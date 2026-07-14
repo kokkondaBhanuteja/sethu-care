@@ -1,0 +1,5 @@
+target/
+.env
+admin/node_modules/
+admin/.next/
+.DS_Store
