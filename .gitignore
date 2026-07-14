@@ -1,5 +1,14 @@
-target/
 .env
+.DS_Store
+.idea/
+.vscode/
+
+# Go
+/bin/
+/tmp/
+*.out
+*.test
+
+# Next.js admin shell (P0 Task 14)
 admin/node_modules/
 admin/.next/
-.DS_Store

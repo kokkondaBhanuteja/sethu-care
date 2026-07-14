@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sethu-postgres
+    environment:
+      POSTGRES_DB: sethu
+      POSTGRES_USER: sethu
+      POSTGRES_PASSWORD: sethu
+    ports:
+      # 5434 on the host, NOT 5432 — deliberately. This machine is crowded:
+      #   5432  native Homebrew postgresql@16 (127.0.0.1 AND [::1])
+      #   5433  the `pharmacy-postgres-local` container from another project
+      #
+      # That 5432 clash is the dangerous one. Docker binds *:5432 while Homebrew's
+      # postgres owns [::1]:5432 — and when a JDBC client resolves "localhost", macOS
+      # tries IPv6 first and reaches the HOMEBREW server, which has no `sethu` role, no
+      # PostGIS, and none of our tables. Two servers answering one address is a coin flip
+      # about which database you are really talking to. An unshared port removes it.
+      - "5434:5432"
+    volumes:
+      - sethu-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sethu -d sethu"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Redis is NOT needed until P2 and is deliberately not started.
+  #
+  # The offer engine wants it for the first-accept-wins lock (ROADMAP §5.2) — but
+  # @Version on the booking row already guarantees that: two accepts race the same
+  # SEARCHING → ASSIGNED transition and exactly one wins the version check. Redis is
+  # therefore a latency optimisation, not a correctness requirement. Uncomment in P2.
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: sethu-redis
+  #   ports:
+  #     - "6379:6379"
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 10
+
+volumes:
+  sethu-pgdata:

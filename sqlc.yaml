@@ -1,0 +1,38 @@
+version: "2"
+sql:
+  - engine: postgresql
+    # sqlc reads the REAL migrations to learn the schema, then type-checks every query
+    # in db/queries against it — at generate time, not at runtime. A typo'd column or a
+    # bad join fails `make generate`; it never reaches production.
+    schema: db/migrations
+    queries: db/queries
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/storage/sqlcgen
+        sql_package: pgx/v5
+
+        # Never nil-check a UUID or a timestamp that the schema says is NOT NULL.
+        emit_pointers_for_null_types: true
+        emit_empty_slices: true
+
+        overrides:
+          # THE IMPORTANT ONE. Every *_paise BIGINT becomes our Money type, not a bare
+          # int64 — so the type safety we built in internal/money survives the round trip
+          # through the database instead of being flattened at the boundary.
+          - column: "*.*_paise"
+            go_type:
+              import: "github.com/kokkondaBhanuteja/sethu-care/internal/money"
+              type: "Money"
+
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
+
+          - db_type: "uuid"
+            nullable: true
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
+              pointer: true

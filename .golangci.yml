@@ -1,0 +1,47 @@
+version: "2"
+
+linters:
+  enable:
+    # THE LOAD-BEARING ONE.
+    #
+    # Go has no real enums and no switch exhaustiveness. Our booking state machine has
+    # 13 states and 13 actions (ROADMAP §7). Without this linter, adding a 14th state
+    # compiles cleanly and silently falls through every switch that forgot it — which is
+    # precisely the class of bug the pure state machine exists to make impossible.
+    # Java's enum + IDE gave this for free. In Go we buy it back here.
+    - exhaustive
+
+    # Money paths. An ignored `err` from a ledger insert is a rupee that vanishes.
+    - errcheck
+    - errorlint # use errors.Is/As, not == and type asserts
+    - nilerr    # returning nil after checking err != nil
+
+    # Database resource leaks — a leaked rows/conn under load takes the pool down.
+    - rowserrcheck
+    - sqlclosecheck
+    - bodyclose
+
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - misspell
+
+settings:
+  exhaustive:
+    # A `default:` clause must NOT excuse a missing case.
+    #
+    # This is the setting that matters. With the default (true), writing `default:`
+    # silently satisfies the linter — and a forgotten BookingState quietly takes the
+    # default branch instead of failing the build. We want to be forced to name every
+    # state.
+    default-signifies-exhaustive: false
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
