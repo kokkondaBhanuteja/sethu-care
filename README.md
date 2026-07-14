@@ -1,0 +1,215 @@
+# SETHU-CARE
+
+An on-demand home services platform — AC repair, plumbing, electrical, appliance
+installation. A customer books a job, the system finds a technician, the technician turns
+up, the work is verified by OTP at both ends, and the money is accounted for.
+
+**Status: P0, in progress.** The booking state machine and the schema are built and proven.
+There is no HTTP API beyond `/health` yet, and no UI at all.
+
+- **[ROADMAP.md](ROADMAP.md)** — the architecture and the reasoning. **Read this first.**
+- **[PLAN-P0.md](PLAN-P0.md)** — the task-by-task plan. ⚠️ *Written for Spring Boot; the
+  architecture holds but every code block is Java. See the banner at its top.*
+- **[Product.md](Product.md)** — the original product brief.
+
+---
+
+## Quick start
+
+You need **Go 1.26+** and **Docker**.
+
+```bash
+brew install go golangci-lint
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+go install github.com/pressly/goose/v3/cmd/goose@latest
+
+make up        # start Postgres + PostGIS
+make migrate   # apply the schema
+make run       # API on :8080
+
+curl localhost:8080/health   # {"status":"UP","db":"UP"}
+```
+
+`make` on its own lists every target. The ones you will actually use:
+
+| Command | What it does |
+|---|---|
+| `make check` | **What CI runs. Run this before you commit.** Lint + every test under `-race`. |
+| `make test` | Tests only, with the race detector. |
+| `make lint` | `go vet` + golangci-lint. |
+| `make reset` | Destroy the database volume and rebuild it from migrations. Local only. |
+| `make generate` | Regenerate type-safe Go from `db/queries`. **Run after ANY schema or query change.** |
+| `make psql` | A psql shell on the SETHU database. |
+
+> **Postgres runs on port 5434, not 5432.** Not an accident — see [Gotchas](#gotchas).
+
+---
+
+## Layout
+
+```
+cmd/api/            the one binary
+internal/
+  money/            Money — a distinct type over int64 paise
+  booking/          the 13-state machine. PURE: no DB, no clock, no I/O
+  identity/         users, salaried technicians, Role
+  catalog/          categories, skills, services, variants, questions
+  order/            the PURCHASE (one payment) — distinct from a booking
+  ledger/           append-only money
+  verification/     dual OTP
+  schema/           the enum drift test (Go constants ⇄ DB CHECK constraints)
+db/
+  migrations/       goose. Applied files are IMMUTABLE.
+  queries/          hand-written SQL; sqlc generates the Go
+```
+
+---
+
+## The five things you need to understand
+
+Everything below is a decision that will look wrong until you know why. Each one exists
+because the obvious alternative fails in a specific, expensive way.
+
+### 1. A booking is one technician's VISIT. An order is one customer's PURCHASE.
+
+These are not the same thing, and conflating them is the mistake this schema is shaped to
+avoid.
+
+A booking has **one state, one Start OTP, one Completion OTP**. So if a customer wants an AC
+service *and* a geyser repair, that is two different skills, two technicians, two arrivals —
+and no single state machine can honestly represent *"half arrived"*.
+
+But they paid **once**. So where does that ₹1,399 payment row attach? With no parent entity
+you must either invent an allocation across the two bookings or staple the whole amount to
+one and show the other as ₹0. **Both are lies in an append-only ledger.** Hence `orders`.
+
+In P0/P1 an order has exactly one booking (a unique index enforces it). P3 drops that index.
+The *structure* is right from the first row, because you cannot retroactively re-attach
+ledger rows that were written against the wrong entity.
+
+### 2. The ledger is append-only, and the database enforces it.
+
+`ledger_entries` and `booking_events` carry a trigger. `UPDATE` and `DELETE` **raise an
+exception**. You correct a mistake by writing a new, offsetting row that points at the one
+it reverses.
+
+This is not ceremony. A `balance` column that drifts from the truth and can never be
+reconciled is a classic way for a startup to lose the ability to prove what happened to its
+own money. A comment saying "don't update this" cannot stop an ops engineer with `psql`. A
+trigger can.
+
+Consequently those two tables have **no `updated_at` and no `version`** — such a column
+would advertise a mutation that must never happen.
+
+### 3. The state machine is PURE, and that is load-bearing.
+
+`booking.Apply(state, action)` imports nothing but `fmt`. No database, no clock, no network,
+not even a `context`. A `depguard` rule fails the build if that ever changes.
+
+The payoff: we test **all 169 (state × action) combinations** in about a millisecond. Every
+legal transition works; every illegal one is refused. That is what makes "the booking spine
+is correct" a *proof* rather than a *hope*.
+
+**But purity says nothing about concurrency.** Two admins both read a booking in `SEARCHING`,
+both find `ASSIGN` perfectly legal, both write — and you have sent **two technicians to one
+kitchen**, with every rule satisfied. So every mutable row carries a `version`, and every
+state change is a compare-and-swap:
+
+```sql
+UPDATE bookings SET state = $1, version = version + 1
+ WHERE id = $2 AND version = $3     -- 0 rows affected => somebody moved first => 409
+```
+
+This also gives P2 first-accept-wins **without Redis**: two technicians accepting the same
+offer race one `SEARCHING → ASSIGNED` update, and the database picks exactly one winner.
+
+### 4. Go has no enums, so we buy exhaustiveness back with three guards.
+
+`type BookingState string` is as close as Go gets, and the set is **not closed** —
+`BookingState("BANANA")` compiles. `switch` has no exhaustiveness check. A 14th state would
+silently fall through every switch that forgot it.
+
+**Each of these three guards has been deliberately broken and observed to fire:**
+
+| Guard | Catches |
+|---|---|
+| `exhaustive` linter | A new constant missing from any `switch`. |
+| `internal/schema` drift test | A Go constant with no migration, or a `CHECK` value with no Go constant. Runs against a **real** Postgres and reads `pg_constraint`. |
+| `booking/constants_test.go` | A new constant missing from the hand-written `AllStates()` slice — which `exhaustive` **does not catch**, because it checks switches, not slices. |
+
+That third guard is not paranoia. **A 14th state, with both switches dutifully fixed, passes
+`exhaustive` with zero issues** and leaves `AllStates()` stale — and everything downstream
+trusts that slice. Verified, not theorised.
+
+> ⚠️ `default-signifies-exhaustive: false` in `.golangci.yml` is **load-bearing**. With the
+> default, writing `default:` silently excuses a missing case. Do not "fix a lint error" by
+> turning it back on.
+
+**`bookings.state` is the one enum column with no `CHECK`, deliberately.** The state machine
+is its sole authority and enforces far more than a `CHECK` could — not merely *"is this a
+real state"* but *"is this a legal state to arrive at, from where you were, by the action you
+took"*. A test pins this decision down so nobody helpfully adds the constraint later.
+
+### 5. Skills are a table, not a `TEXT[]`.
+
+The original design had `technicians.skills TEXT[]` and `services.required_skills TEXT[]` —
+two free-form arrays that must match each other for dispatch eligibility to work, with **no
+referential integrity between them**.
+
+Picture it: ops creates a service needing `'AC_REPAIR'`; the technicians were onboarded with
+`'AC-REPAIR'`. The eligibility query matches nothing. **Zero eligible technicians — every AC
+booking escalates to the human queue, forever.** No exception, no failing test, no error in
+any log. Just a dispatch engine quietly returning an empty list.
+
+Now `skills` is a real table with foreign keys, and `code` carries a regex `CHECK` — so
+`AC-REPAIR`, `ac_repair` and `AC Repair` are all rejected at INSERT time. Adding a skill is
+still just an `INSERT`, so nothing about "configure services without a deploy" is lost.
+
+---
+
+## Rules
+
+**Migrations are immutable.** Once a `db/migrations/*.sql` file has been applied to any
+database, **never edit it** — write a new one. goose checksums applied migrations.
+
+**Run `make generate` after any schema or query change.** sqlc type-checks your SQL against
+the real schema and regenerates the Go. A bad column name fails `make generate`; it never
+reaches production.
+
+**Money is `money.Money`, never `int64`.** `FromRupees("599")` and `FromPaise(599)` differ by
+a factor of 100, and one of them charges ₹5.99. The type makes that a compile error. Every
+`*_paise` column maps to it automatically via `sqlc.yaml`.
+
+**Never ignore an error on a money path.** `errcheck` runs with `check-blank: true`, so even
+`_ = err` is refused. That is intentional.
+
+---
+
+## Gotchas
+
+**Postgres is on `127.0.0.1:5434`.** Port 5432 is not safe on this machine: a native Homebrew
+`postgresql@16` binds `[::1]:5432` while Docker binds `*:5432`, and `localhost` resolves to
+IPv6 first — so half your connections would silently reach a completely different database.
+The DSN uses `127.0.0.1`, not `localhost`, for the same reason. (Another project's container
+holds 5433.)
+
+**Tests need Docker.** `internal/schema` spins up a real PostGIS container via
+testcontainers. No H2, no mocks: the schema under test is the schema that runs in production.
+
+**Redis is commented out of `docker-compose.yml`.** It is not needed until P2, and the
+`version` column already gives us first-accept-wins for free — so Redis is a latency
+optimisation, not a correctness requirement.
+
+---
+
+## Why Go, when the ROADMAP says Java
+
+It did, and the reasoning was sound: *"we build in the language we are strongest in."* That
+premise inverted — the team is one developer whose explicit goal is to **build** Go fluency,
+with no deadline. A Spring Boot 4.1 skeleton was built and discarded before the first Go
+commit.
+
+The architecture in the ROADMAP — the modular monolith, aggregate ownership, the booking
+spine, the Assignment port, the seam rule — is language-independent and survived intact.
+See ROADMAP §10, *"The language decision, revisited"*, which states honestly what the switch
+cost as well as what it bought.

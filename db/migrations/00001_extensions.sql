@@ -12,4 +12,12 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- +goose Down
-DROP EXTENSION IF EXISTS postgis;
+-- Deliberately a NO-OP.
+--
+-- `DROP EXTENSION postgis` fails anyway — PostGIS's own spatial_ref_sys table depends on
+-- it — and `CASCADE` would "fix" that by dropping spatial_ref_sys too, which is the 8,500
+-- coordinate systems every geography column on this database is defined against.
+--
+-- Rolling back a schema change should never uninstall the database's capabilities. There
+-- is no scenario where undoing a migration means "and also remove geospatial support".
+SELECT 1;

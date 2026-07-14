@@ -1,5 +1,33 @@
 # P0 — Foundation & Booking Spine · Implementation Plan (Spring Boot)
 
+> # ⚠️ SUPERSEDED STACK — READ THIS FIRST
+>
+> **This plan is written in Java/Spring. The project is built in Go.** See ROADMAP §10,
+> *"The language decision, revisited"*.
+>
+> **What is still true — and it is most of the document.** The architecture, the module
+> boundaries, the aggregate ownership, the 13-state booking spine, the event catalog, the
+> ordering of the tasks, the exit criteria, and above all the *reasoning* behind each
+> decision. Read this plan for **what to build and why**.
+>
+> **What is wrong.** Every code block, every file path, every `pom.xml`, and the Tech Stack
+> line below. Do **not** copy code out of this document. Translate the intent.
+>
+> | This plan says | The code does |
+> |---|---|
+> | Java 21 · Spring Boot 3.4 · Maven | **Go 1.26** |
+> | Spring JDBC (`JdbcClient`) · Flyway | **pgx + sqlc · goose** |
+> | Spring Modulith `verify()` for module walls | **Nested `internal/` packages** — compiler-enforced |
+> | ArchUnit rule for state-machine purity | **`depguard`** in `.golangci.yml` |
+> | Java `enum` (exhaustiveness free) | **`exhaustive` linter + DB `CHECK` + a `go/ast` drift test.** See ROADMAP §7a — this is Go's weakest point here and needs three guards, not one. |
+> | Modulith `event_publication` (free) | **Hand-rolled transactional `outbox`** |
+> | JUnit 5 + AssertJ + Testcontainers | **stdlib `testing` + testcontainers-go** |
+>
+> **Three schema decisions in this plan are also WRONG and were corrected** (see ROADMAP §9):
+> 1. `technicians.skills TEXT[]` / `services.required_skills TEXT[]` → **`skills` + join tables with real FKs.** The array version has no referential integrity, so one typo silently yields zero eligible technicians and escalates every booking of that service, forever.
+> 2. No `orders` table; money attached to the booking → **`orders` exists from day one.** A booking is one *visit*; an order is one *purchase*. One payment across two bookings has no honest home without it.
+> 3. `otp_challenges` had no column distinguishing a Start OTP from a Completion OTP → **`purpose` added.** As written, a technician could replay the arrival OTP to mark the job complete.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a Spring Modulith monolith whose booking state machine is provably correct — every legal transition works, every illegal transition is rejected — with no UI beyond a bare admin shell.

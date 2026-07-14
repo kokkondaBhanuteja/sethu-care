@@ -315,23 +315,75 @@ consume these — nothing reaches into another module to find out what happened.
 
 | Module | Tables |
 |---|---|
-| Identity | `users` (role), `technicians` (skills, **shift hours, leave, service_radius, max_concurrent_jobs, acceptance_rate**), `customers` |
-| Catalog | `categories`, `services` (**`assignment_mode`**), `service_variants`, `pricing_rules`, `question_defs` |
-| Products & Warranty | `product_models`, `product_units` (serial), `warranties`, `ownerships` |
+| Identity | `users` (role), `technicians` (**shift hours, leave, service_radius, max_concurrent_jobs, acceptance_rate**), `technician_skills` |
+| Catalog | `categories`, `skills`, `services` (**`assignment_mode`**), `service_required_skills`, `service_variants`, `question_defs` |
+| Products & Warranty | `product_models`, `product_units` (serial, **`warranty_expires_at`**) |
 | Address | `addresses` (PostGIS geography point) |
-| Booking | `bookings`, `booking_items`, `booking_events` (append-only) |
-| Assignment | `offers` (tier, technician, sent_at, expires_at, **outcome**), `technician_locations` (PostGIS point, heartbeat) |
-| Verification | `otp_challenges` (hashed, expiring, rate-limited, attempt-capped), `work_photos` |
-| Pricing | `quotes`, `discounts` (the hook) |
-| Ledger | `ledger_entries` (append-only), `payments`, **`cash_custody`**, `credits` |
+| **Order** | `orders` — **the purchase. One payment.** |
+| Booking | `bookings` (**one technician VISIT**), `booking_items`, `booking_events` (append-only) |
+| Assignment *(P2)* | `offers` (tier, technician, sent_at, expires_at, **outcome**), `technician_locations` (PostGIS point, heartbeat) |
+| Verification | `otp_challenges` (hashed, expiring, rate-limited, attempt-capped, **`purpose`**), `work_photos` |
+| Ledger | `ledger_entries` (append-only) |
 | Reviews | `reviews` |
-| Commerce *(P3)* | `orders`, `order_items` |
+| Platform | `outbox`, `goose_db_version` |
+
+### Three schema decisions that were NOT in the first draft of this document
+
+**1. Skill is a first-class entity, not a `TEXT[]`.**
+The first draft had `technicians.skills TEXT[]` and `services.required_skills TEXT[]` — two
+free-form string arrays that must match each other for **§5.1's very first eligibility check**
+to work, with **no referential integrity between them.** Ops creates a service needing
+`'AC_REPAIR'`; the technicians were onboarded with `'AC-REPAIR'`. The eligibility query
+matches nothing. **Zero eligible technicians — every AC booking escalates to the human queue,
+forever.** No exception, no failed test, no error in a log: just a dispatch engine silently
+returning an empty list. A `TEXT[]` cannot reject the typo.
+
+So: a `skills` table with a stable code, plus `technician_skills` and
+`service_required_skills` join tables with real foreign keys. The typo is now **impossible at
+INSERT time**, and adding a skill stays an `INSERT` — HSOS holds.
+
+**2. `orders` exists from day one, and money attaches to it — not to the booking.**
+**A booking is one technician's VISIT** — one state machine, one Start OTP, one Completion
+OTP. **An order is one customer's PURCHASE** — one payment. These are different things, and
+conflating them was the original error. An AC service and a geyser repair need different
+skills, so they are two technicians, two arrivals, two OTP pairs — and no state machine can
+honestly describe "half arrived."
+
+The reason this cannot wait for P3 is **audit**. One ₹1,399 payment fanning out to two
+bookings, with no parent entity, must either invent an allocation across them or staple the
+whole amount to one and show the other as ₹0. **Both are lies in an append-only ledger** —
+and §6 exists precisely so the ledger never lies. You can add a table later; you cannot go
+back and re-attach ledger rows that were written against the wrong entity.
+
+Per §4.6 this is a **seam, not a feature**: in P0/P1 an order has exactly one booking and a
+booking exactly one item, enforced by an invariant. Multi-service checkout, split refunds and
+partial cancellation stay in P3 — the *structure* is right from the first row.
+
+- `ledger_entries.order_id` — `REVENUE`, `CREDIT_ISSUED`, `CREDIT_REDEEMED`. Money is purchased once.
+- `ledger_entries.booking_id` — `CASH_CUSTODY`, `CASH_DEPOSIT`. **Cash is collected at a visit**, by a specific technician.
+
+**3. Every mutable row carries `version`; append-only rows carry neither `version` nor `updated_at`.**
+The state machine proves a transition is *legal*. It says nothing about two people applying a
+legal transition at the same instant — two admins working the P1 queue both read `SEARCHING`,
+both find `ASSIGN` legal, both write. **Two technicians, one address.** Every state change is
+therefore a compare-and-swap: `UPDATE … WHERE id = $1 AND version = $2`, and zero rows
+affected means someone else moved first (a 409).
+
+`booking_events` and `ledger_entries` are **append-only**, so they get **no `version` and
+no `updated_at`**. An `updated_at` on an append-only table advertises a mutation that must
+never happen — and invites exactly the thing §6 exists to prevent. This is **enforced by a
+database trigger** (`forbid_mutation()`), not by convention: an `UPDATE` or `DELETE` on
+either table *raises*. A comment cannot stop an ops engineer with `psql`; a trigger can.
+
+> `outbox` is the **exception**, and deliberately so: its `published_at` and `attempts` are
+> written by the worker *after* the fact, so it is genuinely mutable and carries no trigger.
+> It is the one table where "append-only" would be a lie, so we do not tell it.
 
 **A booking may reference a `product_unit`** — that is how Pricing knows a job is under
 warranty and therefore free.
 
 **Nearby-technician query** is a single indexed `ST_DWithin` over `technician_locations`,
-filtered by the §5.1 capacity predicates.
+filtered by the §5.1 capacity predicates **joined through `technician_skills`**.
 
 ---
 
@@ -340,26 +392,85 @@ filtered by the §5.1 capacity predicates.
 | Layer | Choice | Rationale |
 |---|---|---|
 | Database | **PostgreSQL + PostGIS** | Relational, transactional, money-touching data + a geospatial query at the heart of dispatch. Not a close call. |
-| Cache/Queue | **Redis** | Offer timers, retries, first-accept-wins locking (P2). |
-| **Backend** | **Java 21 LTS + Spring Boot 3.x + Spring Modulith** | **We build in the language we are strongest in.** Spring Modulith *verifies the module walls of §4 in a test* and gives us the domain-event bus with transactional publication. It is the architecture in this document, first-class. |
-| Persistence | **Spring JDBC (`JdbcClient`) + Flyway** | The hottest query is a hand-written `ST_DWithin`. Do not fight Hibernate over PostGIS — write the SQL. Flyway owns migrations. |
-| API contract | **springdoc-openapi → `openapi-typescript`** | The OpenAPI spec is generated from the controllers; the mobile and admin apps generate TS types from it. One source of truth across four surfaces. |
+| Cache/Queue | **Redis** | Offer timers and retries (P2). **No longer needed for first-accept-wins** — see the note below. |
+| **Backend** | **Go 1.26** | *Superseded the original Java/Spring choice — see "The language decision, revisited" below.* |
+| Persistence | **pgx + sqlc + goose** | `sqlc` type-checks hand-written SQL against the real schema at build time and generates the Go. **This is the original instinct of this row, honoured properly**: the hottest query is a hand-written `ST_DWithin`, and we always said *write the SQL*. `goose` owns migrations, exactly as Flyway would have. |
+| Module walls | **Nested `internal/` packages** | Go's `internal/` rule is enforced **by the compiler**, where Spring Modulith could only enforce it in a test. `internal/booking/internal/…` is importable only from within `internal/booking/…`. Cross-*module* imports still need discipline (`depguard`), which Modulith would have given us — a real, accepted loss. |
+| Enum safety | **`exhaustive` linter + DB `CHECK` + a source-parsing drift test** | **Go's weakest point for this system, and it must be actively bought back.** Go has no real enums and no `switch` exhaustiveness: a 14th `BookingState` would compile cleanly and silently fall through every switch that forgot it. See §7a. |
+| Domain events | **Hand-rolled transactional outbox** | Spring Modulith gave us `event_publication` for free; in Go we build it. ~200 lines and a worker. The guarantee is identical: the event is written in the **same transaction** as the state change, so a crash between "booking completed" and "ledger notified" cannot lose the event. |
+| API contract | **Hand-written OpenAPI → `openapi-typescript`** | We lose springdoc's generate-from-controllers. The spec is now authored, not derived — a small ongoing tax, and it must be kept honest in review. |
 | Mobile | **Expo / React Native + TypeScript** | Customer app + technician app, one monorepo, shared UI package. |
 | Admin | **Next.js + Tailwind + shadcn/ui** | Responsive — also serves as "admin mobile." |
-| Payments | **Razorpay** (official Java SDK) | UPI QR + payment links (P1); full checkout (P3). |
+| Payments | **Razorpay** (REST API) | UPI QR + payment links (P1); full checkout (P3). *No official Go SDK — we call the REST API directly.* |
 | SMS / OTP | **MSG91** | |
-| Push | **Firebase Admin SDK** (Java) | |
+| Push | **Firebase Admin SDK** (Go) | |
 | Maps | **Google Maps** | Geocoding + **deep-link navigation**. We do not build a map in P1. |
 | Storage | **S3 / Cloudflare R2** | Work photos. |
 | Errors | **Sentry** | No Prometheus/Grafana stack yet. |
 | Hosting | **Docker on a single managed host** | No Kubernetes. |
+
+### The language decision, revisited
+
+The original decision here was **Java 21 + Spring Boot + Spring Modulith**, and it was
+reasoned as follows — preserved verbatim, because it was correct on its premises:
 
 > **Why not Go, and why not Node.** Go is a fine fit technically — but the team's fluency is
 > in Java/Spring, and Go's advantage here (a ~300MB smaller memory footprint) is worth about
 > **$10/month** at our scale. That is the entire prize. The cost would be building a
 > money-handling business on a 3-month deadline in a second language. *We optimise for the
 > scarce resource (our time and correctness), not the abundant one (server RAM).* Node was
-> rejected on the same fluency grounds. Revisit only if the team changes.
+> rejected on the same fluency grounds. **Revisit only if the team changes.**
+
+**The team changed, so we revisited.** Every load-bearing premise of that paragraph is now false:
+
+| The original premise | What is actually true |
+|---|---|
+| "the team's fluency is in Java/Spring" | The team is **one developer**, whose explicit goal is to **build** Go fluency. The paragraph optimised for *using* existing fluency; the goal is now *acquiring* it. |
+| "a 3-month deadline" | **There is no deadline.** The cost of learning is paid in the one resource we have. |
+| "worth about $10/month… that is the entire prize" | Still true, and still not the point. **Memory was never the reason.** The reason is the developer. |
+
+A Spring Boot 4.1 skeleton was built and discarded before the first Go commit. The
+architecture in this document — the modular monolith, aggregate ownership, the booking
+spine, the Assignment port, the seam rule — is **language-independent and survived intact.**
+Only the stack rows above changed.
+
+> **What this decision costs, stated honestly.** Go is *not* a free win here. We lose
+> compiler-checked enums (§7a), Modulith's verified module walls, its free transactional
+> event registry, and springdoc's generated API spec. We gain a compiler-enforced `internal/`
+> boundary, a money type that costs one line instead of four annotations, no ORM magic in the
+> money paths — and a developer who knows Go at the end of it. **That last one is the actual
+> prize. Everything else is a trade.**
+
+> **Consequence for Redis.** Booking rows carry a `version` column and every state
+> transition is a compare-and-swap (`WHERE id = $1 AND version = $2`). Two technicians
+> accepting the same offer therefore race one `SEARCHING → ASSIGNED` update, and exactly one
+> wins — in the database. §5.2's Redis lock for first-accept-wins is now a **latency
+> optimisation, not a correctness requirement.** We do not need Redis to be correct.
+
+---
+
+## 7a. Constants, and why Go makes this a standing hazard
+
+Go has no enums. `type BookingState string` plus a `const` block is as close as it gets, and
+the set is **not closed** — `BookingState("BANANA")` compiles. `switch` has no exhaustiveness
+check either, so a 14th state silently falls through every switch that forgot it.
+
+Java gave us this for free. In Go it is bought back with **three guards, each of which has
+been deliberately broken and observed to fire**:
+
+| Guard | Catches |
+|---|---|
+| `exhaustive` linter, with `default-signifies-exhaustive: false` | A new state missing from any `switch`. The setting is load-bearing: with the default, writing `default:` silently excuses the missing case. |
+| **DB `CHECK` constraint + drift test** | A value Go knows and Postgres does not, or vice versa. The `CHECK` is generated from the Go constants; a test asserts they agree. |
+| **Source-parsing test** (`go/ast`) | A new constant missing from the hand-written `AllStates()` slice — which the `exhaustive` linter **does not catch**, because it checks switches, not slices. Everything downstream trusts that slice. |
+
+**That third guard is not paranoia.** A 14th state added with both switches dutifully fixed
+passes `exhaustive` with zero issues, leaves `AllStates()` stale, and is then silently never
+tested and silently unpersistable — with a green build. That was observed, not theorised.
+
+> **The one enum column with NO `CHECK`: `bookings.state`.** The state machine is its sole
+> authority. A `CHECK` there would be a second, dumber authority enforcing less than the
+> machine already does, and the two would drift.
 
 ---
 
