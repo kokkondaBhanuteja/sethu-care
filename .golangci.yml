@@ -1,22 +1,28 @@
 version: "2"
 
+# NOTE: in golangci-lint v2, linter settings live UNDER `linters:`, not at the top level.
+# A top-level `settings:` block is silently IGNORED — the linters still run, but with
+# their defaults, so the config looks correct and does nothing. Learned the hard way.
+
 linters:
   enable:
     # THE LOAD-BEARING ONE.
     #
-    # Go has no real enums and no switch exhaustiveness. Our booking state machine has
-    # 13 states and 13 actions (ROADMAP §7). Without this linter, adding a 14th state
-    # compiles cleanly and silently falls through every switch that forgot it — which is
-    # precisely the class of bug the pure state machine exists to make impossible.
-    # Java's enum + IDE gave this for free. In Go we buy it back here.
+    # Go has no real enums and no switch exhaustiveness. Our booking state machine has 13
+    # states and 13 actions (ROADMAP §7). Without this, adding a 14th state compiles
+    # cleanly and silently falls through every switch that forgot it — precisely the class
+    # of bug the pure state machine exists to make impossible. Java's enum gave this free.
     - exhaustive
+
+    # Guards the purity of the state machine (see depguard settings below).
+    - depguard
 
     # Money paths. An ignored `err` from a ledger insert is a rupee that vanishes.
     - errcheck
-    - errorlint # use errors.Is/As, not == and type asserts
+    - errorlint # errors.Is/As over == and bare type asserts; %w over %v
     - nilerr    # returning nil after checking err != nil
 
-    # Database resource leaks — a leaked rows/conn under load takes the pool down.
+    # Database resource leaks — a leaked rows/conn takes the pool down under load.
     - rowserrcheck
     - sqlclosecheck
     - bodyclose
@@ -27,19 +33,50 @@ linters:
     - unused
     - misspell
 
-settings:
-  exhaustive:
-    # A `default:` clause must NOT excuse a missing case.
-    #
-    # This is the setting that matters. With the default (true), writing `default:`
-    # silently satisfies the linter — and a forgotten BookingState quietly takes the
-    # default branch instead of failing the build. We want to be forced to name every
-    # state.
-    default-signifies-exhaustive: false
+  settings:
+    exhaustive:
+      # A `default:` clause must NOT excuse a missing case.
+      #
+      # This is the setting that does the work. With the default (true), writing `default:`
+      # silently satisfies the linter — and a forgotten BookingState quietly takes the
+      # default branch instead of failing the build. Do not "fix a lint error" by turning
+      # this back on.
+      default-signifies-exhaustive: false
 
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    depguard:
+      rules:
+        # THE PURITY RULE — PLAN-P0's ArchUnit guard, in Go.
+        #
+        # The booking state machine must be a pure function over enums: no database, no
+        # clock, no network, not even a context. That purity is what lets us prove it
+        # correct by trying all 169 (state × action) combinations in a millisecond.
+        #
+        # If it ever "needs" one of these imports, the design is wrong — the decision has
+        # leaked out of the machine and into the world. Fail the build, loudly.
+        #
+        # Only these two files are constrained. `deny` beats `allow`, which is why the
+        # stdlib entries below still bite despite $gostd being allowed.
+        booking-state-machine-must-stay-pure:
+          files:
+            - "**/internal/booking/state.go"
+            - "**/internal/booking/statemachine.go"
+          allow:
+            - $gostd
+          deny:
+            - pkg: "database/sql"
+              desc: "the state machine is PURE — legality comes from enums, never from a query"
+            - pkg: "github.com/jackc/pgx"
+              desc: "the state machine is PURE — no database"
+            - pkg: "net/http"
+              desc: "the state machine is PURE — transport does not belong in the domain"
+            - pkg: "context"
+              desc: "the state machine is PURE — nothing in it blocks, so nothing needs cancelling"
+            - pkg: "time"
+              desc: "the state machine is PURE — a transition that depends on the clock cannot be tested exhaustively"
 
 formatters:
   enable:
