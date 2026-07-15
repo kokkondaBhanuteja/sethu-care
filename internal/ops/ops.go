@@ -122,6 +122,36 @@ func (service *Service) Assign(ctx context.Context, bookingID, technicianID, adm
 	})
 }
 
+// StartSearch moves a CONFIRMED booking into SEARCHING, so it appears in the assignment
+// queue automatically. It is the auto-search step: an outbox consumer of `booking.confirmed`
+// wires main -> this. The system performs it (nil actor) with admin authority, since SEARCH
+// is an ops action.
+//
+// IDEMPOTENCY is the whole point here. Outbox delivery is at-least-once, so this may be
+// called again for a booking that has already left CONFIRMED — searched by an admin,
+// cancelled, or re-delivered after we already handled it. In every one of those cases the
+// booking has correctly moved on and there is nothing to do: we return nil so the outbox
+// marks the event published and stops retrying. Only a genuine infrastructure error is worth
+// a retry.
+func (service *Service) StartSearch(ctx context.Context, bookingID uuid.UUID) error {
+	_, err := service.bookings.Apply(ctx, bookingID, booking.ActionSearch, booking.TransitionInput{
+		Actor:     nil, // system
+		ActorRole: identity.RoleAdmin,
+	})
+	if err == nil {
+		return nil
+	}
+
+	// The booking already moved on (illegal from its current state) or someone raced us to
+	// it (optimistic-lock conflict). Either way it is no longer ours to search — done.
+	var illegal *booking.IllegalTransitionError
+	var conflict *booking.ConflictError
+	if errors.As(err, &illegal) || errors.As(err, &conflict) || errors.Is(err, booking.ErrBookingNotFound) {
+		return nil
+	}
+	return fmt.Errorf("auto-search booking %s: %w", bookingID, err)
+}
+
 func timePointer(timestamp pgtype.Timestamptz) *time.Time {
 	if !timestamp.Valid {
 		return nil

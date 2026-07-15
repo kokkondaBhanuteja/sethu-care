@@ -75,8 +75,17 @@ func run() error {
 	// The outbox worker. In P0 the only subscriber is a logging handler — the real
 	// consumers (Notifications, Ledger, Assignment) do not exist yet — so starting the API
 	// visibly drains every domain event to the log, proving the pipeline end to end.
+	bookingService := booking.NewService(pool)
+	opsService := ops.New(pool, bookingService)
+
 	dispatcher := outbox.NewDispatcher()
 	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
+	// AUTO-SEARCH: a confirmed booking moves itself into SEARCHING (and thus the assignment
+	// queue) without an admin poking it. The adapter keeps ops decoupled from outbox.Event —
+	// it just hands over the aggregate id.
+	dispatcher.Subscribe("booking.confirmed", func(ctx context.Context, event outbox.Event) error {
+		return opsService.StartSearch(ctx, event.AggregateID)
+	})
 	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
 
 	var workerDone sync.WaitGroup
@@ -95,11 +104,9 @@ func run() error {
 		return fmt.Errorf("configuring jwt: %w", err)
 	}
 
-	bookingService := booking.NewService(pool)
 	identityService := identity.NewService(pool)
 	catalogService := catalog.New(pool)
 	addressService := address.New(pool)
-	opsService := ops.New(pool, bookingService)
 
 	server := &http.Server{
 		Addr: settings.ListenAddr,

@@ -88,8 +88,13 @@ Then `outbox.Worker` (started by `main`, drained on a ticker) delivers those eve
 claims rows with `FOR UPDATE SKIP LOCKED`, so several workers can run without ever
 double-delivering; dispatches each to its subscribers; and marks it published — or records
 the failure and leaves it for the next poll. Delivery is **at-least-once**, so every consumer
-must be idempotent. In P0 the only subscriber is a logging handler (the real consumers do not
-exist yet), so starting the API visibly drains every domain event to the log.
+must be idempotent.
+
+The first real consumer is **auto-search**: `booking.confirmed` → `ops.StartSearch`, which
+moves the booking `CONFIRMED → SEARCHING` so it appears in the assignment queue on its own,
+no admin required. It demonstrates the idempotency contract concretely — a redelivered
+`booking.confirmed` finds the booking already past `CONFIRMED`, treats that as done, and does
+not retry or double-transition.
 
 ---
 
