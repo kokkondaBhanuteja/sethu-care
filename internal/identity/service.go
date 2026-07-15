@@ -45,11 +45,36 @@ type User struct {
 
 // Service owns users and the OTP challenges that authenticate them.
 type Service struct {
-	pool *pgxpool.Pool
+	pool      *pgxpool.Pool
+	demoPhone string // App Review bypass; empty = disabled
+	demoCode  string
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool}
+// Option configures the Service at construction.
+type Option func(*Service)
+
+// WithDemoAccount enables a FIXED bypass code for ONE reserved phone number. App Store review
+// cannot receive a real SMS OTP (Guideline 2.1a), so the reviewer logs in with this number and a
+// static code. The reserved phone should be pre-provisioned with the role under review (a
+// technician for the provider app). Never set this for a real user's number.
+func WithDemoAccount(phone, code string) Option {
+	return func(service *Service) {
+		service.demoPhone = phone
+		service.demoCode = code
+	}
+}
+
+func NewService(pool *pgxpool.Pool, opts ...Option) *Service {
+	service := &Service{pool: pool}
+	for _, opt := range opts {
+		opt(service)
+	}
+	return service
+}
+
+// isDemo reports whether this phone is the reserved App-Review bypass number.
+func (service *Service) isDemo(phone string) bool {
+	return service.demoPhone != "" && phone == service.demoPhone
 }
 
 // RequestOTP issues a login code for a phone and returns the PLAINTEXT code.
@@ -59,6 +84,12 @@ func NewService(pool *pgxpool.Pool) *Service {
 // never appears in a response or a log. This split is why the code lives in a return value
 // and not in the struct.
 func (service *Service) RequestOTP(ctx context.Context, phone string) (string, error) {
+	// The reserved review number never issues a real code — the reviewer already knows the
+	// fixed bypass code. No DB write, no rate limit.
+	if service.isDemo(phone) {
+		return service.demoCode, nil
+	}
+
 	queries := sqlcgen.New(service.pool)
 
 	recent, err := queries.CountRecentOtpChallenges(ctx, sqlcgen.CountRecentOtpChallengesParams{
@@ -103,6 +134,15 @@ func (service *Service) RequestOTP(ctx context.Context, phone string) (string, e
 // always a new customer.
 func (service *Service) VerifyOTP(ctx context.Context, phone, code string) (User, error) {
 	queries := sqlcgen.New(service.pool)
+
+	// App Review bypass: the reserved number accepts only the fixed code, and returns whatever
+	// user is provisioned for it (its role decides which app the reviewer can exercise).
+	if service.isDemo(phone) {
+		if code != service.demoCode {
+			return User{}, ErrOtpInvalid
+		}
+		return service.findOrCreateCustomer(ctx, queries, phone)
+	}
 
 	challenge, err := queries.GetLiveOtpChallenge(ctx, sqlcgen.GetLiveOtpChallengeParams{
 		Phone:   phone,

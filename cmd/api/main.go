@@ -83,7 +83,11 @@ func run() error {
 	// (ops), OTP issuance (verification), billing (ledger), and customer notifications. The
 	// worker drives them all off the one event stream.
 	bookingService := booking.NewService(pool)
-	identityService := identity.NewService(pool)
+	var identityOptions []identity.Option
+	if settings.DemoPhone != "" && settings.DemoOTP != "" {
+		identityOptions = append(identityOptions, identity.WithDemoAccount(settings.DemoPhone, settings.DemoOTP))
+	}
+	identityService := identity.NewService(pool, identityOptions...)
 	opsService := ops.New(pool, bookingService)
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
