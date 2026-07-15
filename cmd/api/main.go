@@ -167,6 +167,7 @@ func run() error {
 			bookingService:      bookingService,
 			verificationService: verificationService,
 			reviewService:       reviewService,
+			ledgerService:       ledgerService,
 			identityService:     identityService,
 			catalogService:      catalogService,
 			addressService:      addressService,
@@ -241,6 +242,7 @@ type routerDependencies struct {
 	bookingService      *booking.Service
 	verificationService *verification.Service
 	reviewService       *reviews.Service
+	ledgerService       *ledger.Service
 	identityService     *identity.Service
 	catalogService      *catalog.Catalog
 	addressService      *address.Service
@@ -264,6 +266,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 
 	// Ops console: the manual-assignment queue (admin-only).
 	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
+	httpapi.NewCashHandler(dependencies.ledgerService, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
 	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.reviewService, dependencies.signer, dependencies.logger).Register(mux)

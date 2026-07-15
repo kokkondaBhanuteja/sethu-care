@@ -22,6 +22,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
@@ -285,6 +286,7 @@ func newServer(t *testing.T) *testEnv {
 	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
 	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
 	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
+	httpapi.NewCashHandler(ledger.NewService(pool), signer, log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

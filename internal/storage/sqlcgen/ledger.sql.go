@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
@@ -49,6 +50,40 @@ func (q *Queries) CreditExistsForOrder(ctx context.Context, orderID *uuid.UUID) 
 	return exists, err
 }
 
+const depositExistsForBooking = `-- name: DepositExistsForBooking :one
+SELECT EXISTS (
+  SELECT 1 FROM ledger_entries WHERE booking_id = $1 AND kind = 'CASH_DEPOSIT'
+) AS exists
+`
+
+func (q *Queries) DepositExistsForBooking(ctx context.Context, bookingID *uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, depositExistsForBooking, bookingID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getBookingCashCustody = `-- name: GetBookingCashCustody :one
+SELECT amount_paise, technician_id
+  FROM ledger_entries
+ WHERE booking_id = $1 AND kind = 'CASH_CUSTODY'
+ LIMIT 1
+`
+
+type GetBookingCashCustodyRow struct {
+	AmountPaise  money.Money
+	TechnicianID *uuid.UUID
+}
+
+// The cash a technician is holding for a booking (the CASH_CUSTODY row), so a deposit can
+// match its amount and be attributed to the right technician.
+func (q *Queries) GetBookingCashCustody(ctx context.Context, bookingID *uuid.UUID) (GetBookingCashCustodyRow, error) {
+	row := q.db.QueryRow(ctx, getBookingCashCustody, bookingID)
+	var i GetBookingCashCustodyRow
+	err := row.Scan(&i.AmountPaise, &i.TechnicianID)
+	return i, err
+}
+
 const insertLedgerEntry = `-- name: InsertLedgerEntry :exec
 INSERT INTO ledger_entries (kind, amount_paise, order_id, booking_id, customer_id, technician_id, method, memo)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -80,4 +115,52 @@ func (q *Queries) InsertLedgerEntry(ctx context.Context, arg InsertLedgerEntryPa
 		arg.Memo,
 	)
 	return err
+}
+
+const listCashReconciliation = `-- name: ListCashReconciliation :many
+SELECT
+  position.technician_id, u.name,
+  position.collected_paise, position.deposited_paise, position.outstanding_paise,
+  position.oldest_collection_at::timestamptz AS oldest_collection_at
+FROM technician_cash_position position
+JOIN users u ON u.id = position.technician_id
+WHERE position.outstanding_paise > 0
+ORDER BY position.oldest_collection_at
+`
+
+type ListCashReconciliationRow struct {
+	TechnicianID       *uuid.UUID
+	Name               string
+	CollectedPaise     money.Money
+	DepositedPaise     money.Money
+	OutstandingPaise   money.Money
+	OldestCollectionAt pgtype.Timestamptz
+}
+
+// The admin reconciliation view: every technician who still owes a deposit, oldest first.
+func (q *Queries) ListCashReconciliation(ctx context.Context) ([]ListCashReconciliationRow, error) {
+	rows, err := q.db.Query(ctx, listCashReconciliation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCashReconciliationRow{}
+	for rows.Next() {
+		var i ListCashReconciliationRow
+		if err := rows.Scan(
+			&i.TechnicianID,
+			&i.Name,
+			&i.CollectedPaise,
+			&i.DepositedPaise,
+			&i.OutstandingPaise,
+			&i.OldestCollectionAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

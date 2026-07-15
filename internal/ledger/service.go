@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
@@ -133,4 +135,93 @@ func (service *Service) IssueFailureCredit(ctx context.Context, bookingID uuid.U
 		return fmt.Errorf("recording credit: %w", err)
 	}
 	return nil
+}
+
+// Cash-reconciliation errors.
+var (
+	// ErrNoCustody — there is no cash held for this booking (not a cash job, or none recorded).
+	ErrNoCustody = errors.New("ledger: no cash custody for this booking")
+	// ErrNotYourCustody — a technician may only deposit cash they are holding (403).
+	ErrNotYourCustody = errors.New("ledger: this cash is not held by you")
+	// ErrAlreadyDeposited — the cash for this booking was already handed in (409).
+	ErrAlreadyDeposited = errors.New("ledger: cash for this booking has already been deposited")
+)
+
+// CashPosition is one technician's cash standing: what they collected, deposited, and still owe.
+type CashPosition struct {
+	TechnicianID       uuid.UUID
+	Name               string
+	CollectedPaise     money.Money
+	DepositedPaise     money.Money
+	OutstandingPaise   money.Money
+	OldestCollectionAt *time.Time
+}
+
+// RecordDeposit records that a technician handed in the cash they were holding for a booking —
+// a CASH_DEPOSIT that offsets the CASH_CUSTODY, closing the loop the reconciliation view tracks.
+func (service *Service) RecordDeposit(ctx context.Context, bookingID, technicianID uuid.UUID) error {
+	queries := sqlcgen.New(service.pool)
+
+	custody, err := queries.GetBookingCashCustody(ctx, &bookingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNoCustody
+	}
+	if err != nil {
+		return fmt.Errorf("reading custody: %w", err)
+	}
+	if custody.TechnicianID == nil || *custody.TechnicianID != technicianID {
+		return ErrNotYourCustody
+	}
+
+	deposited, err := queries.DepositExistsForBooking(ctx, &bookingID)
+	if err != nil {
+		return fmt.Errorf("checking deposit: %w", err)
+	}
+	if deposited {
+		return ErrAlreadyDeposited
+	}
+
+	method := string(PaymentCash)
+	if err := queries.InsertLedgerEntry(ctx, sqlcgen.InsertLedgerEntryParams{
+		Kind:         string(EntryCashDeposit),
+		AmountPaise:  custody.AmountPaise,
+		BookingID:    &bookingID,
+		TechnicianID: &technicianID,
+		Method:       &method,
+		Memo:         "cash deposited",
+	}); err != nil {
+		return fmt.Errorf("recording deposit: %w", err)
+	}
+	return nil
+}
+
+// Reconciliation returns every technician who still owes a cash deposit, oldest first.
+func (service *Service) Reconciliation(ctx context.Context) ([]CashPosition, error) {
+	rows, err := sqlcgen.New(service.pool).ListCashReconciliation(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reading reconciliation: %w", err)
+	}
+	positions := make([]CashPosition, len(rows))
+	for index, row := range rows {
+		var technicianID uuid.UUID
+		if row.TechnicianID != nil {
+			technicianID = *row.TechnicianID
+		}
+		positions[index] = CashPosition{
+			TechnicianID:       technicianID,
+			Name:               row.Name,
+			CollectedPaise:     row.CollectedPaise,
+			DepositedPaise:     row.DepositedPaise,
+			OutstandingPaise:   row.OutstandingPaise,
+			OldestCollectionAt: timePointer(row.OldestCollectionAt),
+		}
+	}
+	return positions, nil
+}
+
+func timePointer(timestamp pgtype.Timestamptz) *time.Time {
+	if !timestamp.Valid {
+		return nil
+	}
+	return &timestamp.Time
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 )
@@ -50,9 +51,16 @@ func classify(err error) (int, string) {
 
 	switch {
 	case errors.As(err, &forbidden),
-		errors.Is(err, reviews.ErrNotYourBooking):
+		errors.Is(err, reviews.ErrNotYourBooking),
+		errors.Is(err, ledger.ErrNotYourCustody):
 		// The caller is authenticated but not allowed to perform this action on this booking.
 		return http.StatusForbidden, err.Error()
+
+	case errors.Is(err, ledger.ErrAlreadyDeposited):
+		return http.StatusConflict, err.Error()
+
+	case errors.Is(err, ledger.ErrNoCustody):
+		return http.StatusUnprocessableEntity, err.Error()
 
 	case errors.Is(err, reviews.ErrAlreadyReviewed):
 		return http.StatusConflict, err.Error()
