@@ -21,6 +21,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 )
@@ -76,9 +78,11 @@ func run() error {
 		}
 	}()
 
+	bookingSvc := booking.NewService(pool)
+
 	srv := &http.Server{
 		Addr:              env("ADDR", ":8080"),
-		Handler:           routes(pool),
+		Handler:           routes(pool, bookingSvc, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -122,10 +126,13 @@ func run() error {
 	return nil
 }
 
-func routes(pool *pgxpool.Pool) http.Handler {
+func routes(pool *pgxpool.Pool, bookings *booking.Service, log *slog.Logger) http.Handler {
 	// Go 1.22+ ServeMux understands method and path patterns natively — no router
 	// library needed yet. We add one only when we actually need middleware chains.
 	mux := http.NewServeMux()
+
+	// Booking endpoints, registered by the transport layer onto this mux.
+	httpapi.New(bookings, log).Register(mux)
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)

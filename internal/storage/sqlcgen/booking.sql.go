@@ -76,6 +76,30 @@ func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (C
 	return i, err
 }
 
+const createBookingItem = `-- name: CreateBookingItem :exec
+INSERT INTO booking_items (booking_id, service_id, variant_id, quantity, line_total_paise)
+VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateBookingItemParams struct {
+	BookingID      uuid.UUID
+	ServiceID      uuid.UUID
+	VariantID      uuid.UUID
+	Quantity       int32
+	LineTotalPaise money.Money
+}
+
+func (q *Queries) CreateBookingItem(ctx context.Context, arg CreateBookingItemParams) error {
+	_, err := q.db.Exec(ctx, createBookingItem,
+		arg.BookingID,
+		arg.ServiceID,
+		arg.VariantID,
+		arg.Quantity,
+		arg.LineTotalPaise,
+	)
+	return err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (customer_id, total_paise)
 VALUES ($1, $2)
@@ -92,6 +116,39 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (uuid.
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getBooking = `-- name: GetBooking :one
+SELECT id, order_id, customer_id, address_id, technician_id, state, quoted_total_paise, version
+  FROM bookings
+ WHERE id = $1
+`
+
+type GetBookingRow struct {
+	ID               uuid.UUID
+	OrderID          uuid.UUID
+	CustomerID       uuid.UUID
+	AddressID        uuid.UUID
+	TechnicianID     *uuid.UUID
+	State            string
+	QuotedTotalPaise money.Money
+	Version          int64
+}
+
+func (q *Queries) GetBooking(ctx context.Context, id uuid.UUID) (GetBookingRow, error) {
+	row := q.db.QueryRow(ctx, getBooking, id)
+	var i GetBookingRow
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.CustomerID,
+		&i.AddressID,
+		&i.TechnicianID,
+		&i.State,
+		&i.QuotedTotalPaise,
+		&i.Version,
+	)
+	return i, err
 }
 
 const getBookingState = `-- name: GetBookingState :one
@@ -111,6 +168,34 @@ func (q *Queries) GetBookingState(ctx context.Context, id uuid.UUID) (GetBooking
 	row := q.db.QueryRow(ctx, getBookingState, id)
 	var i GetBookingStateRow
 	err := row.Scan(&i.State, &i.Version)
+	return i, err
+}
+
+const getServiceVariant = `-- name: GetServiceVariant :one
+SELECT id, service_id, base_price_paise, is_active
+  FROM service_variants
+ WHERE id = $1
+`
+
+type GetServiceVariantRow struct {
+	ID             uuid.UUID
+	ServiceID      uuid.UUID
+	BasePricePaise money.Money
+	IsActive       bool
+}
+
+// Used at creation time: the price comes from the variant (never from the client), and
+// service_id is derived from it so the booking_item can never reference a variant that
+// belongs to a different service.
+func (q *Queries) GetServiceVariant(ctx context.Context, id uuid.UUID) (GetServiceVariantRow, error) {
+	row := q.db.QueryRow(ctx, getServiceVariant, id)
+	var i GetServiceVariantRow
+	err := row.Scan(
+		&i.ID,
+		&i.ServiceID,
+		&i.BasePricePaise,
+		&i.IsActive,
+	)
 	return i, err
 }
 

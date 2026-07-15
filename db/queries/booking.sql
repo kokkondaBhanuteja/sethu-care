@@ -32,3 +32,20 @@ RETURNING id;
 INSERT INTO bookings (order_id, customer_id, address_id, quoted_total_paise)
 VALUES (@order_id, @customer_id, @address_id, @quoted_total_paise)
 RETURNING id, state, version;
+
+-- name: CreateBookingItem :exec
+INSERT INTO booking_items (booking_id, service_id, variant_id, quantity, line_total_paise)
+VALUES (@booking_id, @service_id, @variant_id, @quantity, @line_total_paise);
+
+-- name: GetServiceVariant :one
+-- Used at creation time: the price comes from the variant (never from the client), and
+-- service_id is derived from it so the booking_item can never reference a variant that
+-- belongs to a different service.
+SELECT id, service_id, base_price_paise, is_active
+  FROM service_variants
+ WHERE id = $1;
+
+-- name: GetBooking :one
+SELECT id, order_id, customer_id, address_id, technician_id, state, quoted_total_paise, version
+  FROM bookings
+ WHERE id = $1;

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
@@ -21,6 +22,13 @@ import (
 
 // ErrBookingNotFound is returned when the id does not exist.
 var ErrBookingNotFound = errors.New("booking: not found")
+
+// Creation-time validation failures. These are the caller's fault (a 4xx), not ours.
+var (
+	ErrVariantNotFound = errors.New("booking: service variant not found")
+	ErrVariantInactive = errors.New("booking: service variant is not active")
+	ErrInvalidQuantity = errors.New("booking: quantity must be at least 1")
+)
 
 // ConflictError means someone moved this booking between our read and our write — the
 // optimistic-lock CAS matched zero rows. The HTTP layer turns this into a 409.
@@ -45,6 +53,156 @@ type Service struct {
 
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool}
+}
+
+// CreateInput is a request to place a booking.
+//
+// The caller supplies the variant (not a price — the price comes from the catalog) and the
+// service is derived from the variant, so a booking can never be priced by the client or
+// reference a variant belonging to another service.
+type CreateInput struct {
+	CustomerID uuid.UUID
+	AddressID  uuid.UUID
+	VariantID  uuid.UUID
+	Quantity   int32
+}
+
+// Created is what Create returns: enough to drive the next step.
+type Created struct {
+	BookingID   uuid.UUID
+	OrderID     uuid.UUID
+	State       State
+	QuotedTotal money.Money
+}
+
+// Create places a booking: an order (the purchase), a booking (the visit) in DRAFT, its
+// single item, and a booking.created outbox event — all in ONE transaction.
+//
+// In P0 an order and its single booking are born together, because §4.6's invariant is
+// one-order-one-booking. So this creation path lives in the booking service. When P3 splits
+// purchase from visit (a cart of several services fanning out to several bookings), order
+// creation moves to an order service and this composes with it — but the seam (a separate
+// orders row that money attaches to) is already here.
+func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
+	if in.Quantity < 1 {
+		return Created{}, ErrInvalidQuantity
+	}
+
+	var out Created
+	err := storage.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := sqlcgen.New(tx)
+
+		variant, err := q.GetServiceVariant(ctx, in.VariantID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrVariantNotFound
+		}
+		if err != nil {
+			return fmt.Errorf("reading variant: %w", err)
+		}
+		if !variant.IsActive {
+			return ErrVariantInactive
+		}
+
+		// The total is computed here, in Money, never taken from the client.
+		lineTotal := variant.BasePricePaise.Mul(int(in.Quantity))
+
+		orderID, err := q.CreateOrder(ctx, sqlcgen.CreateOrderParams{
+			CustomerID: in.CustomerID,
+			TotalPaise: lineTotal,
+		})
+		if err != nil {
+			return fmt.Errorf("creating order: %w", err)
+		}
+
+		booking, err := q.CreateBooking(ctx, sqlcgen.CreateBookingParams{
+			OrderID:          orderID,
+			CustomerID:       in.CustomerID,
+			AddressID:        in.AddressID,
+			QuotedTotalPaise: lineTotal,
+		})
+		if err != nil {
+			return fmt.Errorf("creating booking: %w", err)
+		}
+
+		if err := q.CreateBookingItem(ctx, sqlcgen.CreateBookingItemParams{
+			BookingID:      booking.ID,
+			ServiceID:      variant.ServiceID,
+			VariantID:      in.VariantID,
+			Quantity:       in.Quantity,
+			LineTotalPaise: lineTotal,
+		}); err != nil {
+			return fmt.Errorf("creating booking item: %w", err)
+		}
+
+		payload, err := json.Marshal(createdEvent{
+			BookingID:        booking.ID,
+			OrderID:          orderID,
+			CustomerID:       in.CustomerID,
+			QuotedTotalPaise: lineTotal.Paise(),
+		})
+		if err != nil {
+			return fmt.Errorf("marshalling booking.created: %w", err)
+		}
+		if err := q.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
+			AggregateType: "booking",
+			AggregateID:   booking.ID,
+			EventType:     "booking.created",
+			Payload:       payload,
+		}); err != nil {
+			return fmt.Errorf("writing booking.created: %w", err)
+		}
+
+		state, err := ParseState(booking.State)
+		if err != nil {
+			return err
+		}
+		out = Created{BookingID: booking.ID, OrderID: orderID, State: state, QuotedTotal: lineTotal}
+		return nil
+	})
+
+	if err != nil {
+		return Created{}, err
+	}
+	return out, nil
+}
+
+type createdEvent struct {
+	BookingID        uuid.UUID `json:"booking_id"`
+	OrderID          uuid.UUID `json:"order_id"`
+	CustomerID       uuid.UUID `json:"customer_id"`
+	QuotedTotalPaise int64     `json:"quoted_total_paise"`
+}
+
+// View is a read of a booking's current position, for the GET endpoint and callers that
+// need to know what to do next.
+type View struct {
+	ID             uuid.UUID
+	State          State
+	TechnicianID   *uuid.UUID
+	QuotedTotal    money.Money
+	AllowedActions []Action
+}
+
+// Get reads a booking and the actions currently legal on it.
+func (s *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, error) {
+	row, err := sqlcgen.New(s.pool).GetBooking(ctx, bookingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return View{}, ErrBookingNotFound
+	}
+	if err != nil {
+		return View{}, fmt.Errorf("reading booking: %w", err)
+	}
+	state, err := ParseState(row.State)
+	if err != nil {
+		return View{}, err
+	}
+	return View{
+		ID:             row.ID,
+		State:          state,
+		TechnicianID:   row.TechnicianID,
+		QuotedTotal:    row.QuotedTotalPaise,
+		AllowedActions: AllowedActions(state),
+	}, nil
 }
 
 // TransitionInput carries everything a transition might need beyond the action itself.
