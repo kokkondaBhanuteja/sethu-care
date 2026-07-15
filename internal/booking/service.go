@@ -307,6 +307,9 @@ type TransitionInput struct {
 	// change are one atomic step, so you can never spend an OTP without advancing the booking,
 	// nor advance without a valid code.
 	Guard func(context.Context, pgx.Tx) error
+	// PaymentMethod is carried into the booking.completed event (UPI/CASH/ONLINE) so the
+	// ledger consumer knows how the customer paid. Only meaningful for VERIFY_COMPLETION.
+	PaymentMethod string
 }
 
 // authorize enforces both halves of access control: the role may perform the action at all
@@ -419,10 +422,11 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 		// lands in this same transaction, so it cannot be lost if we crash after commit.
 		if eventType, ok := publishedEventFor(action); ok {
 			payload, err := json.Marshal(transitionEvent{
-				BookingID: bookingID,
-				From:      from,
-				Action:    action,
-				To:        to,
+				BookingID:     bookingID,
+				From:          from,
+				Action:        action,
+				To:            to,
+				PaymentMethod: in.PaymentMethod,
 			})
 			if err != nil {
 				return fmt.Errorf("marshalling outbox payload: %w", err)
@@ -448,10 +452,11 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 }
 
 type transitionEvent struct {
-	BookingID uuid.UUID `json:"booking_id"`
-	From      State     `json:"from"`
-	Action    Action    `json:"action"`
-	To        State     `json:"to"`
+	BookingID     uuid.UUID `json:"booking_id"`
+	From          State     `json:"from"`
+	Action        Action    `json:"action"`
+	To            State     `json:"to"`
+	PaymentMethod string    `json:"payment_method,omitempty"`
 }
 
 // publishedEventFor maps an action to its ROADMAP §8 event name, or (,"false") when the

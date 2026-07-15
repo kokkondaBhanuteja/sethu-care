@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -27,6 +28,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/config"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
@@ -93,6 +95,18 @@ func run() error {
 	// interactively on the transition endpoint.
 	dispatcher.Subscribe("technician.arrived", issueOTP(verificationService, verification.PurposeStart, settings.DevEchoOTP, logger))
 	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
+	// BILLING: a completed booking records its ledger entry (REVENUE or CASH_CUSTODY). The
+	// payment method rides the event payload from the completion request.
+	ledgerService := ledger.NewService(pool)
+	dispatcher.Subscribe("booking.completed", func(ctx context.Context, event outbox.Event) error {
+		var payload struct {
+			PaymentMethod string `json:"payment_method"`
+		}
+		if err := json.Unmarshal(event.Payload, &payload); err != nil {
+			return fmt.Errorf("decoding booking.completed: %w", err)
+		}
+		return ledgerService.RecordCompletion(ctx, event.AggregateID, ledger.PaymentMethod(payload.PaymentMethod))
+	})
 	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
 
 	var workerDone sync.WaitGroup

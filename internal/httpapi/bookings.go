@@ -15,6 +15,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -132,6 +133,8 @@ type transitionRequest struct {
 	Technician *uuid.UUID `json:"technician_id,omitempty"`
 	// Code is the dual-OTP code, required for VERIFY_START and VERIFY_COMPLETION.
 	Code string `json:"code,omitempty"`
+	// PaymentMethod (UPI/CASH/ONLINE) is required for VERIFY_COMPLETION — how the customer paid.
+	PaymentMethod string `json:"payment_method,omitempty"`
 }
 
 func (handler *Handler) transition(writer http.ResponseWriter, request *http.Request) {
@@ -175,6 +178,16 @@ func (handler *Handler) transition(writer http.ResponseWriter, request *http.Req
 			return
 		}
 		transitionInput.Guard = handler.verification.Guard(id, purpose, req.Code)
+	}
+
+	// Completion also captures how the customer paid — it rides the booking.completed event to
+	// the ledger.
+	if action == booking.ActionVerifyCompletion {
+		if !ledger.PaymentMethod(req.PaymentMethod).Valid() {
+			writeError(writer, handler.log, &badRequestError{msg: "payment_method must be UPI, CASH, or ONLINE"})
+			return
+		}
+		transitionInput.PaymentMethod = req.PaymentMethod
 	}
 
 	newState, err := handler.bookings.Apply(request.Context(), id, action, transitionInput)
