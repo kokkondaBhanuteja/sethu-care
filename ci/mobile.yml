@@ -1,0 +1,52 @@
+# Move to .github/workflows/mobile.yml (replacing the old one)
+name: mobile
+
+on:
+  push:
+    branches: [developer, main]
+    paths:
+      - "mobile/**"
+      - "api/openapi.yaml"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - "api/openapi.yaml"
+      - ".github/workflows/mobile.yml"
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: mobile/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generated API client is up to date (drift guard)
+        run: |
+          pnpm --filter @sethu/api-client run generate
+          git diff --exit-code packages/api-client/src/generated \
+            || (echo "::error::packages/api-client is stale — run 'pnpm api:generate' and commit." && exit 1)
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
