@@ -49,6 +49,7 @@ func TestEveryEnumColumnMatchesItsGoConstants(t *testing.T) {
 		{"ledger_entries", "method", toStrings(ledger.AllPaymentMethods())},
 		{"payments", "status", toStrings(ledger.AllPaymentStatuses())},
 		{"otp_challenges", "purpose", toStrings(verification.AllPurposes())},
+		{"work_photos", "kind", toStrings(verification.AllWorkPhotoKinds())},
 	}
 
 	for _, tc := range cases {

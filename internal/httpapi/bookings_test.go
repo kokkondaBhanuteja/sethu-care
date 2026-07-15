@@ -23,6 +23,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
@@ -288,6 +289,7 @@ func newServer(t *testing.T) *testEnv {
 	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
 	httpapi.NewCashHandler(ledger.NewService(pool), signer, log).Register(mux)
 	httpapi.NewPaymentHandler(ledger.NewService(pool), signer, "sethucare@upi", "SETHU-CARE", log).Register(mux)
+	httpapi.NewPhotoHandler(verifier, media.NewCloudinary("democloud", "demokey", "demosecret"), signer, log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

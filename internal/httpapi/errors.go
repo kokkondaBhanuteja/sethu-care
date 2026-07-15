@@ -11,6 +11,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
 // badRequestError is a 400 raised by the transport layer itself — bad JSON, a non-uuid path,
@@ -61,7 +62,8 @@ func classify(err error) (int, string) {
 	case errors.As(err, &forbidden),
 		errors.As(err, &transportForbidden),
 		errors.Is(err, reviews.ErrNotYourBooking),
-		errors.Is(err, ledger.ErrNotYourCustody):
+		errors.Is(err, ledger.ErrNotYourCustody),
+		errors.Is(err, verification.ErrNotAssignedTechnician):
 		// The caller is authenticated but not allowed to perform this action on this booking.
 		return http.StatusForbidden, err.Error()
 
@@ -88,7 +90,8 @@ func classify(err error) (int, string) {
 		errors.Is(err, catalog.ErrServiceNotFound),
 		errors.Is(err, catalog.ErrCategoryNotFound),
 		errors.Is(err, ops.ErrTechnicianNotFound),
-		errors.Is(err, reviews.ErrBookingNotFound):
+		errors.Is(err, reviews.ErrBookingNotFound),
+		errors.Is(err, verification.ErrBookingNotFound):
 		return http.StatusNotFound, err.Error()
 
 	case errors.Is(err, address.ErrInvalidCoordinates),

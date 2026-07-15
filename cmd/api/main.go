@@ -30,6 +30,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
@@ -176,6 +177,7 @@ func run() error {
 			devEchoOTP:          settings.DevEchoOTP,
 			upiVPA:              settings.UPIVirtualAddress,
 			upiPayee:            settings.UPIPayeeName,
+			cloudinary:          media.NewCloudinary(settings.CloudinaryCloudName, settings.CloudinaryAPIKey, settings.CloudinaryAPISecret),
 			logger:              logger,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -257,6 +259,7 @@ type routerDependencies struct {
 	devEchoOTP          bool
 	upiVPA              string
 	upiPayee            string
+	cloudinary          *media.Cloudinary
 	logger              *slog.Logger
 }
 
@@ -276,6 +279,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
 	httpapi.NewCashHandler(dependencies.ledgerService, dependencies.signer, dependencies.logger).Register(mux)
 	httpapi.NewPaymentHandler(dependencies.ledgerService, dependencies.signer, dependencies.upiVPA, dependencies.upiPayee, dependencies.logger).Register(mux)
+	httpapi.NewPhotoHandler(dependencies.verificationService, dependencies.cloudinary, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
 	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.reviewService, dependencies.signer, dependencies.logger).Register(mux)

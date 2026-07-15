@@ -37,6 +37,12 @@ type Config struct {
 	// collection (upi://pay?pa=<vpa>&pn=<name>...). The money lands in the company account.
 	UPIVirtualAddress string
 	UPIPayeeName      string
+
+	// Cloudinary credentials for signed direct uploads of work photos. The backend signs the
+	// upload and verifies the result; the file bytes never pass through us.
+	CloudinaryCloudName string
+	CloudinaryAPIKey    string
+	CloudinaryAPISecret string
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -65,6 +71,9 @@ func Load() (Config, error) {
 		FailedBookingCreditPaise: intEnv("SETHU_FAILED_CREDIT_PAISE", 10000),
 		UPIVirtualAddress:        stringEnv("SETHU_UPI_VPA", "sethucare@upi"),
 		UPIPayeeName:             stringEnv("SETHU_UPI_PAYEE", "SETHU-CARE"),
+		CloudinaryCloudName:      os.Getenv("CLOUDINARY_CLOUD_NAME"),
+		CloudinaryAPIKey:         os.Getenv("CLOUDINARY_API_KEY"),
+		CloudinaryAPISecret:      os.Getenv("CLOUDINARY_API_SECRET"),
 	}
 	return configuration, nil
 }
