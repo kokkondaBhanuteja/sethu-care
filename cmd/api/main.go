@@ -27,6 +27,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/config"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
@@ -98,6 +99,7 @@ func run() error {
 	identityService := identity.NewService(pool)
 	catalogService := catalog.New(pool)
 	addressService := address.New(pool)
+	opsService := ops.New(pool, bookingService)
 
 	server := &http.Server{
 		Addr: settings.ListenAddr,
@@ -107,6 +109,7 @@ func run() error {
 			identityService: identityService,
 			catalogService:  catalogService,
 			addressService:  addressService,
+			opsService:      opsService,
 			signer:          signer,
 			devEchoOTP:      settings.DevEchoOTP,
 			logger:          logger,
@@ -162,6 +165,7 @@ type routerDependencies struct {
 	identityService *identity.Service
 	catalogService  *catalog.Catalog
 	addressService  *address.Service
+	opsService      *ops.Service
 	signer          *auth.Signer
 	devEchoOTP      bool
 	logger          *slog.Logger
@@ -178,6 +182,9 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	// Catalog: public browse + admin management. Addresses: customer-owned.
 	httpapi.NewCatalogHandler(dependencies.catalogService, dependencies.signer, dependencies.logger).Register(mux)
 	httpapi.NewAddressHandler(dependencies.addressService, dependencies.signer, dependencies.logger).Register(mux)
+
+	// Ops console: the manual-assignment queue (admin-only).
+	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
 	httpapi.New(dependencies.bookingService, dependencies.signer, dependencies.logger).Register(mux)

@@ -23,6 +23,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 )
 
@@ -273,10 +274,12 @@ func newServer(t *testing.T) *testEnv {
 	}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
+	bookingService := booking.NewService(pool)
 	mux := http.NewServeMux()
-	httpapi.New(booking.NewService(pool), signer, log).Register(mux)
+	httpapi.New(bookingService, signer, log).Register(mux)
 	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
 	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
+	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

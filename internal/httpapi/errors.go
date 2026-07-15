@@ -8,6 +8,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 )
 
 // badRequestError is a 400 raised by the transport layer itself — bad JSON, a non-uuid path,
@@ -54,7 +55,8 @@ func classify(err error) (int, string) {
 	case errors.Is(err, booking.ErrBookingNotFound),
 		errors.Is(err, booking.ErrVariantNotFound),
 		errors.Is(err, catalog.ErrServiceNotFound),
-		errors.Is(err, catalog.ErrCategoryNotFound):
+		errors.Is(err, catalog.ErrCategoryNotFound),
+		errors.Is(err, ops.ErrTechnicianNotFound):
 		return http.StatusNotFound, err.Error()
 
 	case errors.Is(err, address.ErrInvalidCoordinates),
