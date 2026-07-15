@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 )
 
 // ctxKey is unexported so no other package can write or read the authed user under this key
@@ -79,10 +79,7 @@ func bearerToken(r *http.Request) (string, bool) {
 	return strings.TrimSpace(header[len(prefix):]), true
 }
 
-func writeAuthError(w http.ResponseWriter, code int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("WWW-Authenticate", "Bearer")
-	w.WriteHeader(code)
-	//nolint:errcheck // the status is already written; a failed encode has nowhere to go
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+func writeAuthError(writer http.ResponseWriter, statusCode int, message string) {
+	writer.Header().Set("WWW-Authenticate", "Bearer")
+	response.Error(writer, statusCode, message)
 }

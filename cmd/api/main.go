@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -25,9 +24,11 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/config"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 )
 
@@ -46,23 +47,29 @@ func run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
+	settings, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+	if settings.UsingDevJWTSecret {
+		logger.Warn("JWT_SECRET is not set — using an INSECURE built-in dev secret. Do not run this in production.")
+	}
+
 	// GO LESSON — context.Context is Go's answer to "how do I cancel things?". It is
 	// threaded explicitly through every call that might block. Here it is wired to
 	// SIGINT/SIGTERM, so Ctrl-C cancels every in-flight query rather than killing the
 	// process mid-transaction.
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	dsn := env("DATABASE_URL", "postgres://sethu:sethu@127.0.0.1:5434/sethu?sslmode=disable")
+	rootContext, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopSignals()
 
 	// storage.NewPool (not raw pgxpool.New) because it registers the google/uuid codec and
 	// pings — the same pool the outbox worker and every repository rely on.
-	pool, err := storage.NewPool(ctx, dsn)
+	pool, err := storage.NewPool(rootContext, settings.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("connecting to postgres: %w", err)
 	}
 	defer pool.Close()
-	slog.Info("connected to postgres")
+	logger.Info("connected to postgres")
 
 	// The outbox worker. In P0 the only subscriber is a logging handler — the real
 	// consumers (Notifications, Ledger, Assignment) do not exist yet — so starting the API
@@ -75,28 +82,35 @@ func run() error {
 	workerDone.Add(1)
 	go func() {
 		defer workerDone.Done()
-		// Run only ever returns because ctx was cancelled (a normal shutdown). Any other
-		// return would be a surprise worth logging.
-		if err := worker.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			slog.Error("outbox worker exited unexpectedly", "err", err)
+		// Run only ever returns because rootContext was cancelled (a normal shutdown). Any
+		// other return would be a surprise worth logging.
+		if err := worker.Run(rootContext); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("outbox worker exited unexpectedly", "err", err)
 		}
 	}()
 
-	signer, err := auth.NewSigner(jwtSecret(logger), 24*time.Hour)
+	signer, err := auth.NewSigner(settings.JWTSecret, settings.JWTTTL)
 	if err != nil {
 		return fmt.Errorf("configuring jwt: %w", err)
 	}
-	bookingSvc := booking.NewService(pool)
-	identitySvc := identity.NewService(pool)
-	catalogSvc := catalog.New(pool)
-	addressSvc := address.New(pool)
-	// devEcho returns OTP codes in the response since there is no SMS provider yet. OFF unless
-	// SETHU_DEV_OTP=true, so it can never leak in an environment that forgot to disable it.
-	devEcho := env("SETHU_DEV_OTP", "") == "true"
 
-	srv := &http.Server{
-		Addr:              env("ADDR", ":8080"),
-		Handler:           routes(pool, bookingSvc, identitySvc, catalogSvc, addressSvc, signer, devEcho, logger),
+	bookingService := booking.NewService(pool)
+	identityService := identity.NewService(pool)
+	catalogService := catalog.New(pool)
+	addressService := address.New(pool)
+
+	server := &http.Server{
+		Addr: settings.ListenAddr,
+		Handler: buildRouter(routerDependencies{
+			pool:            pool,
+			bookingService:  bookingService,
+			identityService: identityService,
+			catalogService:  catalogService,
+			addressService:  addressService,
+			signer:          signer,
+			devEchoOTP:      settings.DevEchoOTP,
+			logger:          logger,
+		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -105,100 +119,86 @@ func run() error {
 
 	// GO LESSON — goroutines and channels. `go func()` starts a concurrent lightweight
 	// thread. We run the server in one so that main can sit and wait for EITHER the
-	// server to die OR a shutdown signal, whichever comes first. errCh carries the
+	// server to die OR a shutdown signal, whichever comes first. serverErrors carries the
 	// server's error back across that boundary; a channel is how goroutines talk.
-	errCh := make(chan error, 1)
+	serverErrors := make(chan error, 1)
 	go func() {
-		slog.Info("listening", "addr", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
+		logger.Info("listening", "addr", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrors <- err
 		}
 	}()
 
 	// `select` blocks until one of its cases can proceed.
 	select {
-	case err := <-errCh:
+	case err := <-serverErrors:
 		return fmt.Errorf("http server: %w", err)
-	case <-ctx.Done():
-		slog.Info("shutdown signal received, draining")
+	case <-rootContext.Done():
+		logger.Info("shutdown signal received, draining")
 	}
 
-	// Graceful shutdown on a FRESH context — ctx is already cancelled, so reusing it
+	// Graceful shutdown on a FRESH context — rootContext is already cancelled, so reusing it
 	// would abort in-flight requests instantly, which is the opposite of draining.
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancelShutdown()
 
-	if err := srv.Shutdown(shutdownCtx); err != nil {
+	if err := server.Shutdown(shutdownContext); err != nil {
 		return fmt.Errorf("draining http server: %w", err)
 	}
 
-	// ctx is already cancelled, so the worker is on its way out; wait for its current batch
-	// to finish before we close the pool under it.
+	// rootContext is already cancelled, so the worker is on its way out; wait for its current
+	// batch to finish before we close the pool under it.
 	workerDone.Wait()
 
-	slog.Info("stopped cleanly")
+	logger.Info("stopped cleanly")
 	return nil
 }
 
-func routes(pool *pgxpool.Pool, bookings *booking.Service, ids *identity.Service, cat *catalog.Catalog, addr *address.Service, signer *auth.Signer, devEcho bool, log *slog.Logger) http.Handler {
+// routerDependencies collects everything the router needs, so buildRouter takes one
+// parameter instead of eight positional ones.
+type routerDependencies struct {
+	pool            *pgxpool.Pool
+	bookingService  *booking.Service
+	identityService *identity.Service
+	catalogService  *catalog.Catalog
+	addressService  *address.Service
+	signer          *auth.Signer
+	devEchoOTP      bool
+	logger          *slog.Logger
+}
+
+func buildRouter(dependencies routerDependencies) http.Handler {
 	// Go 1.22+ ServeMux understands method and path patterns natively — no router
 	// library needed yet. We add one only when we actually need middleware chains.
 	mux := http.NewServeMux()
 
 	// Auth endpoints are public — this is where a caller gets a token.
-	httpapi.NewAuthHandler(ids, signer, log, devEcho).Register(mux)
+	httpapi.NewAuthHandler(dependencies.identityService, dependencies.signer, dependencies.logger, dependencies.devEchoOTP).Register(mux)
 
 	// Catalog: public browse + admin management. Addresses: customer-owned.
-	httpapi.NewCatalogHandler(cat, signer, log).Register(mux)
-	httpapi.NewAddressHandler(addr, signer, log).Register(mux)
+	httpapi.NewCatalogHandler(dependencies.catalogService, dependencies.signer, dependencies.logger).Register(mux)
+	httpapi.NewAddressHandler(dependencies.addressService, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
-	httpapi.New(bookings, signer, log).Register(mux)
+	httpapi.New(dependencies.bookingService, dependencies.signer, dependencies.logger).Register(mux)
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-		defer cancel()
+	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
+		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)
+		defer cancelPing()
 
 		status := map[string]string{"status": "UP", "db": "UP"}
-		code := http.StatusOK
+		statusCode := http.StatusOK
 
-		if err := pool.Ping(ctx); err != nil {
+		if err := dependencies.pool.Ping(pingContext); err != nil {
 			// A health check that reports UP while the database is unreachable is worse
 			// than no health check — it tells the load balancer to keep sending traffic.
-			slog.Error("health: database unreachable", "err", err)
+			dependencies.logger.Error("health: database unreachable", "err", err)
 			status["status"], status["db"] = "DOWN", "DOWN"
-			code = http.StatusServiceUnavailable
+			statusCode = http.StatusServiceUnavailable
 		}
 
-		writeJSON(w, code, status)
+		response.JSON(writer, statusCode, status)
 	})
 
 	return mux
-}
-
-func writeJSON(w http.ResponseWriter, code int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		slog.Error("writing json response", "err", err)
-	}
-}
-
-func env(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-// jwtSecret reads JWT_SECRET, or falls back to a FIXED dev secret with a loud warning. The
-// fallback lets a developer run the app with zero setup, while making it impossible to ship
-// to production by accident without noticing the log line — and NewSigner still rejects it
-// if it were ever shortened below 32 bytes.
-func jwtSecret(log *slog.Logger) string {
-	if s := os.Getenv("JWT_SECRET"); s != "" {
-		return s
-	}
-	log.Warn("JWT_SECRET is not set — using an INSECURE built-in dev secret. Do not run this in production.")
-	return "sethu-care-insecure-dev-secret-change-me"
 }

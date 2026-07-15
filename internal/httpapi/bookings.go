@@ -14,6 +14,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 )
 
 // Handler wires the HTTP routes to the domain services.
@@ -200,10 +201,8 @@ func actionStrings(actions []booking.Action) []string {
 	return out
 }
 
-func writeJSON(w http.ResponseWriter, code int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		slog.Default().Error("writing json response", "err", err)
-	}
+// writeJSON is the transport layer's local alias for the shared response helper, so handler
+// code reads naturally without importing the shared package everywhere.
+func writeJSON(writer http.ResponseWriter, statusCode int, payload any) {
+	response.JSON(writer, statusCode, payload)
 }
