@@ -205,6 +205,22 @@ func (service *Service) findOrCreateCustomer(ctx context.Context, queries *sqlcg
 	}
 }
 
+// DeleteAccount deletes the caller's account (App Store Guideline 5.1.1(v)). Because the
+// append-only ledger and booking_events reference the user, this ANONYMISES in place rather than
+// hard-deleting: it scrubs the PII (name, phone) and marks the account deleted. The scrubbed phone
+// stays unique and frees the real number for re-registration; the person can no longer log in to
+// the old account. Idempotent — an already-deleted account is a no-op.
+func (service *Service) DeleteAccount(ctx context.Context, userID uuid.UUID) error {
+	scrubbedPhone := "deleted:" + userID.String()
+	if err := sqlcgen.New(service.pool).ScrubUser(ctx, sqlcgen.ScrubUserParams{
+		ID:            userID,
+		ScrubbedPhone: scrubbedPhone,
+	}); err != nil {
+		return fmt.Errorf("deleting account: %w", err)
+	}
+	return nil
+}
+
 // RecomputeTechnicianRating recomputes a technician's rating as the average of their reviews.
 // It is the review.submitted consumer, and idempotent: recomputing from the same reviews
 // yields the same average, so an at-least-once redelivery is harmless.

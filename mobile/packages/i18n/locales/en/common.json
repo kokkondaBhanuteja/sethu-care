@@ -6,7 +6,9 @@
     "retry": "Retry",
     "continue": "Continue",
     "done": "Done",
-    "delete": "Delete"
+    "delete": "Delete",
+    "settings": "Settings",
+    "signOut": "Sign out"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

@@ -52,3 +52,13 @@ SELECT count(*)
  WHERE phone = $1
    AND purpose = $2
    AND created_at > now() - make_interval(secs => @within_seconds);
+
+-- name: ScrubUser :exec
+-- Account deletion: anonymise the user in place (we cannot hard-delete — see migration 00012).
+-- Scrubs the PII and marks the account deleted; the scrubbed phone stays unique and frees the
+-- real number for re-registration.
+UPDATE users
+   SET name = 'Deleted user',
+       phone = @scrubbed_phone,
+       deleted_at = now()
+ WHERE id = @id AND deleted_at IS NULL;

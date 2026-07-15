@@ -195,3 +195,24 @@ func (q *Queries) RecomputeTechnicianRating(ctx context.Context, technicianID uu
 	_, err := q.db.Exec(ctx, recomputeTechnicianRating, technicianID)
 	return err
 }
+
+const scrubUser = `-- name: ScrubUser :exec
+UPDATE users
+   SET name = 'Deleted user',
+       phone = $1,
+       deleted_at = now()
+ WHERE id = $2 AND deleted_at IS NULL
+`
+
+type ScrubUserParams struct {
+	ScrubbedPhone string
+	ID            uuid.UUID
+}
+
+// Account deletion: anonymise the user in place (we cannot hard-delete — see migration 00012).
+// Scrubs the PII and marks the account deleted; the scrubbed phone stays unique and frees the
+// real number for re-registration.
+func (q *Queries) ScrubUser(ctx context.Context, arg ScrubUserParams) error {
+	_, err := q.db.Exec(ctx, scrubUser, arg.ScrubbedPhone, arg.ID)
+	return err
+}

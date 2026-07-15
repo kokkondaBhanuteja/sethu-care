@@ -1018,6 +1018,23 @@ paths:
       summary: Create a category
       tags:
         - Catalog
+  /me:
+    delete:
+      operationId: deleteAccount
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Delete my account
+      tags:
+        - Auth
   /me/bookings:
     get:
       operationId: listMyBookings

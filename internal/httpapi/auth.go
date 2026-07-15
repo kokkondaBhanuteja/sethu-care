@@ -41,6 +41,25 @@ func (handler *AuthHandler) RegisterHuma(api huma.API) {
 		OperationID: "verifyOTP", Method: http.MethodPost, Path: "/auth/verify",
 		Summary: "Verify a login OTP and receive a token", Tags: []string{"Auth"},
 	}, handler.verifyOTP)
+	huma.Register(api, huma.Operation{
+		OperationID: "deleteAccount", Method: http.MethodDelete, Path: "/me",
+		Summary: "Delete my account", Tags: []string{"Auth"}, DefaultStatus: http.StatusNoContent,
+		Security: bearerSecurity(),
+	}, handler.deleteAccount)
+}
+
+// deleteAccountOutput has no body — a 204 No Content on success.
+type deleteAccountOutput struct{}
+
+func (handler *AuthHandler) deleteAccount(ctx context.Context, _ *struct{}) (*deleteAccountOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	if err := handler.identity.DeleteAccount(ctx, caller.ID); err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &deleteAccountOutput{}, nil
 }
 
 type otpRequest struct {

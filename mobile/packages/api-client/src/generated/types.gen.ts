@@ -716,6 +716,31 @@ export type CreateCategoryResponses = {
 
 export type CreateCategoryResponse = CreateCategoryResponses[keyof CreateCategoryResponses];
 
+export type DeleteAccountData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/me';
+};
+
+export type DeleteAccountErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type DeleteAccountError = DeleteAccountErrors[keyof DeleteAccountErrors];
+
+export type DeleteAccountResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteAccountResponse = DeleteAccountResponses[keyof DeleteAccountResponses];
+
 export type ListMyBookingsData = {
     body?: never;
     path?: never;

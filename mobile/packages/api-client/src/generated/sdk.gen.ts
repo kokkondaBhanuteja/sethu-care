@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -168,6 +168,15 @@ export const createCategory = <ThrowOnError extends boolean = false>(options: Op
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Delete my account
+ */
+export const deleteAccount = <ThrowOnError extends boolean = false>(options?: Options<DeleteAccountData, ThrowOnError>): RequestResult<DeleteAccountResponses, DeleteAccountErrors, ThrowOnError> => (options?.client ?? client).delete<DeleteAccountResponses, DeleteAccountErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/me',
+    ...options
 });
 
 /**
