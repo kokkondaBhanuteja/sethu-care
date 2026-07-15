@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -32,10 +33,10 @@ func New(bookings *booking.Service, signer *auth.Signer, log *slog.Logger) *Hand
 // authorization rule for every route is visible right here, at the route — not buried in the
 // handler.
 //
-// P0 scope: creating a booking requires the CUSTOMER role (customers book); reading and
-// transitioning require only authentication. Per-action RBAC on transitions (only a
-// technician may ARRIVE, only an admin may ASSIGN) is a P1 refinement — the RequireRole
-// mechanism it needs already exists and is tested.
+// Creating a booking requires CUSTOMER; the technician job view requires TECHNICIAN. Reading
+// and transitioning require only authentication at the transport layer — the per-action role
+// and ownership rules live in booking.Apply (see CanPerform and authorize), because they
+// depend on the booking and its owner.
 func (handler *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("POST /bookings",
 		handler.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(handler.create))))
@@ -43,6 +44,9 @@ func (handler *Handler) Register(mux *http.ServeMux) {
 		handler.signer.RequireAuth(http.HandlerFunc(handler.get)))
 	mux.Handle("POST /bookings/{id}/transitions",
 		handler.signer.RequireAuth(http.HandlerFunc(handler.transition)))
+	// A technician's own active jobs. TECHNICIAN-only, filtered to the caller.
+	mux.Handle("GET /me/jobs",
+		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.myJobs))))
 }
 
 // --- POST /bookings ---------------------------------------------------------
@@ -169,6 +173,56 @@ func (handler *Handler) transition(writer http.ResponseWriter, request *http.Req
 		State:          newState.String(),
 		AllowedActions: actionStrings(booking.AllowedActions(newState)),
 	})
+}
+
+// --- GET /me/jobs -----------------------------------------------------------
+
+type jobResponse struct {
+	BookingID      string     `json:"booking_id"`
+	State          string     `json:"state"`
+	AllowedActions []string   `json:"allowed_actions"`
+	CustomerName   string     `json:"customer_name"`
+	CustomerPhone  string     `json:"customer_phone"`
+	ServiceName    string     `json:"service_name"`
+	Line1          string     `json:"line1"`
+	City           string     `json:"city"`
+	Pincode        string     `json:"pincode"`
+	Lat            float64    `json:"lat"`
+	Lng            float64    `json:"lng"`
+	ScheduledFor   *time.Time `json:"scheduled_for,omitempty"`
+	QuotedTotal    string     `json:"quoted_total"`
+}
+
+func (handler *Handler) myJobs(writer http.ResponseWriter, request *http.Request) {
+	caller, ok := auth.UserFrom(request.Context())
+	if !ok {
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
+		return
+	}
+	jobs, err := handler.bookings.ListForTechnician(request.Context(), caller.ID)
+	if err != nil {
+		writeError(writer, handler.log, err)
+		return
+	}
+	payload := make([]jobResponse, len(jobs))
+	for index, job := range jobs {
+		payload[index] = jobResponse{
+			BookingID:      job.BookingID.String(),
+			State:          job.State.String(),
+			AllowedActions: actionStrings(job.AllowedActions),
+			CustomerName:   job.CustomerName,
+			CustomerPhone:  job.CustomerPhone,
+			ServiceName:    job.ServiceName,
+			Line1:          job.Line1,
+			City:           job.City,
+			Pincode:        job.Pincode,
+			Lat:            job.Lat,
+			Lng:            job.Lng,
+			ScheduledFor:   job.ScheduledFor,
+			QuotedTotal:    job.QuotedTotal.Rupees(),
+		}
+	}
+	writeJSON(writer, http.StatusOK, map[string]any{"jobs": payload})
 }
 
 // --- helpers ----------------------------------------------------------------

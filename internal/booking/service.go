@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
@@ -217,6 +219,77 @@ func (service *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, err
 		QuotedTotal:    row.QuotedTotalPaise,
 		AllowedActions: AllowedActions(state),
 	}, nil
+}
+
+// Job is one of a technician's active jobs, with the on-site context and the actions THIS
+// technician may take next (legal-from-state ∩ permitted-for-technician).
+type Job struct {
+	BookingID      uuid.UUID
+	State          State
+	AllowedActions []Action
+	CustomerName   string
+	CustomerPhone  string
+	ServiceName    string
+	Line1          string
+	City           string
+	Pincode        string
+	Lat            float64
+	Lng            float64
+	ScheduledFor   *time.Time
+	QuotedTotal    money.Money
+}
+
+// ListForTechnician returns the active jobs assigned to a technician, each annotated with the
+// actions they can take right now — so the app shows exactly the buttons that will work.
+//
+// NOTE: this joins across users/services/addresses for display. It is a read-only denormalised
+// view; the write ownership of those aggregates stays with their modules (ROADMAP §4.2).
+func (service *Service) ListForTechnician(ctx context.Context, technicianID uuid.UUID) ([]Job, error) {
+	rows, err := sqlcgen.New(service.pool).ListTechnicianJobs(ctx, &technicianID)
+	if err != nil {
+		return nil, fmt.Errorf("listing technician jobs: %w", err)
+	}
+	jobs := make([]Job, len(rows))
+	for index, row := range rows {
+		state, err := ParseState(row.State)
+		if err != nil {
+			return nil, err
+		}
+		jobs[index] = Job{
+			BookingID:      row.ID,
+			State:          state,
+			AllowedActions: technicianActions(state),
+			CustomerName:   row.CustomerName,
+			CustomerPhone:  row.CustomerPhone,
+			ServiceName:    row.ServiceName,
+			Line1:          row.Line1,
+			City:           row.City,
+			Pincode:        row.Pincode,
+			Lat:            row.Lat,
+			Lng:            row.Lng,
+			ScheduledFor:   timePointer(row.ScheduledFor),
+			QuotedTotal:    row.QuotedTotalPaise,
+		}
+	}
+	return jobs, nil
+}
+
+// technicianActions is the legal-from-here actions a TECHNICIAN is allowed to perform.
+func technicianActions(state State) []Action {
+	permitted := make([]Action, 0, 2)
+	for _, action := range AllowedActions(state) {
+		if CanPerform(identity.RoleTechnician, action) {
+			permitted = append(permitted, action)
+		}
+	}
+	return permitted
+}
+
+func timePointer(timestamp pgtype.Timestamptz) *time.Time {
+	if !timestamp.Valid {
+		return nil
+	}
+	return &timestamp.Time
 }
 
 // TransitionInput carries everything a transition might need beyond the action itself.

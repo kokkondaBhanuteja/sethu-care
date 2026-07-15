@@ -246,6 +246,7 @@ server fails loudly on a bind clash (`address already in use`) rather than misbe
 | `POST /bookings` | CUSTOMER | Place a booking (address, variant, quantity). The customer is the token holder; the price comes from the catalog. → 201 |
 | `GET /bookings/{id}` | any | Current state + the actions legal right now. |
 | `POST /bookings/{id}/transitions` | per-action | Apply an action (`{"action":"CONFIRM"}`). Role + ownership enforced: customers confirm/cancel their own booking, technicians drive their assigned jobs, admin overrides. |
+| `GET /me/jobs` | TECHNICIAN | The caller's active jobs, each with customer contact, address, and the actions that technician may take next. |
 | `GET /ops/assignment-queue` | ADMIN | Bookings awaiting a technician (SEARCHING/ESCALATED), oldest first. |
 | `GET /ops/bookings/{id}/candidates` | ADMIN | Eligible technicians for a booking (§5.1: city, skill, online, capacity), ranked. |
 | `POST /ops/bookings/{id}/assign` | ADMIN | Assign a technician (`{"technician_id":"…"}`) — the P1 manual-dispatch path. |

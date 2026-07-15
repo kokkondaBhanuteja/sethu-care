@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
@@ -225,4 +226,74 @@ func (q *Queries) InsertBookingEvent(ctx context.Context, arg InsertBookingEvent
 		arg.Meta,
 	)
 	return err
+}
+
+const listTechnicianJobs = `-- name: ListTechnicianJobs :many
+SELECT
+  b.id, b.state, b.scheduled_for, b.quoted_total_paise,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  s.name  AS service_name,
+  a.line1, a.city, a.pincode,
+  ST_Y(a.geog::geometry)::float8 AS lat,
+  ST_X(a.geog::geometry)::float8 AS lng
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE b.technician_id = $1
+  AND b.state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+ORDER BY b.scheduled_for NULLS LAST, b.created_at
+`
+
+type ListTechnicianJobsRow struct {
+	ID               uuid.UUID
+	State            string
+	ScheduledFor     pgtype.Timestamptz
+	QuotedTotalPaise money.Money
+	CustomerName     string
+	CustomerPhone    string
+	ServiceName      string
+	Line1            string
+	City             string
+	Pincode          string
+	Lat              float64
+	Lng              float64
+}
+
+// A technician's active jobs, with the customer contact and address they need on site.
+// Active = anything from ASSIGNED through AWAITING_COMPLETION; finished/cancelled jobs drop
+// off the list. Soonest scheduled first.
+func (q *Queries) ListTechnicianJobs(ctx context.Context, technicianID *uuid.UUID) ([]ListTechnicianJobsRow, error) {
+	rows, err := q.db.Query(ctx, listTechnicianJobs, technicianID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTechnicianJobsRow{}
+	for rows.Next() {
+		var i ListTechnicianJobsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.ScheduledFor,
+			&i.QuotedTotalPaise,
+			&i.CustomerName,
+			&i.CustomerPhone,
+			&i.ServiceName,
+			&i.Line1,
+			&i.City,
+			&i.Pincode,
+			&i.Lat,
+			&i.Lng,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

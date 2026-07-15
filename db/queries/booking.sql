@@ -49,3 +49,24 @@ SELECT id, service_id, base_price_paise, is_active
 SELECT id, order_id, customer_id, address_id, technician_id, state, quoted_total_paise, version
   FROM bookings
  WHERE id = $1;
+
+-- name: ListTechnicianJobs :many
+-- A technician's active jobs, with the customer contact and address they need on site.
+-- Active = anything from ASSIGNED through AWAITING_COMPLETION; finished/cancelled jobs drop
+-- off the list. Soonest scheduled first.
+SELECT
+  b.id, b.state, b.scheduled_for, b.quoted_total_paise,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  s.name  AS service_name,
+  a.line1, a.city, a.pincode,
+  ST_Y(a.geog::geometry)::float8 AS lat,
+  ST_X(a.geog::geometry)::float8 AS lng
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE b.technician_id = $1
+  AND b.state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+ORDER BY b.scheduled_for NULLS LAST, b.created_at;
