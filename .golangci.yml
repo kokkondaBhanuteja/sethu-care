@@ -125,6 +125,13 @@ linters:
             - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal"
               desc: "money is a pure value object — it must depend on nothing else in the domain"
 
+  # The Go module root is the repo root, so `go list ./...` descends into the mobile/ JS
+  # workspace — and some npm packages (e.g. flatted) ship vendored Go files. Those are not our
+  # code; never lint them.
+  exclusions:
+    paths:
+      - node_modules
+
 formatters:
   enable:
     - gofmt
