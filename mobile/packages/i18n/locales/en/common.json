@@ -1,0 +1,19 @@
+{
+  "appName": "SETHU-CARE",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "continue": "Continue",
+    "done": "Done",
+    "delete": "Delete"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "No internet connection.",
+    "notFound": "Not found."
+  },
+  "empty": {
+    "title": "Nothing here yet"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@sethu/domain",
+  "name": "@sethu/i18n",
   "version": "0.0.0",
   "private": true,
   "main": "src/index.ts",
@@ -10,7 +10,16 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": "*"
+  },
+  "dependencies": {
+    "i18next": "^26.3.6",
+    "react-i18next": "^17.0.9"
+  },
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "react": "^19.2.7",
     "typescript": "^5.9.3"
   }
 }
