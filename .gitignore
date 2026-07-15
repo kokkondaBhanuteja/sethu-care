@@ -12,3 +12,6 @@
 # Next.js admin shell (P0 Task 14)
 admin/node_modules/
 admin/.next/
+
+#design files temporary
+stitch_swiftfix_premium_services/
