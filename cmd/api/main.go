@@ -30,6 +30,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
@@ -121,6 +122,11 @@ func run() error {
 			return fmt.Errorf("decoding booking.completed: %w", err)
 		}
 		return ledgerService.RecordCompletion(ctx, event.AggregateID, ledger.PaymentMethod(payload.PaymentMethod))
+	})
+	// CREDITS: a booking that FAILED (nobody could be found) gets a goodwill credit.
+	failedCredit := money.FromPaise(settings.FailedBookingCreditPaise)
+	dispatcher.Subscribe("booking.failed", func(ctx context.Context, event outbox.Event) error {
+		return ledgerService.IssueFailureCredit(ctx, event.AggregateID, failedCredit)
 	})
 	// RATINGS: a submitted review updates the technician's rating — the signal the assignment
 	// queue ranks by. Reviews publishes; Identity (which owns technicians) recomputes.

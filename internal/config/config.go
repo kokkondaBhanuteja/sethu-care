@@ -28,6 +28,10 @@ type Config struct {
 	// DevEchoOTP returns OTP codes in the HTTP response (dev only — there is no SMS provider
 	// yet). Off unless SETHU_DEV_OTP=true, so it cannot leak by default.
 	DevEchoOTP bool
+
+	// FailedBookingCreditPaise is the goodwill credit issued when a booking FAILS (nobody
+	// could be found). Default ₹100.
+	FailedBookingCreditPaise int64
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -47,14 +51,24 @@ func Load() (Config, error) {
 	}
 
 	configuration := Config{
-		DatabaseURL:       stringEnv("DATABASE_URL", "postgres://sethu:sethu@127.0.0.1:5434/sethu?sslmode=disable"),
-		ListenAddr:        stringEnv("ADDR", ":8080"),
-		JWTSecret:         jwtSecret,
-		JWTTTL:            jwtTTL,
-		UsingDevJWTSecret: usingDevSecret,
-		DevEchoOTP:        os.Getenv("SETHU_DEV_OTP") == "true",
+		DatabaseURL:              stringEnv("DATABASE_URL", "postgres://sethu:sethu@127.0.0.1:5434/sethu?sslmode=disable"),
+		ListenAddr:               stringEnv("ADDR", ":8080"),
+		JWTSecret:                jwtSecret,
+		JWTTTL:                   jwtTTL,
+		UsingDevJWTSecret:        usingDevSecret,
+		DevEchoOTP:               os.Getenv("SETHU_DEV_OTP") == "true",
+		FailedBookingCreditPaise: intEnv("SETHU_FAILED_CREDIT_PAISE", 10000),
 	}
 	return configuration, nil
+}
+
+func intEnv(key string, fallback int64) int64 {
+	if raw := os.Getenv(key); raw != "" {
+		if parsed, err := strconv.ParseInt(raw, 10, 64); err == nil {
+			return parsed
+		}
+	}
+	return fallback
 }
 
 func stringEnv(key, fallback string) string {

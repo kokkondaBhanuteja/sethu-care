@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
+
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
@@ -90,6 +92,45 @@ func (service *Service) RecordCompletion(ctx context.Context, bookingID uuid.UUI
 
 	if err := queries.InsertLedgerEntry(ctx, entry); err != nil {
 		return fmt.Errorf("recording ledger entry: %w", err)
+	}
+	return nil
+}
+
+// IssueFailureCredit records a goodwill CREDIT_ISSUED for a booking that FAILED — nobody could
+// be found, so we owe the customer an apology credit (ROADMAP §6, §8). Attaches to the order
+// (the CHECK requires it). Idempotent: a redelivered booking.failed does not double-credit.
+func (service *Service) IssueFailureCredit(ctx context.Context, bookingID uuid.UUID, amount money.Money) error {
+	if amount.IsZero() {
+		return nil
+	}
+	queries := sqlcgen.New(service.pool)
+
+	booking, err := queries.GetBooking(ctx, bookingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrBookingNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("reading booking: %w", err)
+	}
+
+	alreadyCredited, err := queries.CreditExistsForOrder(ctx, &booking.OrderID)
+	if err != nil {
+		return fmt.Errorf("checking existing credit: %w", err)
+	}
+	if alreadyCredited {
+		return nil
+	}
+
+	orderID := booking.OrderID
+	customerID := booking.CustomerID
+	if err := queries.InsertLedgerEntry(ctx, sqlcgen.InsertLedgerEntryParams{
+		Kind:        string(EntryCreditIssued),
+		AmountPaise: amount,
+		OrderID:     &orderID,
+		CustomerID:  &customerID,
+		Memo:        "goodwill credit — we could not find a technician",
+	}); err != nil {
+		return fmt.Errorf("recording credit: %w", err)
 	}
 	return nil
 }

@@ -528,7 +528,11 @@ func publishedEventFor(action Action) (string, bool) {
 		// Not in the original §8 catalog, added here: it triggers issuing the completion OTP
 		// (the technician says the work is done; the customer gets a code to confirm it).
 		return "booking.awaiting_completion", true
-	case ActionSearch, ActionResume, ActionReschedule, ActionCancel:
+	case ActionCancel:
+		return "booking.cancelled", true
+	case ActionReschedule:
+		return "booking.rescheduled", true
+	case ActionSearch, ActionResume:
 		return "", false
 	}
 	return "", false

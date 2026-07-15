@@ -90,6 +90,10 @@ func messageFor(eventType string) (string, bool) {
 		return "We're personally arranging a technician for you — we'll confirm shortly.", true
 	case "booking.failed":
 		return "We're sorry — we couldn't find a technician. A credit has been added to your account.", true
+	case "booking.cancelled":
+		return "Your booking has been cancelled.", true
+	case "booking.rescheduled":
+		return "Your booking has been rescheduled.", true
 	default:
 		return "", false
 	}

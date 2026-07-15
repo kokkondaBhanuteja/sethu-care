@@ -35,6 +35,20 @@ func (q *Queries) CompletionLedgerExists(ctx context.Context, arg CompletionLedg
 	return exists, err
 }
 
+const creditExistsForOrder = `-- name: CreditExistsForOrder :one
+SELECT EXISTS (
+  SELECT 1 FROM ledger_entries WHERE order_id = $1 AND kind = 'CREDIT_ISSUED'
+) AS exists
+`
+
+// Idempotency guard for the failed-booking credit consumer.
+func (q *Queries) CreditExistsForOrder(ctx context.Context, orderID *uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, creditExistsForOrder, orderID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const insertLedgerEntry = `-- name: InsertLedgerEntry :exec
 INSERT INTO ledger_entries (kind, amount_paise, order_id, booking_id, customer_id, technician_id, method, memo)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
