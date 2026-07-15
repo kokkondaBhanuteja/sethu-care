@@ -29,7 +29,12 @@ export default function Home() {
         <FlashList
           data={services}
           keyExtractor={(item, index) => item.id ?? String(index)}
-          renderItem={({ item }) => <ServiceCard service={item} />}
+          renderItem={({ item }) => (
+            <ServiceCard
+              service={item}
+              onPress={() => item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })}
+            />
+          )}
           ItemSeparatorComponent={() => <View className="h-md" />}
           ListEmptyComponent={isLoading ? null : <Text tone="muted">{t("empty.title")}</Text>}
         />

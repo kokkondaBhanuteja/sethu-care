@@ -17,5 +17,11 @@
   },
   "empty": {
     "title": "Nothing here yet"
+  },
+  "address": {
+    "add": "Add address",
+    "line1": "Address line 1",
+    "city": "City",
+    "select": "Select an address"
   }
 }
