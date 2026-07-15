@@ -11,15 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
-const fetchUnpublishedOutbox = `-- name: FetchUnpublishedOutbox :many
+const claimUnpublishedOutbox = `-- name: ClaimUnpublishedOutbox :many
 SELECT id, aggregate_type, aggregate_id, event_type, payload, attempts
   FROM outbox
  WHERE published_at IS NULL
  ORDER BY created_at
+   FOR UPDATE SKIP LOCKED
  LIMIT $1
 `
 
-type FetchUnpublishedOutboxRow struct {
+type ClaimUnpublishedOutboxRow struct {
 	ID            uuid.UUID
 	AggregateType string
 	AggregateID   uuid.UUID
@@ -28,17 +29,19 @@ type FetchUnpublishedOutboxRow struct {
 	Attempts      int32
 }
 
-// What the publisher worker reads: everything not yet sent, oldest first. Uses the partial
-// index outbox_unpublished_idx, so it stays fast no matter how many events have been sent.
-func (q *Queries) FetchUnpublishedOutbox(ctx context.Context, limit int32) ([]FetchUnpublishedOutboxRow, error) {
-	rows, err := q.db.Query(ctx, fetchUnpublishedOutbox, limit)
+// The worker's claim. FOR UPDATE SKIP LOCKED is the idiomatic Postgres work-queue: each
+// row the worker reads is locked for the transaction, and SKIP LOCKED means a second worker
+// (or a second poll that overlaps) simply steps over the locked rows to the next free ones.
+// Two workers therefore never dispatch the same event, with no external lock and no queue.
+func (q *Queries) ClaimUnpublishedOutbox(ctx context.Context, limit int32) ([]ClaimUnpublishedOutboxRow, error) {
+	rows, err := q.db.Query(ctx, claimUnpublishedOutbox, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []FetchUnpublishedOutboxRow{}
+	items := []ClaimUnpublishedOutboxRow{}
 	for rows.Next() {
-		var i FetchUnpublishedOutboxRow
+		var i ClaimUnpublishedOutboxRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.AggregateType,
@@ -80,5 +83,36 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 		arg.EventType,
 		arg.Payload,
 	)
+	return err
+}
+
+const markOutboxPublished = `-- name: MarkOutboxPublished :exec
+UPDATE outbox
+   SET published_at = now(), updated_at = now()
+ WHERE id = $1
+`
+
+// Delivered. The partial index outbox_unpublished_idx now excludes this row, so it never
+// comes back — and stays small no matter how many millions have been published.
+func (q *Queries) MarkOutboxPublished(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, markOutboxPublished, id)
+	return err
+}
+
+const recordOutboxFailure = `-- name: RecordOutboxFailure :exec
+UPDATE outbox
+   SET attempts = attempts + 1, last_error = $2, updated_at = now()
+ WHERE id = $1
+`
+
+type RecordOutboxFailureParams struct {
+	ID        uuid.UUID
+	LastError *string
+}
+
+// A handler refused this event. Record why and count the attempt; the row stays
+// unpublished, so the next poll retries it. This is the at-least-once contract in action.
+func (q *Queries) RecordOutboxFailure(ctx context.Context, arg RecordOutboxFailureParams) error {
+	_, err := q.db.Exec(ctx, recordOutboxFailure, arg.ID, arg.LastError)
 	return err
 }

@@ -15,10 +15,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 )
 
 func main() {
@@ -45,18 +49,32 @@ func run() error {
 
 	dsn := env("DATABASE_URL", "postgres://sethu:sethu@127.0.0.1:5434/sethu?sslmode=disable")
 
-	pool, err := pgxpool.New(ctx, dsn)
+	// storage.NewPool (not raw pgxpool.New) because it registers the google/uuid codec and
+	// pings — the same pool the outbox worker and every repository rely on.
+	pool, err := storage.NewPool(ctx, dsn)
 	if err != nil {
 		return fmt.Errorf("connecting to postgres: %w", err)
 	}
 	defer pool.Close()
-
-	// pgxpool.New is lazy — it does not dial until the first query. Ping now, so a bad
-	// DSN is a startup failure with a clear message rather than a confusing 500 later.
-	if err := pool.Ping(ctx); err != nil {
-		return fmt.Errorf("pinging postgres: %w", err)
-	}
 	slog.Info("connected to postgres")
+
+	// The outbox worker. In P0 the only subscriber is a logging handler — the real
+	// consumers (Notifications, Ledger, Assignment) do not exist yet — so starting the API
+	// visibly drains every domain event to the log, proving the pipeline end to end.
+	dispatcher := outbox.NewDispatcher()
+	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
+	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
+
+	var workerDone sync.WaitGroup
+	workerDone.Add(1)
+	go func() {
+		defer workerDone.Done()
+		// Run only ever returns because ctx was cancelled (a normal shutdown). Any other
+		// return would be a surprise worth logging.
+		if err := worker.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			slog.Error("outbox worker exited unexpectedly", "err", err)
+		}
+	}()
 
 	srv := &http.Server{
 		Addr:              env("ADDR", ":8080"),
@@ -95,6 +113,11 @@ func run() error {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("draining http server: %w", err)
 	}
+
+	// ctx is already cancelled, so the worker is on its way out; wait for its current batch
+	// to finish before we close the pool under it.
+	workerDone.Wait()
+
 	slog.Info("stopped cleanly")
 	return nil
 }

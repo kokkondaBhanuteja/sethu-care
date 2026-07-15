@@ -1,0 +1,232 @@
+// Package outbox delivers the domain events that booking.Service (and later others) write
+// transactionally into the `outbox` table. It is the other half of the transactional-outbox
+// pattern: the writer guarantees the event was SAVED atomically with the state change; this
+// worker guarantees it is eventually DELIVERED.
+//
+// Delivery is AT-LEAST-ONCE, and that is not a limitation to be fixed — it is the contract.
+// The worker dispatches an event, then marks it published. If it crashes in between, the row
+// is still unpublished and goes out again on restart. Therefore every handler MUST be
+// idempotent: seeing the same event twice must be harmless.
+package outbox
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
+)
+
+// Event is one row of the outbox, handed to a subscriber.
+type Event struct {
+	ID            uuid.UUID
+	AggregateType string
+	AggregateID   uuid.UUID
+	EventType     string // the ROADMAP §8 name, e.g. "booking.completed"
+	Payload       json.RawMessage
+	Attempts      int32 // how many times delivery has already been tried and failed
+}
+
+// Handler reacts to an event. Returning an error leaves the event unpublished for retry.
+//
+// GO LESSON — a function type as the unit of behaviour, rather than an interface with one
+// method. When the abstraction is "a thing you call", a func type is lighter than an
+// interface and any matching function or closure satisfies it for free.
+type Handler func(context.Context, Event) error
+
+// Dispatcher routes an event to the handlers subscribed to it. Safe for concurrent use:
+// subscriptions are set up once at startup, then read by the worker goroutine.
+type Dispatcher struct {
+	mu     sync.RWMutex
+	byType map[string][]Handler
+	all    []Handler
+}
+
+func NewDispatcher() *Dispatcher {
+	return &Dispatcher{byType: make(map[string][]Handler)}
+}
+
+// Subscribe registers a handler for one event type — e.g. Ledger for "booking.completed".
+func (d *Dispatcher) Subscribe(eventType string, h Handler) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.byType[eventType] = append(d.byType[eventType], h)
+}
+
+// SubscribeAll registers a handler for EVERY event — for cross-cutting consumers like
+// logging and, later, analytics, which do not care about the specific type.
+func (d *Dispatcher) SubscribeAll(h Handler) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.all = append(d.all, h)
+}
+
+// dispatch delivers to every matching handler. If any fails, the event is considered
+// undelivered and will be retried in full — so, again, handlers must be idempotent.
+//
+// errors.Join collects every handler's failure rather than stopping at the first: one
+// broken consumer should not hide that a second one also broke.
+func (d *Dispatcher) dispatch(ctx context.Context, e Event) error {
+	d.mu.RLock()
+	handlers := make([]Handler, 0, len(d.all)+len(d.byType[e.EventType]))
+	handlers = append(handlers, d.all...)
+	handlers = append(handlers, d.byType[e.EventType]...)
+	d.mu.RUnlock()
+
+	var errs []error
+	for _, h := range handlers {
+		if err := h(ctx, e); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// Worker polls the outbox and drives delivery.
+type Worker struct {
+	pool       *pgxpool.Pool
+	dispatcher *Dispatcher
+	batchSize  int32
+	interval   time.Duration
+	log        *slog.Logger
+}
+
+// NewWorker builds a worker with sensible defaults; the Option functions tune it.
+func NewWorker(pool *pgxpool.Pool, d *Dispatcher, opts ...Option) *Worker {
+	w := &Worker{
+		pool:       pool,
+		dispatcher: d,
+		batchSize:  100,
+		interval:   time.Second,
+		log:        slog.Default(),
+	}
+	for _, opt := range opts {
+		opt(w)
+	}
+	return w
+}
+
+// Option tunes a Worker. This is the functional-options pattern — Go's idiom for optional
+// constructor parameters, since it has no keyword or default arguments.
+type Option func(*Worker)
+
+func WithInterval(d time.Duration) Option { return func(w *Worker) { w.interval = d } }
+func WithBatchSize(n int32) Option        { return func(w *Worker) { w.batchSize = n } }
+func WithLogger(l *slog.Logger) Option    { return func(w *Worker) { w.log = l } }
+
+// Poll processes at most one batch and returns how many events it delivered.
+//
+// The whole batch runs in ONE transaction. ClaimUnpublishedOutbox takes FOR UPDATE SKIP
+// LOCKED, so the rows are locked to this worker for the duration; a concurrent worker skips
+// them. Each row is dispatched and then marked published (success) or has its failure
+// recorded (leaving it unpublished for the next poll). The lock releases on commit.
+func (w *Worker) Poll(ctx context.Context) (int, error) {
+	var delivered int
+
+	err := storage.InTx(ctx, w.pool, func(tx pgx.Tx) error {
+		q := sqlcgen.New(tx)
+
+		rows, err := q.ClaimUnpublishedOutbox(ctx, w.batchSize)
+		if err != nil {
+			return err
+		}
+
+		for _, r := range rows {
+			event := Event{
+				ID:            r.ID,
+				AggregateType: r.AggregateType,
+				AggregateID:   r.AggregateID,
+				EventType:     r.EventType,
+				Payload:       r.Payload,
+				Attempts:      r.Attempts,
+			}
+
+			if derr := w.dispatcher.dispatch(ctx, event); derr != nil {
+				// A handler refused. Record the failure and MOVE ON — leaving the row
+				// unpublished so the next poll retries it. We do not return the error,
+				// because that would roll back the whole batch and lose the successful
+				// deliveries alongside it.
+				msg := derr.Error()
+				if ferr := q.RecordOutboxFailure(ctx, sqlcgen.RecordOutboxFailureParams{
+					ID:        r.ID,
+					LastError: &msg,
+				}); ferr != nil {
+					return ferr // a DB failure IS fatal to the batch
+				}
+				w.log.Warn("outbox delivery failed; will retry",
+					"event_type", event.EventType, "event_id", event.ID,
+					"attempts", event.Attempts+1, "err", msg)
+				continue
+			}
+
+			if merr := q.MarkOutboxPublished(ctx, r.ID); merr != nil {
+				return merr
+			}
+			delivered++
+		}
+		return nil
+	})
+
+	return delivered, err
+}
+
+// Run polls on a ticker until ctx is cancelled. On each tick it drains fully — polling
+// repeatedly until a batch comes back short — so a burst of events does not sit waiting a
+// whole interval per batch.
+//
+// GO LESSON — the select-on-ctx.Done() loop is the standard shape of a long-running Go
+// worker. ctx is wired to SIGTERM in main, so a deploy stops this cleanly between batches.
+func (w *Worker) Run(ctx context.Context) error {
+	w.log.Info("outbox worker started", "interval", w.interval, "batch_size", w.batchSize)
+
+	ticker := time.NewTicker(w.interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			w.log.Info("outbox worker stopping")
+			return ctx.Err()
+		case <-ticker.C:
+			w.drain(ctx)
+		}
+	}
+}
+
+func (w *Worker) drain(ctx context.Context) {
+	for {
+		n, err := w.Poll(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return // shutting down; not an error worth logging
+			}
+			w.log.Error("outbox poll failed", "err", err)
+			return
+		}
+		if n < int(w.batchSize) {
+			return // a short batch means the backlog is drained
+		}
+	}
+}
+
+// LoggingHandler returns a SubscribeAll handler that logs every event. In P0 the real
+// consumers (Notifications, Ledger, Assignment) do not exist yet, so this gives the worker
+// something visible to do and proves the pipeline end to end.
+func LoggingHandler(log *slog.Logger) Handler {
+	return func(_ context.Context, e Event) error {
+		log.Info("domain event",
+			"event_type", e.EventType,
+			"aggregate", e.AggregateType,
+			"aggregate_id", e.AggregateID,
+			"payload", string(e.Payload))
+		return nil
+	}
+}
