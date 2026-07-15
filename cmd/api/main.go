@@ -29,6 +29,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
@@ -75,15 +76,26 @@ func run() error {
 	defer pool.Close()
 	logger.Info("connected to postgres")
 
-	// The outbox worker. In P0 the only subscriber is a logging handler — the real
-	// consumers (Notifications, Ledger, Assignment) do not exist yet — so starting the API
-	// visibly drains every domain event to the log, proving the pipeline end to end.
+	// The domain services, and the outbox consumers that react to their events: auto-search
+	// (ops), OTP issuance (verification), billing (ledger), and customer notifications. The
+	// worker drives them all off the one event stream.
 	bookingService := booking.NewService(pool)
 	opsService := ops.New(pool, bookingService)
 	verificationService := verification.NewService(pool)
 
+	notificationService := notifications.NewService(pool, logger)
+
 	dispatcher := outbox.NewDispatcher()
 	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
+	// NOTIFICATIONS: the customer-facing voice. It sees every event and sends a message for the
+	// ones a customer should hear about (assigned, en route, arrived, started, completed,
+	// escalated, failed); the rest it skips.
+	dispatcher.SubscribeAll(func(ctx context.Context, event outbox.Event) error {
+		if event.AggregateType != "booking" {
+			return nil
+		}
+		return notificationService.Notify(ctx, event.EventType, event.AggregateID)
+	})
 	// AUTO-SEARCH: a confirmed booking moves itself into SEARCHING (and thus the assignment
 	// queue) without an admin poking it. The adapter keeps ops decoupled from outbox.Event —
 	// it just hands over the aggregate id.

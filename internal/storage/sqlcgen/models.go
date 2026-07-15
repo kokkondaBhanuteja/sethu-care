@@ -88,6 +88,16 @@ type LedgerEntry struct {
 	CreatedAt       pgtype.Timestamptz
 }
 
+type NotificationLog struct {
+	ID          uuid.UUID
+	RecipientID uuid.UUID
+	Channel     string
+	EventType   string
+	BookingID   *uuid.UUID
+	Body        string
+	CreatedAt   pgtype.Timestamptz
+}
+
 type Order struct {
 	ID         uuid.UUID
 	CustomerID uuid.UUID
