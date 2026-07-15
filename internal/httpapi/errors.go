@@ -34,6 +34,11 @@ func writeError(w http.ResponseWriter, log *slog.Logger, err error) {
 }
 
 func classify(err error) (int, string) {
+	// Identity/auth errors first, via their own mapper, so that package's errors stay with it.
+	if status, msg, ok := classifyAuth(err); ok {
+		return status, msg
+	}
+
 	var conflict *booking.ConflictError
 	var illegal *booking.IllegalTransitionError
 	var badReq *badRequestError

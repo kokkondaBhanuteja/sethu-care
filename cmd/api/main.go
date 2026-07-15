@@ -21,8 +21,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 )
@@ -78,11 +80,19 @@ func run() error {
 		}
 	}()
 
+	signer, err := auth.NewSigner(jwtSecret(logger), 24*time.Hour)
+	if err != nil {
+		return fmt.Errorf("configuring jwt: %w", err)
+	}
 	bookingSvc := booking.NewService(pool)
+	identitySvc := identity.NewService(pool)
+	// devEcho returns OTP codes in the response since there is no SMS provider yet. OFF unless
+	// SETHU_DEV_OTP=true, so it can never leak in an environment that forgot to disable it.
+	devEcho := env("SETHU_DEV_OTP", "") == "true"
 
 	srv := &http.Server{
 		Addr:              env("ADDR", ":8080"),
-		Handler:           routes(pool, bookingSvc, logger),
+		Handler:           routes(pool, bookingSvc, identitySvc, signer, devEcho, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -126,13 +136,16 @@ func run() error {
 	return nil
 }
 
-func routes(pool *pgxpool.Pool, bookings *booking.Service, log *slog.Logger) http.Handler {
+func routes(pool *pgxpool.Pool, bookings *booking.Service, ids *identity.Service, signer *auth.Signer, devEcho bool, log *slog.Logger) http.Handler {
 	// Go 1.22+ ServeMux understands method and path patterns natively — no router
 	// library needed yet. We add one only when we actually need middleware chains.
 	mux := http.NewServeMux()
 
-	// Booking endpoints, registered by the transport layer onto this mux.
-	httpapi.New(bookings, log).Register(mux)
+	// Auth endpoints are public — this is where a caller gets a token.
+	httpapi.NewAuthHandler(ids, signer, log, devEcho).Register(mux)
+
+	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
+	httpapi.New(bookings, signer, log).Register(mux)
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -168,4 +181,16 @@ func env(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// jwtSecret reads JWT_SECRET, or falls back to a FIXED dev secret with a loud warning. The
+// fallback lets a developer run the app with zero setup, while making it impossible to ship
+// to production by accident without noticing the log line — and NewSigner still rejects it
+// if it were ever shortened below 32 bytes.
+func jwtSecret(log *slog.Logger) string {
+	if s := os.Getenv("JWT_SECRET"); s != "" {
+		return s
+	}
+	log.Warn("JWT_SECRET is not set — using an INSECURE built-in dev secret. Do not run this in production.")
+	return "sethu-care-insecure-dev-secret-change-me"
 }

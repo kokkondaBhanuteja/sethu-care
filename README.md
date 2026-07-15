@@ -4,11 +4,11 @@ An on-demand home services platform — AC repair, plumbing, electrical, applian
 installation. A customer books a job, the system finds a technician, the technician turns
 up, the work is verified by OTP at both ends, and the money is accounted for.
 
-**Status: P0, in progress.** The whole booking spine works end to end: create a booking and
-walk it `DRAFT → COMPLETED` over HTTP, with each transition compare-and-swapped, audited to
-an append-only log, and published through the outbox worker. Built and proven against a real
-database. No UI yet, and **no auth yet** — transitions take an actor from a dev header
-pending Task 6.
+**Status: P0, in progress.** The whole booking spine works end to end behind authentication:
+log in by OTP to get a JWT, then create a booking and walk it `DRAFT → COMPLETED` over HTTP —
+each transition compare-and-swapped, attributed to the authenticated actor, audited to an
+append-only log, and published through the outbox worker. Built and proven against a real
+database. No UI yet.
 
 - **[ROADMAP.md](ROADMAP.md)** — the architecture and the reasoning. **Read this first.**
 - **[PLAN-P0.md](PLAN-P0.md)** — the task-by-task plan. ⚠️ *Written for Spring Boot; the
@@ -62,6 +62,7 @@ internal/
   ledger/           append-only money
   verification/     dual OTP
   outbox/           the worker that delivers domain events (SKIP LOCKED, at-least-once)
+  auth/             JWT signing/verifying + the RequireAuth / RequireRole middleware
   httpapi/          transport: HTTP <-> domain, and the one place errors become status codes
   schema/           the enum drift test (Go constants ⇄ DB CHECK constraints)
   storage/          the pgx pool + InTx transaction helper
@@ -233,15 +234,29 @@ server fails loudly on a bind clash (`address already in use`) rather than misbe
 
 ## The HTTP API (P0)
 
-| Method + path | Does |
-|---|---|
-| `POST /bookings` | Place a booking (customer, address, variant, quantity). Price comes from the catalog, never the client. → 201 |
-| `GET /bookings/{id}` | Current state + the actions legal right now. |
-| `POST /bookings/{id}/transitions` | Apply an action (`{"action":"CONFIRM"}`; `ASSIGN` also takes `technician_id`). |
+| Method + path | Auth | Does |
+|---|---|---|
+| `POST /auth/otp` | public | Request a login code for a phone. In dev (`SETHU_DEV_OTP=true`) the code is returned; in prod it goes by SMS. |
+| `POST /auth/verify` | public | Exchange phone + code for a JWT. Creates a `CUSTOMER` on first login; staff are pre-provisioned. |
+| `POST /bookings` | CUSTOMER | Place a booking (address, variant, quantity). The customer is the token holder; the price comes from the catalog. → 201 |
+| `GET /bookings/{id}` | any | Current state + the actions legal right now. |
+| `POST /bookings/{id}/transitions` | any | Apply an action (`{"action":"CONFIRM"}`; `ASSIGN` also takes `technician_id`). The actor is the token holder. |
 
-Error mapping lives in one place (`httpapi/errors.go`): not-found → 404, lost optimistic-lock
-race → 409, illegal-from-this-state → 422, malformed request → 400. 5xx bodies never leak the
-internal error text.
+Pass the token as `Authorization: Bearer <jwt>`. Error mapping lives in one place
+(`httpapi/errors.go`): missing/invalid token → 401, wrong role → 403, not-found → 404, lost
+optimistic-lock race → 409, illegal-from-this-state → 422, malformed request → 400, OTP rate
+limit → 429. 5xx bodies never leak the internal error text.
+
+### Auth notes
+
+- **JWTs are HS256**, signed with `JWT_SECRET` (min 32 bytes; a loud dev fallback is used if
+  unset). The verifier pins the algorithm, so the `alg=none` and RS256-confusion forgeries are
+  rejected — both are tested.
+- **OTP codes are bcrypt-hashed**, never stored in plaintext; expiring, attempt-capped, and
+  rate-limited on resend.
+- **Per-action RBAC on transitions is a P1 refinement.** Today every transition needs only
+  authentication (the actor is recorded); the `RequireRole` mechanism for "only a technician
+  may ARRIVE, only an admin may ASSIGN" exists and is tested, but is not yet applied per action.
 
 ---
 

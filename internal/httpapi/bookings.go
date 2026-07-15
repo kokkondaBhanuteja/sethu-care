@@ -11,34 +11,47 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 )
 
 // Handler wires the HTTP routes to the domain services.
 type Handler struct {
 	bookings *booking.Service
+	signer   *auth.Signer
 	log      *slog.Logger
 }
 
-func New(bookings *booking.Service, log *slog.Logger) *Handler {
-	return &Handler{bookings: bookings, log: log}
+func New(bookings *booking.Service, signer *auth.Signer, log *slog.Logger) *Handler {
+	return &Handler{bookings: bookings, signer: signer, log: log}
 }
 
-// Register mounts the booking endpoints onto mux. Go 1.22+ ServeMux matches method and path
-// pattern natively, so {id} is a real path variable read via r.PathValue.
+// Register mounts the booking endpoints onto mux, each wrapped in the auth it requires. The
+// authorization rule for every route is visible right here, at the route — not buried in the
+// handler.
+//
+// P0 scope: creating a booking requires the CUSTOMER role (customers book); reading and
+// transitioning require only authentication. Per-action RBAC on transitions (only a
+// technician may ARRIVE, only an admin may ASSIGN) is a P1 refinement — the RequireRole
+// mechanism it needs already exists and is tested.
 func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("POST /bookings", h.create)
-	mux.HandleFunc("GET /bookings/{id}", h.get)
-	mux.HandleFunc("POST /bookings/{id}/transitions", h.transition)
+	mux.Handle("POST /bookings",
+		h.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(h.create))))
+	mux.Handle("GET /bookings/{id}",
+		h.signer.RequireAuth(http.HandlerFunc(h.get)))
+	mux.Handle("POST /bookings/{id}/transitions",
+		h.signer.RequireAuth(http.HandlerFunc(h.transition)))
 }
 
 // --- POST /bookings ---------------------------------------------------------
 
+// createRequest has no customer_id — the customer is the authenticated caller, taken from
+// the token. Letting a client name the customer would let one customer book for another.
 type createRequest struct {
-	CustomerID uuid.UUID `json:"customer_id"`
-	AddressID  uuid.UUID `json:"address_id"`
-	VariantID  uuid.UUID `json:"variant_id"`
-	Quantity   int32     `json:"quantity"`
+	AddressID uuid.UUID `json:"address_id"`
+	VariantID uuid.UUID `json:"variant_id"`
+	Quantity  int32     `json:"quantity"`
 }
 
 type bookingResponse struct {
@@ -50,6 +63,12 @@ type bookingResponse struct {
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+	caller, ok := auth.UserFrom(r.Context())
+	if !ok {
+		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		return
+	}
+
 	var req createRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, h.log, err)
@@ -57,7 +76,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	created, err := h.bookings.Create(r.Context(), booking.CreateInput{
-		CustomerID: req.CustomerID,
+		CustomerID: caller.ID, // the booker is the authenticated caller, never a body field
 		AddressID:  req.AddressID,
 		VariantID:  req.VariantID,
 		Quantity:   req.Quantity,
@@ -125,13 +144,17 @@ func (h *Handler) transition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Actor comes from a dev header until Task 6 wires real auth. A transition SHOULD be
-	// attributed to who performed it; for now it is optional and unauthenticated. This is
-	// noted so nobody mistakes it for a finished authorization story.
-	actor := actorFromHeader(r)
+	// The actor is the authenticated caller — attributed to the booking_events row, and
+	// forgery-proof, because it comes from the verified token, not a header.
+	caller, ok := auth.UserFrom(r.Context())
+	if !ok {
+		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		return
+	}
+	actor := caller.ID
 
 	newState, err := h.bookings.Apply(r.Context(), id, action, booking.TransitionInput{
-		Actor:            actor,
+		Actor:            &actor,
 		AssignTechnician: req.Technician,
 	})
 	if err != nil {
@@ -147,18 +170,6 @@ func (h *Handler) transition(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- helpers ----------------------------------------------------------------
-
-func actorFromHeader(r *http.Request) *uuid.UUID {
-	raw := r.Header.Get("X-Actor-Id")
-	if raw == "" {
-		return nil
-	}
-	id, err := uuid.Parse(raw)
-	if err != nil {
-		return nil // a malformed actor header is treated as no actor, not an error
-	}
-	return &id
-}
 
 func pathUUID(r *http.Request, name string) (uuid.UUID, error) {
 	id, err := uuid.Parse(r.PathValue(name))
