@@ -88,7 +88,7 @@ func run() error {
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
-	notificationService := notifications.NewService(pool, logger)
+	notificationService := notifications.NewService(pool, notifications.NewLogSender(logger), logger)
 
 	dispatcher := outbox.NewDispatcher()
 	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
@@ -110,8 +110,8 @@ func run() error {
 	// DUAL OTP issuance: when the technician arrives, issue the START code to the customer;
 	// when they say the work is done, issue the COMPLETION code. Verification happens
 	// interactively on the transition endpoint.
-	dispatcher.Subscribe("technician.arrived", issueOTP(verificationService, verification.PurposeStart, settings.DevEchoOTP, logger))
-	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
+	dispatcher.Subscribe("technician.arrived", issueOTP(verificationService, notificationService, verification.PurposeStart, settings.DevEchoOTP, logger))
+	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, notificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
 	// BILLING: a completed booking records its ledger entry (REVENUE or CASH_CUSTODY). The
 	// payment method rides the event payload from the completion request.
 	dispatcher.Subscribe("booking.completed", func(ctx context.Context, event outbox.Event) error {
@@ -220,18 +220,22 @@ func run() error {
 }
 
 // issueOTP returns an outbox handler that issues the START or COMPLETION code for the booking
-// the event names. In dev it logs the code (there is no SMS provider yet). Idempotent: a
-// redelivered event finds the code already issued and does nothing.
-func issueOTP(verifier *verification.Service, purpose verification.Purpose, devEcho bool, logger *slog.Logger) outbox.Handler {
+// the event names and texts it to the customer. Idempotent: a redelivered event finds the code
+// already issued (issued=false) and neither re-issues nor re-sends. In dev it also echoes the
+// code to the log for local testing without a real handset.
+func issueOTP(verifier *verification.Service, notifier *notifications.Service, purpose verification.Purpose, devEcho bool, logger *slog.Logger) outbox.Handler {
 	return func(ctx context.Context, event outbox.Event) error {
 		code, issued, err := verifier.IssueOTP(ctx, event.AggregateID, purpose)
 		if err != nil {
 			return err
 		}
-		if issued && devEcho {
+		if !issued {
+			return nil // a live code already exists — nothing to send
+		}
+		if devEcho {
 			logger.Info("DEV job otp issued", "booking_id", event.AggregateID, "purpose", purpose, "code", code)
 		}
-		return nil
+		return notifier.SendJobCode(ctx, event.AggregateID, purpose.String(), code)
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,13 +17,34 @@ import (
 
 const migrationsDir = "../../db/migrations"
 
+// recordingSender is a test Sender that captures every dispatched message so a test can assert
+// what actually left through the delivery port.
+type recordingSender struct {
+	mu   sync.Mutex
+	sent []notifications.Outbound
+}
+
+func (sender *recordingSender) Send(ctx context.Context, message notifications.Outbound) error {
+	sender.mu.Lock()
+	defer sender.mu.Unlock()
+	sender.sent = append(sender.sent, message)
+	return nil
+}
+
+func (sender *recordingSender) messages() []notifications.Outbound {
+	sender.mu.Lock()
+	defer sender.mu.Unlock()
+	return append([]notifications.Outbound(nil), sender.sent...)
+}
+
 // An event with a customer-facing message records exactly one notification; a redelivery
 // records nothing (the unique index makes it idempotent); an event with no message records
 // nothing at all.
 func TestNotifyRecordsOncePerBookingEvent(t *testing.T) {
 	pool := storagetest.NewPool(t, migrationsDir)
 	ctx := context.Background()
-	service := notifications.NewService(pool, discardLogger())
+	sender := &recordingSender{}
+	service := notifications.NewService(pool, sender, discardLogger())
 
 	customerID, bookingID := seedBooking(t, pool)
 
@@ -34,6 +57,10 @@ func TestNotifyRecordsOncePerBookingEvent(t *testing.T) {
 		t.Fatalf("redelivered Notify: %v", err)
 	}
 	assertNotificationCount(t, pool, bookingID, "booking.assigned", 1)
+	// It also left through the delivery port exactly once, to the customer's phone.
+	if dispatched := sender.messages(); len(dispatched) != 1 {
+		t.Errorf("dispatched %d messages, want 1 (no resend on redelivery)", len(dispatched))
+	}
 
 	// A different event -> its own notification.
 	if err := service.Notify(ctx, "booking.completed", bookingID); err != nil {
@@ -56,6 +83,41 @@ func TestNotifyRecordsOncePerBookingEvent(t *testing.T) {
 	}
 	if recipient != customerID {
 		t.Errorf("recipient = %s, want the customer %s", recipient, customerID)
+	}
+}
+
+// SendJobCode texts the plaintext OTP straight through the delivery port to the customer, and
+// deliberately does NOT persist it to notification_log (an audit log is not a credential store).
+func TestSendJobCodeDeliversWithoutLogging(t *testing.T) {
+	pool := storagetest.NewPool(t, migrationsDir)
+	ctx := context.Background()
+	sender := &recordingSender{}
+	service := notifications.NewService(pool, sender, discardLogger())
+
+	_, bookingID := seedBooking(t, pool)
+
+	if err := service.SendJobCode(ctx, bookingID, "START", "123456"); err != nil {
+		t.Fatalf("SendJobCode: %v", err)
+	}
+	dispatched := sender.messages()
+	if len(dispatched) != 1 {
+		t.Fatalf("dispatched %d messages, want 1", len(dispatched))
+	}
+	if !strings.Contains(dispatched[0].Body, "123456") {
+		t.Errorf("body %q does not carry the code", dispatched[0].Body)
+	}
+	if dispatched[0].EventType != "otp.START" {
+		t.Errorf("event type = %q, want otp.START", dispatched[0].EventType)
+	}
+	// The plaintext code must never be written to the durable log.
+	var logged int
+	if err := pool.QueryRow(ctx,
+		"SELECT count(*) FROM notification_log WHERE booking_id=$1 AND body LIKE '%123456%'", bookingID).
+		Scan(&logged); err != nil {
+		t.Fatal(err)
+	}
+	if logged != 0 {
+		t.Errorf("OTP code persisted to notification_log %d time(s), want 0", logged)
 	}
 }
 

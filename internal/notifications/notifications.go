@@ -23,14 +23,16 @@ const (
 	ChannelPush Channel = "PUSH"
 )
 
-// Service records and (in dev, logs) customer notifications.
+// Service records customer notifications and hands them to a Sender for delivery. It owns the
+// durable record (notification_log); the Sender owns the wire.
 type Service struct {
-	pool *pgxpool.Pool
-	log  *slog.Logger
+	pool   *pgxpool.Pool
+	sender Sender
+	log    *slog.Logger
 }
 
-func NewService(pool *pgxpool.Pool, log *slog.Logger) *Service {
-	return &Service{pool: pool, log: log}
+func NewService(pool *pgxpool.Pool, sender Sender, log *slog.Logger) *Service {
+	return &Service{pool: pool, sender: sender, log: log}
 }
 
 // Notify sends the customer the message for a booking event, if that event has one. It is an
@@ -65,10 +67,42 @@ func (service *Service) Notify(ctx context.Context, eventType string, bookingID 
 		return nil // already sent (redelivery)
 	}
 
-	// In production this hands off to the SMS provider. In dev, the log IS the delivery.
-	service.log.Info("notification sent",
-		"channel", ChannelSMS, "to", recipient.Phone, "event", eventType, "body", body)
-	return nil
+	// The row is committed; now hand it to the delivery port. A Send failure returns an error
+	// so the outbox retries — at-least-once, matching every other consumer.
+	return service.sender.Send(ctx, Outbound{
+		Channel:   ChannelSMS,
+		Recipient: recipient.Phone,
+		EventType: eventType,
+		Body:      body,
+	})
+}
+
+// SendJobCode delivers a freshly issued job OTP (the START or COMPLETION code) to the booking's
+// customer, who then reads it aloud to the technician. It goes straight through the delivery
+// port and is deliberately NOT written to notification_log: persisting a plaintext OTP would
+// turn the audit log into a credential store. Idempotency is upstream — the caller only issues
+// (and so only sends) a code once per live challenge.
+func (service *Service) SendJobCode(ctx context.Context, bookingID uuid.UUID, purpose, code string) error {
+	recipient, err := sqlcgen.New(service.pool).GetNotificationRecipient(ctx, bookingID)
+	if err != nil {
+		return fmt.Errorf("finding otp recipient: %w", err)
+	}
+	return service.sender.Send(ctx, Outbound{
+		Channel:   ChannelSMS,
+		Recipient: recipient.Phone,
+		EventType: "otp." + purpose,
+		Body:      codeMessage(purpose, code),
+	})
+}
+
+// codeMessage is the SMS copy for a job OTP. START begins the work; COMPLETION closes it out.
+func codeMessage(purpose, code string) string {
+	switch purpose {
+	case "COMPLETION":
+		return fmt.Sprintf("Your SETHU-CARE completion code is %s. Share it with your technician once the work is done.", code)
+	default:
+		return fmt.Sprintf("Your SETHU-CARE start code is %s. Share it with your technician to begin.", code)
+	}
 }
 
 // messageFor is the template for each customer-facing event. Events not listed here produce
@@ -81,7 +115,7 @@ func messageFor(eventType string) (string, bool) {
 	case "technician.en_route":
 		return "Your technician is on the way.", true
 	case "technician.arrived":
-		return "Your technician has arrived. Share the start code to begin.", true
+		return "Your technician has arrived. We've texted you a start code to share with them.", true
 	case "booking.started":
 		return "Your service has started.", true
 	case "booking.completed":
