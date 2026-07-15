@@ -1,0 +1,46 @@
+{
+  "list": {
+    "title": "My jobs",
+    "subtitle": "Your assigned service visits",
+    "empty": "No jobs assigned yet"
+  },
+  "detail": {
+    "customer": "Customer",
+    "service": "Service",
+    "address": "Address",
+    "total": "Total {{amount}}",
+    "call": "Call customer",
+    "navigate": "Navigate"
+  },
+  "actions": {
+    "depart": "Start travelling",
+    "arrive": "I've arrived",
+    "verifyStart": "Start job",
+    "requestCompletion": "Mark work done",
+    "verifyCompletion": "Complete & collect",
+    "cancel": "Cancel",
+    "fail": "Report a problem"
+  },
+  "otp": {
+    "startTitle": "Enter the customer's start code",
+    "startHint": "Ask the customer for the 6-digit code sent to their phone.",
+    "completionTitle": "Enter the customer's completion code",
+    "codeLabel": "6-digit code",
+    "verifyStart": "Verify & start",
+    "verifyComplete": "Verify & complete"
+  },
+  "payment": {
+    "methodTitle": "How is the customer paying?",
+    "upi": "UPI",
+    "cash": "Cash",
+    "online": "Online",
+    "collectTitle": "Collect payment",
+    "amount": "Amount {{amount}}",
+    "reference": "Ref {{reference}}",
+    "openUpi": "Open UPI app",
+    "paid": "Payment received",
+    "cashHeld": "You are holding this cash",
+    "deposit": "Deposit cash",
+    "deposited": "Cash deposited"
+  }
+}

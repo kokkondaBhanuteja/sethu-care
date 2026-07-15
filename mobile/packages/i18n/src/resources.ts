@@ -5,6 +5,7 @@
 import common from "../locales/en/common.json";
 import auth from "../locales/en/features/auth.json";
 import booking from "../locales/en/features/booking.json";
+import jobs from "../locales/en/features/jobs.json";
 
 export const defaultNS = "common" as const;
 
@@ -13,6 +14,7 @@ export const resources = {
   common,
   auth,
   booking,
+  jobs,
 } as const;
 
 export type AppResources = typeof resources;
