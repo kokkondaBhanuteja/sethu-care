@@ -1,0 +1,19 @@
+{
+  "name": "sethu-care-mobile",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "api:generate": "pnpm --filter @sethu/api-client run generate"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5",
+    "turbo": "^2.5.6",
+    "typescript": "^5.7.3"
+  }
+}

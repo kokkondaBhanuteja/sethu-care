@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    // The ./generated tree is a vendored artifact from @hey-api/openapi-ts, not our code. It is
+    // valid TypeScript but does not satisfy exactOptionalPropertyTypes (e.g. the SSE core we don't
+    // use). Our hand-written code (index.ts) keeps every other strict flag.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src"]
+}

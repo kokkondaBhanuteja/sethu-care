@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output / caches
+dist/
+.turbo/
+.expo/
+web-build/
+expo-env.d.ts
+
+# Native
+ios/Pods/
+*.xcworkspace
+android/.gradle/
+android/app/build/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs / OS
+*.log
+.DS_Store
