@@ -78,6 +78,53 @@ linters:
             - pkg: "time"
               desc: "the state machine is PURE — a transition that depends on the clock cannot be tested exhaustively"
 
+        # MODULE DEPENDENCY RULE — the architecture's allowed-import graph, enforced.
+        #
+        # The domain graph must stay ACYCLIC and point INWARD toward the stable cores
+        # (money, identity, booking). The "core" modules below must NEVER import a
+        # consumer/leaf module (ledger, notifications, verification, ops, reviews, media):
+        # those CONSUME booking's events (or are invoked by transport) — a core is never
+        # called back into. Enforcing it here means a cycle or an inverted dependency fails
+        # the build, not code review.
+        #
+        # Composition (cmd, internal/app) and transport (internal/httpapi) are deliberately
+        # NOT listed — they wire everything together and may import any module.
+        cores-must-not-import-consumers:
+          files:
+            # Production files only — a test may legitimately import sibling modules to seed data.
+            - "!**/*_test.go"
+            - "**/internal/order/**"
+            - "**/internal/identity/**"
+            - "**/internal/auth/**"
+            - "**/internal/catalog/**"
+            - "**/internal/address/**"
+            - "**/internal/booking/**"
+          deny:
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+              desc: "a core must not import a consumer — ledger consumes booking events, never the reverse"
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
+              desc: "a core must not import a consumer — notifications consumes events"
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/verification"
+              desc: "a core must not import a consumer — verification is invoked by transport / consumes events"
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+              desc: "a core must not import a consumer — ops orchestrates booking, not the reverse"
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
+              desc: "a core must not import a consumer — reviews consumes events"
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal/media"
+              desc: "a core must not import media"
+
+        # money is the deepest leaf — a pure value object that depends on NOTHING else in
+        # the domain. If money ever imports another internal package, a rule has leaked into
+        # the value type.
+        money-is-a-pure-leaf:
+          files:
+            # Production files only — the external money_test package imports money itself.
+            - "!**/*_test.go"
+            - "**/internal/money/**"
+          deny:
+            - pkg: "github.com/kokkondaBhanuteja/sethu-care/internal"
+              desc: "money is a pure value object — it must depend on nothing else in the domain"
+
 formatters:
   enable:
     - gofmt

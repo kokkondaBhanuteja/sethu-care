@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,10 +18,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/app"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -91,54 +90,18 @@ func run() error {
 	reviewService := reviews.NewService(pool)
 	notificationService := notifications.NewService(pool, notifications.NewLogSender(logger), logger)
 
+	// The outbox consumers (auto-search, dual-OTP, billing, credits, notifications, ratings) are
+	// wired in one place — internal/app — so this composition root stays thin as they multiply.
 	dispatcher := outbox.NewDispatcher()
-	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
-	// NOTIFICATIONS: the customer-facing voice. It sees every event and sends a message for the
-	// ones a customer should hear about (assigned, en route, arrived, started, completed,
-	// escalated, failed); the rest it skips.
-	dispatcher.SubscribeAll(func(ctx context.Context, event outbox.Event) error {
-		if event.AggregateType != "booking" {
-			return nil
-		}
-		return notificationService.Notify(ctx, event.EventType, event.AggregateID)
-	})
-	// AUTO-SEARCH: a confirmed booking moves itself into SEARCHING (and thus the assignment
-	// queue) without an admin poking it. The adapter keeps ops decoupled from outbox.Event —
-	// it just hands over the aggregate id.
-	dispatcher.Subscribe("booking.confirmed", func(ctx context.Context, event outbox.Event) error {
-		return opsService.StartSearch(ctx, event.AggregateID)
-	})
-	// DUAL OTP issuance: when the technician arrives, issue the START code to the customer;
-	// when they say the work is done, issue the COMPLETION code. Verification happens
-	// interactively on the transition endpoint.
-	dispatcher.Subscribe("technician.arrived", issueOTP(verificationService, notificationService, verification.PurposeStart, settings.DevEchoOTP, logger))
-	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, notificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
-	// BILLING: a completed booking records its ledger entry (REVENUE or CASH_CUSTODY). The
-	// payment method rides the event payload from the completion request.
-	dispatcher.Subscribe("booking.completed", func(ctx context.Context, event outbox.Event) error {
-		var payload struct {
-			PaymentMethod string `json:"payment_method"`
-		}
-		if err := json.Unmarshal(event.Payload, &payload); err != nil {
-			return fmt.Errorf("decoding booking.completed: %w", err)
-		}
-		return ledgerService.RecordCompletion(ctx, event.AggregateID, ledger.PaymentMethod(payload.PaymentMethod))
-	})
-	// CREDITS: a booking that FAILED (nobody could be found) gets a goodwill credit.
-	failedCredit := money.FromPaise(settings.FailedBookingCreditPaise)
-	dispatcher.Subscribe("booking.failed", func(ctx context.Context, event outbox.Event) error {
-		return ledgerService.IssueFailureCredit(ctx, event.AggregateID, failedCredit)
-	})
-	// RATINGS: a submitted review updates the technician's rating — the signal the assignment
-	// queue ranks by. Reviews publishes; Identity (which owns technicians) recomputes.
-	dispatcher.Subscribe("review.submitted", func(ctx context.Context, event outbox.Event) error {
-		var payload struct {
-			TechnicianID uuid.UUID `json:"technician_id"`
-		}
-		if err := json.Unmarshal(event.Payload, &payload); err != nil {
-			return fmt.Errorf("decoding review.submitted: %w", err)
-		}
-		return identityService.RecomputeTechnicianRating(ctx, payload.TechnicianID)
+	app.RegisterConsumers(dispatcher, app.ConsumerDeps{
+		Notifications: notificationService,
+		Ops:           opsService,
+		Verification:  verificationService,
+		Ledger:        ledgerService,
+		Identity:      identityService,
+		FailedCredit:  money.FromPaise(settings.FailedBookingCreditPaise),
+		DevEchoOTP:    settings.DevEchoOTP,
+		Logger:        logger,
 	})
 	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
 
@@ -221,26 +184,6 @@ func run() error {
 
 	logger.Info("stopped cleanly")
 	return nil
-}
-
-// issueOTP returns an outbox handler that issues the START or COMPLETION code for the booking
-// the event names and texts it to the customer. Idempotent: a redelivered event finds the code
-// already issued (issued=false) and neither re-issues nor re-sends. In dev it also echoes the
-// code to the log for local testing without a real handset.
-func issueOTP(verifier *verification.Service, notifier *notifications.Service, purpose verification.Purpose, devEcho bool, logger *slog.Logger) outbox.Handler {
-	return func(ctx context.Context, event outbox.Event) error {
-		code, issued, err := verifier.IssueOTP(ctx, event.AggregateID, purpose)
-		if err != nil {
-			return err
-		}
-		if !issued {
-			return nil // a live code already exists — nothing to send
-		}
-		if devEcho {
-			logger.Info("DEV job otp issued", "booking_id", event.AggregateID, "purpose", purpose, "code", code)
-		}
-		return notifier.SendJobCode(ctx, event.AggregateID, purpose.String(), code)
-	}
 }
 
 // routerDependencies collects everything the router needs, so buildRouter takes one
