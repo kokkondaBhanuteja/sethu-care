@@ -38,7 +38,7 @@ func TestManualAssignmentFlow(t *testing.T) {
 	// An eligible technician: Bengaluru, online, holds AC_REPAIR.
 	techID := uuid.New()
 	env.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'Asha', 'TECHNICIAN')", techID, "+9191"+techID.String()[:8])
-	env.exec(t, "INSERT INTO technicians (user_id, city, is_online) VALUES ($1, 'Bengaluru', true)", techID)
+	env.exec(t, "INSERT INTO technicians (user_id, city, is_online, shift_start_minute, shift_end_minute) VALUES ($1, 'Bengaluru', true, 0, 1439)", techID)
 	env.exec(t, "INSERT INTO technician_skills (technician_id, skill_id) VALUES ($1, $2)", techID, skillID)
 
 	// An INELIGIBLE technician: right city and skill but OFFLINE — must not be a candidate.

@@ -221,6 +221,42 @@ func (service *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, err
 	}, nil
 }
 
+// Summary is a booking as it appears in a customer's history.
+type Summary struct {
+	BookingID    uuid.UUID
+	State        State
+	ServiceName  string
+	City         string
+	ScheduledFor *time.Time
+	QuotedTotal  money.Money
+	CreatedAt    time.Time
+}
+
+// ListForCustomer returns a customer's own bookings, newest first.
+func (service *Service) ListForCustomer(ctx context.Context, customerID uuid.UUID) ([]Summary, error) {
+	rows, err := sqlcgen.New(service.pool).ListCustomerBookings(ctx, customerID)
+	if err != nil {
+		return nil, fmt.Errorf("listing customer bookings: %w", err)
+	}
+	summaries := make([]Summary, len(rows))
+	for index, row := range rows {
+		state, err := ParseState(row.State)
+		if err != nil {
+			return nil, err
+		}
+		summaries[index] = Summary{
+			BookingID:    row.ID,
+			State:        state,
+			ServiceName:  row.ServiceName,
+			City:         row.City,
+			ScheduledFor: timePointer(row.ScheduledFor),
+			QuotedTotal:  row.QuotedTotalPaise,
+			CreatedAt:    row.CreatedAt.Time,
+		}
+	}
+	return summaries, nil
+}
+
 // Job is one of a technician's active jobs, with the on-site context and the actions THIS
 // technician may take next (legal-from-state ∩ permitted-for-technician).
 type Job struct {

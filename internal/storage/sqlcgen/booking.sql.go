@@ -228,6 +228,58 @@ func (q *Queries) InsertBookingEvent(ctx context.Context, arg InsertBookingEvent
 	return err
 }
 
+const listCustomerBookings = `-- name: ListCustomerBookings :many
+SELECT
+  b.id, b.state, b.scheduled_for, b.quoted_total_paise, b.created_at,
+  s.name AS service_name,
+  a.city
+FROM bookings b
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE b.customer_id = $1
+ORDER BY b.created_at DESC
+`
+
+type ListCustomerBookingsRow struct {
+	ID               uuid.UUID
+	State            string
+	ScheduledFor     pgtype.Timestamptz
+	QuotedTotalPaise money.Money
+	CreatedAt        pgtype.Timestamptz
+	ServiceName      string
+	City             string
+}
+
+// A customer's own bookings, newest first — their history across every state.
+func (q *Queries) ListCustomerBookings(ctx context.Context, customerID uuid.UUID) ([]ListCustomerBookingsRow, error) {
+	rows, err := q.db.Query(ctx, listCustomerBookings, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCustomerBookingsRow{}
+	for rows.Next() {
+		var i ListCustomerBookingsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.ScheduledFor,
+			&i.QuotedTotalPaise,
+			&i.CreatedAt,
+			&i.ServiceName,
+			&i.City,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTechnicianJobs = `-- name: ListTechnicianJobs :many
 SELECT
   b.id, b.state, b.scheduled_for, b.quoted_total_paise,

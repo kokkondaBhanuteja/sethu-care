@@ -50,6 +50,19 @@ SELECT id, order_id, customer_id, address_id, technician_id, state, quoted_total
   FROM bookings
  WHERE id = $1;
 
+-- name: ListCustomerBookings :many
+-- A customer's own bookings, newest first — their history across every state.
+SELECT
+  b.id, b.state, b.scheduled_for, b.quoted_total_paise, b.created_at,
+  s.name AS service_name,
+  a.city
+FROM bookings b
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE b.customer_id = $1
+ORDER BY b.created_at DESC;
+
 -- name: ListTechnicianJobs :many
 -- A technician's active jobs, with the customer contact and address they need on site.
 -- Active = anything from ASSIGNED through AWAITING_COMPLETION; finished/cancelled jobs drop

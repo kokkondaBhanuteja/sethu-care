@@ -49,6 +49,9 @@ func (handler *Handler) Register(mux *http.ServeMux) {
 		handler.signer.RequireAuth(http.HandlerFunc(handler.get)))
 	mux.Handle("POST /bookings/{id}/transitions",
 		handler.signer.RequireAuth(http.HandlerFunc(handler.transition)))
+	// A customer's own booking history. Authenticated; filtered to the caller.
+	mux.Handle("GET /me/bookings",
+		handler.signer.RequireAuth(http.HandlerFunc(handler.myBookings)))
 	// A technician's own active jobs. TECHNICIAN-only, filtered to the caller.
 	mux.Handle("GET /me/jobs",
 		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.myJobs))))
@@ -250,6 +253,44 @@ func otpPurposeFor(action booking.Action) (verification.Purpose, bool) {
 		return "", false
 	}
 	return "", false
+}
+
+// --- GET /me/bookings -------------------------------------------------------
+
+type summaryResponse struct {
+	BookingID    string     `json:"booking_id"`
+	State        string     `json:"state"`
+	ServiceName  string     `json:"service_name"`
+	City         string     `json:"city"`
+	ScheduledFor *time.Time `json:"scheduled_for,omitempty"`
+	QuotedTotal  string     `json:"quoted_total"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
+func (handler *Handler) myBookings(writer http.ResponseWriter, request *http.Request) {
+	caller, ok := auth.UserFrom(request.Context())
+	if !ok {
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
+		return
+	}
+	summaries, err := handler.bookings.ListForCustomer(request.Context(), caller.ID)
+	if err != nil {
+		writeError(writer, handler.log, err)
+		return
+	}
+	payload := make([]summaryResponse, len(summaries))
+	for index, summary := range summaries {
+		payload[index] = summaryResponse{
+			BookingID:    summary.BookingID.String(),
+			State:        summary.State.String(),
+			ServiceName:  summary.ServiceName,
+			City:         summary.City,
+			ScheduledFor: summary.ScheduledFor,
+			QuotedTotal:  summary.QuotedTotal.Rupees(),
+			CreatedAt:    summary.CreatedAt,
+		}
+	}
+	writeJSON(writer, http.StatusOK, map[string]any{"bookings": payload})
 }
 
 // --- GET /me/jobs -----------------------------------------------------------

@@ -25,7 +25,11 @@ ORDER BY b.created_at;
 --   * below their max-concurrent-jobs limit.
 -- Ranked by acceptance rate then rating — the §5.1 ranking signals we have today.
 WITH job AS (
-  SELECT bi.service_id, a.city
+  SELECT bi.service_id, a.city,
+         -- The minute-of-day the job happens (scheduled time, or now for an immediate job),
+         -- in IST — compared against the technician's shift window below.
+         (EXTRACT(HOUR   FROM COALESCE(b.scheduled_for, now()) AT TIME ZONE 'Asia/Kolkata') * 60
+        + EXTRACT(MINUTE FROM COALESCE(b.scheduled_for, now()) AT TIME ZONE 'Asia/Kolkata'))::int AS job_minute
   FROM bookings b
   JOIN booking_items bi ON bi.booking_id = b.id
   JOIN addresses a      ON a.id = b.address_id
@@ -48,6 +52,7 @@ JOIN job     ON job.city = t.city
 LEFT JOIN active_jobs aj ON aj.technician_id = t.user_id
 WHERE t.is_online
   AND NOT t.on_leave
+  AND job.job_minute BETWEEN t.shift_start_minute AND t.shift_end_minute
   AND COALESCE(aj.count, 0) < t.max_concurrent_jobs
   AND NOT EXISTS (
     SELECT 1
