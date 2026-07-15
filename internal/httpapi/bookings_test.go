@@ -123,6 +123,24 @@ func TestAuthGuards(t *testing.T) {
 	})
 }
 
+// Ownership: a customer may not act on a booking that belongs to someone else, even with a
+// valid token and an action their role can normally perform.
+func TestCustomerCannotActOnAnothersBooking(t *testing.T) {
+	env := newServer(t)
+	alice, address := env.seedCustomerAndAddress(t)
+	variant := env.seedService(t, "599")
+	aliceToken := env.token(t, alice, identity.RoleCustomer)
+
+	body := fmt.Sprintf(`{"address_id":%q,"variant_id":%q,"quantity":1}`, address, variant)
+	id := mustString(t, env.do(t, http.MethodPost, "/bookings", body, aliceToken).json, "booking_id")
+
+	bobToken := env.staffToken(t, identity.RoleCustomer) // a different customer
+	r := env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"CONFIRM"}`, bobToken)
+	if r.code != http.StatusForbidden {
+		t.Errorf("bob confirming alice's booking = %d, want 403; body=%s", r.code, r.body)
+	}
+}
+
 // The error mapping — each domain failure to its status code — now behind auth.
 func TestErrorMapping(t *testing.T) {
 	env := newServer(t)
@@ -137,9 +155,23 @@ func TestErrorMapping(t *testing.T) {
 
 	t.Run("illegal transition -> 422", func(t *testing.T) {
 		id := create()
-		r := env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"ARRIVE"}`, tok)
+		// CONFIRM is a customer-allowed action, so it reaches the state machine. Confirm once
+		// (legal), then again — CONFIRM from CONFIRMED is illegal -> 422, not a role 403.
+		if first := env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"CONFIRM"}`, tok); first.code != http.StatusOK {
+			t.Fatalf("first CONFIRM = %d, want 200; body=%s", first.code, first.body)
+		}
+		r := env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"CONFIRM"}`, tok)
 		if r.code != http.StatusUnprocessableEntity {
 			t.Errorf("illegal transition = %d, want 422; body=%s", r.code, r.body)
+		}
+	})
+
+	t.Run("role not permitted -> 403", func(t *testing.T) {
+		id := create()
+		// SEARCH is admin-only; a customer may not perform it, whatever the state.
+		r := env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"SEARCH"}`, tok)
+		if r.code != http.StatusForbidden {
+			t.Errorf("customer SEARCH = %d, want 403; body=%s", r.code, r.body)
 		}
 	})
 

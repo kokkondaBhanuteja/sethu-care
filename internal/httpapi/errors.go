@@ -43,9 +43,14 @@ func classify(err error) (int, string) {
 
 	var conflict *booking.ConflictError
 	var illegal *booking.IllegalTransitionError
+	var forbidden *booking.ForbiddenError
 	var badReq *badRequestError
 
 	switch {
+	case errors.As(err, &forbidden):
+		// The caller is authenticated but not allowed to perform this action on this booking.
+		return http.StatusForbidden, err.Error()
+
 	case errors.Is(err, booking.ErrBookingNotFound),
 		errors.Is(err, booking.ErrVariantNotFound),
 		errors.Is(err, catalog.ErrServiceNotFound),

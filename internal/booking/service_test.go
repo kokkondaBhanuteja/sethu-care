@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 )
 
@@ -25,7 +26,7 @@ func TestApplyPersistsTransitionEventAndOutboxTogether(t *testing.T) {
 
 	bookingID := seedBooking(t, pool)
 
-	newState, err := svc.Apply(ctx, bookingID, booking.ActionConfirm, booking.TransitionInput{})
+	newState, err := svc.Apply(ctx, bookingID, booking.ActionConfirm, booking.TransitionInput{ActorRole: identity.RoleAdmin})
 	if err != nil {
 		t.Fatalf("Apply(CONFIRM) failed: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestIllegalTransitionWritesNothing(t *testing.T) {
 	bookingID := seedBooking(t, pool) // DRAFT
 
 	// You cannot ARRIVE a booking that was never even confirmed.
-	_, err := svc.Apply(ctx, bookingID, booking.ActionArrive, booking.TransitionInput{})
+	_, err := svc.Apply(ctx, bookingID, booking.ActionArrive, booking.TransitionInput{ActorRole: identity.RoleAdmin})
 
 	var illegal *booking.IllegalTransitionError
 	if !errors.As(err, &illegal) {
@@ -137,7 +138,7 @@ func TestConcurrentTransitionsExactlyOneWins(t *testing.T) {
 			defer wg.Done()
 			<-start // release both at once, to actually contend
 			_, results[index] = svc.Apply(ctx, bookingID, booking.ActionAssign,
-				booking.TransitionInput{AssignTechnician: &tech})
+				booking.TransitionInput{ActorRole: identity.RoleAdmin, AssignTechnician: &tech})
 		}()
 	}
 	close(start)
@@ -180,7 +181,7 @@ func TestApplyOnMissingBookingReturnsNotFound(t *testing.T) {
 	pool := storagetest.NewPool(t, migrationsDir)
 	svc := booking.NewService(pool)
 
-	_, err := svc.Apply(context.Background(), uuid.New(), booking.ActionConfirm, booking.TransitionInput{})
+	_, err := svc.Apply(context.Background(), uuid.New(), booking.ActionConfirm, booking.TransitionInput{ActorRole: identity.RoleAdmin})
 	if !errors.Is(err, booking.ErrBookingNotFound) {
 		t.Fatalf("error = %v, want ErrBookingNotFound", err)
 	}
@@ -192,7 +193,7 @@ func TestApplyOnMissingBookingReturnsNotFound(t *testing.T) {
 
 func mustApply(t *testing.T, svc *booking.Service, id uuid.UUID, action booking.Action) {
 	t.Helper()
-	if _, err := svc.Apply(context.Background(), id, action, booking.TransitionInput{}); err != nil {
+	if _, err := svc.Apply(context.Background(), id, action, booking.TransitionInput{ActorRole: identity.RoleAdmin}); err != nil {
 		t.Fatalf("mustApply(%s): %v", action, err)
 	}
 }

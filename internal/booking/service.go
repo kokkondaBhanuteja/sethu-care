@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
@@ -43,6 +44,19 @@ type ConflictError struct {
 
 func (conflict *ConflictError) Error() string {
 	return fmt.Sprintf("booking %s was modified concurrently; %s did not apply", conflict.BookingID, conflict.Action)
+}
+
+// ForbiddenError means the actor is not allowed to perform this action — either their role
+// cannot do it at all, or it is not their booking to act on. The HTTP layer turns this into
+// a 403.
+type ForbiddenError struct {
+	Role   identity.Role
+	Action Action
+	Reason string
+}
+
+func (forbidden *ForbiddenError) Error() string {
+	return fmt.Sprintf("%s may not %s: %s", forbidden.Role, forbidden.Action, forbidden.Reason)
 }
 
 // Service is the only way to change a booking. It owns the bookings aggregate (ROADMAP
@@ -90,9 +104,9 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 
 	var out Created
 	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
-		q := sqlcgen.New(tx)
+		queries := sqlcgen.New(tx)
 
-		variant, err := q.GetServiceVariant(ctx, in.VariantID)
+		variant, err := queries.GetServiceVariant(ctx, in.VariantID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrVariantNotFound
 		}
@@ -106,7 +120,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 		// The total is computed here, in Money, never taken from the client.
 		lineTotal := variant.BasePricePaise.Mul(int(in.Quantity))
 
-		orderID, err := q.CreateOrder(ctx, sqlcgen.CreateOrderParams{
+		orderID, err := queries.CreateOrder(ctx, sqlcgen.CreateOrderParams{
 			CustomerID: in.CustomerID,
 			TotalPaise: lineTotal,
 		})
@@ -114,7 +128,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 			return fmt.Errorf("creating order: %w", err)
 		}
 
-		booking, err := q.CreateBooking(ctx, sqlcgen.CreateBookingParams{
+		booking, err := queries.CreateBooking(ctx, sqlcgen.CreateBookingParams{
 			OrderID:          orderID,
 			CustomerID:       in.CustomerID,
 			AddressID:        in.AddressID,
@@ -124,7 +138,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 			return fmt.Errorf("creating booking: %w", err)
 		}
 
-		if err := q.CreateBookingItem(ctx, sqlcgen.CreateBookingItemParams{
+		if err := queries.CreateBookingItem(ctx, sqlcgen.CreateBookingItemParams{
 			BookingID:      booking.ID,
 			ServiceID:      variant.ServiceID,
 			VariantID:      in.VariantID,
@@ -143,7 +157,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 		if err != nil {
 			return fmt.Errorf("marshalling booking.created: %w", err)
 		}
-		if err := q.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
+		if err := queries.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
 			AggregateType: "booking",
 			AggregateID:   booking.ID,
 			EventType:     "booking.created",
@@ -207,10 +221,40 @@ func (service *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, err
 
 // TransitionInput carries everything a transition might need beyond the action itself.
 type TransitionInput struct {
-	// Actor is who performed this. Nil for transitions the system made on its own.
+	// Actor is who performed this. Nil for transitions the system made on its own — a nil
+	// actor skips the ownership check (the system is trusted) but still obeys the role rule.
 	Actor *uuid.UUID
+	// ActorRole is the actor's role, used for authorization (see CanPerform).
+	ActorRole identity.Role
 	// AssignTechnician is set only for ASSIGN; ignored otherwise.
 	AssignTechnician *uuid.UUID
+}
+
+// authorize enforces both halves of access control: the role may perform the action at all
+// (CanPerform), AND the actor owns this booking. ADMIN and system (nil actor) bypass
+// ownership; a customer may only touch their own booking; a technician only a job assigned
+// to them.
+func authorize(in TransitionInput, bookingRow sqlcgen.GetBookingRow, action Action) error {
+	if !CanPerform(in.ActorRole, action) {
+		return &ForbiddenError{Role: in.ActorRole, Action: action, Reason: "role is not permitted to perform this action"}
+	}
+	if in.ActorRole == identity.RoleAdmin || in.Actor == nil {
+		return nil
+	}
+	switch in.ActorRole {
+	case identity.RoleCustomer:
+		if bookingRow.CustomerID != *in.Actor {
+			return &ForbiddenError{Role: in.ActorRole, Action: action, Reason: "not your booking"}
+		}
+	case identity.RoleTechnician:
+		if bookingRow.TechnicianID == nil || *bookingRow.TechnicianID != *in.Actor {
+			return &ForbiddenError{Role: in.ActorRole, Action: action, Reason: "booking is not assigned to you"}
+		}
+	case identity.RoleAdmin:
+		// Unreachable: admin returned above. Named so the exhaustive linter is satisfied and
+		// a new role cannot be added without deciding its ownership rule here.
+	}
+	return nil
 }
 
 // Apply moves a booking through one transition, atomically.
@@ -229,9 +273,9 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 	var newState State
 
 	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
-		q := sqlcgen.New(tx)
+		queries := sqlcgen.New(tx)
 
-		current, err := q.GetBookingState(ctx, bookingID)
+		bookingRow, err := queries.GetBooking(ctx, bookingID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrBookingNotFound
 		}
@@ -239,7 +283,13 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			return fmt.Errorf("reading booking: %w", err)
 		}
 
-		from, err := ParseState(current.State)
+		// AUTHORIZE before anything else, and before the pure legality check — an
+		// unauthorized caller should not even learn whether the transition was legal.
+		if err := authorize(in, bookingRow, action); err != nil {
+			return err
+		}
+
+		from, err := ParseState(bookingRow.State)
 		if err != nil {
 			// The database holds a state Go does not know. This should be impossible —
 			// ParseState guards every write path — so if it happens, something bypassed us.
@@ -253,11 +303,11 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 		}
 
 		// THE COMPARE-AND-SWAP. version is the guard: zero rows means someone raced us.
-		rows, err := q.ApplyBookingTransition(ctx, sqlcgen.ApplyBookingTransitionParams{
+		rows, err := queries.ApplyBookingTransition(ctx, sqlcgen.ApplyBookingTransitionParams{
 			ToState:         string(to),
 			TechnicianID:    in.AssignTechnician,
 			ID:              bookingID,
-			ExpectedVersion: current.Version,
+			ExpectedVersion: bookingRow.Version,
 		})
 		if err != nil {
 			return fmt.Errorf("applying transition: %w", err)
@@ -267,7 +317,7 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 		}
 
 		// APPEND-ONLY, same transaction. The log can never disagree with the row above.
-		if err := q.InsertBookingEvent(ctx, sqlcgen.InsertBookingEventParams{
+		if err := queries.InsertBookingEvent(ctx, sqlcgen.InsertBookingEventParams{
 			BookingID:   bookingID,
 			FromState:   string(from),
 			Action:      string(action),
@@ -290,7 +340,7 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			if err != nil {
 				return fmt.Errorf("marshalling outbox payload: %w", err)
 			}
-			if err := q.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
+			if err := queries.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
 				AggregateType: "booking",
 				AggregateID:   bookingID,
 				EventType:     eventType,

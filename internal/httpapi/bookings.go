@@ -156,6 +156,7 @@ func (handler *Handler) transition(writer http.ResponseWriter, request *http.Req
 
 	newState, err := handler.bookings.Apply(request.Context(), id, action, booking.TransitionInput{
 		Actor:            &actor,
+		ActorRole:        caller.Role,
 		AssignTechnician: req.Technician,
 	})
 	if err != nil {
