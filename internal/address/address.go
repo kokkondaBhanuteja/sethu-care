@@ -117,12 +117,12 @@ func (service *Service) List(ctx context.Context, userID uuid.UUID) ([]Address, 
 	if err != nil {
 		return nil, fmt.Errorf("listing addresses: %w", err)
 	}
-	out := make([]Address, len(rows))
-	for i, r := range rows {
-		out[i] = Address{
-			ID: r.ID, Label: r.Label, Line1: r.Line1, Line2: r.Line2,
-			City: r.City, Pincode: r.Pincode, Lat: r.Lat, Lng: r.Lng, IsDefault: r.IsDefault,
+	addresses := make([]Address, len(rows))
+	for index, row := range rows {
+		addresses[index] = Address{
+			ID: row.ID, Label: row.Label, Line1: row.Line1, Line2: row.Line2,
+			City: row.City, Pincode: row.Pincode, Lat: row.Lat, Lng: row.Lng, IsDefault: row.IsDefault,
 		}
 	}
-	return out, nil
+	return addresses, nil
 }

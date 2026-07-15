@@ -34,10 +34,10 @@ func (mode AssignmentMode) Valid() bool {
 
 func (mode AssignmentMode) String() string { return string(mode) }
 
-func ParseAssignmentMode(s string) (AssignmentMode, error) {
-	mode := AssignmentMode(s)
+func ParseAssignmentMode(raw string) (AssignmentMode, error) {
+	mode := AssignmentMode(raw)
 	if !mode.Valid() {
-		return "", fmt.Errorf("catalog: unknown assignment mode %q", s)
+		return "", fmt.Errorf("catalog: unknown assignment mode %q", raw)
 	}
 	return mode, nil
 }
@@ -83,10 +83,10 @@ func (kind QuestionKind) RequiresOptions() bool {
 
 func (kind QuestionKind) String() string { return string(kind) }
 
-func ParseQuestionKind(s string) (QuestionKind, error) {
-	kind := QuestionKind(s)
+func ParseQuestionKind(raw string) (QuestionKind, error) {
+	kind := QuestionKind(raw)
 	if !kind.Valid() {
-		return "", fmt.Errorf("catalog: unknown question kind %q", s)
+		return "", fmt.Errorf("catalog: unknown question kind %q", raw)
 	}
 	return kind, nil
 }

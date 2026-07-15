@@ -63,31 +63,31 @@ type bookingResponse struct {
 	AllowedActions   []string  `json:"allowed_actions,omitempty"`
 }
 
-func (handler *Handler) create(w http.ResponseWriter, r *http.Request) {
-	caller, ok := auth.UserFrom(r.Context())
+func (handler *Handler) create(writer http.ResponseWriter, request *http.Request) {
+	caller, ok := auth.UserFrom(request.Context())
 	if !ok {
-		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 
 	var req createRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	created, err := handler.bookings.Create(r.Context(), booking.CreateInput{
+	created, err := handler.bookings.Create(request.Context(), booking.CreateInput{
 		CustomerID: caller.ID, // the booker is the authenticated caller, never a body field
 		AddressID:  req.AddressID,
 		VariantID:  req.VariantID,
 		Quantity:   req.Quantity,
 	})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, bookingResponse{
+	writeJSON(writer, http.StatusCreated, bookingResponse{
 		BookingID:        created.BookingID,
 		OrderID:          created.OrderID,
 		State:            created.State.String(),
@@ -98,20 +98,20 @@ func (handler *Handler) create(w http.ResponseWriter, r *http.Request) {
 
 // --- GET /bookings/{id} -----------------------------------------------------
 
-func (handler *Handler) get(w http.ResponseWriter, r *http.Request) {
-	id, err := pathUUID(r, "id")
+func (handler *Handler) get(writer http.ResponseWriter, request *http.Request) {
+	id, err := pathUUID(request, "id")
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	view, err := handler.bookings.Get(r.Context(), id)
+	view, err := handler.bookings.Get(request.Context(), id)
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, bookingResponse{
+	writeJSON(writer, http.StatusOK, bookingResponse{
 		BookingID:        view.ID,
 		State:            view.State.String(),
 		QuotedTotalPaise: view.QuotedTotal.Paise(),
@@ -126,44 +126,44 @@ type transitionRequest struct {
 	Technician *uuid.UUID `json:"technician_id,omitempty"`
 }
 
-func (handler *Handler) transition(w http.ResponseWriter, r *http.Request) {
-	id, err := pathUUID(r, "id")
+func (handler *Handler) transition(writer http.ResponseWriter, request *http.Request) {
+	id, err := pathUUID(request, "id")
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
 	var req transitionRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 
 	action := booking.Action(req.Action)
 	if !action.Valid() {
-		writeError(w, handler.log, &badRequestError{msg: "unknown action: " + req.Action})
+		writeError(writer, handler.log, &badRequestError{msg: "unknown action: " + req.Action})
 		return
 	}
 
 	// The actor is the authenticated caller — attributed to the booking_events row, and
 	// forgery-proof, because it comes from the verified token, not a header.
-	caller, ok := auth.UserFrom(r.Context())
+	caller, ok := auth.UserFrom(request.Context())
 	if !ok {
-		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 	actor := caller.ID
 
-	newState, err := handler.bookings.Apply(r.Context(), id, action, booking.TransitionInput{
+	newState, err := handler.bookings.Apply(request.Context(), id, action, booking.TransitionInput{
 		Actor:            &actor,
 		AssignTechnician: req.Technician,
 	})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, bookingResponse{
+	writeJSON(writer, http.StatusOK, bookingResponse{
 		BookingID:      id,
 		State:          newState.String(),
 		AllowedActions: actionStrings(booking.AllowedActions(newState)),
@@ -172,8 +172,8 @@ func (handler *Handler) transition(w http.ResponseWriter, r *http.Request) {
 
 // --- helpers ----------------------------------------------------------------
 
-func pathUUID(r *http.Request, name string) (uuid.UUID, error) {
-	return parseUUID(r.PathValue(name), name)
+func pathUUID(request *http.Request, name string) (uuid.UUID, error) {
+	return parseUUID(request.PathValue(name), name)
 }
 
 func parseUUID(raw, name string) (uuid.UUID, error) {
@@ -184,8 +184,8 @@ func parseUUID(raw, name string) (uuid.UUID, error) {
 	return id, nil
 }
 
-func decodeJSON(_ http.ResponseWriter, r *http.Request, dst any) error {
-	dec := json.NewDecoder(r.Body)
+func decodeJSON(writer http.ResponseWriter, request *http.Request, dst any) error {
+	dec := json.NewDecoder(request.Body)
 	dec.DisallowUnknownFields() // a typo'd field is a 400, not a silently ignored value
 	if err := dec.Decode(dst); err != nil {
 		return &badRequestError{msg: "invalid request body: " + err.Error()}
@@ -194,11 +194,11 @@ func decodeJSON(_ http.ResponseWriter, r *http.Request, dst any) error {
 }
 
 func actionStrings(actions []booking.Action) []string {
-	out := make([]string, len(actions))
-	for i, a := range actions {
-		out[i] = a.String()
+	names := make([]string, len(actions))
+	for index, action := range actions {
+		names[index] = action.String()
 	}
-	return out
+	return names
 }
 
 // writeJSON is the transport layer's local alias for the shared response helper, so handler

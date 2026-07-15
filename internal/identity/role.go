@@ -28,10 +28,10 @@ func (role Role) Valid() bool {
 func (role Role) String() string { return string(role) }
 
 // ParseRole is the only place a raw string may become a Role.
-func ParseRole(s string) (Role, error) {
-	role := Role(s)
+func ParseRole(raw string) (Role, error) {
+	role := Role(raw)
 	if !role.Valid() {
-		return "", fmt.Errorf("identity: unknown role %q", s)
+		return "", fmt.Errorf("identity: unknown role %q", raw)
 	}
 	return role, nil
 }

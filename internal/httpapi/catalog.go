@@ -73,66 +73,66 @@ type serviceResponse struct {
 	Questions        []questionResponse `json:"questions,omitempty"`
 }
 
-func toVariant(v catalog.Variant) variantResponse {
-	return variantResponse{ID: v.ID.String(), Name: v.Name, PricePaise: v.Price.Paise(), PriceRupee: v.Price.Rupees()}
+func toVariant(variant catalog.Variant) variantResponse {
+	return variantResponse{ID: variant.ID.String(), Name: variant.Name, PricePaise: variant.Price.Paise(), PriceRupee: variant.Price.Rupees()}
 }
 
-func toService(s catalog.Service) serviceResponse {
-	variants := make([]variantResponse, len(s.Variants))
-	for i, v := range s.Variants {
-		variants[i] = toVariant(v)
+func toService(service catalog.Service) serviceResponse {
+	variants := make([]variantResponse, len(service.Variants))
+	for index, variant := range service.Variants {
+		variants[index] = toVariant(variant)
 	}
-	questions := make([]questionResponse, len(s.Questions))
-	for i, q := range s.Questions {
-		questions[i] = questionResponse{ID: q.ID.String(), Prompt: q.Prompt, Kind: q.Kind.String(), Options: q.Options, Required: q.Required}
+	questions := make([]questionResponse, len(service.Questions))
+	for index, question := range service.Questions {
+		questions[index] = questionResponse{ID: question.ID.String(), Prompt: question.Prompt, Kind: question.Kind.String(), Options: question.Options, Required: question.Required}
 	}
 	return serviceResponse{
-		ID: s.ID.String(), CategoryID: s.CategoryID.String(), Name: s.Name, Slug: s.Slug,
-		Description: s.Description, AssignmentMode: s.AssignmentMode.String(),
-		EstimatedMinutes: s.EstimatedMinutes, Variants: variants, Questions: questions,
+		ID: service.ID.String(), CategoryID: service.CategoryID.String(), Name: service.Name, Slug: service.Slug,
+		Description: service.Description, AssignmentMode: service.AssignmentMode.String(),
+		EstimatedMinutes: service.EstimatedMinutes, Variants: variants, Questions: questions,
 	}
 }
 
 // ---- read handlers ---------------------------------------------------------
 
-func (handler *CatalogHandler) listCategories(w http.ResponseWriter, r *http.Request) {
-	cats, err := handler.catalog.ListCategories(r.Context())
+func (handler *CatalogHandler) listCategories(writer http.ResponseWriter, request *http.Request) {
+	cats, err := handler.catalog.ListCategories(request.Context())
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	out := make([]categoryResponse, len(cats))
-	for i, c := range cats {
-		out[i] = categoryResponse{ID: c.ID.String(), Name: c.Name, Slug: c.Slug, SortOrder: c.SortOrder}
+	payload := make([]categoryResponse, len(cats))
+	for index, category := range cats {
+		payload[index] = categoryResponse{ID: category.ID.String(), Name: category.Name, Slug: category.Slug, SortOrder: category.SortOrder}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"categories": out})
+	writeJSON(writer, http.StatusOK, map[string]any{"categories": payload})
 }
 
-func (handler *CatalogHandler) listServices(w http.ResponseWriter, r *http.Request) {
-	services, err := handler.catalog.ListServices(r.Context())
+func (handler *CatalogHandler) listServices(writer http.ResponseWriter, request *http.Request) {
+	services, err := handler.catalog.ListServices(request.Context())
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	out := make([]serviceResponse, len(services))
-	for i, s := range services {
-		out[i] = toService(s)
+	payload := make([]serviceResponse, len(services))
+	for index, service := range services {
+		payload[index] = toService(service)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"services": out})
+	writeJSON(writer, http.StatusOK, map[string]any{"services": payload})
 }
 
-func (handler *CatalogHandler) getService(w http.ResponseWriter, r *http.Request) {
-	id, err := pathUUID(r, "id")
+func (handler *CatalogHandler) getService(writer http.ResponseWriter, request *http.Request) {
+	id, err := pathUUID(request, "id")
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	s, err := handler.catalog.GetService(r.Context(), id)
+	s, err := handler.catalog.GetService(request.Context(), id)
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toService(s))
+	writeJSON(writer, http.StatusOK, toService(s))
 }
 
 // ---- admin write handlers --------------------------------------------------
@@ -143,22 +143,22 @@ type createCategoryRequest struct {
 	SortOrder int32  `json:"sort_order"`
 }
 
-func (handler *CatalogHandler) createCategory(w http.ResponseWriter, r *http.Request) {
+func (handler *CatalogHandler) createCategory(writer http.ResponseWriter, request *http.Request) {
 	var req createCategoryRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 	if req.Name == "" || req.Slug == "" {
-		writeError(w, handler.log, &badRequestError{msg: "name and slug are required"})
+		writeError(writer, handler.log, &badRequestError{msg: "name and slug are required"})
 		return
 	}
-	cat, err := handler.catalog.CreateCategory(r.Context(), catalog.NewCategory{Name: req.Name, Slug: req.Slug, SortOrder: req.SortOrder})
+	cat, err := handler.catalog.CreateCategory(request.Context(), catalog.NewCategory{Name: req.Name, Slug: req.Slug, SortOrder: req.SortOrder})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, categoryResponse{ID: cat.ID.String(), Name: cat.Name, Slug: cat.Slug, SortOrder: cat.SortOrder})
+	writeJSON(writer, http.StatusCreated, categoryResponse{ID: cat.ID.String(), Name: cat.Name, Slug: cat.Slug, SortOrder: cat.SortOrder})
 }
 
 type createServiceRequest struct {
@@ -170,15 +170,15 @@ type createServiceRequest struct {
 	EstimatedMinutes int32  `json:"estimated_minutes"`
 }
 
-func (handler *CatalogHandler) createService(w http.ResponseWriter, r *http.Request) {
+func (handler *CatalogHandler) createService(writer http.ResponseWriter, request *http.Request) {
 	var req createServiceRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 	categoryID, err := parseUUID(req.CategoryID, "category_id")
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 	mode := catalog.AssignmentMode(req.AssignmentMode)
@@ -188,15 +188,15 @@ func (handler *CatalogHandler) createService(w http.ResponseWriter, r *http.Requ
 	if req.EstimatedMinutes <= 0 {
 		req.EstimatedMinutes = 60
 	}
-	svc, err := handler.catalog.CreateService(r.Context(), catalog.NewService{
+	svc, err := handler.catalog.CreateService(request.Context(), catalog.NewService{
 		CategoryID: categoryID, Name: req.Name, Slug: req.Slug, Description: req.Description,
 		AssignmentMode: mode, EstimatedMinutes: req.EstimatedMinutes,
 	})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toService(svc))
+	writeJSON(writer, http.StatusCreated, toService(svc))
 }
 
 type createVariantRequest struct {
@@ -204,26 +204,26 @@ type createVariantRequest struct {
 	Price string `json:"price"` // rupees, e.g. "599" or "499.99"
 }
 
-func (handler *CatalogHandler) createVariant(w http.ResponseWriter, r *http.Request) {
-	serviceID, err := pathUUID(r, "id")
+func (handler *CatalogHandler) createVariant(writer http.ResponseWriter, request *http.Request) {
+	serviceID, err := pathUUID(request, "id")
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 	var req createVariantRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 	price, err := money.FromRupees(req.Price)
 	if err != nil {
-		writeError(w, handler.log, &badRequestError{msg: "price must be rupees like \"599\" or \"499.99\""})
+		writeError(writer, handler.log, &badRequestError{msg: "price must be rupees like \"599\" or \"499.99\""})
 		return
 	}
-	v, err := handler.catalog.CreateVariant(r.Context(), catalog.NewVariant{ServiceID: serviceID, Name: req.Name, Price: price})
+	v, err := handler.catalog.CreateVariant(request.Context(), catalog.NewVariant{ServiceID: serviceID, Name: req.Name, Price: price})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toVariant(v))
+	writeJSON(writer, http.StatusCreated, toVariant(v))
 }

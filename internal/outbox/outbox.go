@@ -55,18 +55,18 @@ func NewDispatcher() *Dispatcher {
 }
 
 // Subscribe registers a handler for one event type — e.g. Ledger for "booking.completed".
-func (dispatcher *Dispatcher) Subscribe(eventType string, h Handler) {
+func (dispatcher *Dispatcher) Subscribe(eventType string, handler Handler) {
 	dispatcher.mu.Lock()
 	defer dispatcher.mu.Unlock()
-	dispatcher.byType[eventType] = append(dispatcher.byType[eventType], h)
+	dispatcher.byType[eventType] = append(dispatcher.byType[eventType], handler)
 }
 
 // SubscribeAll registers a handler for EVERY event — for cross-cutting consumers like
 // logging and, later, analytics, which do not care about the specific type.
-func (dispatcher *Dispatcher) SubscribeAll(h Handler) {
+func (dispatcher *Dispatcher) SubscribeAll(handler Handler) {
 	dispatcher.mu.Lock()
 	defer dispatcher.mu.Unlock()
-	dispatcher.all = append(dispatcher.all, h)
+	dispatcher.all = append(dispatcher.all, handler)
 }
 
 // dispatch delivers to every matching handler. If any fails, the event is considered
@@ -74,16 +74,16 @@ func (dispatcher *Dispatcher) SubscribeAll(h Handler) {
 //
 // errors.Join collects every handler's failure rather than stopping at the first: one
 // broken consumer should not hide that a second one also broke.
-func (dispatcher *Dispatcher) dispatch(ctx context.Context, e Event) error {
+func (dispatcher *Dispatcher) dispatch(ctx context.Context, event Event) error {
 	dispatcher.mu.RLock()
-	handlers := make([]Handler, 0, len(dispatcher.all)+len(dispatcher.byType[e.EventType]))
+	handlers := make([]Handler, 0, len(dispatcher.all)+len(dispatcher.byType[event.EventType]))
 	handlers = append(handlers, dispatcher.all...)
-	handlers = append(handlers, dispatcher.byType[e.EventType]...)
+	handlers = append(handlers, dispatcher.byType[event.EventType]...)
 	dispatcher.mu.RUnlock()
 
 	var errs []error
-	for _, h := range handlers {
-		if err := h(ctx, e); err != nil {
+	for _, handler := range handlers {
+		if err := handler(ctx, event); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -100,27 +100,29 @@ type Worker struct {
 }
 
 // NewWorker builds a worker with sensible defaults; the Option functions tune it.
-func NewWorker(pool *pgxpool.Pool, d *Dispatcher, opts ...Option) *Worker {
-	w := &Worker{
+func NewWorker(pool *pgxpool.Pool, dispatcher *Dispatcher, opts ...Option) *Worker {
+	worker := &Worker{
 		pool:       pool,
-		dispatcher: d,
+		dispatcher: dispatcher,
 		batchSize:  100,
 		interval:   time.Second,
 		log:        slog.Default(),
 	}
-	for _, opt := range opts {
-		opt(w)
+	for _, applyOption := range opts {
+		applyOption(worker)
 	}
-	return w
+	return worker
 }
 
 // Option tunes a Worker. This is the functional-options pattern — Go's idiom for optional
 // constructor parameters, since it has no keyword or default arguments.
 type Option func(*Worker)
 
-func WithInterval(d time.Duration) Option { return func(w *Worker) { w.interval = d } }
-func WithBatchSize(n int32) Option        { return func(w *Worker) { w.batchSize = n } }
-func WithLogger(l *slog.Logger) Option    { return func(w *Worker) { w.log = l } }
+func WithInterval(interval time.Duration) Option {
+	return func(worker *Worker) { worker.interval = interval }
+}
+func WithBatchSize(size int32) Option       { return func(worker *Worker) { worker.batchSize = size } }
+func WithLogger(logger *slog.Logger) Option { return func(worker *Worker) { worker.log = logger } }
 
 // Poll processes at most one batch and returns how many events it delivered.
 //
@@ -132,43 +134,43 @@ func (worker *Worker) Poll(ctx context.Context) (int, error) {
 	var delivered int
 
 	err := storage.InTx(ctx, worker.pool, func(tx pgx.Tx) error {
-		q := sqlcgen.New(tx)
+		queries := sqlcgen.New(tx)
 
-		rows, err := q.ClaimUnpublishedOutbox(ctx, worker.batchSize)
+		rows, err := queries.ClaimUnpublishedOutbox(ctx, worker.batchSize)
 		if err != nil {
 			return err
 		}
 
-		for _, r := range rows {
+		for _, row := range rows {
 			event := Event{
-				ID:            r.ID,
-				AggregateType: r.AggregateType,
-				AggregateID:   r.AggregateID,
-				EventType:     r.EventType,
-				Payload:       r.Payload,
-				Attempts:      r.Attempts,
+				ID:            row.ID,
+				AggregateType: row.AggregateType,
+				AggregateID:   row.AggregateID,
+				EventType:     row.EventType,
+				Payload:       row.Payload,
+				Attempts:      row.Attempts,
 			}
 
-			if derr := worker.dispatcher.dispatch(ctx, event); derr != nil {
+			if dispatchErr := worker.dispatcher.dispatch(ctx, event); dispatchErr != nil {
 				// A handler refused. Record the failure and MOVE ON — leaving the row
 				// unpublished so the next poll retries it. We do not return the error,
 				// because that would roll back the whole batch and lose the successful
 				// deliveries alongside it.
-				msg := derr.Error()
-				if ferr := q.RecordOutboxFailure(ctx, sqlcgen.RecordOutboxFailureParams{
-					ID:        r.ID,
-					LastError: &msg,
-				}); ferr != nil {
-					return ferr // a DB failure IS fatal to the batch
+				message := dispatchErr.Error()
+				if failureErr := queries.RecordOutboxFailure(ctx, sqlcgen.RecordOutboxFailureParams{
+					ID:        row.ID,
+					LastError: &message,
+				}); failureErr != nil {
+					return failureErr // a DB failure IS fatal to the batch
 				}
 				worker.log.Warn("outbox delivery failed; will retry",
 					"event_type", event.EventType, "event_id", event.ID,
-					"attempts", event.Attempts+1, "err", msg)
+					"attempts", event.Attempts+1, "err", message)
 				continue
 			}
 
-			if merr := q.MarkOutboxPublished(ctx, r.ID); merr != nil {
-				return merr
+			if publishErr := queries.MarkOutboxPublished(ctx, row.ID); publishErr != nil {
+				return publishErr
 			}
 			delivered++
 		}
@@ -203,7 +205,7 @@ func (worker *Worker) Run(ctx context.Context) error {
 
 func (worker *Worker) drain(ctx context.Context) {
 	for {
-		n, err := worker.Poll(ctx)
+		delivered, err := worker.Poll(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return // shutting down; not an error worth logging
@@ -211,7 +213,7 @@ func (worker *Worker) drain(ctx context.Context) {
 			worker.log.Error("outbox poll failed", "err", err)
 			return
 		}
-		if n < int(worker.batchSize) {
+		if delivered < int(worker.batchSize) {
 			return // a short batch means the backlog is drained
 		}
 	}
@@ -221,12 +223,12 @@ func (worker *Worker) drain(ctx context.Context) {
 // consumers (Notifications, Ledger, Assignment) do not exist yet, so this gives the worker
 // something visible to do and proves the pipeline end to end.
 func LoggingHandler(log *slog.Logger) Handler {
-	return func(_ context.Context, e Event) error {
+	return func(_ context.Context, event Event) error {
 		log.Info("domain event",
-			"event_type", e.EventType,
-			"aggregate", e.AggregateType,
-			"aggregate_id", e.AggregateID,
-			"payload", string(e.Payload))
+			"event_type", event.EventType,
+			"aggregate", event.AggregateType,
+			"aggregate_id", event.AggregateID,
+			"payload", string(event.Payload))
 		return nil
 	}
 }

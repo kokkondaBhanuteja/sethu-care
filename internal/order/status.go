@@ -43,10 +43,10 @@ func (status Status) Valid() bool {
 
 func (status Status) String() string { return string(status) }
 
-func ParseStatus(s string) (Status, error) {
-	status := Status(s)
+func ParseStatus(raw string) (Status, error) {
+	status := Status(raw)
 	if !status.Valid() {
-		return "", fmt.Errorf("order: unknown status %q", s)
+		return "", fmt.Errorf("order: unknown status %q", raw)
 	}
 	return status, nil
 }

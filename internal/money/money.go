@@ -59,28 +59,28 @@ func FromPaise(paise int64) Money { return Money(paise) }
 // Deliberately NOT float64. 499.99 has no exact binary representation, so a float path
 // would drift by a paisa somewhere — in an append-only ledger, where the row can never
 // be edited, only offset by a correcting entry.
-func FromRupees(s string) (Money, error) {
-	t := strings.TrimSpace(s)
-	if t == "" {
+func FromRupees(input string) (Money, error) {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
 		return 0, fmt.Errorf("%w: empty string", ErrInvalidAmount)
 	}
 
 	negative := false
-	switch t[0] {
+	switch trimmed[0] {
 	case '-':
-		negative, t = true, t[1:]
+		negative, trimmed = true, trimmed[1:]
 	case '+':
-		t = t[1:]
+		trimmed = trimmed[1:]
 	}
 
-	whole, frac, _ := strings.Cut(t, ".")
+	whole, frac, _ := strings.Cut(trimmed, ".")
 	if whole == "" && frac == "" {
-		return 0, fmt.Errorf("%w: %q", ErrInvalidAmount, s)
+		return 0, fmt.Errorf("%w: %q", ErrInvalidAmount, input)
 	}
 	// "1.005" is a real amount that we cannot store. Refuse it loudly rather than
 	// rounding silently — a silent half-paisa is exactly how ledgers stop reconciling.
 	if len(frac) > 2 {
-		return 0, fmt.Errorf("%w: %q", ErrSubPaise, s)
+		return 0, fmt.Errorf("%w: %q", ErrSubPaise, input)
 	}
 	if whole == "" {
 		whole = "0"
@@ -89,7 +89,7 @@ func FromRupees(s string) (Money, error) {
 		frac += "0"
 	}
 	if !allDigits(whole) || !allDigits(frac) {
-		return 0, fmt.Errorf("%w: %q", ErrInvalidAmount, s)
+		return 0, fmt.Errorf("%w: %q", ErrInvalidAmount, input)
 	}
 
 	// GO LESSON — fmt.Errorf accepts MULTIPLE %w verbs (Go 1.20+). Both errors stay in
@@ -97,21 +97,21 @@ func FromRupees(s string) (Money, error) {
 	// both work on the same value. Using %v here instead would format the underlying
 	// error into the text and then DROP it from the chain — which is exactly what the
 	// errorlint linter just caught.
-	rupees, err := strconv.ParseInt(whole, 10, 64)
+	wholeRupees, err := strconv.ParseInt(whole, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %q: %w", ErrOverflow, s, err)
+		return 0, fmt.Errorf("%w: %q: %w", ErrOverflow, input, err)
 	}
 	fracPaise, err := strconv.ParseInt(frac, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %q: %w", ErrInvalidAmount, s, err)
+		return 0, fmt.Errorf("%w: %q: %w", ErrInvalidAmount, input, err)
 	}
 
-	total := rupees * 100
-	if rupees != 0 && total/100 != rupees { // multiplication wrapped around
-		return 0, fmt.Errorf("%w: %q", ErrOverflow, s)
+	total := wholeRupees * 100
+	if wholeRupees != 0 && total/100 != wholeRupees { // multiplication wrapped around
+		return 0, fmt.Errorf("%w: %q", ErrOverflow, input)
 	}
 	if total > math.MaxInt64-fracPaise {
-		return 0, fmt.Errorf("%w: %q", ErrOverflow, s)
+		return 0, fmt.Errorf("%w: %q", ErrOverflow, input)
 	}
 	total += fracPaise
 
@@ -125,12 +125,12 @@ func FromRupees(s string) (Money, error) {
 //
 // GO LESSON — the "Must" prefix is a Go convention meaning "panics instead of returning
 // an error". Reserve it for values you control. NEVER call it on user input.
-func MustFromRupees(s string) Money {
-	m, err := FromRupees(s)
+func MustFromRupees(rupees string) Money {
+	amount, err := FromRupees(rupees)
 	if err != nil {
 		panic(err)
 	}
-	return m
+	return amount
 }
 
 // Paise returns the raw amount, for the database and for Razorpay.
@@ -199,11 +199,11 @@ func (amount Money) RequireNonNegative() error {
 
 // Rupees renders the bare number for APIs and CSVs: "499.99".
 func (amount Money) Rupees() string {
-	sign, n := "", int64(amount)
-	if n < 0 {
-		sign, n = "-", -n
+	sign, paise := "", int64(amount)
+	if paise < 0 {
+		sign, paise = "-", -paise
 	}
-	return fmt.Sprintf("%s%d.%02d", sign, n/100, n%100)
+	return fmt.Sprintf("%s%d.%02d", sign, paise/100, paise%100)
 }
 
 // String renders for humans, logs, and admin screens: "₹499.99".
@@ -213,11 +213,11 @@ func (amount Money) Rupees() string {
 // fmt.Printf("%v", someMoney) now prints ₹499.99 with no further wiring.
 func (amount Money) String() string { return "₹" + amount.Rupees() }
 
-func allDigits(s string) bool {
-	for _, r := range s {
-		if r < '0' || r > '9' {
+func allDigits(text string) bool {
+	for _, char := range text {
+		if char < '0' || char > '9' {
 			return false
 		}
 	}
-	return len(s) > 0
+	return len(text) > 0
 }

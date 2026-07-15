@@ -59,9 +59,9 @@ func NewService(pool *pgxpool.Pool) *Service {
 // never appears in a response or a log. This split is why the code lives in a return value
 // and not in the struct.
 func (service *Service) RequestOTP(ctx context.Context, phone string) (string, error) {
-	q := sqlcgen.New(service.pool)
+	queries := sqlcgen.New(service.pool)
 
-	recent, err := q.CountRecentOtpChallenges(ctx, sqlcgen.CountRecentOtpChallengesParams{
+	recent, err := queries.CountRecentOtpChallenges(ctx, sqlcgen.CountRecentOtpChallengesParams{
 		Phone:         phone,
 		Purpose:       "LOGIN",
 		WithinSeconds: otpResendGuard,
@@ -85,7 +85,7 @@ func (service *Service) RequestOTP(ctx context.Context, phone string) (string, e
 		return "", fmt.Errorf("hashing otp: %w", err)
 	}
 
-	if _, err := q.InsertOtpChallenge(ctx, sqlcgen.InsertOtpChallengeParams{
+	if _, err := queries.InsertOtpChallenge(ctx, sqlcgen.InsertOtpChallengeParams{
 		Purpose:     "LOGIN",
 		Phone:       phone,
 		CodeHash:    string(hash),
@@ -102,9 +102,9 @@ func (service *Service) RequestOTP(ctx context.Context, phone string) (string, e
 // login. Staff (TECHNICIAN, ADMIN) are provisioned ahead of time, so an unknown phone is
 // always a new customer.
 func (service *Service) VerifyOTP(ctx context.Context, phone, code string) (User, error) {
-	q := sqlcgen.New(service.pool)
+	queries := sqlcgen.New(service.pool)
 
-	challenge, err := q.GetLiveOtpChallenge(ctx, sqlcgen.GetLiveOtpChallengeParams{
+	challenge, err := queries.GetLiveOtpChallenge(ctx, sqlcgen.GetLiveOtpChallengeParams{
 		Phone:   phone,
 		Purpose: "LOGIN",
 	})
@@ -117,7 +117,7 @@ func (service *Service) VerifyOTP(ctx context.Context, phone, code string) (User
 
 	if challenge.Attempts >= challenge.MaxAttempts {
 		// Burn it so it cannot be hammered further, then refuse.
-		if err := q.ConsumeOtpChallenge(ctx, challenge.ID); err != nil {
+		if err := queries.ConsumeOtpChallenge(ctx, challenge.ID); err != nil {
 			return User{}, fmt.Errorf("consuming exhausted otp: %w", err)
 		}
 		return User{}, ErrOtpTooManyAttempts
@@ -125,22 +125,22 @@ func (service *Service) VerifyOTP(ctx context.Context, phone, code string) (User
 
 	if bcrypt.CompareHashAndPassword([]byte(challenge.CodeHash), []byte(code)) != nil {
 		// Wrong code: count the attempt (so the cap means something) and refuse.
-		if err := q.IncrementOtpAttempts(ctx, challenge.ID); err != nil {
+		if err := queries.IncrementOtpAttempts(ctx, challenge.ID); err != nil {
 			return User{}, fmt.Errorf("recording failed attempt: %w", err)
 		}
 		return User{}, ErrOtpInvalid
 	}
 
 	// Correct. Consume the challenge so the same code can never be replayed.
-	if err := q.ConsumeOtpChallenge(ctx, challenge.ID); err != nil {
+	if err := queries.ConsumeOtpChallenge(ctx, challenge.ID); err != nil {
 		return User{}, fmt.Errorf("consuming otp: %w", err)
 	}
 
-	return service.findOrCreateCustomer(ctx, q, phone)
+	return service.findOrCreateCustomer(ctx, queries, phone)
 }
 
-func (service *Service) findOrCreateCustomer(ctx context.Context, q *sqlcgen.Queries, phone string) (User, error) {
-	existing, err := q.GetUserByPhone(ctx, phone)
+func (service *Service) findOrCreateCustomer(ctx context.Context, queries *sqlcgen.Queries, phone string) (User, error) {
+	existing, err := queries.GetUserByPhone(ctx, phone)
 	switch {
 	case err == nil:
 		role, perr := ParseRole(existing.Role)
@@ -150,7 +150,7 @@ func (service *Service) findOrCreateCustomer(ctx context.Context, q *sqlcgen.Que
 		return User{ID: existing.ID, Phone: existing.Phone, Name: existing.Name, Role: role}, nil
 
 	case errors.Is(err, pgx.ErrNoRows):
-		created, cerr := q.CreateUser(ctx, sqlcgen.CreateUserParams{
+		created, cerr := queries.CreateUser(ctx, sqlcgen.CreateUserParams{
 			Phone: phone,
 			Name:  "", // set later via profile; the column allows empty, not null
 			Role:  string(RoleCustomer),
@@ -165,20 +165,20 @@ func (service *Service) findOrCreateCustomer(ctx context.Context, q *sqlcgen.Que
 	}
 }
 
-// randomCode returns an n-digit numeric code using crypto/rand — NOT math/rand, whose output
-// is predictable and would make codes guessable.
-func randomCode(n int) (string, error) {
+// randomCode returns a numeric code of the given length using crypto/rand — NOT math/rand,
+// whose output is predictable and would make codes guessable.
+func randomCode(length int) (string, error) {
 	const digits = "0123456789"
-	buf := make([]byte, n)
+	buf := make([]byte, length)
 	if _, err := rand.Read(buf); err != nil {
 		return "", fmt.Errorf("generating otp: %w", err)
 	}
-	for i := range buf {
-		buf[i] = digits[int(buf[i])%len(digits)]
+	for index := range buf {
+		buf[index] = digits[int(buf[index])%len(digits)]
 	}
 	return string(buf), nil
 }
 
-func pgTimestamp(t time.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t, Valid: true}
+func pgTimestamp(at time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: at, Valid: true}
 }

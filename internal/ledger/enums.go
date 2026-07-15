@@ -76,10 +76,10 @@ func (kind EntryKind) IsCash() bool {
 
 func (kind EntryKind) String() string { return string(kind) }
 
-func ParseEntryKind(s string) (EntryKind, error) {
-	kind := EntryKind(s)
+func ParseEntryKind(raw string) (EntryKind, error) {
+	kind := EntryKind(raw)
 	if !kind.Valid() {
-		return "", fmt.Errorf("ledger: unknown entry kind %q", s)
+		return "", fmt.Errorf("ledger: unknown entry kind %q", raw)
 	}
 	return kind, nil
 }
@@ -113,10 +113,10 @@ func (method PaymentMethod) Valid() bool {
 
 func (method PaymentMethod) String() string { return string(method) }
 
-func ParsePaymentMethod(s string) (PaymentMethod, error) {
-	method := PaymentMethod(s)
+func ParsePaymentMethod(raw string) (PaymentMethod, error) {
+	method := PaymentMethod(raw)
 	if !method.Valid() {
-		return "", fmt.Errorf("ledger: unknown payment method %q", s)
+		return "", fmt.Errorf("ledger: unknown payment method %q", raw)
 	}
 	return method, nil
 }

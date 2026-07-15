@@ -147,10 +147,10 @@ func AllowedActions(from State) []Action {
 
 // ParseState converts a string from the database into a State, refusing anything unknown.
 // This is the ONLY place a raw string is allowed to become a State.
-func ParseState(s string) (State, error) {
-	state := State(s)
+func ParseState(raw string) (State, error) {
+	state := State(raw)
 	if !state.Valid() {
-		return "", &UnknownStateError{Value: s}
+		return "", &UnknownStateError{Value: raw}
 	}
 	return state, nil
 }

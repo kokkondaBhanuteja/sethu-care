@@ -75,90 +75,90 @@ func (catalog *Catalog) ListCategories(ctx context.Context) ([]Category, error) 
 	if err != nil {
 		return nil, fmt.Errorf("listing categories: %w", err)
 	}
-	out := make([]Category, len(rows))
-	for i, r := range rows {
-		out[i] = Category{ID: r.ID, Name: r.Name, Slug: r.Slug, SortOrder: r.SortOrder}
+	categories := make([]Category, len(rows))
+	for index, row := range rows {
+		categories[index] = Category{ID: row.ID, Name: row.Name, Slug: row.Slug, SortOrder: row.SortOrder}
 	}
-	return out, nil
+	return categories, nil
 }
 
 // ListServices returns every active service with its active variants, assembled from two
 // queries (services + all variants) rather than one query per service.
 func (catalog *Catalog) ListServices(ctx context.Context) ([]Service, error) {
-	q := sqlcgen.New(catalog.pool)
+	queries := sqlcgen.New(catalog.pool)
 
-	serviceRows, err := q.ListActiveServices(ctx)
+	serviceRows, err := queries.ListActiveServices(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing services: %w", err)
 	}
-	variantRows, err := q.ListActiveVariants(ctx)
+	variantRows, err := queries.ListActiveVariants(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing variants: %w", err)
 	}
 
-	byService := make(map[uuid.UUID][]Variant, len(serviceRows))
-	for _, v := range variantRows {
-		byService[v.ServiceID] = append(byService[v.ServiceID], Variant{
-			ID: v.ID, Name: v.Name, Price: v.BasePricePaise,
+	variantsByService := make(map[uuid.UUID][]Variant, len(serviceRows))
+	for _, variantRow := range variantRows {
+		variantsByService[variantRow.ServiceID] = append(variantsByService[variantRow.ServiceID], Variant{
+			ID: variantRow.ID, Name: variantRow.Name, Price: variantRow.BasePricePaise,
 		})
 	}
 
-	out := make([]Service, len(serviceRows))
-	for i, s := range serviceRows {
-		mode, err := ParseAssignmentMode(s.AssignmentMode)
+	services := make([]Service, len(serviceRows))
+	for index, serviceRow := range serviceRows {
+		mode, err := ParseAssignmentMode(serviceRow.AssignmentMode)
 		if err != nil {
 			return nil, err
 		}
-		out[i] = Service{
-			ID: s.ID, CategoryID: s.CategoryID, Name: s.Name, Slug: s.Slug,
-			Description: s.Description, AssignmentMode: mode, EstimatedMinutes: s.EstimatedMinutes,
-			Variants: byService[s.ID],
+		services[index] = Service{
+			ID: serviceRow.ID, CategoryID: serviceRow.CategoryID, Name: serviceRow.Name, Slug: serviceRow.Slug,
+			Description: serviceRow.Description, AssignmentMode: mode, EstimatedMinutes: serviceRow.EstimatedMinutes,
+			Variants: variantsByService[serviceRow.ID],
 		}
 	}
-	return out, nil
+	return services, nil
 }
 
 // GetService returns one service with its variants and its booking-time questions.
 func (catalog *Catalog) GetService(ctx context.Context, id uuid.UUID) (Service, error) {
-	q := sqlcgen.New(catalog.pool)
+	queries := sqlcgen.New(catalog.pool)
 
-	s, err := q.GetService(ctx, id)
+	serviceRow, err := queries.GetService(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Service{}, ErrServiceNotFound
 	}
 	if err != nil {
 		return Service{}, fmt.Errorf("reading service: %w", err)
 	}
-	mode, err := ParseAssignmentMode(s.AssignmentMode)
+	mode, err := ParseAssignmentMode(serviceRow.AssignmentMode)
 	if err != nil {
 		return Service{}, err
 	}
 
-	variantRows, err := q.ListVariantsByService(ctx, id)
+	variantRows, err := queries.ListVariantsByService(ctx, id)
 	if err != nil {
 		return Service{}, fmt.Errorf("reading variants: %w", err)
 	}
 	variants := make([]Variant, len(variantRows))
-	for i, v := range variantRows {
-		variants[i] = Variant{ID: v.ID, Name: v.Name, Price: v.BasePricePaise}
+	for index, variantRow := range variantRows {
+		variants[index] = Variant{ID: variantRow.ID, Name: variantRow.Name, Price: variantRow.BasePricePaise}
 	}
 
-	questionRows, err := q.ListQuestionsByService(ctx, id)
+	questionRows, err := queries.ListQuestionsByService(ctx, id)
 	if err != nil {
 		return Service{}, fmt.Errorf("reading questions: %w", err)
 	}
 	questions := make([]Question, len(questionRows))
-	for i, qq := range questionRows {
-		kind, err := ParseQuestionKind(qq.Kind)
+	for index, questionRow := range questionRows {
+		kind, err := ParseQuestionKind(questionRow.Kind)
 		if err != nil {
 			return Service{}, err
 		}
-		questions[i] = Question{ID: qq.ID, Prompt: qq.Prompt, Kind: kind, Options: qq.Options, Required: qq.IsRequired}
+		questions[index] = Question{ID: questionRow.ID, Prompt: questionRow.Prompt, Kind: kind, Options: questionRow.Options, Required: questionRow.IsRequired}
 	}
 
 	return Service{
-		ID: s.ID, CategoryID: s.CategoryID, Name: s.Name, Slug: s.Slug,
-		Description: s.Description, AssignmentMode: mode, EstimatedMinutes: s.EstimatedMinutes,
+		ID: serviceRow.ID, CategoryID: serviceRow.CategoryID, Name: serviceRow.Name, Slug: serviceRow.Slug,
+		Description: serviceRow.Description, AssignmentMode: mode, EstimatedMinutes: serviceRow.EstimatedMinutes,
 		Variants: variants, Questions: questions,
 	}, nil
 }

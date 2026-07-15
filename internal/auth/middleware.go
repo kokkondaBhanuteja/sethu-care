@@ -28,10 +28,10 @@ func UserFrom(ctx context.Context) (AuthedUser, bool) {
 // one. Wrapping composes: RequireRole(ADMIN) wraps RequireAuth wraps the handler, and the
 // request falls through each layer in order.
 func (signer *Signer) RequireAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		raw, ok := bearerToken(r)
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		raw, ok := bearerToken(request)
 		if !ok {
-			writeAuthError(w, http.StatusUnauthorized, "missing or malformed Authorization header")
+			writeAuthError(writer, http.StatusUnauthorized, "missing or malformed Authorization header")
 			return
 		}
 
@@ -39,36 +39,36 @@ func (signer *Signer) RequireAuth(next http.Handler) http.Handler {
 		if err != nil {
 			// Deliberately vague: never tell the caller whether the token was expired,
 			// tampered, or nonsense.
-			writeAuthError(w, http.StatusUnauthorized, "invalid or expired token")
+			writeAuthError(writer, http.StatusUnauthorized, "invalid or expired token")
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ctxKey{}, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		ctx := context.WithValue(request.Context(), ctxKey{}, user)
+		next.ServeHTTP(writer, request.WithContext(ctx))
 	})
 }
 
 // RequireRole wraps a handler so only a caller with the given role may reach it. It must sit
 // INSIDE RequireAuth (which puts the user in context); on its own it denies everything.
 func RequireRole(role identity.Role, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := UserFrom(r.Context())
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		user, ok := UserFrom(request.Context())
 		if !ok {
-			writeAuthError(w, http.StatusUnauthorized, "authentication required")
+			writeAuthError(writer, http.StatusUnauthorized, "authentication required")
 			return
 		}
 		if user.Role != role {
 			// 403, not 404: the caller is known, they are simply not allowed. Telling them
 			// so is fine — they authenticated.
-			writeAuthError(w, http.StatusForbidden, "requires "+role.String()+" role")
+			writeAuthError(writer, http.StatusForbidden, "requires "+role.String()+" role")
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(writer, request)
 	})
 }
 
-func bearerToken(r *http.Request) (string, bool) {
-	header := r.Header.Get("Authorization")
+func bearerToken(request *http.Request) (string, bool) {
+	header := request.Header.Get("Authorization")
 	if header == "" {
 		return "", false
 	}

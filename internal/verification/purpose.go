@@ -54,10 +54,10 @@ func (purpose Purpose) RequiresBooking() bool {
 
 func (purpose Purpose) String() string { return string(purpose) }
 
-func ParsePurpose(s string) (Purpose, error) {
-	purpose := Purpose(s)
+func ParsePurpose(raw string) (Purpose, error) {
+	purpose := Purpose(raw)
 	if !purpose.Valid() {
-		return "", fmt.Errorf("verification: unknown otp purpose %q", s)
+		return "", fmt.Errorf("verification: unknown otp purpose %q", raw)
 	}
 	return purpose, nil
 }

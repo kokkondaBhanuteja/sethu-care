@@ -63,13 +63,13 @@ func InTx(ctx context.Context, pool *pgxpool.Pool, fn func(pgx.Tx) error) (err e
 	}
 
 	defer func() {
-		if p := recover(); p != nil {
+		if recovered := recover(); recovered != nil {
 			// Best-effort rollback before re-panicking; the panic is the real signal, so a
 			// rollback error here has nowhere useful to go.
-			if rbErr := tx.Rollback(ctx); rbErr != nil && !isTxClosed(rbErr) {
-				_ = rbErr // intentionally discarded: we are already unwinding a panic
+			if rollbackErr := tx.Rollback(ctx); rollbackErr != nil && !isTxClosed(rollbackErr) {
+				_ = rollbackErr // intentionally discarded: we are already unwinding a panic
 			}
-			panic(p)
+			panic(recovered)
 		}
 		if err != nil {
 			if rbErr := tx.Rollback(ctx); rbErr != nil && !isTxClosed(rbErr) {

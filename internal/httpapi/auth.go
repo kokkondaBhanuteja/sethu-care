@@ -43,20 +43,20 @@ type otpResponse struct {
 	DevCode string `json:"dev_code,omitempty"`
 }
 
-func (handler *AuthHandler) requestOTP(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) requestOTP(writer http.ResponseWriter, request *http.Request) {
 	var req otpRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 	if !e164ish.MatchString(req.Phone) {
-		writeError(w, handler.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
+		writeError(writer, handler.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
 		return
 	}
 
-	code, err := handler.identity.RequestOTP(r.Context(), req.Phone)
+	code, err := handler.identity.RequestOTP(request.Context(), req.Phone)
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (handler *AuthHandler) requestOTP(w http.ResponseWriter, r *http.Request) {
 		handler.log.Info("DEV otp issued", "phone", req.Phone, "code", code)
 		resp.DevCode = code
 	}
-	writeJSON(w, http.StatusOK, resp)
+	writeJSON(writer, http.StatusOK, resp)
 }
 
 type verifyRequest struct {
@@ -80,26 +80,26 @@ type verifyResponse struct {
 	Name  string `json:"name"`
 }
 
-func (handler *AuthHandler) verifyOTP(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) verifyOTP(writer http.ResponseWriter, request *http.Request) {
 	var req verifyRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	user, err := handler.identity.VerifyOTP(r.Context(), req.Phone, req.Code)
+	user, err := handler.identity.VerifyOTP(request.Context(), req.Phone, req.Code)
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
 	token, err := handler.signer.Issue(auth.AuthedUser{ID: user.ID, Role: user.Role})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, verifyResponse{Token: token, Role: user.Role.String(), Name: user.Name})
+	writeJSON(writer, http.StatusOK, verifyResponse{Token: token, Role: user.Role.String(), Name: user.Name})
 }
 
 // classifyAuth maps identity/auth errors to status codes. It is called from the shared

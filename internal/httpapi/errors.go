@@ -22,7 +22,7 @@ func (badRequest *badRequestError) Error() string { return badRequest.msg }
 //
 // GO LESSON — errors.As walks the wrapped-error chain, so this works even though the service
 // wraps its errors with fmt.Errorf("...: %w", err) on the way up.
-func writeError(w http.ResponseWriter, log *slog.Logger, err error) {
+func writeError(writer http.ResponseWriter, log *slog.Logger, err error) {
 	status, message := classify(err)
 
 	// 5xx means WE broke. Log the real error server-side, but never send its text to the
@@ -32,7 +32,7 @@ func writeError(w http.ResponseWriter, log *slog.Logger, err error) {
 		message = "internal error"
 	}
 
-	writeJSON(w, status, map[string]string{"error": message})
+	writeJSON(writer, status, map[string]string{"error": message})
 }
 
 func classify(err error) (int, string) {

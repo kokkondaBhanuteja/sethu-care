@@ -37,10 +37,10 @@ type addressResponse struct {
 	IsDefault bool    `json:"is_default"`
 }
 
-func toAddress(a address.Address) addressResponse {
+func toAddress(addr address.Address) addressResponse {
 	return addressResponse{
-		ID: a.ID.String(), Label: a.Label, Line1: a.Line1, Line2: a.Line2, City: a.City,
-		Pincode: a.Pincode, Lat: a.Lat, Lng: a.Lng, IsDefault: a.IsDefault,
+		ID: addr.ID.String(), Label: addr.Label, Line1: addr.Line1, Line2: addr.Line2, City: addr.City,
+		Pincode: addr.Pincode, Lat: addr.Lat, Lng: addr.Lng, IsDefault: addr.IsDefault,
 	}
 }
 
@@ -55,24 +55,24 @@ type createAddressRequest struct {
 	IsDefault bool    `json:"is_default"`
 }
 
-func (handler *AddressHandler) create(w http.ResponseWriter, r *http.Request) {
-	caller, ok := auth.UserFrom(r.Context())
+func (handler *AddressHandler) create(writer http.ResponseWriter, request *http.Request) {
+	caller, ok := auth.UserFrom(request.Context())
 	if !ok {
-		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 
 	var req createAddressRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, handler.log, err)
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
 		return
 	}
 	if req.Line1 == "" || req.City == "" {
-		writeError(w, handler.log, &badRequestError{msg: "line1 and city are required"})
+		writeError(writer, handler.log, &badRequestError{msg: "line1 and city are required"})
 		return
 	}
 
-	addr, err := handler.addresses.Create(r.Context(), address.NewAddress{
+	addr, err := handler.addresses.Create(request.Context(), address.NewAddress{
 		UserID:    caller.ID, // the owner is the caller, never a body field
 		Label:     req.Label,
 		Line1:     req.Line1,
@@ -84,26 +84,26 @@ func (handler *AddressHandler) create(w http.ResponseWriter, r *http.Request) {
 		IsDefault: req.IsDefault,
 	})
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, toAddress(addr))
+	writeJSON(writer, http.StatusCreated, toAddress(addr))
 }
 
-func (handler *AddressHandler) list(w http.ResponseWriter, r *http.Request) {
-	caller, ok := auth.UserFrom(r.Context())
+func (handler *AddressHandler) list(writer http.ResponseWriter, request *http.Request) {
+	caller, ok := auth.UserFrom(request.Context())
 	if !ok {
-		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
-	addrs, err := handler.addresses.List(r.Context(), caller.ID)
+	addrs, err := handler.addresses.List(request.Context(), caller.ID)
 	if err != nil {
-		writeError(w, handler.log, err)
+		writeError(writer, handler.log, err)
 		return
 	}
-	out := make([]addressResponse, len(addrs))
-	for i, a := range addrs {
-		out[i] = toAddress(a)
+	payload := make([]addressResponse, len(addrs))
+	for index, addr := range addrs {
+		payload[index] = toAddress(addr)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"addresses": out})
+	writeJSON(writer, http.StatusOK, map[string]any{"addresses": payload})
 }
