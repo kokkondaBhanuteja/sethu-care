@@ -22,6 +22,7 @@
     "add": "Add address",
     "line1": "Address line 1",
     "city": "City",
+    "pincode": "PIN code",
     "select": "Select an address"
   }
 }

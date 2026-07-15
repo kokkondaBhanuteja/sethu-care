@@ -21,11 +21,14 @@ export function AddressPicker({
   const [adding, setAdding] = useState(false);
   const [line1, setLine1] = useState("");
   const [city, setCity] = useState("Bengaluru");
+  const [pincode, setPincode] = useState("");
+
+  const pincodeValid = /^\d{6}$/.test(pincode);
 
   const onAdd = () => {
-    if (!line1 || !city) return;
+    if (!line1 || !city || !pincodeValid) return;
     createAddress.mutate(
-      { body: { line1, city, lat: 12.97, lng: 77.59, is_default: true } },
+      { body: { line1, city, pincode, lat: 12.97, lng: 77.59, is_default: true } },
       {
         onSuccess: (address) => {
           if (address.id) onSelect(address.id);
@@ -70,7 +73,21 @@ export function AddressPicker({
             placeholder={t("address.city")}
             className="rounded-md border border-outline-variant px-sm py-sm font-body text-body-md text-on-surface"
           />
-          <Button label={t("actions.save")} size="sm" loading={createAddress.isPending} onPress={onAdd} />
+          <TextInput
+            value={pincode}
+            onChangeText={setPincode}
+            keyboardType="number-pad"
+            maxLength={6}
+            placeholder={t("address.pincode")}
+            className="rounded-md border border-outline-variant px-sm py-sm font-body text-body-md text-on-surface"
+          />
+          <Button
+            label={t("actions.save")}
+            size="sm"
+            loading={createAddress.isPending}
+            disabled={!line1 || !city || !pincodeValid}
+            onPress={onAdd}
+          />
         </View>
       ) : (
         <Button label={t("address.add")} variant="secondary" size="sm" onPress={() => setAdding(true)} />
