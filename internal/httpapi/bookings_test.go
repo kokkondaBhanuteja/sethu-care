@@ -16,8 +16,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
@@ -241,10 +243,22 @@ func newServer(t *testing.T) *testEnv {
 
 	mux := http.NewServeMux()
 	httpapi.New(booking.NewService(pool), signer, log).Register(mux)
+	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
+	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return &testEnv{srv: srv, pool: pool, signer: signer}
+}
+
+// staffToken provisions a user of the given role and returns a token for them — for testing
+// routes that need a specific role (e.g. admin-only catalog writes).
+func (e *testEnv) staffToken(t *testing.T, role identity.Role) string {
+	t.Helper()
+	id := uuid.New()
+	e.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'Staff', $3)",
+		id, "+9199"+id.String()[:8], string(role))
+	return e.token(t, id.String(), role)
 }
 
 // token mints a Bearer token for a user id and role.
@@ -316,6 +330,24 @@ func mustString(t *testing.T, m map[string]any, key string) string {
 		t.Fatalf("response field %q missing or not a string in %v", key, m)
 	}
 	return v
+}
+
+func asArray(t *testing.T, v any) []any {
+	t.Helper()
+	a, ok := v.([]any)
+	if !ok {
+		t.Fatalf("expected a json array, got %T: %v", v, v)
+	}
+	return a
+}
+
+func asObject(t *testing.T, v any) map[string]any {
+	t.Helper()
+	m, ok := v.(map[string]any)
+	if !ok {
+		t.Fatalf("expected a json object, got %T: %v", v, v)
+	}
+	return m
 }
 
 func assertAllowed(t *testing.T, body map[string]any, want ...string) {

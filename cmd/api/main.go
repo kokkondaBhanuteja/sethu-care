@@ -21,8 +21,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
@@ -86,13 +88,15 @@ func run() error {
 	}
 	bookingSvc := booking.NewService(pool)
 	identitySvc := identity.NewService(pool)
+	catalogSvc := catalog.New(pool)
+	addressSvc := address.New(pool)
 	// devEcho returns OTP codes in the response since there is no SMS provider yet. OFF unless
 	// SETHU_DEV_OTP=true, so it can never leak in an environment that forgot to disable it.
 	devEcho := env("SETHU_DEV_OTP", "") == "true"
 
 	srv := &http.Server{
 		Addr:              env("ADDR", ":8080"),
-		Handler:           routes(pool, bookingSvc, identitySvc, signer, devEcho, logger),
+		Handler:           routes(pool, bookingSvc, identitySvc, catalogSvc, addressSvc, signer, devEcho, logger),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -136,13 +140,17 @@ func run() error {
 	return nil
 }
 
-func routes(pool *pgxpool.Pool, bookings *booking.Service, ids *identity.Service, signer *auth.Signer, devEcho bool, log *slog.Logger) http.Handler {
+func routes(pool *pgxpool.Pool, bookings *booking.Service, ids *identity.Service, cat *catalog.Catalog, addr *address.Service, signer *auth.Signer, devEcho bool, log *slog.Logger) http.Handler {
 	// Go 1.22+ ServeMux understands method and path patterns natively — no router
 	// library needed yet. We add one only when we actually need middleware chains.
 	mux := http.NewServeMux()
 
 	// Auth endpoints are public — this is where a caller gets a token.
 	httpapi.NewAuthHandler(ids, signer, log, devEcho).Register(mux)
+
+	// Catalog: public browse + admin management. Addresses: customer-owned.
+	httpapi.NewCatalogHandler(cat, signer, log).Register(mux)
+	httpapi.NewAddressHandler(addr, signer, log).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
 	httpapi.New(bookings, signer, log).Register(mux)

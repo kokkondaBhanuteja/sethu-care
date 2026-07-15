@@ -172,7 +172,11 @@ func (h *Handler) transition(w http.ResponseWriter, r *http.Request) {
 // --- helpers ----------------------------------------------------------------
 
 func pathUUID(r *http.Request, name string) (uuid.UUID, error) {
-	id, err := uuid.Parse(r.PathValue(name))
+	return parseUUID(r.PathValue(name), name)
+}
+
+func parseUUID(raw, name string) (uuid.UUID, error) {
+	id, err := uuid.Parse(raw)
 	if err != nil {
 		return uuid.Nil, &badRequestError{msg: "invalid " + name + ": must be a uuid"}
 	}
