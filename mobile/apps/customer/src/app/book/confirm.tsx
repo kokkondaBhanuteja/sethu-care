@@ -25,7 +25,15 @@ export default function Confirm() {
     if (!addressId) return;
     mutate(
       { body: { address_id: addressId, variant_id: variantId, quantity: 1 } },
-      { onSuccess: () => router.replace("/") },
+      {
+        onSuccess: (data) => {
+          if (data.booking_id) {
+            router.replace({ pathname: "/booking/[id]", params: { id: data.booking_id } });
+          } else {
+            router.replace("/");
+          }
+        },
+      },
     );
   };
 

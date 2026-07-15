@@ -15,6 +15,13 @@
     "confirming": "Confirming…",
     "total": "Total {{amount}}"
   },
+  "actions": {
+    "confirm": "Confirm booking"
+  },
+  "history": {
+    "title": "My bookings",
+    "empty": "No bookings yet"
+  },
   "otp": {
     "startTitle": "Share your start code",
     "startHint": "Read this code to your technician to begin.",
