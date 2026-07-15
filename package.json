@@ -1,0 +1,13 @@
+{
+  "name": "sethu-care",
+  "private": true,
+  "description": "Repo-root tooling only (git hooks). The Go backend and the mobile/ pnpm workspace are independent.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.9.5"
+  }
+}
