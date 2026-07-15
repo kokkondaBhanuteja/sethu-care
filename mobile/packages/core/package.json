@@ -15,6 +15,7 @@
   },
   "peerDependencies": {
     "expo-secure-store": "*",
-    "react": "*"
+    "react": "*",
+    "react-native": "*"
   }
 }
