@@ -131,12 +131,12 @@ func TestConcurrentTransitionsExactlyOneWins(t *testing.T) {
 	var wg sync.WaitGroup
 	results := make([]error, 2)
 	start := make(chan struct{})
-	for i := range 2 {
+	for index := range 2 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			<-start // release both at once, to actually contend
-			_, results[i] = svc.Apply(ctx, bookingID, booking.ActionAssign,
+			_, results[index] = svc.Apply(ctx, bookingID, booking.ActionAssign,
 				booking.TransitionInput{AssignTechnician: &tech})
 		}()
 	}
@@ -203,8 +203,8 @@ func isConflict(err error) bool {
 }
 
 func isIllegalTransition(err error) bool {
-	var i *booking.IllegalTransitionError
-	return errors.As(err, &i)
+	var index *booking.IllegalTransitionError
+	return errors.As(err, &index)
 }
 
 func assertCounts(t *testing.T, pool *pgxpool.Pool, id uuid.UUID, wantState string, wantVersion, wantEvents, wantOutbox int64) {

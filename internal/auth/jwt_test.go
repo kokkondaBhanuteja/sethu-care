@@ -24,13 +24,13 @@ func newSigner(t *testing.T) *auth.Signer {
 	return s
 }
 
-func mustIssue(t *testing.T, s *auth.Signer, u auth.AuthedUser) string {
+func mustIssue(t *testing.T, signer *auth.Signer, user auth.AuthedUser) string {
 	t.Helper()
-	tok, err := s.Issue(u)
+	token, err := signer.Issue(user)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
-	return tok
+	return token
 }
 
 func TestNewSignerRejectsWeakSecret(t *testing.T) {

@@ -13,29 +13,29 @@ func TestAddressCreateAndListIsOwnedByTheCaller(t *testing.T) {
 	bob := env.staffToken(t, identity.RoleCustomer)
 
 	// Alice adds two addresses; the FIRST is her default automatically.
-	r := env.do(t, http.MethodPost, "/addresses",
+	resp := env.do(t, http.MethodPost, "/addresses",
 		`{"label":"Home","line1":"12 MG Rd","city":"Bengaluru","pincode":"560001","lat":12.9716,"lng":77.5946}`, alice)
-	if r.code != http.StatusCreated {
-		t.Fatalf("POST /addresses = %d, want 201; body=%s", r.code, r.body)
+	if resp.code != http.StatusCreated {
+		t.Fatalf("POST /addresses = %d, want 201; body=%s", resp.code, resp.body)
 	}
-	if r.json["is_default"] != true {
-		t.Errorf("first address is_default = %v, want true", r.json["is_default"])
+	if resp.json["is_default"] != true {
+		t.Errorf("first address is_default = %v, want true", resp.json["is_default"])
 	}
 
-	r = env.do(t, http.MethodPost, "/addresses",
+	resp = env.do(t, http.MethodPost, "/addresses",
 		`{"label":"Office","line1":"1 Residency Rd","city":"Bengaluru","pincode":"560025","lat":12.97,"lng":77.60}`, alice)
-	if r.json["is_default"] != false {
-		t.Errorf("second address is_default = %v, want false", r.json["is_default"])
+	if resp.json["is_default"] != false {
+		t.Errorf("second address is_default = %v, want false", resp.json["is_default"])
 	}
 
 	// Alice sees both; Bob sees none — ownership isolation.
-	r = env.do(t, http.MethodGet, "/addresses", "", alice)
-	if list, ok := r.json["addresses"].([]any); !ok || len(list) != 2 {
-		t.Errorf("alice sees %v addresses, want 2", r.json["addresses"])
+	resp = env.do(t, http.MethodGet, "/addresses", "", alice)
+	if list, ok := resp.json["addresses"].([]any); !ok || len(list) != 2 {
+		t.Errorf("alice sees %v addresses, want 2", resp.json["addresses"])
 	}
-	r = env.do(t, http.MethodGet, "/addresses", "", bob)
-	if list, ok := r.json["addresses"].([]any); !ok || len(list) != 0 {
-		t.Errorf("bob sees %v addresses, want 0 — a customer must not see another's", r.json["addresses"])
+	resp = env.do(t, http.MethodGet, "/addresses", "", bob)
+	if list, ok := resp.json["addresses"].([]any); !ok || len(list) != 0 {
+		t.Errorf("bob sees %v addresses, want 0 — a customer must not see another's", resp.json["addresses"])
 	}
 }
 
@@ -50,8 +50,8 @@ func TestAddressDefaultSwitchesAndCoordsRoundTrip(t *testing.T) {
 	env.do(t, http.MethodPost, "/addresses",
 		`{"label":"Office","line1":"B","city":"Bengaluru","pincode":"560025","lat":13.01,"lng":77.61,"is_default":true}`, tok)
 
-	r := env.do(t, http.MethodGet, "/addresses", "", tok)
-	list := asArray(t, r.json["addresses"])
+	resp := env.do(t, http.MethodGet, "/addresses", "", tok)
+	list := asArray(t, resp.json["addresses"])
 	if len(list) != 2 {
 		t.Fatalf("want 2 addresses, got %v", list)
 	}
@@ -62,8 +62,8 @@ func TestAddressDefaultSwitchesAndCoordsRoundTrip(t *testing.T) {
 	}
 	// Exactly one default.
 	defaults := 0
-	for _, a := range list {
-		if asObject(t, a)["is_default"] == true {
+	for _, addr := range list {
+		if asObject(t, addr)["is_default"] == true {
 			defaults++
 		}
 	}
@@ -81,31 +81,31 @@ func TestAddressValidation(t *testing.T) {
 	tok := env.staffToken(t, identity.RoleCustomer)
 
 	t.Run("no token -> 401", func(t *testing.T) {
-		if r := env.do(t, http.MethodPost, "/addresses", `{"line1":"A","city":"B","lat":1,"lng":1}`, ""); r.code != http.StatusUnauthorized {
-			t.Errorf("= %d, want 401", r.code)
+		if resp := env.do(t, http.MethodPost, "/addresses", `{"line1":"A","city":"B","lat":1,"lng":1}`, ""); resp.code != http.StatusUnauthorized {
+			t.Errorf("= %d, want 401", resp.code)
 		}
 	})
 
 	t.Run("out-of-range coordinates -> 400", func(t *testing.T) {
-		r := env.do(t, http.MethodPost, "/addresses",
+		resp := env.do(t, http.MethodPost, "/addresses",
 			`{"line1":"A","city":"B","pincode":"560001","lat":999,"lng":77}`, tok)
-		if r.code != http.StatusBadRequest {
-			t.Errorf("= %d, want 400; body=%s", r.code, r.body)
+		if resp.code != http.StatusBadRequest {
+			t.Errorf("= %d, want 400; body=%s", resp.code, resp.body)
 		}
 	})
 
 	t.Run("bad pincode -> 400 (DB CHECK)", func(t *testing.T) {
-		r := env.do(t, http.MethodPost, "/addresses",
+		resp := env.do(t, http.MethodPost, "/addresses",
 			`{"line1":"A","city":"B","pincode":"12","lat":12.97,"lng":77.59}`, tok)
-		if r.code != http.StatusBadRequest {
-			t.Errorf("= %d, want 400; body=%s", r.code, r.body)
+		if resp.code != http.StatusBadRequest {
+			t.Errorf("= %d, want 400; body=%s", resp.code, resp.body)
 		}
 	})
 
 	t.Run("missing line1 -> 400", func(t *testing.T) {
-		r := env.do(t, http.MethodPost, "/addresses", `{"city":"B","pincode":"560001","lat":12.97,"lng":77.59}`, tok)
-		if r.code != http.StatusBadRequest {
-			t.Errorf("= %d, want 400", r.code)
+		resp := env.do(t, http.MethodPost, "/addresses", `{"city":"B","pincode":"560001","lat":12.97,"lng":77.59}`, tok)
+		if resp.code != http.StatusBadRequest {
+			t.Errorf("= %d, want 400", resp.code)
 		}
 	})
 }

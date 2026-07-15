@@ -27,14 +27,14 @@ func TestInTxRollsBackEveryWriteWhenFnErrorsLate(t *testing.T) {
 
 	err := storage.InTx(ctx, pool, func(tx pgx.Tx) error {
 		// Two successful writes to two different tables...
-		if _, e := tx.Exec(ctx,
+		if _, execErr := tx.Exec(ctx,
 			`INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload)
-			 VALUES ($1, 'booking', $1, 'booking.confirmed', '{}')`, id); e != nil {
-			return e
+			 VALUES ($1, 'booking', $1, 'booking.confirmed', '{}')`, id); execErr != nil {
+			return execErr
 		}
-		if _, e := tx.Exec(ctx,
-			`INSERT INTO categories (name, slug) VALUES ('X', $1)`, id.String()); e != nil {
-			return e
+		if _, execErr := tx.Exec(ctx,
+			`INSERT INTO categories (name, slug) VALUES ('X', $1)`, id.String()); execErr != nil {
+			return execErr
 		}
 		// ...then fail. Both writes must vanish.
 		return sentinel
@@ -54,10 +54,10 @@ func TestInTxCommitsEveryWriteOnSuccess(t *testing.T) {
 
 	id := uuid.New()
 	err := storage.InTx(ctx, pool, func(tx pgx.Tx) error {
-		_, e := tx.Exec(ctx,
+		_, execErr := tx.Exec(ctx,
 			`INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload)
 			 VALUES ($1, 'booking', $1, 'booking.confirmed', '{}')`, id)
-		return e
+		return execErr
 	})
 	if err != nil {
 		t.Fatalf("InTx returned error on success path: %v", err)
@@ -80,10 +80,10 @@ func TestInTxRollsBackAndRepanicsOnPanic(t *testing.T) {
 		}()
 		//nolint:errcheck // InTx re-panics below, so its error return is never reached
 		storage.InTx(ctx, pool, func(tx pgx.Tx) error {
-			if _, e := tx.Exec(ctx,
+			if _, execErr := tx.Exec(ctx,
 				`INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload)
-				 VALUES ($1, 'booking', $1, 'x', '{}')`, id); e != nil {
-				t.Logf("insert before panic: %v", e)
+				 VALUES ($1, 'booking', $1, 'x', '{}')`, id); execErr != nil {
+				t.Logf("insert before panic: %v", execErr)
 			}
 			panic("mid-transaction panic")
 		})

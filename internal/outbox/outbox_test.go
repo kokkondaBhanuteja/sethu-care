@@ -27,19 +27,19 @@ func TestPollDeliversAndMarksPublished(t *testing.T) {
 	id := seedEvent(t, pool, "booking.confirmed", `{"hello":"world"}`)
 
 	var got []outbox.Event
-	d := outbox.NewDispatcher()
-	d.Subscribe("booking.confirmed", func(_ context.Context, e outbox.Event) error {
-		got = append(got, e)
+	dispatcher := outbox.NewDispatcher()
+	dispatcher.Subscribe("booking.confirmed", func(_ context.Context, event outbox.Event) error {
+		got = append(got, event)
 		return nil
 	})
 
-	w := outbox.NewWorker(pool, d)
-	n, err := w.Poll(ctx)
+	worker := outbox.NewWorker(pool, dispatcher)
+	delivered, err := worker.Poll(ctx)
 	if err != nil {
 		t.Fatalf("Poll: %v", err)
 	}
-	if n != 1 {
-		t.Fatalf("delivered %d, want 1", n)
+	if delivered != 1 {
+		t.Fatalf("delivered %d, want 1", delivered)
 	}
 	if len(got) != 1 || got[0].EventType != "booking.confirmed" {
 		t.Fatalf("handler got %+v, want one booking.confirmed event", got)
@@ -58,9 +58,9 @@ func TestPollDeliversAndMarksPublished(t *testing.T) {
 
 	// A second poll must find nothing — published rows are gone from the queue.
 	got = nil
-	n, err = w.Poll(ctx)
-	if err != nil || n != 0 || len(got) != 0 {
-		t.Fatalf("second poll delivered %d (err %v); want 0 — a published event must not redeliver", n, err)
+	delivered, err = worker.Poll(ctx)
+	if err != nil || delivered != 0 || len(got) != 0 {
+		t.Fatalf("second poll delivered %d (err %v); want 0 — a published event must not redeliver", delivered, err)
 	}
 }
 
@@ -73,25 +73,25 @@ func TestFailingHandlerRetriesAndDoesNotBlockTheBatch(t *testing.T) {
 	poison := seedEvent(t, pool, "booking.failed", `{}`)
 	healthy := seedEvent(t, pool, "booking.confirmed", `{}`)
 
-	d := outbox.NewDispatcher()
-	d.Subscribe("booking.failed", func(_ context.Context, _ outbox.Event) error {
+	dispatcher := outbox.NewDispatcher()
+	dispatcher.Subscribe("booking.failed", func(_ context.Context, _ outbox.Event) error {
 		return errors.New("consumer is down")
 	})
 	var healthyDelivered int
-	d.Subscribe("booking.confirmed", func(_ context.Context, _ outbox.Event) error {
+	dispatcher.Subscribe("booking.confirmed", func(_ context.Context, _ outbox.Event) error {
 		healthyDelivered++
 		return nil
 	})
 
-	w := outbox.NewWorker(pool, d)
-	n, err := w.Poll(ctx)
+	worker := outbox.NewWorker(pool, dispatcher)
+	delivered, err := worker.Poll(ctx)
 	if err != nil {
 		t.Fatalf("Poll: %v", err)
 	}
 
 	// The healthy event was delivered and published despite its batch-mate failing.
-	if n != 1 || healthyDelivered != 1 {
-		t.Errorf("delivered=%d healthyDelivered=%d, want 1 and 1", n, healthyDelivered)
+	if delivered != 1 || healthyDelivered != 1 {
+		t.Errorf("delivered=%d healthyDelivered=%d, want 1 and 1", delivered, healthyDelivered)
 	}
 	assertPublished(t, pool, healthy, true)
 
@@ -121,14 +121,14 @@ func TestSubscribeAllReceivesEveryEvent(t *testing.T) {
 	seedEvent(t, pool, "booking.completed", `{}`)
 
 	var seen int32
-	d := outbox.NewDispatcher()
-	d.SubscribeAll(func(_ context.Context, _ outbox.Event) error {
+	dispatcher := outbox.NewDispatcher()
+	dispatcher.SubscribeAll(func(_ context.Context, _ outbox.Event) error {
 		atomic.AddInt32(&seen, 1)
 		return nil
 	})
 
-	w := outbox.NewWorker(pool, d)
-	if _, err := w.Poll(ctx); err != nil {
+	worker := outbox.NewWorker(pool, dispatcher)
+	if _, err := worker.Poll(ctx); err != nil {
 		t.Fatal(err)
 	}
 	if seen != 2 {
@@ -145,9 +145,9 @@ func TestSkipLockedPreventsDoubleDelivery(t *testing.T) {
 	ctx := context.Background()
 
 	const total = 50
-	for i := range total {
+	for index := range total {
 		seedEvent(t, pool, "booking.confirmed", `{}`)
-		_ = i
+		_ = index
 	}
 
 	// One shared counter, incremented atomically by whichever worker delivers each event.
@@ -158,31 +158,31 @@ func TestSkipLockedPreventsDoubleDelivery(t *testing.T) {
 	}
 
 	newWorker := func() *outbox.Worker {
-		d := outbox.NewDispatcher()
-		d.Subscribe("booking.confirmed", handler)
-		return outbox.NewWorker(pool, d, outbox.WithBatchSize(7)) // small batches => real contention
+		dispatcher := outbox.NewDispatcher()
+		dispatcher.Subscribe("booking.confirmed", handler)
+		return outbox.NewWorker(pool, dispatcher, outbox.WithBatchSize(7)) // small batches => real contention
 	}
-	a, b := newWorker(), newWorker()
+	workerA, workerB := newWorker(), newWorker()
 
 	var wg sync.WaitGroup
 	start := make(chan struct{})
-	drain := func(w *outbox.Worker) {
+	drain := func(worker *outbox.Worker) {
 		defer wg.Done()
 		<-start
 		for {
-			n, err := w.Poll(ctx)
+			delivered, err := worker.Poll(ctx)
 			if err != nil {
 				t.Errorf("poll: %v", err)
 				return
 			}
-			if n == 0 {
+			if delivered == 0 {
 				return
 			}
 		}
 	}
 	wg.Add(2)
-	go drain(a)
-	go drain(b)
+	go drain(workerA)
+	go drain(workerB)
 	close(start)
 	wg.Wait()
 
@@ -208,23 +208,23 @@ func TestEventSurvivesUntilAHandlerFinallySucceeds(t *testing.T) {
 	seedEvent(t, pool, "booking.assigned", `{}`)
 
 	var calls int32
-	d := outbox.NewDispatcher()
-	d.Subscribe("booking.assigned", func(_ context.Context, _ outbox.Event) error {
+	dispatcher := outbox.NewDispatcher()
+	dispatcher.Subscribe("booking.assigned", func(_ context.Context, _ outbox.Event) error {
 		if atomic.AddInt32(&calls, 1) == 1 {
 			return errors.New("transient blip")
 		}
 		return nil
 	})
 
-	w := outbox.NewWorker(pool, d)
+	worker := outbox.NewWorker(pool, dispatcher)
 
-	n, err := w.Poll(ctx) // first attempt fails
-	if err != nil || n != 0 {
-		t.Fatalf("first poll: delivered %d, err %v; want 0, nil", n, err)
+	delivered, err := worker.Poll(ctx) // first attempt fails
+	if err != nil || delivered != 0 {
+		t.Fatalf("first poll: delivered %d, err %v; want 0, nil", delivered, err)
 	}
-	n, err = w.Poll(ctx) // retry succeeds
-	if err != nil || n != 1 {
-		t.Fatalf("second poll: delivered %d, err %v; want 1, nil", n, err)
+	delivered, err = worker.Poll(ctx) // retry succeeds
+	if err != nil || delivered != 1 {
+		t.Fatalf("second poll: delivered %d, err %v; want 1, nil", delivered, err)
 	}
 	if calls != 2 {
 		t.Errorf("handler called %d times, want 2 (one failure, one success)", calls)
@@ -235,11 +235,11 @@ func TestEventSurvivesUntilAHandlerFinallySucceeds(t *testing.T) {
 func TestRunStopsOnContextCancel(t *testing.T) {
 	pool := storagetest.NewPool(t, migrationsDir)
 
-	w := outbox.NewWorker(pool, outbox.NewDispatcher(), outbox.WithInterval(10*time.Millisecond))
+	worker := outbox.NewWorker(pool, outbox.NewDispatcher(), outbox.WithInterval(10*time.Millisecond))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- w.Run(ctx) }()
+	go func() { done <- worker.Run(ctx) }()
 
 	cancel()
 	select {

@@ -88,23 +88,23 @@ func assertSameSet(t *testing.T, what string, got, want []string) {
 	t.Helper()
 
 	inGot := make(map[string]bool, len(got))
-	for _, v := range got {
-		inGot[v] = true
+	for _, value := range got {
+		inGot[value] = true
 	}
 	inWant := make(map[string]bool, len(want))
-	for _, v := range want {
-		inWant[v] = true
+	for _, value := range want {
+		inWant[value] = true
 	}
 
-	for _, v := range want {
-		if !inGot[v] {
+	for _, value := range want {
+		if !inGot[value] {
 			t.Errorf("%s is MISSING %q — it is declared as a constant but never listed, "+
-				"so nothing downstream will ever test or persist it", what, v)
+				"so nothing downstream will ever test or persist it", what, value)
 		}
 	}
-	for _, v := range got {
-		if !inWant[v] {
-			t.Errorf("%s contains %q, which is not declared as a constant in state.go", what, v)
+	for _, value := range got {
+		if !inWant[value] {
+			t.Errorf("%s contains %q, which is not declared as a constant in state.go", what, value)
 		}
 	}
 }
@@ -114,8 +114,8 @@ func assertSameSet(t *testing.T, what string, got, want []string) {
 // constraint would only match `string` itself and our defined types would not satisfy it.
 func toStrings[T ~string](values []T) []string {
 	out := make([]string, 0, len(values))
-	for _, v := range values {
-		out = append(out, string(v))
+	for _, value := range values {
+		out = append(out, string(value))
 	}
 	return out
 }

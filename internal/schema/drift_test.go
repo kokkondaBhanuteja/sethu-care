@@ -116,8 +116,8 @@ func checkConstraintValues(t *testing.T, pool *pgxpool.Pool, table, column strin
 		if !regexp.MustCompile(`ANY \(ARRAY\[`).MatchString(def) {
 			continue
 		}
-		for _, m := range inArrayValues.FindAllStringSubmatch(def, -1) {
-			values = append(values, m[1])
+		for _, match := range inArrayValues.FindAllStringSubmatch(def, -1) {
+			values = append(values, match[1])
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -130,24 +130,24 @@ func assertSameSet(t *testing.T, what string, got, want []string) {
 	t.Helper()
 
 	gotSet, wantSet := map[string]bool{}, map[string]bool{}
-	for _, v := range got {
-		gotSet[v] = true
+	for _, value := range got {
+		gotSet[value] = true
 	}
-	for _, v := range want {
-		wantSet[v] = true
+	for _, value := range want {
+		wantSet[value] = true
 	}
 
-	for _, v := range want {
-		if !gotSet[v] {
+	for _, value := range want {
+		if !gotSet[value] {
 			t.Errorf("%s: Go declares %q but the DB CHECK does NOT allow it — "+
-				"you added a constant without a migration. The database will reject this value.", what, v)
+				"you added a constant without a migration. The database will reject this value.", what, value)
 		}
 	}
-	for _, v := range got {
-		if !wantSet[v] {
+	for _, value := range got {
+		if !wantSet[value] {
 			t.Errorf("%s: the DB CHECK allows %q but Go has no such constant — "+
 				"you wrote a migration without adding the constant. Nothing in the code can produce "+
-				"or handle this value.", what, v)
+				"or handle this value.", what, value)
 		}
 	}
 
@@ -161,8 +161,8 @@ func assertSameSet(t *testing.T, what string, got, want []string) {
 
 func toStrings[T ~string](values []T) []string {
 	out := make([]string, 0, len(values))
-	for _, v := range values {
-		out = append(out, string(v))
+	for _, value := range values {
+		out = append(out, string(value))
 	}
 	return out
 }

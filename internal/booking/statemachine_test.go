@@ -263,8 +263,8 @@ func TestAllowedActionsIsDeterministic(t *testing.T) {
 		if len(got) != len(first) {
 			t.Fatalf("AllowedActions length changed between calls: %v vs %v", got, first)
 		}
-		for i := range got {
-			if got[i] != first[i] {
+		for index := range got {
+			if got[index] != first[index] {
 				t.Fatalf("AllowedActions order is not deterministic: %v vs %v", got, first)
 			}
 		}

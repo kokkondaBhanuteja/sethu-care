@@ -206,17 +206,17 @@ func TestConcurrentTransitionSurfacesAsConflictOr422(t *testing.T) {
 			codes <- env.do(t, http.MethodPost, "/bookings/"+id+"/transitions", `{"action":"CONFIRM"}`, tok).code
 		}()
 	}
-	a, b := <-codes, <-codes
+	codeA, codeB := <-codes, <-codes
 
 	ok, lost := 0, 0
-	for _, c := range []int{a, b} {
-		switch c {
+	for _, code := range []int{codeA, codeB} {
+		switch code {
 		case http.StatusOK:
 			ok++
 		case http.StatusConflict, http.StatusUnprocessableEntity:
 			lost++
 		default:
-			t.Errorf("unexpected status %d", c)
+			t.Errorf("unexpected status %d", code)
 		}
 	}
 	if ok != 1 || lost != 1 {
@@ -285,21 +285,21 @@ type result struct {
 func (env *testEnv) do(t *testing.T, method, path, body, token string) result {
 	t.Helper()
 
-	var r *http.Request
+	var request *http.Request
 	var err error
 	if body == "" {
-		r, err = http.NewRequest(method, env.srv.URL+path, nil)
+		request, err = http.NewRequest(method, env.srv.URL+path, nil)
 	} else {
-		r, err = http.NewRequest(method, env.srv.URL+path, strings.NewReader(body))
+		request, err = http.NewRequest(method, env.srv.URL+path, strings.NewReader(body))
 	}
 	if err != nil {
 		t.Fatalf("building request: %v", err)
 	}
 	if token != "" {
-		r.Header.Set("Authorization", "Bearer "+token)
+		request.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	resp, err := env.srv.Client().Do(r)
+	resp, err := env.srv.Client().Do(request)
 	if err != nil {
 		t.Fatalf("doing request: %v", err)
 	}
@@ -357,17 +357,17 @@ func assertAllowed(t *testing.T, body map[string]any, want ...string) {
 		t.Fatalf("allowed_actions missing or not an array: %v", body["allowed_actions"])
 	}
 	got := map[string]bool{}
-	for _, a := range raw {
-		if s, ok := a.(string); ok {
-			got[s] = true
+	for _, entry := range raw {
+		if actionName, ok := entry.(string); ok {
+			got[actionName] = true
 		}
 	}
 	if len(got) != len(want) {
 		t.Errorf("allowed_actions = %v, want exactly %v", raw, want)
 	}
-	for _, w := range want {
-		if !got[w] {
-			t.Errorf("allowed_actions %v missing %q", raw, w)
+	for _, wantedAction := range want {
+		if !got[wantedAction] {
+			t.Errorf("allowed_actions %v missing %q", raw, wantedAction)
 		}
 	}
 }
