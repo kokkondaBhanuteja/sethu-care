@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
@@ -32,6 +33,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
@@ -80,9 +82,11 @@ func run() error {
 	// (ops), OTP issuance (verification), billing (ledger), and customer notifications. The
 	// worker drives them all off the one event stream.
 	bookingService := booking.NewService(pool)
+	identityService := identity.NewService(pool)
 	opsService := ops.New(pool, bookingService)
 	verificationService := verification.NewService(pool)
-
+	ledgerService := ledger.NewService(pool)
+	reviewService := reviews.NewService(pool)
 	notificationService := notifications.NewService(pool, logger)
 
 	dispatcher := outbox.NewDispatcher()
@@ -109,7 +113,6 @@ func run() error {
 	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
 	// BILLING: a completed booking records its ledger entry (REVENUE or CASH_CUSTODY). The
 	// payment method rides the event payload from the completion request.
-	ledgerService := ledger.NewService(pool)
 	dispatcher.Subscribe("booking.completed", func(ctx context.Context, event outbox.Event) error {
 		var payload struct {
 			PaymentMethod string `json:"payment_method"`
@@ -118,6 +121,17 @@ func run() error {
 			return fmt.Errorf("decoding booking.completed: %w", err)
 		}
 		return ledgerService.RecordCompletion(ctx, event.AggregateID, ledger.PaymentMethod(payload.PaymentMethod))
+	})
+	// RATINGS: a submitted review updates the technician's rating — the signal the assignment
+	// queue ranks by. Reviews publishes; Identity (which owns technicians) recomputes.
+	dispatcher.Subscribe("review.submitted", func(ctx context.Context, event outbox.Event) error {
+		var payload struct {
+			TechnicianID uuid.UUID `json:"technician_id"`
+		}
+		if err := json.Unmarshal(event.Payload, &payload); err != nil {
+			return fmt.Errorf("decoding review.submitted: %w", err)
+		}
+		return identityService.RecomputeTechnicianRating(ctx, payload.TechnicianID)
 	})
 	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
 
@@ -137,7 +151,6 @@ func run() error {
 		return fmt.Errorf("configuring jwt: %w", err)
 	}
 
-	identityService := identity.NewService(pool)
 	catalogService := catalog.New(pool)
 	addressService := address.New(pool)
 
@@ -147,6 +160,7 @@ func run() error {
 			pool:                pool,
 			bookingService:      bookingService,
 			verificationService: verificationService,
+			reviewService:       reviewService,
 			identityService:     identityService,
 			catalogService:      catalogService,
 			addressService:      addressService,
@@ -220,6 +234,7 @@ type routerDependencies struct {
 	pool                *pgxpool.Pool
 	bookingService      *booking.Service
 	verificationService *verification.Service
+	reviewService       *reviews.Service
 	identityService     *identity.Service
 	catalogService      *catalog.Catalog
 	addressService      *address.Service
@@ -245,7 +260,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
-	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.signer, dependencies.logger).Register(mux)
+	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.reviewService, dependencies.signer, dependencies.logger).Register(mux)
 
 	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)

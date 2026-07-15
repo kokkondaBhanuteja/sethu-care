@@ -37,6 +37,14 @@ UPDATE otp_challenges
    SET consumed_at = now(), updated_at = now()
  WHERE id = $1;
 
+-- name: RecomputeTechnicianRating :exec
+-- Recompute a technician's rating as the average of all their reviews. Idempotent — the
+-- review.submitted consumer can run it as often as the event is delivered.
+UPDATE technicians
+   SET rating = COALESCE((SELECT AVG(rating)::numeric(3, 2) FROM reviews WHERE technician_id = $1), 5.00),
+       updated_at = now()
+ WHERE user_id = $1;
+
 -- name: CountRecentOtpChallenges :one
 -- Rate-limit guard: how many challenges were issued for this phone in the last N seconds.
 SELECT count(*)

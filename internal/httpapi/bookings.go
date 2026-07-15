@@ -16,6 +16,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -24,12 +25,13 @@ import (
 type Handler struct {
 	bookings     *booking.Service
 	verification *verification.Service
+	reviews      *reviews.Service
 	signer       *auth.Signer
 	log          *slog.Logger
 }
 
-func New(bookings *booking.Service, verifier *verification.Service, signer *auth.Signer, log *slog.Logger) *Handler {
-	return &Handler{bookings: bookings, verification: verifier, signer: signer, log: log}
+func New(bookings *booking.Service, verifier *verification.Service, reviewer *reviews.Service, signer *auth.Signer, log *slog.Logger) *Handler {
+	return &Handler{bookings: bookings, verification: verifier, reviews: reviewer, signer: signer, log: log}
 }
 
 // Register mounts the booking endpoints onto mux, each wrapped in the auth it requires. The
@@ -50,6 +52,37 @@ func (handler *Handler) Register(mux *http.ServeMux) {
 	// A technician's own active jobs. TECHNICIAN-only, filtered to the caller.
 	mux.Handle("GET /me/jobs",
 		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.myJobs))))
+	// A customer reviews their completed booking. CUSTOMER-only; ownership checked in the service.
+	mux.Handle("POST /bookings/{id}/review",
+		handler.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(handler.review))))
+}
+
+type reviewRequest struct {
+	Rating  int32  `json:"rating"`
+	Comment string `json:"comment"`
+}
+
+func (handler *Handler) review(writer http.ResponseWriter, request *http.Request) {
+	id, err := pathUUID(request, "id")
+	if err != nil {
+		writeError(writer, handler.log, err)
+		return
+	}
+	caller, ok := auth.UserFrom(request.Context())
+	if !ok {
+		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
+		return
+	}
+	var req reviewRequest
+	if err := decodeJSON(writer, request, &req); err != nil {
+		writeError(writer, handler.log, err)
+		return
+	}
+	if err := handler.reviews.Submit(request.Context(), id, caller.ID, req.Rating, req.Comment); err != nil {
+		writeError(writer, handler.log, err)
+		return
+	}
+	writeJSON(writer, http.StatusCreated, map[string]any{"status": "recorded"})
 }
 
 // --- POST /bookings ---------------------------------------------------------

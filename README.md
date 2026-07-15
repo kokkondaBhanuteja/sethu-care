@@ -247,6 +247,7 @@ server fails loudly on a bind clash (`address already in use`) rather than misbe
 | `GET /bookings/{id}` | any | Current state + the actions legal right now. |
 | `POST /bookings/{id}/transitions` | per-action | Apply an action (`{"action":"CONFIRM"}`). Role + ownership enforced. `VERIFY_START`/`VERIFY_COMPLETION` also take `{"code":"…"}` — the dual OTP. |
 | `GET /me/jobs` | TECHNICIAN | The caller's active jobs, each with customer contact, address, and the actions that technician may take next. |
+| `POST /bookings/{id}/review` | CUSTOMER | Review a completed booking (`{"rating":1-5,"comment":"…"}`). Feeds back into the technician's rating. |
 | `GET /ops/assignment-queue` | ADMIN | Bookings awaiting a technician (SEARCHING/ESCALATED), oldest first. |
 | `GET /ops/bookings/{id}/candidates` | ADMIN | Eligible technicians for a booking (§5.1: city, skill, online, capacity), ranked. |
 | `POST /ops/bookings/{id}/assign` | ADMIN | Assign a technician (`{"technician_id":"…"}`) — the P1 manual-dispatch path. |

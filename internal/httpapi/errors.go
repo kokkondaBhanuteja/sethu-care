@@ -9,6 +9,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 )
 
 // badRequestError is a 400 raised by the transport layer itself — bad JSON, a non-uuid path,
@@ -48,15 +49,26 @@ func classify(err error) (int, string) {
 	var badReq *badRequestError
 
 	switch {
-	case errors.As(err, &forbidden):
+	case errors.As(err, &forbidden),
+		errors.Is(err, reviews.ErrNotYourBooking):
 		// The caller is authenticated but not allowed to perform this action on this booking.
 		return http.StatusForbidden, err.Error()
+
+	case errors.Is(err, reviews.ErrAlreadyReviewed):
+		return http.StatusConflict, err.Error()
+
+	case errors.Is(err, reviews.ErrNotReviewable):
+		return http.StatusUnprocessableEntity, err.Error()
+
+	case errors.Is(err, reviews.ErrInvalidRating):
+		return http.StatusBadRequest, err.Error()
 
 	case errors.Is(err, booking.ErrBookingNotFound),
 		errors.Is(err, booking.ErrVariantNotFound),
 		errors.Is(err, catalog.ErrServiceNotFound),
 		errors.Is(err, catalog.ErrCategoryNotFound),
-		errors.Is(err, ops.ErrTechnicianNotFound):
+		errors.Is(err, ops.ErrTechnicianNotFound),
+		errors.Is(err, reviews.ErrBookingNotFound):
 		return http.StatusNotFound, err.Error()
 
 	case errors.Is(err, address.ErrInvalidCoordinates),

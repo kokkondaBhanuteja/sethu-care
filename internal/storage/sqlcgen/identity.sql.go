@@ -181,3 +181,17 @@ func (q *Queries) InsertOtpChallenge(ctx context.Context, arg InsertOtpChallenge
 	err := row.Scan(&id)
 	return id, err
 }
+
+const recomputeTechnicianRating = `-- name: RecomputeTechnicianRating :exec
+UPDATE technicians
+   SET rating = COALESCE((SELECT AVG(rating)::numeric(3, 2) FROM reviews WHERE technician_id = $1), 5.00),
+       updated_at = now()
+ WHERE user_id = $1
+`
+
+// Recompute a technician's rating as the average of all their reviews. Idempotent — the
+// review.submitted consumer can run it as often as the event is delivered.
+func (q *Queries) RecomputeTechnicianRating(ctx context.Context, technicianID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, recomputeTechnicianRating, technicianID)
+	return err
+}

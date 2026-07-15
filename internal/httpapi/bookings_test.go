@@ -24,6 +24,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -278,8 +279,9 @@ func newServer(t *testing.T) *testEnv {
 
 	bookingService := booking.NewService(pool)
 	verifier := verification.NewService(pool)
+	reviewer := reviews.NewService(pool)
 	mux := http.NewServeMux()
-	httpapi.New(bookingService, verifier, signer, log).Register(mux)
+	httpapi.New(bookingService, verifier, reviewer, signer, log).Register(mux)
 	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
 	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
 	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)

@@ -165,6 +165,16 @@ func (service *Service) findOrCreateCustomer(ctx context.Context, queries *sqlcg
 	}
 }
 
+// RecomputeTechnicianRating recomputes a technician's rating as the average of their reviews.
+// It is the review.submitted consumer, and idempotent: recomputing from the same reviews
+// yields the same average, so an at-least-once redelivery is harmless.
+func (service *Service) RecomputeTechnicianRating(ctx context.Context, technicianID uuid.UUID) error {
+	if err := sqlcgen.New(service.pool).RecomputeTechnicianRating(ctx, technicianID); err != nil {
+		return fmt.Errorf("recomputing technician rating: %w", err)
+	}
+	return nil
+}
+
 // randomCode returns a numeric code of the given length using crypto/rand — NOT math/rand,
 // whose output is predictable and would make codes guessable.
 func randomCode(length int) (string, error) {
