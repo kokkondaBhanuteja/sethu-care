@@ -32,6 +32,11 @@ type Config struct {
 	// FailedBookingCreditPaise is the goodwill credit issued when a booking FAILS (nobody
 	// could be found). Default ₹100.
 	FailedBookingCreditPaise int64
+
+	// UPIVirtualAddress and UPIPayeeName build the customer-facing UPI QR/intent for a
+	// collection (upi://pay?pa=<vpa>&pn=<name>...). The money lands in the company account.
+	UPIVirtualAddress string
+	UPIPayeeName      string
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -58,6 +63,8 @@ func Load() (Config, error) {
 		UsingDevJWTSecret:        usingDevSecret,
 		DevEchoOTP:               os.Getenv("SETHU_DEV_OTP") == "true",
 		FailedBookingCreditPaise: intEnv("SETHU_FAILED_CREDIT_PAISE", 10000),
+		UPIVirtualAddress:        stringEnv("SETHU_UPI_VPA", "sethucare@upi"),
+		UPIPayeeName:             stringEnv("SETHU_UPI_PAYEE", "SETHU-CARE"),
 	}
 	return configuration, nil
 }

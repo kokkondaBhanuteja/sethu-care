@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
-
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
@@ -33,7 +34,8 @@ func NewService(pool *pgxpool.Pool) *Service {
 // paid. It is the booking.completed consumer, so it must be IDEMPOTENT (at-least-once
 // delivery): if the booking is already billed, it does nothing.
 //
-//   - UPI / ONLINE -> REVENUE, attached to the ORDER. The money is in the company account.
+//   - UPI / ONLINE -> a PENDING payment collection (a booking-specific UPI QR). REVENUE is NOT
+//     booked here; it is booked by CaptureUPIPayment when the money actually lands.
 //   - CASH         -> CASH_CUSTODY, attached to the booking AND the technician. They are now
 //     holding company money and owe a deposit (the reconciliation screen tracks the gap).
 //   - a warranty job (quoted total is zero) resolves to no entry at all — there was no payment.
@@ -68,32 +70,38 @@ func (service *Service) RecordCompletion(ctx context.Context, bookingID uuid.UUI
 		return nil
 	}
 
-	methodStr := string(method)
-	orderID := booking.OrderID
-	customerID := booking.CustomerID
-
-	entry := sqlcgen.InsertLedgerEntryParams{
-		AmountPaise: booking.QuotedTotalPaise,
-		CustomerID:  &customerID,
-		Method:      &methodStr,
-	}
+	// CASH lands with the technician, not the company account — record the custody debt now.
 	if method == PaymentCash {
-		// Cash lands with the technician, not the company account.
 		if booking.TechnicianID == nil {
 			return fmt.Errorf("ledger: cash completion for booking %s has no technician", bookingID)
 		}
-		entry.Kind = string(EntryCashCustody)
-		entry.BookingID = &bookingID
-		entry.TechnicianID = booking.TechnicianID
-		entry.Memo = "cash collected on completion"
-	} else {
-		entry.Kind = string(EntryRevenue)
-		entry.OrderID = &orderID
-		entry.Memo = "paid on completion via " + methodStr
+		methodStr := string(PaymentCash)
+		customerID := booking.CustomerID
+		if err := queries.InsertLedgerEntry(ctx, sqlcgen.InsertLedgerEntryParams{
+			Kind:         string(EntryCashCustody),
+			AmountPaise:  booking.QuotedTotalPaise,
+			BookingID:    &bookingID,
+			CustomerID:   &customerID,
+			TechnicianID: booking.TechnicianID,
+			Method:       &methodStr,
+			Memo:         "cash collected on completion",
+		}); err != nil {
+			return fmt.Errorf("recording ledger entry: %w", err)
+		}
+		return nil
 	}
 
-	if err := queries.InsertLedgerEntry(ctx, entry); err != nil {
-		return fmt.Errorf("recording ledger entry: %w", err)
+	// UPI / ONLINE: the customer pays into the company account by scanning a booking-specific
+	// UPI QR. We do NOT book REVENUE here — the money is not ours until it lands. Instead we
+	// open a PENDING collection; REVENUE is booked when CaptureUPIPayment confirms it.
+	_, err = queries.UpsertPendingPayment(ctx, sqlcgen.UpsertPendingPaymentParams{
+		BookingID:   bookingID,
+		OrderID:     booking.OrderID,
+		AmountPaise: booking.QuotedTotalPaise,
+		Reference:   paymentReference(bookingID),
+	})
+	if err != nil {
+		return fmt.Errorf("opening upi collection: %w", err)
 	}
 	return nil
 }
@@ -224,4 +232,112 @@ func timePointer(timestamp pgtype.Timestamptz) *time.Time {
 		return nil
 	}
 	return &timestamp.Time
+}
+
+// ErrPaymentNotFound is returned when a capture or read names a collection that does not exist.
+var ErrPaymentNotFound = errors.New("ledger: payment not found")
+
+// Collection is a UPI payment we are collecting for a booking: the amount, our reference (the
+// UPI `tr`), and where it stands. CustomerID and TechnicianID ride along so a read can be
+// authorized to the owning customer or the assigned technician.
+type Collection struct {
+	Reference    string
+	Amount       money.Money
+	Status       PaymentStatus
+	BookingID    uuid.UUID
+	OrderID      uuid.UUID
+	CustomerID   uuid.UUID
+	TechnicianID *uuid.UUID
+}
+
+// CollectionForBooking returns the UPI collection opened for a booking, for the customer (or the
+// assigned technician) to render the QR. ErrPaymentNotFound if the booking has no collection —
+// it was cash, a warranty job, or is not yet completed.
+func (service *Service) CollectionForBooking(ctx context.Context, bookingID uuid.UUID) (Collection, error) {
+	row, err := sqlcgen.New(service.pool).GetPaymentByBooking(ctx, bookingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Collection{}, ErrPaymentNotFound
+	}
+	if err != nil {
+		return Collection{}, fmt.Errorf("reading collection: %w", err)
+	}
+	return Collection{
+		Reference:    row.Reference,
+		Amount:       row.AmountPaise,
+		Status:       PaymentStatus(row.Status),
+		BookingID:    row.BookingID,
+		OrderID:      row.OrderID,
+		CustomerID:   row.CustomerID,
+		TechnicianID: row.TechnicianID,
+	}, nil
+}
+
+// CaptureUPIPayment records that the customer's UPI payment landed in the company account. It
+// is the money-moved moment: it marks the collection CAPTURED and books REVENUE against the
+// order, atomically. In production the caller is the PSP webhook; in P1 an admin confirms it.
+//
+// Idempotent: a redelivered/duplicate capture (already CAPTURED, or REVENUE already booked)
+// records nothing further.
+func (service *Service) CaptureUPIPayment(ctx context.Context, reference string, providerRef *string) error {
+	queries := sqlcgen.New(service.pool)
+
+	payment, err := queries.GetPaymentByReference(ctx, reference)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrPaymentNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("reading payment: %w", err)
+	}
+	if payment.Status == string(PaymentCaptured) {
+		return nil // already captured
+	}
+
+	booking, err := queries.GetBooking(ctx, payment.BookingID)
+	if err != nil {
+		return fmt.Errorf("reading booking for capture: %w", err)
+	}
+
+	// Mark captured and book REVENUE together — the money-moved record and the ledger cannot
+	// disagree.
+	return storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
+		inTx := queries.WithTx(tx)
+
+		// Guard against double-booking REVENUE if two captures race past the status check.
+		alreadyBooked, err := inTx.CompletionLedgerExists(ctx, sqlcgen.CompletionLedgerExistsParams{
+			OrderID:   &payment.OrderID,
+			BookingID: &payment.BookingID,
+		})
+		if err != nil {
+			return fmt.Errorf("checking existing revenue: %w", err)
+		}
+		if !alreadyBooked {
+			methodStr := string(PaymentUPI)
+			customerID := booking.CustomerID
+			if err := inTx.InsertLedgerEntry(ctx, sqlcgen.InsertLedgerEntryParams{
+				Kind:        string(EntryRevenue),
+				AmountPaise: payment.AmountPaise,
+				OrderID:     &payment.OrderID,
+				CustomerID:  &customerID,
+				Method:      &methodStr,
+				Memo:        "upi payment captured",
+			}); err != nil {
+				return fmt.Errorf("recording revenue: %w", err)
+			}
+		}
+
+		if err := inTx.MarkPaymentCaptured(ctx, sqlcgen.MarkPaymentCapturedParams{
+			Reference:   reference,
+			ProviderRef: providerRef,
+		}); err != nil {
+			return fmt.Errorf("marking captured: %w", err)
+		}
+		return nil
+	})
+}
+
+// paymentReference derives the UPI transaction reference from the booking id — deterministic, so
+// opening a collection is idempotent, and unique, so a capture maps to exactly one booking. It
+// fits inside the UPI `tr` length limit (2 + 32 hex = 34 chars).
+func paymentReference(bookingID uuid.UUID) string {
+	return "SC" + strings.ReplaceAll(bookingID.String(), "-", "")
 }

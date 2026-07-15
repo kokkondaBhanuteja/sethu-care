@@ -14,29 +14,57 @@ import (
 
 const migrationsDir = "../../db/migrations"
 
-// A UPI/online completion records a REVENUE entry against the order; re-running (a redelivery)
-// does not double-bill.
-func TestRecordCompletionRevenueIsIdempotent(t *testing.T) {
+// A UPI completion opens a PENDING collection and books NO revenue yet — the money is not the
+// company's until it lands. Capturing the payment then books exactly one REVENUE entry, and a
+// redelivered completion or duplicate capture does not double-bill.
+func TestUPICompletionCollectsThenCaptures(t *testing.T) {
 	pool := storagetest.NewPool(t, migrationsDir)
 	ctx := context.Background()
 	ledgerService := ledger.NewService(pool)
 
 	bookingID, orderID, _ := seedCompletedBooking(t, pool, "599")
 
+	// Completion opens the collection; a redelivery must not open a second.
 	if err := ledgerService.RecordCompletion(ctx, bookingID, ledger.PaymentUPI); err != nil {
 		t.Fatalf("RecordCompletion: %v", err)
 	}
-	// Redelivery: at-least-once means this can be called again. It must NOT add a second row.
 	if err := ledgerService.RecordCompletion(ctx, bookingID, ledger.PaymentUPI); err != nil {
 		t.Fatalf("second RecordCompletion: %v", err)
 	}
+	// No REVENUE yet — the customer has not paid.
+	if _, _, count := revenueForOrder(t, pool, orderID); count != 0 {
+		t.Fatalf("REVENUE rows before capture = %d, want 0 (money has not landed)", count)
+	}
+	collection, err := ledgerService.CollectionForBooking(ctx, bookingID)
+	if err != nil {
+		t.Fatalf("CollectionForBooking: %v", err)
+	}
+	if collection.Status != ledger.PaymentPending || collection.Amount.Paise() != 59900 {
+		t.Fatalf("collection = (%s, %d), want (PENDING, 59900)", collection.Status, collection.Amount.Paise())
+	}
 
+	// The money lands: capture books REVENUE. A duplicate capture must not double-bill.
+	if err := ledgerService.CaptureUPIPayment(ctx, collection.Reference, nil); err != nil {
+		t.Fatalf("CaptureUPIPayment: %v", err)
+	}
+	if err := ledgerService.CaptureUPIPayment(ctx, collection.Reference, nil); err != nil {
+		t.Fatalf("second CaptureUPIPayment: %v", err)
+	}
 	kind, amount, count := revenueForOrder(t, pool, orderID)
 	if count != 1 {
-		t.Fatalf("REVENUE rows for order = %d, want exactly 1 (idempotent)", count)
+		t.Fatalf("REVENUE rows after capture = %d, want exactly 1 (idempotent)", count)
 	}
 	if kind != "REVENUE" || amount != 59900 {
 		t.Errorf("entry = (%s, %d), want (REVENUE, 59900)", kind, amount)
+	}
+
+	// The collection is now CAPTURED.
+	captured, err := ledgerService.CollectionForBooking(ctx, bookingID)
+	if err != nil {
+		t.Fatalf("CollectionForBooking after capture: %v", err)
+	}
+	if captured.Status != ledger.PaymentCaptured {
+		t.Errorf("status after capture = %s, want CAPTURED", captured.Status)
 	}
 }
 

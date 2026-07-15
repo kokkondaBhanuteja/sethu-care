@@ -120,3 +120,29 @@ func ParsePaymentMethod(raw string) (PaymentMethod, error) {
 	}
 	return method, nil
 }
+
+// PaymentStatus is where a UPI collection stands. It is not the money itself — that is the
+// ledger — but the state of the request we put to the customer.
+type PaymentStatus string
+
+const (
+	// PaymentPending — the QR has been generated; we are waiting for the customer to pay.
+	PaymentPending PaymentStatus = "PENDING"
+
+	// PaymentCaptured — the money landed in the company account; REVENUE is booked.
+	PaymentCaptured PaymentStatus = "CAPTURED"
+)
+
+func AllPaymentStatuses() []PaymentStatus {
+	return []PaymentStatus{PaymentPending, PaymentCaptured}
+}
+
+func (status PaymentStatus) Valid() bool {
+	switch status {
+	case PaymentPending, PaymentCaptured:
+		return true
+	}
+	return false
+}
+
+func (status PaymentStatus) String() string { return string(status) }

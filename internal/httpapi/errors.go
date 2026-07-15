@@ -19,6 +19,13 @@ type badRequestError struct{ msg string }
 
 func (badRequest *badRequestError) Error() string { return badRequest.msg }
 
+// forbiddenError is a 403 raised by the transport layer for an authorization rule that depends
+// on the request's own data (e.g. this caller is neither the booking's customer nor its
+// assigned technician), as opposed to a role gate the middleware already enforces.
+type forbiddenError struct{ msg string }
+
+func (forbidden *forbiddenError) Error() string { return forbidden.msg }
+
 // writeError is the ONE place domain errors become HTTP status codes. Centralising it means
 // a new error type is mapped once, here, rather than in every handler — and no handler can
 // accidentally leak an internal error's text to the client.
@@ -47,10 +54,12 @@ func classify(err error) (int, string) {
 	var conflict *booking.ConflictError
 	var illegal *booking.IllegalTransitionError
 	var forbidden *booking.ForbiddenError
+	var transportForbidden *forbiddenError
 	var badReq *badRequestError
 
 	switch {
 	case errors.As(err, &forbidden),
+		errors.As(err, &transportForbidden),
 		errors.Is(err, reviews.ErrNotYourBooking),
 		errors.Is(err, ledger.ErrNotYourCustody):
 		// The caller is authenticated but not allowed to perform this action on this booking.
@@ -61,6 +70,9 @@ func classify(err error) (int, string) {
 
 	case errors.Is(err, ledger.ErrNoCustody):
 		return http.StatusUnprocessableEntity, err.Error()
+
+	case errors.Is(err, ledger.ErrPaymentNotFound):
+		return http.StatusNotFound, err.Error()
 
 	case errors.Is(err, reviews.ErrAlreadyReviewed):
 		return http.StatusConflict, err.Error()

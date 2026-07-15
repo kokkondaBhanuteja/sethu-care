@@ -287,6 +287,7 @@ func newServer(t *testing.T) *testEnv {
 	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
 	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
 	httpapi.NewCashHandler(ledger.NewService(pool), signer, log).Register(mux)
+	httpapi.NewPaymentHandler(ledger.NewService(pool), signer, "sethucare@upi", "SETHU-CARE", log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

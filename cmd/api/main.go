@@ -174,6 +174,8 @@ func run() error {
 			opsService:          opsService,
 			signer:              signer,
 			devEchoOTP:          settings.DevEchoOTP,
+			upiVPA:              settings.UPIVirtualAddress,
+			upiPayee:            settings.UPIPayeeName,
 			logger:              logger,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -253,6 +255,8 @@ type routerDependencies struct {
 	opsService          *ops.Service
 	signer              *auth.Signer
 	devEchoOTP          bool
+	upiVPA              string
+	upiPayee            string
 	logger              *slog.Logger
 }
 
@@ -271,6 +275,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	// Ops console: the manual-assignment queue (admin-only).
 	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
 	httpapi.NewCashHandler(dependencies.ledgerService, dependencies.signer, dependencies.logger).Register(mux)
+	httpapi.NewPaymentHandler(dependencies.ledgerService, dependencies.signer, dependencies.upiVPA, dependencies.upiPayee, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
 	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.reviewService, dependencies.signer, dependencies.logger).Register(mux)

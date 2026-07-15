@@ -47,6 +47,7 @@ func TestEveryEnumColumnMatchesItsGoConstants(t *testing.T) {
 		{"orders", "status", toStrings(order.AllStatuses())},
 		{"ledger_entries", "kind", toStrings(ledger.AllEntryKinds())},
 		{"ledger_entries", "method", toStrings(ledger.AllPaymentMethods())},
+		{"payments", "status", toStrings(ledger.AllPaymentStatuses())},
 		{"otp_challenges", "purpose", toStrings(verification.AllPurposes())},
 	}
 

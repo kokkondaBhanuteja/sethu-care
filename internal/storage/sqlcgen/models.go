@@ -136,6 +136,18 @@ type Outbox struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type Payment struct {
+	ID          uuid.UUID
+	BookingID   uuid.UUID
+	OrderID     uuid.UUID
+	AmountPaise money.Money
+	Reference   string
+	Status      string
+	ProviderRef *string
+	CreatedAt   pgtype.Timestamptz
+	CapturedAt  pgtype.Timestamptz
+}
+
 type ProductModel struct {
 	ID             uuid.UUID
 	CategoryID     uuid.UUID
