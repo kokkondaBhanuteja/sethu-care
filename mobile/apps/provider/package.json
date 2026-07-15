@@ -14,6 +14,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.6",
     "@sethu/api-client": "workspace:*",
+    "@sethu/core": "workspace:*",
     "@sethu/domain": "workspace:*",
     "@sethu/i18n": "workspace:*",
     "@sethu/tokens": "workspace:*",

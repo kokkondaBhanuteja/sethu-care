@@ -181,6 +181,9 @@ importers:
       '@sethu/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@sethu/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@sethu/domain':
         specifier: workspace:*
         version: link:../../packages/domain
