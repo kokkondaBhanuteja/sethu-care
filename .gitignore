@@ -15,3 +15,7 @@ admin/.next/
 
 #design files temporary
 stitch_swiftfix_premium_services/
+
+# Root tooling (husky/lint-staged)
+/node_modules/
+/package-lock.json

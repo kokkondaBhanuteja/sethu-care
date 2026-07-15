@@ -1,0 +1,58 @@
+# Move to .github/workflows/backend.yml
+name: backend
+
+on:
+  push:
+    branches: [developer, main]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "db/**"
+      - "api/**"
+      - ".golangci.yml"
+      - "Makefile"
+      - "sqlc.yaml"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "db/**"
+      - "api/**"
+      - ".golangci.yml"
+      - "Makefile"
+      - "sqlc.yaml"
+      - ".github/workflows/backend.yml"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      # golangci-lint installed directly (v2, matching .golangci.yml) instead of
+      # golangci/golangci-lint-action, which pinned the now-removed Node 20 runtime and
+      # shipped golangci-lint v1 built with Go 1.24 — too old for go 1.26.5 in go.mod.
+      - name: Lint (golangci-lint v2, incl. depguard dependency rules)
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+          golangci-lint run
+
+      - name: OpenAPI contract is up to date (drift guard)
+        run: |
+          go run ./cmd/genopenapi > /tmp/openapi.gen.yaml
+          diff -u api/openapi.yaml /tmp/openapi.gen.yaml \
+            || (echo "::error::api/openapi.yaml is stale — run 'make openapi' and commit." && exit 1)
+
+      - name: Test (race detector; testcontainers use the runner's Docker)
+        run: go test -race ./...

@@ -83,7 +83,11 @@ func run() error {
 	// (ops), OTP issuance (verification), billing (ledger), and customer notifications. The
 	// worker drives them all off the one event stream.
 	bookingService := booking.NewService(pool)
-	identityService := identity.NewService(pool)
+	var identityOptions []identity.Option
+	if settings.DemoPhone != "" && settings.DemoOTP != "" {
+		identityOptions = append(identityOptions, identity.WithDemoAccount(settings.DemoPhone, settings.DemoOTP))
+	}
+	identityService := identity.NewService(pool, identityOptions...)
 	opsService := ops.New(pool, bookingService)
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
@@ -250,5 +254,21 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		response.JSON(writer, statusCode, status)
 	})
 
-	return mux
+	// CORS so the web surfaces (admin dashboard, local web previews) can call the API from a
+	// different origin. The API is Bearer-token (no cookies), so a wildcard origin is safe; a
+	// production deployment should restrict it to known origins via config.
+	return withCORS(mux)
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		if request.Method == http.MethodOptions {
+			writer.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(writer, request)
+	})
 }

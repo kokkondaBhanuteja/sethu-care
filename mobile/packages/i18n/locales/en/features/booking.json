@@ -1,0 +1,30 @@
+{
+  "status": {
+    "pending": "Pending",
+    "searching": "Finding a technician",
+    "assigned": "Technician assigned",
+    "enRoute": "On the way",
+    "arrived": "Arrived",
+    "inProgress": "In progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Couldn't be assigned"
+  },
+  "book": {
+    "cta": "Book now",
+    "confirming": "Confirming…",
+    "total": "Total {{amount}}"
+  },
+  "actions": {
+    "confirm": "Confirm booking"
+  },
+  "history": {
+    "title": "My bookings",
+    "empty": "No bookings yet"
+  },
+  "otp": {
+    "startTitle": "Share your start code",
+    "startHint": "Read this code to your technician to begin.",
+    "completionTitle": "Share your completion code"
+  }
+}

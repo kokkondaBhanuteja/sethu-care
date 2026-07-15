@@ -160,6 +160,39 @@ func TestCodeIsStoredHashedNotPlaintext(t *testing.T) {
 	}
 }
 
+// The App-Review demo number bypasses the real OTP: RequestOTP issues the fixed code without a DB
+// write, VerifyOTP accepts only that code, and the provisioned role flows through. Other numbers
+// are unaffected.
+func TestDemoAccountBypassesOTP(t *testing.T) {
+	pool := storagetest.NewPool(t, migrationsDir)
+	const demoPhone = "+919000000000"
+	const demoCode = "000000"
+	service := identity.NewService(pool, identity.WithDemoAccount(demoPhone, demoCode))
+	ctx := context.Background()
+
+	// Pre-provision the demo number as a technician (the reviewer exercises the provider app).
+	exec(t, pool, "INSERT INTO users (phone, name, role) VALUES ($1, 'Demo Tech', 'TECHNICIAN')", demoPhone)
+
+	code, err := service.RequestOTP(ctx, demoPhone)
+	if err != nil || code != demoCode {
+		t.Fatalf("RequestOTP demo = (%q, %v), want (%q, nil)", code, err, demoCode)
+	}
+	if _, err := service.VerifyOTP(ctx, demoPhone, "111111"); !errors.Is(err, identity.ErrOtpInvalid) {
+		t.Errorf("wrong demo code err = %v, want ErrOtpInvalid", err)
+	}
+	user, err := service.VerifyOTP(ctx, demoPhone, demoCode)
+	if err != nil {
+		t.Fatalf("VerifyOTP demo: %v", err)
+	}
+	if user.Role != identity.RoleTechnician {
+		t.Errorf("demo user role = %s, want TECHNICIAN", user.Role)
+	}
+	// A non-demo phone is unaffected — no live challenge, so invalid.
+	if _, err := service.VerifyOTP(ctx, "+919111111111", demoCode); !errors.Is(err, identity.ErrOtpInvalid) {
+		t.Errorf("non-demo verify err = %v, want ErrOtpInvalid", err)
+	}
+}
+
 // ---------------------------------------------------------------------------
 
 func newService(t *testing.T) (*identity.Service, *pgxpool.Pool) {

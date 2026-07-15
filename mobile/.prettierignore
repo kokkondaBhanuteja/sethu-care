@@ -1,0 +1,14 @@
+# Dependencies & build output
+node_modules
+.expo
+.next
+.turbo
+dist
+web-build
+
+# Generated code — never hand-formatted (owned by @hey-api/openapi-ts)
+**/src/generated
+
+# Lockfiles & data
+pnpm-lock.yaml
+*.md

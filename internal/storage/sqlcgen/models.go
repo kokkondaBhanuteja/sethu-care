@@ -275,6 +275,7 @@ type User struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	Version   int64
+	DeletedAt pgtype.Timestamptz
 }
 
 type WorkPhoto struct {

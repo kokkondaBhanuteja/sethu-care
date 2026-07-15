@@ -43,6 +43,11 @@ type Config struct {
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
+
+	// DemoPhone / DemoOTP enable a fixed bypass code for one reserved number, so App Store review
+	// can log in without a real SMS. Both empty = disabled. Never point at a real user's phone.
+	DemoPhone string
+	DemoOTP   string
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -74,6 +79,8 @@ func Load() (Config, error) {
 		CloudinaryCloudName:      os.Getenv("CLOUDINARY_CLOUD_NAME"),
 		CloudinaryAPIKey:         os.Getenv("CLOUDINARY_API_KEY"),
 		CloudinaryAPISecret:      os.Getenv("CLOUDINARY_API_SECRET"),
+		DemoPhone:                os.Getenv("SETHU_DEMO_PHONE"),
+		DemoOTP:                  os.Getenv("SETHU_DEMO_OTP"),
 	}
 	return configuration, nil
 }

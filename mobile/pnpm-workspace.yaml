@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  sharp: false
+
+# React Native / Metro do not resolve pnpm's symlinked, isolated node_modules reliably.
+# A hoisted layout is the supported setup for Expo + pnpm monorepos. (pnpm 10 reads this here.)
+nodeLinker: hoisted
