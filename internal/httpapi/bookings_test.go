@@ -25,6 +25,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
 const (
@@ -260,9 +261,10 @@ func TestConcurrentTransitionSurfacesAsConflictOr422(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type testEnv struct {
-	srv    *httptest.Server
-	pool   *pgxpool.Pool
-	signer *auth.Signer
+	srv      *httptest.Server
+	pool     *pgxpool.Pool
+	signer   *auth.Signer
+	verifier *verification.Service
 }
 
 func newServer(t *testing.T) *testEnv {
@@ -275,15 +277,16 @@ func newServer(t *testing.T) *testEnv {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	bookingService := booking.NewService(pool)
+	verifier := verification.NewService(pool)
 	mux := http.NewServeMux()
-	httpapi.New(bookingService, signer, log).Register(mux)
+	httpapi.New(bookingService, verifier, signer, log).Register(mux)
 	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
 	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
 	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return &testEnv{srv: srv, pool: pool, signer: signer}
+	return &testEnv{srv: srv, pool: pool, signer: signer, verifier: verifier}
 }
 
 // staffToken provisions a user of the given role and returns a token for them — for testing

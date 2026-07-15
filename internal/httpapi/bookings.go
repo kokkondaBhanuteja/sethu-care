@@ -16,17 +16,19 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
 // Handler wires the HTTP routes to the domain services.
 type Handler struct {
-	bookings *booking.Service
-	signer   *auth.Signer
-	log      *slog.Logger
+	bookings     *booking.Service
+	verification *verification.Service
+	signer       *auth.Signer
+	log          *slog.Logger
 }
 
-func New(bookings *booking.Service, signer *auth.Signer, log *slog.Logger) *Handler {
-	return &Handler{bookings: bookings, signer: signer, log: log}
+func New(bookings *booking.Service, verifier *verification.Service, signer *auth.Signer, log *slog.Logger) *Handler {
+	return &Handler{bookings: bookings, verification: verifier, signer: signer, log: log}
 }
 
 // Register mounts the booking endpoints onto mux, each wrapped in the auth it requires. The
@@ -128,6 +130,8 @@ func (handler *Handler) get(writer http.ResponseWriter, request *http.Request) {
 type transitionRequest struct {
 	Action     string     `json:"action"`
 	Technician *uuid.UUID `json:"technician_id,omitempty"`
+	// Code is the dual-OTP code, required for VERIFY_START and VERIFY_COMPLETION.
+	Code string `json:"code,omitempty"`
 }
 
 func (handler *Handler) transition(writer http.ResponseWriter, request *http.Request) {
@@ -158,11 +162,22 @@ func (handler *Handler) transition(writer http.ResponseWriter, request *http.Req
 	}
 	actor := caller.ID
 
-	newState, err := handler.bookings.Apply(request.Context(), id, action, booking.TransitionInput{
+	transitionInput := booking.TransitionInput{
 		Actor:            &actor,
 		ActorRole:        caller.Role,
 		AssignTechnician: req.Technician,
-	})
+	}
+	// VERIFY_START / VERIFY_COMPLETION gate on the dual OTP. Build the guard so the code check
+	// and the state change happen in one transaction.
+	if purpose, needsOTP := otpPurposeFor(action); needsOTP {
+		if req.Code == "" {
+			writeError(writer, handler.log, &badRequestError{msg: "code is required for " + req.Action})
+			return
+		}
+		transitionInput.Guard = handler.verification.Guard(id, purpose, req.Code)
+	}
+
+	newState, err := handler.bookings.Apply(request.Context(), id, action, transitionInput)
 	if err != nil {
 		writeError(writer, handler.log, err)
 		return
@@ -173,6 +188,22 @@ func (handler *Handler) transition(writer http.ResponseWriter, request *http.Req
 		State:          newState.String(),
 		AllowedActions: actionStrings(booking.AllowedActions(newState)),
 	})
+}
+
+// otpPurposeFor maps the two OTP-gated actions to their challenge purpose. Exhaustive-linted,
+// so a new action cannot ship without a decision about whether it needs an OTP.
+func otpPurposeFor(action booking.Action) (verification.Purpose, bool) {
+	switch action {
+	case booking.ActionVerifyStart:
+		return verification.PurposeStart, true
+	case booking.ActionVerifyCompletion:
+		return verification.PurposeCompletion, true
+	case booking.ActionConfirm, booking.ActionSearch, booking.ActionAssign, booking.ActionDepart,
+		booking.ActionArrive, booking.ActionRequestCompletion, booking.ActionResume,
+		booking.ActionEscalate, booking.ActionReschedule, booking.ActionCancel, booking.ActionFail:
+		return "", false
+	}
+	return "", false
 }
 
 // --- GET /me/jobs -----------------------------------------------------------

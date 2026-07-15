@@ -8,6 +8,7 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
 // e164ish is a pragmatic phone check: a leading + and 8–15 digits. Full validation belongs
@@ -109,7 +110,10 @@ func classifyAuth(err error) (int, string, bool) {
 	case errors.Is(err, identity.ErrOtpRateLimited):
 		return http.StatusTooManyRequests, err.Error(), true
 	case errors.Is(err, identity.ErrOtpInvalid),
-		errors.Is(err, identity.ErrOtpTooManyAttempts):
+		errors.Is(err, identity.ErrOtpTooManyAttempts),
+		errors.Is(err, verification.ErrOtpInvalid),
+		errors.Is(err, verification.ErrOtpTooManyAttempts):
+		// A bad or exhausted OTP — for login OR for a job's start/completion.
 		return http.StatusUnauthorized, err.Error(), true
 	default:
 		return 0, "", false

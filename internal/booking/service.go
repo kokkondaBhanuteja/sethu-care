@@ -301,6 +301,12 @@ type TransitionInput struct {
 	ActorRole identity.Role
 	// AssignTechnician is set only for ASSIGN; ignored otherwise.
 	AssignTechnician *uuid.UUID
+	// Guard, if set, runs inside the transaction after authorization and before the state
+	// change. If it returns an error, NOTHING is written — the transaction rolls back. This is
+	// how VERIFY_START / VERIFY_COMPLETION gate on the dual OTP: the code check and the state
+	// change are one atomic step, so you can never spend an OTP without advancing the booking,
+	// nor advance without a valid code.
+	Guard func(context.Context, pgx.Tx) error
 }
 
 // authorize enforces both halves of access control: the role may perform the action at all
@@ -360,6 +366,14 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 		// unauthorized caller should not even learn whether the transition was legal.
 		if err := authorize(in, bookingRow, action); err != nil {
 			return err
+		}
+
+		// GUARD runs in this transaction (the OTP check for VERIFY_* actions). A failure here
+		// rolls back everything: no OTP consumed, no state change.
+		if in.Guard != nil {
+			if err := in.Guard(ctx, tx); err != nil {
+				return err
+			}
 		}
 
 		from, err := ParseState(bookingRow.State)
@@ -469,7 +483,11 @@ func publishedEventFor(action Action) (string, bool) {
 		return "booking.escalated", true
 	case ActionFail:
 		return "booking.failed", true
-	case ActionSearch, ActionRequestCompletion, ActionResume, ActionReschedule, ActionCancel:
+	case ActionRequestCompletion:
+		// Not in the original §8 catalog, added here: it triggers issuing the completion OTP
+		// (the technician says the work is done; the customer gets a code to confirm it).
+		return "booking.awaiting_completion", true
+	case ActionSearch, ActionResume, ActionReschedule, ActionCancel:
 		return "", false
 	}
 	return "", false

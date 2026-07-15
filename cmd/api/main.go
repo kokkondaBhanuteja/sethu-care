@@ -31,6 +31,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
 func main() {
@@ -77,6 +78,7 @@ func run() error {
 	// visibly drains every domain event to the log, proving the pipeline end to end.
 	bookingService := booking.NewService(pool)
 	opsService := ops.New(pool, bookingService)
+	verificationService := verification.NewService(pool)
 
 	dispatcher := outbox.NewDispatcher()
 	dispatcher.SubscribeAll(outbox.LoggingHandler(logger))
@@ -86,6 +88,11 @@ func run() error {
 	dispatcher.Subscribe("booking.confirmed", func(ctx context.Context, event outbox.Event) error {
 		return opsService.StartSearch(ctx, event.AggregateID)
 	})
+	// DUAL OTP issuance: when the technician arrives, issue the START code to the customer;
+	// when they say the work is done, issue the COMPLETION code. Verification happens
+	// interactively on the transition endpoint.
+	dispatcher.Subscribe("technician.arrived", issueOTP(verificationService, verification.PurposeStart, settings.DevEchoOTP, logger))
+	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(verificationService, verification.PurposeCompletion, settings.DevEchoOTP, logger))
 	worker := outbox.NewWorker(pool, dispatcher, outbox.WithLogger(logger))
 
 	var workerDone sync.WaitGroup
@@ -111,15 +118,16 @@ func run() error {
 	server := &http.Server{
 		Addr: settings.ListenAddr,
 		Handler: buildRouter(routerDependencies{
-			pool:            pool,
-			bookingService:  bookingService,
-			identityService: identityService,
-			catalogService:  catalogService,
-			addressService:  addressService,
-			opsService:      opsService,
-			signer:          signer,
-			devEchoOTP:      settings.DevEchoOTP,
-			logger:          logger,
+			pool:                pool,
+			bookingService:      bookingService,
+			verificationService: verificationService,
+			identityService:     identityService,
+			catalogService:      catalogService,
+			addressService:      addressService,
+			opsService:          opsService,
+			signer:              signer,
+			devEchoOTP:          settings.DevEchoOTP,
+			logger:              logger,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -164,18 +172,35 @@ func run() error {
 	return nil
 }
 
+// issueOTP returns an outbox handler that issues the START or COMPLETION code for the booking
+// the event names. In dev it logs the code (there is no SMS provider yet). Idempotent: a
+// redelivered event finds the code already issued and does nothing.
+func issueOTP(verifier *verification.Service, purpose verification.Purpose, devEcho bool, logger *slog.Logger) outbox.Handler {
+	return func(ctx context.Context, event outbox.Event) error {
+		code, issued, err := verifier.IssueOTP(ctx, event.AggregateID, purpose)
+		if err != nil {
+			return err
+		}
+		if issued && devEcho {
+			logger.Info("DEV job otp issued", "booking_id", event.AggregateID, "purpose", purpose, "code", code)
+		}
+		return nil
+	}
+}
+
 // routerDependencies collects everything the router needs, so buildRouter takes one
-// parameter instead of eight positional ones.
+// parameter instead of many positional ones.
 type routerDependencies struct {
-	pool            *pgxpool.Pool
-	bookingService  *booking.Service
-	identityService *identity.Service
-	catalogService  *catalog.Catalog
-	addressService  *address.Service
-	opsService      *ops.Service
-	signer          *auth.Signer
-	devEchoOTP      bool
-	logger          *slog.Logger
+	pool                *pgxpool.Pool
+	bookingService      *booking.Service
+	verificationService *verification.Service
+	identityService     *identity.Service
+	catalogService      *catalog.Catalog
+	addressService      *address.Service
+	opsService          *ops.Service
+	signer              *auth.Signer
+	devEchoOTP          bool
+	logger              *slog.Logger
 }
 
 func buildRouter(dependencies routerDependencies) http.Handler {
@@ -194,7 +219,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
 
 	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
-	httpapi.New(dependencies.bookingService, dependencies.signer, dependencies.logger).Register(mux)
+	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.signer, dependencies.logger).Register(mux)
 
 	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)
