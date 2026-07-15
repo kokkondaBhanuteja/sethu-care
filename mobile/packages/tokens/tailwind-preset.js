@@ -85,7 +85,10 @@ module.exports = {
       },
       fontSize: {
         "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
-        "display-lg-mobile": ["36px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "800" }],
+        "display-lg-mobile": [
+          "36px",
+          { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "800" },
+        ],
         "headline-md": ["30px", { lineHeight: "1.3", letterSpacing: "-0.01em", fontWeight: "700" }],
         "headline-sm": ["24px", { lineHeight: "1.4", fontWeight: "700" }],
         "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],

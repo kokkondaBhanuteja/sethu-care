@@ -11,7 +11,13 @@ export type GlassSurfaceProps = ViewProps & {
   tint?: "light" | "dark" | "default";
 };
 
-export function GlassSurface({ intensity = 40, tint = "default", className, children, ...rest }: GlassSurfaceProps) {
+export function GlassSurface({
+  intensity = 40,
+  tint = "default",
+  className,
+  children,
+  ...rest
+}: GlassSurfaceProps) {
   return (
     <View className={`overflow-hidden ${className ?? ""}`} {...rest}>
       {isLiquidGlassAvailable() ? (

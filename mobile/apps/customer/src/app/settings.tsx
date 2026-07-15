@@ -36,7 +36,12 @@ export default function Settings() {
       <View className="flex-1 gap-md px-mobile-margin pt-lg">
         <Text variant="headline">{t("common:actions.settings")}</Text>
         <View className="flex-1 justify-end gap-md pb-xl">
-          <Button label={t("common:actions.signOut")} variant="secondary" onPress={goToSignIn} fullWidth />
+          <Button
+            label={t("common:actions.signOut")}
+            variant="secondary"
+            onPress={goToSignIn}
+            fullWidth
+          />
           <Button
             label={t("auth:account.delete")}
             variant="destructive"

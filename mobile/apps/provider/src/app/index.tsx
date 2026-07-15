@@ -14,7 +14,12 @@ export default function Home() {
           {t("common:appName")}
         </Text>
         <StatusPill label={t("booking:status.inProgress")} tone="active" />
-        <Button label={t("common:actions.continue")} variant="secondary" fullWidth onPress={() => undefined} />
+        <Button
+          label={t("common:actions.continue")}
+          variant="secondary"
+          fullWidth
+          onPress={() => undefined}
+        />
       </View>
     </Screen>
   );

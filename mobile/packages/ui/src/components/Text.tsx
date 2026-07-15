@@ -30,6 +30,9 @@ const text = tv({
 
 export type TextProps = RNTextProps & VariantProps<typeof text>;
 
-export const Text = forwardRef<RNText, TextProps>(function Text({ variant, tone, className, ...rest }, ref) {
+export const Text = forwardRef<RNText, TextProps>(function Text(
+  { variant, tone, className, ...rest },
+  ref,
+) {
   return <RNText ref={ref} className={text({ variant, tone, className })} {...rest} />;
 });

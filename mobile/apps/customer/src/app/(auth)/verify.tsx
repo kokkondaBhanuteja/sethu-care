@@ -23,7 +23,10 @@ export default function Verify() {
       {
         onSuccess: async (data) => {
           if (!data.token) return;
-          await signIn(data.token, { role: (data.role as Role | undefined) ?? "CUSTOMER", name: data.name ?? "" });
+          await signIn(data.token, {
+            role: (data.role as Role | undefined) ?? "CUSTOMER",
+            name: data.name ?? "",
+          });
           router.replace("/");
         },
       },
@@ -51,7 +54,12 @@ export default function Verify() {
             accessibilityLabel={t("otp.title")}
             className="rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-sm text-center font-body text-headline-sm tracking-[8px] text-on-surface"
           />
-          <Button label={t("common:actions.continue")} loading={isPending} onPress={onVerify} fullWidth />
+          <Button
+            label={t("common:actions.continue")}
+            loading={isPending}
+            onPress={onVerify}
+            fullWidth
+          />
         </View>
       </KeyboardAvoidingView>
     </Screen>

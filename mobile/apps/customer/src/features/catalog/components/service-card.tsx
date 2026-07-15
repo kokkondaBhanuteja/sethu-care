@@ -5,7 +5,13 @@ import type { ServiceResponse } from "@sethu/api-client";
 
 // A catalog service card: name, description, and the starting price (first variant). Presentational
 // — the screen wires the tap.
-export function ServiceCard({ service, onPress }: { service: ServiceResponse; onPress?: () => void }) {
+export function ServiceCard({
+  service,
+  onPress,
+}: {
+  service: ServiceResponse;
+  onPress?: () => void;
+}) {
   const firstVariant = service.variants?.[0];
   const price = firstVariant?.price_paise != null ? formatPaise(firstVariant.price_paise) : null;
 

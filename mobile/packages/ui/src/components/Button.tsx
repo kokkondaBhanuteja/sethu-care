@@ -46,7 +46,16 @@ export type ButtonProps = Omit<VariantProps<typeof container>, "isDisabled"> & {
 };
 
 export const Button = forwardRef<View, ButtonProps>(function Button(
-  { label, variant = "primary", size = "md", fullWidth, disabled, loading, onPress, accessibilityLabel },
+  {
+    label,
+    variant = "primary",
+    size = "md",
+    fullWidth,
+    disabled,
+    loading,
+    onPress,
+    accessibilityLabel,
+  },
   ref,
 ) {
   const isDisabled = Boolean(disabled) || Boolean(loading);

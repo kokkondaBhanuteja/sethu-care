@@ -90,7 +90,12 @@ export function AddressPicker({
           />
         </View>
       ) : (
-        <Button label={t("address.add")} variant="secondary" size="sm" onPress={() => setAdding(true)} />
+        <Button
+          label={t("address.add")}
+          variant="secondary"
+          size="sm"
+          onPress={() => setAdding(true)}
+        />
       )}
     </View>
   );

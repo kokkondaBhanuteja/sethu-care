@@ -93,14 +93,62 @@ export const fontFamily = {
 
 /** Type scale: [fontSize px, { lineHeight, fontWeight, letterSpacing? }]. */
 export const typography = {
-  displayLg: { fontSize: 48, lineHeight: 1.1, fontWeight: "800", letterSpacing: -0.02, family: fontFamily.display },
-  displayLgMobile: { fontSize: 36, lineHeight: 1.2, fontWeight: "800", letterSpacing: -0.02, family: fontFamily.display },
-  headlineMd: { fontSize: 30, lineHeight: 1.3, fontWeight: "700", letterSpacing: -0.01, family: fontFamily.heading },
-  headlineSm: { fontSize: 24, lineHeight: 1.4, fontWeight: "700", letterSpacing: 0, family: fontFamily.heading },
-  bodyLg: { fontSize: 18, lineHeight: 1.6, fontWeight: "400", letterSpacing: 0, family: fontFamily.body },
-  bodyMd: { fontSize: 16, lineHeight: 1.5, fontWeight: "400", letterSpacing: 0, family: fontFamily.body },
-  labelMd: { fontSize: 14, lineHeight: 1.2, fontWeight: "600", letterSpacing: 0.05, family: fontFamily.body },
-  labelSm: { fontSize: 12, lineHeight: 1.2, fontWeight: "500", letterSpacing: 0, family: fontFamily.body },
+  displayLg: {
+    fontSize: 48,
+    lineHeight: 1.1,
+    fontWeight: "800",
+    letterSpacing: -0.02,
+    family: fontFamily.display,
+  },
+  displayLgMobile: {
+    fontSize: 36,
+    lineHeight: 1.2,
+    fontWeight: "800",
+    letterSpacing: -0.02,
+    family: fontFamily.display,
+  },
+  headlineMd: {
+    fontSize: 30,
+    lineHeight: 1.3,
+    fontWeight: "700",
+    letterSpacing: -0.01,
+    family: fontFamily.heading,
+  },
+  headlineSm: {
+    fontSize: 24,
+    lineHeight: 1.4,
+    fontWeight: "700",
+    letterSpacing: 0,
+    family: fontFamily.heading,
+  },
+  bodyLg: {
+    fontSize: 18,
+    lineHeight: 1.6,
+    fontWeight: "400",
+    letterSpacing: 0,
+    family: fontFamily.body,
+  },
+  bodyMd: {
+    fontSize: 16,
+    lineHeight: 1.5,
+    fontWeight: "400",
+    letterSpacing: 0,
+    family: fontFamily.body,
+  },
+  labelMd: {
+    fontSize: 14,
+    lineHeight: 1.2,
+    fontWeight: "600",
+    letterSpacing: 0.05,
+    family: fontFamily.body,
+  },
+  labelSm: {
+    fontSize: 12,
+    lineHeight: 1.2,
+    fontWeight: "500",
+    letterSpacing: 0,
+    family: fontFamily.body,
+  },
 } as const;
 
 export type ColorToken = keyof typeof color;

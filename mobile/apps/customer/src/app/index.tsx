@@ -32,7 +32,9 @@ export default function Home() {
           renderItem={({ item }) => (
             <ServiceCard
               service={item}
-              onPress={() => item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })}
+              onPress={() =>
+                item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })
+              }
             />
           )}
           ItemSeparatorComponent={() => <View className="h-md" />}

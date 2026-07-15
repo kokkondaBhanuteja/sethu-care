@@ -5,7 +5,15 @@ import * as SecureStore from "expo-secure-store";
 // local previews) secure-store has no implementation, so we fall back to localStorage.
 const TOKEN_KEY = "sethu.jwt";
 
-const webStore = (globalThis as { localStorage?: { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void } }).localStorage;
+const webStore = (
+  globalThis as {
+    localStorage?: {
+      getItem(k: string): string | null;
+      setItem(k: string, v: string): void;
+      removeItem(k: string): void;
+    };
+  }
+).localStorage;
 
 export async function saveToken(token: string): Promise<void> {
   if (Platform.OS === "web") {
