@@ -1,28 +1,37 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
+	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
-	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 )
 
-// AddressHandler serves a customer's own addresses. Every route is authenticated, and the
+// AddressHandler serves a customer's own addresses. Every operation is authenticated, and the
 // owner is always the token holder — a customer can only see and create their own.
 type AddressHandler struct {
 	addresses *address.Service
-	signer    *auth.Signer
 	log       *slog.Logger
 }
 
-func NewAddressHandler(a *address.Service, signer *auth.Signer, log *slog.Logger) *AddressHandler {
-	return &AddressHandler{addresses: a, signer: signer, log: log}
+func NewAddressHandler(addressService *address.Service, log *slog.Logger) *AddressHandler {
+	return &AddressHandler{addresses: addressService, log: log}
 }
 
-func (handler *AddressHandler) Register(mux *http.ServeMux) {
-	mux.Handle("POST /addresses", handler.signer.RequireAuth(http.HandlerFunc(handler.create)))
-	mux.Handle("GET /addresses", handler.signer.RequireAuth(http.HandlerFunc(handler.list)))
+func (handler *AddressHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "createAddress", Method: http.MethodPost, Path: "/addresses",
+		Summary: "Create an address", Tags: []string{"Addresses"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(),
+	}, handler.create)
+	huma.Register(api, huma.Operation{
+		OperationID: "listAddresses", Method: http.MethodGet, Path: "/addresses",
+		Summary: "List my addresses", Tags: []string{"Addresses"},
+		Security: bearerSecurity(),
+	}, handler.list)
 }
 
 type addressResponse struct {
@@ -55,55 +64,58 @@ type createAddressRequest struct {
 	IsDefault bool    `json:"is_default"`
 }
 
-func (handler *AddressHandler) create(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
-	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
-	}
-
-	var req createAddressRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	if req.Line1 == "" || req.City == "" {
-		writeError(writer, handler.log, &badRequestError{msg: "line1 and city are required"})
-		return
-	}
-
-	addr, err := handler.addresses.Create(request.Context(), address.NewAddress{
-		UserID:    caller.ID, // the owner is the caller, never a body field
-		Label:     req.Label,
-		Line1:     req.Line1,
-		Line2:     req.Line2,
-		City:      req.City,
-		Pincode:   req.Pincode,
-		Lat:       req.Lat,
-		Lng:       req.Lng,
-		IsDefault: req.IsDefault,
-	})
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	writeJSON(writer, http.StatusCreated, toAddress(addr))
+type createAddressInput struct {
+	Body createAddressRequest
 }
 
-func (handler *AddressHandler) list(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
+type addressOutput struct {
+	Body addressResponse
+}
+
+func (handler *AddressHandler) create(ctx context.Context, input *createAddressInput) (*addressOutput, error) {
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-	addrs, err := handler.addresses.List(request.Context(), caller.ID)
+	if input.Body.Line1 == "" || input.Body.City == "" {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "line1 and city are required"})
+	}
+	addr, err := handler.addresses.Create(ctx, address.NewAddress{
+		UserID:    caller.ID, // the owner is the caller, never a body field
+		Label:     input.Body.Label,
+		Line1:     input.Body.Line1,
+		Line2:     input.Body.Line2,
+		City:      input.Body.City,
+		Pincode:   input.Body.Pincode,
+		Lat:       input.Body.Lat,
+		Lng:       input.Body.Lng,
+		IsDefault: input.Body.IsDefault,
+	})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]addressResponse, len(addrs))
+	return &addressOutput{Body: toAddress(addr)}, nil
+}
+
+type listAddressesOutput struct {
+	Body struct {
+		Addresses []addressResponse `json:"addresses"`
+	}
+}
+
+func (handler *AddressHandler) list(ctx context.Context, _ *struct{}) (*listAddressesOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	addrs, err := handler.addresses.List(ctx, caller.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &listAddressesOutput{}
+	out.Body.Addresses = make([]addressResponse, len(addrs))
 	for index, addr := range addrs {
-		payload[index] = toAddress(addr)
+		out.Body.Addresses[index] = toAddress(addr)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"addresses": payload})
+	return out, nil
 }

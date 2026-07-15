@@ -268,21 +268,26 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	// library needed yet. We add one only when we actually need middleware chains.
 	mux := http.NewServeMux()
 
-	// Auth endpoints are public — this is where a caller gets a token.
-	httpapi.NewAuthHandler(dependencies.identityService, dependencies.signer, dependencies.logger, dependencies.devEchoOTP).Register(mux)
-
-	// Catalog: public browse + admin management. Addresses: customer-owned.
-	httpapi.NewCatalogHandler(dependencies.catalogService, dependencies.signer, dependencies.logger).Register(mux)
-	httpapi.NewAddressHandler(dependencies.addressService, dependencies.signer, dependencies.logger).Register(mux)
-
-	// Ops console: the manual-assignment queue (admin-only).
-	httpapi.NewOpsHandler(dependencies.opsService, dependencies.signer, dependencies.logger).Register(mux)
-	httpapi.NewCashHandler(dependencies.ledgerService, dependencies.signer, dependencies.logger).Register(mux)
-	httpapi.NewPaymentHandler(dependencies.ledgerService, dependencies.signer, dependencies.upiVPA, dependencies.upiPayee, dependencies.logger).Register(mux)
-	httpapi.NewPhotoHandler(dependencies.verificationService, dependencies.cloudinary, dependencies.signer, dependencies.logger).Register(mux)
-
-	// Booking endpoints, each guarded by the auth it declares (see Handler.Register).
-	httpapi.New(dependencies.bookingService, dependencies.verificationService, dependencies.reviewService, dependencies.signer, dependencies.logger).Register(mux)
+	// The huma API wraps the mux: every operation is registered through it, producing the OpenAPI
+	// contract the mobile client is generated from, and sharing one router. RegisterAll is the
+	// single operation list, shared with the tests and the OpenAPI generator.
+	humaAPI := httpapi.NewHumaAPI(mux, dependencies.signer)
+	httpapi.RegisterAll(humaAPI, httpapi.Dependencies{
+		Identity:     dependencies.identityService,
+		Catalog:      dependencies.catalogService,
+		Address:      dependencies.addressService,
+		Ops:          dependencies.opsService,
+		Ledger:       dependencies.ledgerService,
+		Verification: dependencies.verificationService,
+		Booking:      dependencies.bookingService,
+		Reviews:      dependencies.reviewService,
+		Cloudinary:   dependencies.cloudinary,
+		Signer:       dependencies.signer,
+		UPIVPA:       dependencies.upiVPA,
+		UPIPayee:     dependencies.upiPayee,
+		DevEchoOTP:   dependencies.devEchoOTP,
+		Logger:       dependencies.logger,
+	})
 
 	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)

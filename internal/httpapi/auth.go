@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"regexp"
+
+	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
@@ -25,13 +28,19 @@ type AuthHandler struct {
 	devEcho  bool
 }
 
-func NewAuthHandler(id *identity.Service, signer *auth.Signer, log *slog.Logger, devEcho bool) *AuthHandler {
-	return &AuthHandler{identity: id, signer: signer, log: log, devEcho: devEcho}
+func NewAuthHandler(identityService *identity.Service, signer *auth.Signer, log *slog.Logger, devEcho bool) *AuthHandler {
+	return &AuthHandler{identity: identityService, signer: signer, log: log, devEcho: devEcho}
 }
 
-func (handler *AuthHandler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("POST /auth/otp", handler.requestOTP)
-	mux.HandleFunc("POST /auth/verify", handler.verifyOTP)
+func (handler *AuthHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "requestOTP", Method: http.MethodPost, Path: "/auth/otp",
+		Summary: "Request a login OTP", Tags: []string{"Auth"},
+	}, handler.requestOTP)
+	huma.Register(api, huma.Operation{
+		OperationID: "verifyOTP", Method: http.MethodPost, Path: "/auth/verify",
+		Summary: "Verify a login OTP and receive a token", Tags: []string{"Auth"},
+	}, handler.verifyOTP)
 }
 
 type otpRequest struct {
@@ -44,30 +53,29 @@ type otpResponse struct {
 	DevCode string `json:"dev_code,omitempty"`
 }
 
-func (handler *AuthHandler) requestOTP(writer http.ResponseWriter, request *http.Request) {
-	var req otpRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	if !e164ish.MatchString(req.Phone) {
-		writeError(writer, handler.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
-		return
-	}
+type requestOTPInput struct {
+	Body otpRequest
+}
 
-	code, err := handler.identity.RequestOTP(request.Context(), req.Phone)
+type requestOTPOutput struct {
+	Body otpResponse
+}
+
+func (handler *AuthHandler) requestOTP(ctx context.Context, input *requestOTPInput) (*requestOTPOutput, error) {
+	if !e164ish.MatchString(input.Body.Phone) {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
+	}
+	code, err := handler.identity.RequestOTP(ctx, input.Body.Phone)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
 	// In dev, make the code reachable without an SMS provider. Never in production.
-	resp := otpResponse{Sent: true}
+	out := &requestOTPOutput{Body: otpResponse{Sent: true}}
 	if handler.devEcho {
-		handler.log.Info("DEV otp issued", "phone", req.Phone, "code", code)
-		resp.DevCode = code
+		handler.log.Info("DEV otp issued", "phone", input.Body.Phone, "code", code)
+		out.Body.DevCode = code
 	}
-	writeJSON(writer, http.StatusOK, resp)
+	return out, nil
 }
 
 type verifyRequest struct {
@@ -81,30 +89,28 @@ type verifyResponse struct {
 	Name  string `json:"name"`
 }
 
-func (handler *AuthHandler) verifyOTP(writer http.ResponseWriter, request *http.Request) {
-	var req verifyRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
+type verifyOTPInput struct {
+	Body verifyRequest
+}
 
-	user, err := handler.identity.VerifyOTP(request.Context(), req.Phone, req.Code)
+type verifyOTPOutput struct {
+	Body verifyResponse
+}
+
+func (handler *AuthHandler) verifyOTP(ctx context.Context, input *verifyOTPInput) (*verifyOTPOutput, error) {
+	user, err := handler.identity.VerifyOTP(ctx, input.Body.Phone, input.Body.Code)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
 	token, err := handler.signer.Issue(auth.AuthedUser{ID: user.ID, Role: user.Role})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	writeJSON(writer, http.StatusOK, verifyResponse{Token: token, Role: user.Role.String(), Name: user.Name})
+	return &verifyOTPOutput{Body: verifyResponse{Token: token, Role: user.Role.String(), Name: user.Name}}, nil
 }
 
 // classifyAuth maps identity/auth errors to status codes. It is called from the shared
-// writeError via classifyExtra so all error mapping stays in one path.
+// classify() so all error mapping stays in one path.
 func classifyAuth(err error) (int, string, bool) {
 	switch {
 	case errors.Is(err, identity.ErrOtpRateLimited):

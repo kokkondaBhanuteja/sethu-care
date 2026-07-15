@@ -1,12 +1,11 @@
 package httpapi
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
+	"context"
 	"log/slog"
-	"net/http"
 	"net/url"
+
+	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
@@ -18,25 +17,30 @@ import (
 // for the PSP webhook in P1 — confirms the money landed.
 type PaymentHandler struct {
 	ledger   *ledger.Service
-	signer   *auth.Signer
 	upiVPA   string
 	upiPayee string
 	log      *slog.Logger
 }
 
-func NewPaymentHandler(ledgerService *ledger.Service, signer *auth.Signer, upiVPA, upiPayee string, log *slog.Logger) *PaymentHandler {
-	return &PaymentHandler{ledger: ledgerService, signer: signer, upiVPA: upiVPA, upiPayee: upiPayee, log: log}
+func NewPaymentHandler(ledgerService *ledger.Service, upiVPA, upiPayee string, log *slog.Logger) *PaymentHandler {
+	return &PaymentHandler{ledger: ledgerService, upiVPA: upiVPA, upiPayee: upiPayee, log: log}
 }
 
-func (handler *PaymentHandler) Register(mux *http.ServeMux) {
+func (handler *PaymentHandler) RegisterHuma(api huma.API) {
 	// The QR is for the booking's customer to pay, or the assigned technician to show. The
 	// ownership check is in the handler because it depends on the booking's parties.
-	mux.Handle("GET /bookings/{id}/payment",
-		handler.signer.RequireAuth(http.HandlerFunc(handler.get)))
+	huma.Register(api, huma.Operation{
+		OperationID: "getPayment", Method: "GET", Path: "/bookings/{id}/payment",
+		Summary: "Get a booking's UPI collection", Tags: []string{"Payments"},
+		Security: bearerSecurity(),
+	}, handler.get)
 	// Capturing a payment (the money-landed callback) is the provider's job. In P1 that is an
 	// admin; in production it is the PSP webhook, authenticated the same way.
-	mux.Handle("POST /payments/{reference}/capture",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleAdmin, http.HandlerFunc(handler.capture))))
+	huma.Register(api, huma.Operation{
+		OperationID: "capturePayment", Method: "POST", Path: "/payments/{reference}/capture",
+		Summary: "Confirm a UPI payment landed", Tags: []string{"Payments"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.capture)
 }
 
 type paymentResponse struct {
@@ -47,28 +51,30 @@ type paymentResponse struct {
 	UPILink   string `json:"upi_link,omitempty"`
 }
 
-func (handler *PaymentHandler) get(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	caller, ok := auth.UserFrom(request.Context())
-	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
-	}
+type getPaymentInput struct {
+	ID string `path:"id" format:"uuid" doc:"Booking id"`
+}
 
-	collection, err := handler.ledger.CollectionForBooking(request.Context(), bookingID)
+type getPaymentOutput struct {
+	Body paymentResponse
+}
+
+func (handler *PaymentHandler) get(ctx context.Context, input *getPaymentInput) (*getPaymentOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
+	}
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	collection, err := handler.ledger.CollectionForBooking(ctx, bookingID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
 	}
 	if !handler.mayView(caller, collection) {
-		writeError(writer, handler.log, &forbiddenError{msg: "this payment is not yours to view"})
-		return
+		return nil, toHumaError(handler.log, &forbiddenError{msg: "this payment is not yours to view"})
 	}
-
 	response := paymentResponse{
 		BookingID: collection.BookingID.String(),
 		Reference: collection.Reference,
@@ -79,7 +85,7 @@ func (handler *PaymentHandler) get(writer http.ResponseWriter, request *http.Req
 	if collection.Status == ledger.PaymentPending {
 		response.UPILink = handler.upiLink(collection)
 	}
-	writeJSON(writer, http.StatusOK, response)
+	return &getPaymentOutput{Body: response}, nil
 }
 
 // mayView allows the booking's own customer, its assigned technician, or an admin to see the
@@ -114,26 +120,30 @@ type captureRequest struct {
 	ProviderRef string `json:"provider_ref,omitempty"`
 }
 
-func (handler *PaymentHandler) capture(writer http.ResponseWriter, request *http.Request) {
-	reference := request.PathValue("reference")
-	if reference == "" {
-		writeError(writer, handler.log, &badRequestError{msg: "payment reference is required"})
-		return
+type captureInput struct {
+	Reference string `path:"reference" doc:"The payment reference (UPI tr)"`
+	// Body is optional: a bare capture may carry no body at all (the provider_ref is optional).
+	Body *captureRequest
+}
+
+type captureOutput struct {
+	Body struct {
+		Status string `json:"status"`
 	}
-	// The provider_ref is optional and a bare capture may carry no body at all — tolerate an
-	// empty body (EOF) but still reject a malformed one.
-	var req captureRequest
-	if err := json.NewDecoder(request.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
-		writeError(writer, handler.log, &badRequestError{msg: "invalid request body: " + err.Error()})
-		return
+}
+
+func (handler *PaymentHandler) capture(ctx context.Context, input *captureInput) (*captureOutput, error) {
+	if input.Reference == "" {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "payment reference is required"})
 	}
 	var providerRef *string
-	if req.ProviderRef != "" {
-		providerRef = &req.ProviderRef
+	if input.Body != nil && input.Body.ProviderRef != "" {
+		providerRef = &input.Body.ProviderRef
 	}
-	if err := handler.ledger.CaptureUPIPayment(request.Context(), reference, providerRef); err != nil {
-		writeError(writer, handler.log, err)
-		return
+	if err := handler.ledger.CaptureUPIPayment(ctx, input.Reference, providerRef); err != nil {
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"status": "captured"})
+	out := &captureOutput{}
+	out.Body.Status = "captured"
+	return out, nil
 }

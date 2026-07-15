@@ -1,0 +1,1340 @@
+components:
+  schemas:
+    AddressResponse:
+      additionalProperties: false
+      properties:
+        city:
+          type: string
+        id:
+          type: string
+        is_default:
+          type: boolean
+        label:
+          type: string
+        lat:
+          format: double
+          type: number
+        line1:
+          type: string
+        line2:
+          type: string
+        lng:
+          format: double
+          type: number
+        pincode:
+          type: string
+      type: object
+    AssignOutputBody:
+      additionalProperties: false
+      properties:
+        booking_id:
+          type: string
+        state:
+          type: string
+      type: object
+    AssignRequest:
+      additionalProperties: false
+      properties:
+        technician_id:
+          type: string
+      type: object
+    BookingResponse:
+      additionalProperties: false
+      properties:
+        allowed_actions:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        booking_id:
+          type: string
+        order_id:
+          type: string
+        quoted_total_paise:
+          format: int64
+          type: integer
+        state:
+          type: string
+      type: object
+    CandidateResponse:
+      additionalProperties: false
+      properties:
+        acceptance_rate:
+          format: double
+          type: number
+        active_jobs:
+          format: int32
+          type: integer
+        city:
+          type: string
+        max_concurrent_jobs:
+          format: int32
+          type: integer
+        name:
+          type: string
+        rating:
+          format: double
+          type: number
+        technician_id:
+          type: string
+      type: object
+    CandidatesOutputBody:
+      additionalProperties: false
+      properties:
+        candidates:
+          items:
+            $ref: "#/components/schemas/CandidateResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    CaptureOutputBody:
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      type: object
+    CaptureRequest:
+      additionalProperties: false
+      properties:
+        provider_ref:
+          type: string
+      type: object
+    CashPositionResponse:
+      additionalProperties: false
+      properties:
+        collected:
+          type: string
+        deposited:
+          type: string
+        name:
+          type: string
+        oldest_collection_at:
+          format: date-time
+          type: string
+        outstanding:
+          type: string
+        technician_id:
+          type: string
+      type: object
+    CategoryResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        sort_order:
+          format: int32
+          type: integer
+      type: object
+    CreateAddressRequest:
+      additionalProperties: false
+      properties:
+        city:
+          type: string
+        is_default:
+          type: boolean
+        label:
+          type: string
+        lat:
+          format: double
+          type: number
+        line1:
+          type: string
+        line2:
+          type: string
+        lng:
+          format: double
+          type: number
+        pincode:
+          type: string
+      type: object
+    CreateCategoryRequest:
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        sort_order:
+          format: int32
+          type: integer
+      type: object
+    CreateRequest:
+      additionalProperties: false
+      properties:
+        address_id:
+          type: string
+        quantity:
+          format: int32
+          type: integer
+        variant_id:
+          type: string
+      type: object
+    CreateServiceRequest:
+      additionalProperties: false
+      properties:
+        assignment_mode:
+          type: string
+        category_id:
+          type: string
+        description:
+          type: string
+        estimated_minutes:
+          format: int32
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+      type: object
+    CreateVariantRequest:
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        price:
+          description: Rupees, e.g. "599" or "499.99"
+          type: string
+      type: object
+    DepositOutputBody:
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      type: object
+    DepositRequest:
+      additionalProperties: false
+      properties:
+        booking_id:
+          type: string
+      type: object
+    ErrorDetail:
+      additionalProperties: false
+      properties:
+        location:
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          type: string
+        message:
+          description: Error message text
+          type: string
+        value:
+          description: The value at the given location
+      type: object
+    ErrorModel:
+      additionalProperties: false
+      properties:
+        detail:
+          description: A human-readable explanation specific to this occurrence of the problem.
+          examples:
+            - Property foo is required but is missing.
+          type: string
+        errors:
+          description: Optional list of individual error details
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          type:
+            - array
+            - "null"
+        instance:
+          description: A URI reference that identifies the specific occurrence of the problem.
+          examples:
+            - https://example.com/error-log/abc123
+          format: uri
+          type: string
+        status:
+          description: HTTP status code
+          examples:
+            - 400
+          format: int64
+          type: integer
+        title:
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          examples:
+            - Bad Request
+          type: string
+        type:
+          default: about:blank
+          description: A URI reference to human-readable documentation for the error.
+          examples:
+            - https://example.com/errors/example
+          format: uri
+          type: string
+      type: object
+    JobResponse:
+      additionalProperties: false
+      properties:
+        allowed_actions:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        booking_id:
+          type: string
+        city:
+          type: string
+        customer_name:
+          type: string
+        customer_phone:
+          type: string
+        lat:
+          format: double
+          type: number
+        line1:
+          type: string
+        lng:
+          format: double
+          type: number
+        pincode:
+          type: string
+        quoted_total:
+          type: string
+        scheduled_for:
+          format: date-time
+          type: string
+        service_name:
+          type: string
+        state:
+          type: string
+      type: object
+    ListAddressesOutputBody:
+      additionalProperties: false
+      properties:
+        addresses:
+          items:
+            $ref: "#/components/schemas/AddressResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    ListCategoriesOutputBody:
+      additionalProperties: false
+      properties:
+        categories:
+          items:
+            $ref: "#/components/schemas/CategoryResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    ListPhotosOutputBody:
+      additionalProperties: false
+      properties:
+        photos:
+          items:
+            $ref: "#/components/schemas/PhotoResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    ListServicesOutputBody:
+      additionalProperties: false
+      properties:
+        services:
+          items:
+            $ref: "#/components/schemas/ServiceResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    MyBookingsOutputBody:
+      additionalProperties: false
+      properties:
+        bookings:
+          items:
+            $ref: "#/components/schemas/SummaryResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    MyJobsOutputBody:
+      additionalProperties: false
+      properties:
+        jobs:
+          items:
+            $ref: "#/components/schemas/JobResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    OtpRequest:
+      additionalProperties: false
+      properties:
+        phone:
+          type: string
+      type: object
+    OtpResponse:
+      additionalProperties: false
+      properties:
+        dev_code:
+          type: string
+        sent:
+          type: boolean
+      type: object
+    PaymentResponse:
+      additionalProperties: false
+      properties:
+        amount:
+          type: string
+        booking_id:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+        upi_link:
+          type: string
+      type: object
+    PhotoResponse:
+      additionalProperties: false
+      properties:
+        created_at:
+          type: string
+        id:
+          type: string
+        kind:
+          type: string
+        url:
+          type: string
+      type: object
+    QuestionResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+        options:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        prompt:
+          type: string
+        required:
+          type: boolean
+      type: object
+    QueueEntryResponse:
+      additionalProperties: false
+      properties:
+        booking_id:
+          type: string
+        city:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        customer_name:
+          type: string
+        customer_phone:
+          type: string
+        line1:
+          type: string
+        quoted_total:
+          type: string
+        scheduled_for:
+          format: date-time
+          type: string
+        service_name:
+          type: string
+        state:
+          type: string
+      type: object
+    QueueOutputBody:
+      additionalProperties: false
+      properties:
+        queue:
+          items:
+            $ref: "#/components/schemas/QueueEntryResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    ReconciliationOutputBody:
+      additionalProperties: false
+      properties:
+        reconciliation:
+          items:
+            $ref: "#/components/schemas/CashPositionResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    RecordPhotoOutputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+        status:
+          type: string
+      type: object
+    RecordRequest:
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+        public_id:
+          type: string
+        secure_url:
+          type: string
+        signature:
+          type: string
+        version:
+          type: string
+      type: object
+    ReviewRequest:
+      additionalProperties: false
+      properties:
+        comment:
+          type: string
+        rating:
+          format: int32
+          type: integer
+      type: object
+    ServiceResponse:
+      additionalProperties: false
+      properties:
+        assignment_mode:
+          type: string
+        category_id:
+          type: string
+        description:
+          type: string
+        estimated_minutes:
+          format: int32
+          type: integer
+        id:
+          type: string
+        name:
+          type: string
+        questions:
+          items:
+            $ref: "#/components/schemas/QuestionResponse"
+          type:
+            - array
+            - "null"
+        slug:
+          type: string
+        variants:
+          items:
+            $ref: "#/components/schemas/VariantResponse"
+          type:
+            - array
+            - "null"
+      type: object
+    SignatureResponse:
+      additionalProperties: false
+      properties:
+        api_key:
+          type: string
+        cloud_name:
+          type: string
+        folder:
+          type: string
+        signature:
+          type: string
+        timestamp:
+          format: int64
+          type: integer
+      type: object
+    StatusOutputBody:
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      type: object
+    SummaryResponse:
+      additionalProperties: false
+      properties:
+        booking_id:
+          type: string
+        city:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        quoted_total:
+          type: string
+        scheduled_for:
+          format: date-time
+          type: string
+        service_name:
+          type: string
+        state:
+          type: string
+      type: object
+    TransitionRequest:
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        code:
+          type: string
+        payment_method:
+          type: string
+        technician_id:
+          type: string
+      type: object
+    VariantResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: string
+        price_paise:
+          format: int64
+          type: integer
+      type: object
+    VerifyRequest:
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        phone:
+          type: string
+      type: object
+    VerifyResponse:
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        token:
+          type: string
+      type: object
+  securitySchemes:
+    bearer:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+info:
+  title: SETHU-CARE API
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /addresses:
+    get:
+      operationId: listAddresses
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAddressesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List my addresses
+      tags:
+        - Addresses
+    post:
+      operationId: createAddress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAddressRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create an address
+      tags:
+        - Addresses
+  /auth/otp:
+    post:
+      operationId: requestOTP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Request a login OTP
+      tags:
+        - Auth
+  /auth/verify:
+    post:
+      operationId: verifyOTP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Verify a login OTP and receive a token
+      tags:
+        - Auth
+  /bookings:
+    post:
+      operationId: createBooking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a booking
+      tags:
+        - Bookings
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get a booking
+      tags:
+        - Bookings
+  /bookings/{id}/payment:
+    get:
+      operationId: getPayment
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get a booking's UPI collection
+      tags:
+        - Payments
+  /bookings/{id}/photos:
+    get:
+      operationId: listPhotos
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPhotosOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List a booking's work photos
+      tags:
+        - Photos
+    post:
+      operationId: recordPhoto
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordPhotoOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Record an uploaded work photo
+      tags:
+        - Photos
+  /bookings/{id}/photos/signature:
+    post:
+      operationId: signPhotoUpload
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignatureResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Sign a work-photo upload
+      tags:
+        - Photos
+  /bookings/{id}/review:
+    post:
+      operationId: reviewBooking
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Review a completed booking
+      tags:
+        - Bookings
+  /bookings/{id}/transitions:
+    post:
+      operationId: transitionBooking
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Apply a state transition to a booking
+      tags:
+        - Bookings
+  /categories:
+    get:
+      operationId: listCategories
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCategoriesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List service categories
+      tags:
+        - Catalog
+    post:
+      operationId: createCategory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a category
+      tags:
+        - Catalog
+  /me/bookings:
+    get:
+      operationId: listMyBookings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyBookingsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List my bookings
+      tags:
+        - Bookings
+  /me/cash/deposit:
+    post:
+      operationId: depositCash
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Deposit collected cash
+      tags:
+        - Cash
+  /me/jobs:
+    get:
+      operationId: listMyJobs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyJobsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List my assigned jobs
+      tags:
+        - Bookings
+  /ops/assignment-queue:
+    get:
+      operationId: assignmentQueue
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the assignment queue
+      tags:
+        - Ops
+  /ops/bookings/{id}/assign:
+    post:
+      operationId: assignBooking
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Assign a technician to a booking
+      tags:
+        - Ops
+  /ops/bookings/{id}/candidates:
+    get:
+      operationId: bookingCandidates
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidatesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List eligible technicians for a booking
+      tags:
+        - Ops
+  /ops/cash-reconciliation:
+    get:
+      operationId: cashReconciliation
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconciliationOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Cash reconciliation across technicians
+      tags:
+        - Cash
+  /payments/{reference}/capture:
+    post:
+      operationId: capturePayment
+      parameters:
+        - description: The payment reference (UPI tr)
+          in: path
+          name: reference
+          required: true
+          schema:
+            description: The payment reference (UPI tr)
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Confirm a UPI payment landed
+      tags:
+        - Payments
+  /services:
+    get:
+      operationId: listServices
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListServicesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List services
+      tags:
+        - Catalog
+    post:
+      operationId: createService
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServiceRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a service
+      tags:
+        - Catalog
+  /services/{id}:
+    get:
+      operationId: getService
+      parameters:
+        - description: Service id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Service id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a service
+      tags:
+        - Catalog
+  /services/{id}/variants:
+    post:
+      operationId: createVariant
+      parameters:
+        - description: Service id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Service id
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVariantRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariantResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a service variant
+      tags:
+        - Catalog

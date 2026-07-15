@@ -2,7 +2,6 @@ package httpapi
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
@@ -27,25 +26,11 @@ type forbiddenError struct{ msg string }
 
 func (forbidden *forbiddenError) Error() string { return forbidden.msg }
 
-// writeError is the ONE place domain errors become HTTP status codes. Centralising it means
-// a new error type is mapped once, here, rather than in every handler — and no handler can
-// accidentally leak an internal error's text to the client.
+// classify is the ONE place domain errors become HTTP status codes, shared by toHumaError so a
+// new error type is mapped once, here, rather than in every handler.
 //
 // GO LESSON — errors.As walks the wrapped-error chain, so this works even though the service
 // wraps its errors with fmt.Errorf("...: %w", err) on the way up.
-func writeError(writer http.ResponseWriter, log *slog.Logger, err error) {
-	status, message := classify(err)
-
-	// 5xx means WE broke. Log the real error server-side, but never send its text to the
-	// client — it can leak SQL, table names, internal structure.
-	if status >= 500 {
-		log.Error("request failed", "err", err)
-		message = "internal error"
-	}
-
-	writeJSON(writer, status, map[string]string{"error": message})
-}
-
 func classify(err error) (int, string) {
 	// Identity/auth errors first, via their own mapper, so that package's errors stay with it.
 	if status, msg, ok := classifyAuth(err); ok {

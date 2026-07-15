@@ -1,13 +1,14 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
-	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 )
@@ -16,41 +17,51 @@ import (
 // and an admin sees who still owes.
 type CashHandler struct {
 	ledger *ledger.Service
-	signer *auth.Signer
 	log    *slog.Logger
 }
 
-func NewCashHandler(ledgerService *ledger.Service, signer *auth.Signer, log *slog.Logger) *CashHandler {
-	return &CashHandler{ledger: ledgerService, signer: signer, log: log}
+func NewCashHandler(ledgerService *ledger.Service, log *slog.Logger) *CashHandler {
+	return &CashHandler{ledger: ledgerService, log: log}
 }
 
-func (handler *CashHandler) Register(mux *http.ServeMux) {
-	mux.Handle("POST /me/cash/deposit",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.deposit))))
-	mux.Handle("GET /ops/cash-reconciliation",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleAdmin, http.HandlerFunc(handler.reconciliation))))
+func (handler *CashHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "depositCash", Method: http.MethodPost, Path: "/me/cash/deposit",
+		Summary: "Deposit collected cash", Tags: []string{"Cash"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.deposit)
+	huma.Register(api, huma.Operation{
+		OperationID: "cashReconciliation", Method: http.MethodGet, Path: "/ops/cash-reconciliation",
+		Summary: "Cash reconciliation across technicians", Tags: []string{"Cash"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.reconciliation)
 }
 
 type depositRequest struct {
 	BookingID uuid.UUID `json:"booking_id"`
 }
 
-func (handler *CashHandler) deposit(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
+type depositInput struct {
+	Body depositRequest
+}
+
+type depositOutput struct {
+	Body struct {
+		Status string `json:"status"`
+	}
+}
+
+func (handler *CashHandler) deposit(ctx context.Context, input *depositInput) (*depositOutput, error) {
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-	var req depositRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
+	if err := handler.ledger.RecordDeposit(ctx, input.Body.BookingID, caller.ID); err != nil {
+		return nil, toHumaError(handler.log, err)
 	}
-	if err := handler.ledger.RecordDeposit(request.Context(), req.BookingID, caller.ID); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	writeJSON(writer, http.StatusCreated, map[string]any{"status": "deposited"})
+	out := &depositOutput{}
+	out.Body.Status = "deposited"
+	return out, nil
 }
 
 type cashPositionResponse struct {
@@ -62,15 +73,21 @@ type cashPositionResponse struct {
 	OldestCollectionAt *time.Time `json:"oldest_collection_at,omitempty"`
 }
 
-func (handler *CashHandler) reconciliation(writer http.ResponseWriter, request *http.Request) {
-	positions, err := handler.ledger.Reconciliation(request.Context())
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+type reconciliationOutput struct {
+	Body struct {
+		Reconciliation []cashPositionResponse `json:"reconciliation"`
 	}
-	payload := make([]cashPositionResponse, len(positions))
+}
+
+func (handler *CashHandler) reconciliation(ctx context.Context, _ *struct{}) (*reconciliationOutput, error) {
+	positions, err := handler.ledger.Reconciliation(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &reconciliationOutput{}
+	out.Body.Reconciliation = make([]cashPositionResponse, len(positions))
 	for index, position := range positions {
-		payload[index] = cashPositionResponse{
+		out.Body.Reconciliation[index] = cashPositionResponse{
 			TechnicianID:       position.TechnicianID.String(),
 			Name:               position.Name,
 			Collected:          position.CollectedPaise.Rupees(),
@@ -79,5 +96,5 @@ func (handler *CashHandler) reconciliation(writer http.ResponseWriter, request *
 			OldestCollectionAt: position.OldestCollectionAt,
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"reconciliation": payload})
+	return out, nil
 }

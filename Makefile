@@ -41,6 +41,16 @@ generate: ## Regenerate type-safe Go from db/queries. Run after ANY schema or qu
 	@sqlc generate
 	@echo "sqlc: ok"
 
+openapi: ## Regenerate the OpenAPI contract from the huma handlers. Run after ANY handler change.
+	@go run ./cmd/genopenapi > api/openapi.yaml
+	@echo "openapi: ok"
+
+openapi-check: ## CI drift guard: fail if the committed api/openapi.yaml is out of date.
+	@go run ./cmd/genopenapi > /tmp/openapi.gen.yaml
+	@diff -u api/openapi.yaml /tmp/openapi.gen.yaml \
+		&& echo "openapi: up to date" \
+		|| (echo "ERROR: api/openapi.yaml is stale — run 'make openapi' and commit."; exit 1)
+
 test: ## Run every test with the race detector
 	@go test -race ./...
 
@@ -51,7 +61,7 @@ lint: ## Vet + golangci-lint (includes the `exhaustive` switch check)
 run: ## Run the API against local Postgres
 	@go run ./cmd/api
 
-check: lint test ## What CI runs. Run this before you commit.
+check: lint openapi-check test ## What CI runs. Run this before you commit.
 
 psql: ## Open a psql shell on the SETHU database
 	@PGPASSWORD=sethu psql -h 127.0.0.1 -p 5434 -U sethu -d sethu

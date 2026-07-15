@@ -195,18 +195,22 @@ func TestErrorMapping(t *testing.T) {
 		}
 	})
 
-	t.Run("non-uuid path -> 400", func(t *testing.T) {
+	t.Run("non-uuid path -> 422", func(t *testing.T) {
+		// A malformed path parameter fails schema validation (the id is declared format:uuid),
+		// which huma reports as 422 Unprocessable Entity — well-formed request, invalid value.
 		r := env.do(t, http.MethodGet, "/bookings/not-a-uuid", "", tok)
-		if r.code != http.StatusBadRequest {
-			t.Errorf("non-uuid path = %d, want 400", r.code)
+		if r.code != http.StatusUnprocessableEntity {
+			t.Errorf("non-uuid path = %d, want 422", r.code)
 		}
 	})
 
-	t.Run("unknown json field -> 400", func(t *testing.T) {
+	t.Run("unknown json field -> 422", func(t *testing.T) {
+		// Unknown body properties are rejected (additionalProperties:false), as a huma schema
+		// validation failure — 422, the standard for a well-formed but invalid body.
 		body := fmt.Sprintf(`{"address_id":%q,"variant_id":%q,"quantity":1,"surprise":true}`, address, variant)
 		r := env.do(t, http.MethodPost, "/bookings", body, tok)
-		if r.code != http.StatusBadRequest {
-			t.Errorf("unknown field = %d, want 400; body=%s", r.code, r.body)
+		if r.code != http.StatusUnprocessableEntity {
+			t.Errorf("unknown field = %d, want 422; body=%s", r.code, r.body)
 		}
 	})
 
@@ -283,13 +287,23 @@ func newServer(t *testing.T) *testEnv {
 	verifier := verification.NewService(pool)
 	reviewer := reviews.NewService(pool)
 	mux := http.NewServeMux()
-	httpapi.New(bookingService, verifier, reviewer, signer, log).Register(mux)
-	httpapi.NewCatalogHandler(catalog.New(pool), signer, log).Register(mux)
-	httpapi.NewAddressHandler(address.New(pool), signer, log).Register(mux)
-	httpapi.NewOpsHandler(ops.New(pool, bookingService), signer, log).Register(mux)
-	httpapi.NewCashHandler(ledger.NewService(pool), signer, log).Register(mux)
-	httpapi.NewPaymentHandler(ledger.NewService(pool), signer, "sethucare@upi", "SETHU-CARE", log).Register(mux)
-	httpapi.NewPhotoHandler(verifier, media.NewCloudinary("democloud", "demokey", "demosecret"), signer, log).Register(mux)
+	api := httpapi.NewHumaAPI(mux, signer)
+	httpapi.RegisterAll(api, httpapi.Dependencies{
+		Identity:     identity.NewService(pool),
+		Catalog:      catalog.New(pool),
+		Address:      address.New(pool),
+		Ops:          ops.New(pool, bookingService),
+		Ledger:       ledger.NewService(pool),
+		Verification: verifier,
+		Booking:      bookingService,
+		Reviews:      reviewer,
+		Cloudinary:   media.NewCloudinary("democloud", "demokey", "demosecret"),
+		Signer:       signer,
+		UPIVPA:       "sethucare@upi",
+		UPIPayee:     "SETHU-CARE",
+		DevEchoOTP:   true,
+		Logger:       log,
+	})
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)

@@ -1,102 +1,75 @@
 // Package httpapi is the transport layer: it turns HTTP requests into domain-service calls
 // and domain results (and errors) back into HTTP. It holds no business rules — those live in
-// the domain packages. Keeping transport separate is why the same booking.Service can later
-// be driven by a gRPC or a queue consumer without change.
+// the domain packages. huma turns the typed operations here into the OpenAPI contract the
+// mobile client is generated from.
 package httpapi
 
 import (
-	"encoding/json"
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
-	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
-	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
-// Handler wires the HTTP routes to the domain services.
+// Handler wires the booking HTTP operations to the domain services.
 type Handler struct {
 	bookings     *booking.Service
 	verification *verification.Service
 	reviews      *reviews.Service
-	signer       *auth.Signer
 	log          *slog.Logger
 }
 
-func New(bookings *booking.Service, verifier *verification.Service, reviewer *reviews.Service, signer *auth.Signer, log *slog.Logger) *Handler {
-	return &Handler{bookings: bookings, verification: verifier, reviews: reviewer, signer: signer, log: log}
+func New(bookings *booking.Service, verifier *verification.Service, reviewer *reviews.Service, log *slog.Logger) *Handler {
+	return &Handler{bookings: bookings, verification: verifier, reviews: reviewer, log: log}
 }
 
-// Register mounts the booking endpoints onto mux, each wrapped in the auth it requires. The
-// authorization rule for every route is visible right here, at the route — not buried in the
-// handler.
-//
-// Creating a booking requires CUSTOMER; the technician job view requires TECHNICIAN. Reading
-// and transitioning require only authentication at the transport layer — the per-action role
-// and ownership rules live in booking.Apply (see CanPerform and authorize), because they
-// depend on the booking and its owner.
-func (handler *Handler) Register(mux *http.ServeMux) {
-	mux.Handle("POST /bookings",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(handler.create))))
-	mux.Handle("GET /bookings/{id}",
-		handler.signer.RequireAuth(http.HandlerFunc(handler.get)))
-	mux.Handle("POST /bookings/{id}/transitions",
-		handler.signer.RequireAuth(http.HandlerFunc(handler.transition)))
-	// A customer's own booking history. Authenticated; filtered to the caller.
-	mux.Handle("GET /me/bookings",
-		handler.signer.RequireAuth(http.HandlerFunc(handler.myBookings)))
-	// A technician's own active jobs. TECHNICIAN-only, filtered to the caller.
-	mux.Handle("GET /me/jobs",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.myJobs))))
-	// A customer reviews their completed booking. CUSTOMER-only; ownership checked in the service.
-	mux.Handle("POST /bookings/{id}/review",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(handler.review))))
+// RegisterHuma mounts the booking operations. The authorization rule for each is declared right
+// at the route: creating a booking and reviewing require CUSTOMER; the job view requires
+// TECHNICIAN; reading and transitioning require only authentication — the per-action role and
+// ownership rules live in booking.Apply, because they depend on the booking and its owner.
+func (handler *Handler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "createBooking", Method: http.MethodPost, Path: "/bookings",
+		Summary: "Create a booking", Tags: []string{"Bookings"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleCustomer),
+	}, handler.create)
+	huma.Register(api, huma.Operation{
+		OperationID: "getBooking", Method: http.MethodGet, Path: "/bookings/{id}",
+		Summary: "Get a booking", Tags: []string{"Bookings"},
+		Security: bearerSecurity(),
+	}, handler.get)
+	huma.Register(api, huma.Operation{
+		OperationID: "transitionBooking", Method: http.MethodPost, Path: "/bookings/{id}/transitions",
+		Summary: "Apply a state transition to a booking", Tags: []string{"Bookings"},
+		Security: bearerSecurity(),
+	}, handler.transition)
+	huma.Register(api, huma.Operation{
+		OperationID: "listMyBookings", Method: http.MethodGet, Path: "/me/bookings",
+		Summary: "List my bookings", Tags: []string{"Bookings"},
+		Security: bearerSecurity(),
+	}, handler.myBookings)
+	huma.Register(api, huma.Operation{
+		OperationID: "listMyJobs", Method: http.MethodGet, Path: "/me/jobs",
+		Summary: "List my assigned jobs", Tags: []string{"Bookings"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.myJobs)
+	huma.Register(api, huma.Operation{
+		OperationID: "reviewBooking", Method: http.MethodPost, Path: "/bookings/{id}/review",
+		Summary: "Review a completed booking", Tags: []string{"Bookings"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleCustomer),
+	}, handler.review)
 }
 
-type reviewRequest struct {
-	Rating  int32  `json:"rating"`
-	Comment string `json:"comment"`
-}
-
-func (handler *Handler) review(writer http.ResponseWriter, request *http.Request) {
-	id, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	caller, ok := auth.UserFrom(request.Context())
-	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
-	}
-	var req reviewRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	if err := handler.reviews.Submit(request.Context(), id, caller.ID, req.Rating, req.Comment); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	writeJSON(writer, http.StatusCreated, map[string]any{"status": "recorded"})
-}
-
-// --- POST /bookings ---------------------------------------------------------
-
-// createRequest has no customer_id — the customer is the authenticated caller, taken from
-// the token. Letting a client name the customer would let one customer book for another.
-type createRequest struct {
-	AddressID uuid.UUID `json:"address_id"`
-	VariantID uuid.UUID `json:"variant_id"`
-	Quantity  int32     `json:"quantity"`
-}
+// --- shared DTOs ------------------------------------------------------------
 
 type bookingResponse struct {
 	BookingID        uuid.UUID `json:"booking_id"`
@@ -106,60 +79,64 @@ type bookingResponse struct {
 	AllowedActions   []string  `json:"allowed_actions,omitempty"`
 }
 
-func (handler *Handler) create(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
+type bookingOutput struct {
+	Body bookingResponse
+}
+
+// --- POST /bookings ---------------------------------------------------------
+
+// createRequest has no customer_id — the customer is the authenticated caller, taken from the
+// token. Letting a client name the customer would let one customer book for another.
+type createRequest struct {
+	AddressID uuid.UUID `json:"address_id"`
+	VariantID uuid.UUID `json:"variant_id"`
+	Quantity  int32     `json:"quantity"`
+}
+
+type createBookingInput struct {
+	Body createRequest
+}
+
+func (handler *Handler) create(ctx context.Context, input *createBookingInput) (*bookingOutput, error) {
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-
-	var req createRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-
-	created, err := handler.bookings.Create(request.Context(), booking.CreateInput{
+	created, err := handler.bookings.Create(ctx, booking.CreateInput{
 		CustomerID: caller.ID, // the booker is the authenticated caller, never a body field
-		AddressID:  req.AddressID,
-		VariantID:  req.VariantID,
-		Quantity:   req.Quantity,
+		AddressID:  input.Body.AddressID,
+		VariantID:  input.Body.VariantID,
+		Quantity:   input.Body.Quantity,
 	})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	writeJSON(writer, http.StatusCreated, bookingResponse{
+	return &bookingOutput{Body: bookingResponse{
 		BookingID:        created.BookingID,
 		OrderID:          created.OrderID,
 		State:            created.State.String(),
 		QuotedTotalPaise: created.QuotedTotal.Paise(),
 		AllowedActions:   actionStrings(booking.AllowedActions(created.State)),
-	})
+	}}, nil
 }
 
 // --- GET /bookings/{id} -----------------------------------------------------
 
-func (handler *Handler) get(writer http.ResponseWriter, request *http.Request) {
-	id, err := pathUUID(request, "id")
+func (handler *Handler) get(ctx context.Context, input *bookingIDInput) (*bookingOutput, error) {
+	id, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	view, err := handler.bookings.Get(request.Context(), id)
+	view, err := handler.bookings.Get(ctx, id)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	writeJSON(writer, http.StatusOK, bookingResponse{
+	return &bookingOutput{Body: bookingResponse{
 		BookingID:        view.ID,
 		State:            view.State.String(),
 		QuotedTotalPaise: view.QuotedTotal.Paise(),
 		AllowedActions:   actionStrings(view.AllowedActions),
-	})
+	}}, nil
 }
 
 // --- POST /bookings/{id}/transitions ---------------------------------------
@@ -173,70 +150,61 @@ type transitionRequest struct {
 	PaymentMethod string `json:"payment_method,omitempty"`
 }
 
-func (handler *Handler) transition(writer http.ResponseWriter, request *http.Request) {
-	id, err := pathUUID(request, "id")
+type transitionBookingInput struct {
+	ID   string `path:"id" format:"uuid" doc:"Booking id"`
+	Body transitionRequest
+}
+
+func (handler *Handler) transition(ctx context.Context, input *transitionBookingInput) (*bookingOutput, error) {
+	id, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	var req transitionRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-
-	action := booking.Action(req.Action)
+	action := booking.Action(input.Body.Action)
 	if !action.Valid() {
-		writeError(writer, handler.log, &badRequestError{msg: "unknown action: " + req.Action})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "unknown action: " + input.Body.Action})
 	}
 
 	// The actor is the authenticated caller — attributed to the booking_events row, and
 	// forgery-proof, because it comes from the verified token, not a header.
-	caller, ok := auth.UserFrom(request.Context())
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
 	actor := caller.ID
 
 	transitionInput := booking.TransitionInput{
 		Actor:            &actor,
 		ActorRole:        caller.Role,
-		AssignTechnician: req.Technician,
+		AssignTechnician: input.Body.Technician,
 	}
 	// VERIFY_START / VERIFY_COMPLETION gate on the dual OTP. Build the guard so the code check
 	// and the state change happen in one transaction.
 	if purpose, needsOTP := otpPurposeFor(action); needsOTP {
-		if req.Code == "" {
-			writeError(writer, handler.log, &badRequestError{msg: "code is required for " + req.Action})
-			return
+		if input.Body.Code == "" {
+			return nil, toHumaError(handler.log, &badRequestError{msg: "code is required for " + input.Body.Action})
 		}
-		transitionInput.Guard = handler.verification.Guard(id, purpose, req.Code)
+		transitionInput.Guard = handler.verification.Guard(id, purpose, input.Body.Code)
 	}
 
 	// Completion also captures how the customer paid — it rides the booking.completed event to
 	// the ledger.
 	if action == booking.ActionVerifyCompletion {
-		if !ledger.PaymentMethod(req.PaymentMethod).Valid() {
-			writeError(writer, handler.log, &badRequestError{msg: "payment_method must be UPI, CASH, or ONLINE"})
-			return
+		if !ledger.PaymentMethod(input.Body.PaymentMethod).Valid() {
+			return nil, toHumaError(handler.log, &badRequestError{msg: "payment_method must be UPI, CASH, or ONLINE"})
 		}
-		transitionInput.PaymentMethod = req.PaymentMethod
+		transitionInput.PaymentMethod = input.Body.PaymentMethod
 	}
 
-	newState, err := handler.bookings.Apply(request.Context(), id, action, transitionInput)
+	newState, err := handler.bookings.Apply(ctx, id, action, transitionInput)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-
-	writeJSON(writer, http.StatusOK, bookingResponse{
+	return &bookingOutput{Body: bookingResponse{
 		BookingID:      id,
 		State:          newState.String(),
 		AllowedActions: actionStrings(booking.AllowedActions(newState)),
-	})
+	}}, nil
 }
 
 // otpPurposeFor maps the two OTP-gated actions to their challenge purpose. Exhaustive-linted,
@@ -267,20 +235,25 @@ type summaryResponse struct {
 	CreatedAt    time.Time  `json:"created_at"`
 }
 
-func (handler *Handler) myBookings(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
+type myBookingsOutput struct {
+	Body struct {
+		Bookings []summaryResponse `json:"bookings"`
+	}
+}
+
+func (handler *Handler) myBookings(ctx context.Context, _ *struct{}) (*myBookingsOutput, error) {
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-	summaries, err := handler.bookings.ListForCustomer(request.Context(), caller.ID)
+	summaries, err := handler.bookings.ListForCustomer(ctx, caller.ID)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]summaryResponse, len(summaries))
+	out := &myBookingsOutput{}
+	out.Body.Bookings = make([]summaryResponse, len(summaries))
 	for index, summary := range summaries {
-		payload[index] = summaryResponse{
+		out.Body.Bookings[index] = summaryResponse{
 			BookingID:    summary.BookingID.String(),
 			State:        summary.State.String(),
 			ServiceName:  summary.ServiceName,
@@ -290,7 +263,7 @@ func (handler *Handler) myBookings(writer http.ResponseWriter, request *http.Req
 			CreatedAt:    summary.CreatedAt,
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"bookings": payload})
+	return out, nil
 }
 
 // --- GET /me/jobs -----------------------------------------------------------
@@ -311,20 +284,25 @@ type jobResponse struct {
 	QuotedTotal    string     `json:"quoted_total"`
 }
 
-func (handler *Handler) myJobs(writer http.ResponseWriter, request *http.Request) {
-	caller, ok := auth.UserFrom(request.Context())
+type myJobsOutput struct {
+	Body struct {
+		Jobs []jobResponse `json:"jobs"`
+	}
+}
+
+func (handler *Handler) myJobs(ctx context.Context, _ *struct{}) (*myJobsOutput, error) {
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-	jobs, err := handler.bookings.ListForTechnician(request.Context(), caller.ID)
+	jobs, err := handler.bookings.ListForTechnician(ctx, caller.ID)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]jobResponse, len(jobs))
+	out := &myJobsOutput{}
+	out.Body.Jobs = make([]jobResponse, len(jobs))
 	for index, job := range jobs {
-		payload[index] = jobResponse{
+		out.Body.Jobs[index] = jobResponse{
 			BookingID:      job.BookingID.String(),
 			State:          job.State.String(),
 			AllowedActions: actionStrings(job.AllowedActions),
@@ -340,14 +318,45 @@ func (handler *Handler) myJobs(writer http.ResponseWriter, request *http.Request
 			QuotedTotal:    job.QuotedTotal.Rupees(),
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"jobs": payload})
+	return out, nil
+}
+
+// --- POST /bookings/{id}/review --------------------------------------------
+
+type reviewRequest struct {
+	Rating  int32  `json:"rating"`
+	Comment string `json:"comment"`
+}
+
+type reviewBookingInput struct {
+	ID   string `path:"id" format:"uuid" doc:"Booking id"`
+	Body reviewRequest
+}
+
+type statusOutput struct {
+	Body struct {
+		Status string `json:"status"`
+	}
+}
+
+func (handler *Handler) review(ctx context.Context, input *reviewBookingInput) (*statusOutput, error) {
+	id, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	if err := handler.reviews.Submit(ctx, id, caller.ID, input.Body.Rating, input.Body.Comment); err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &statusOutput{}
+	out.Body.Status = "recorded"
+	return out, nil
 }
 
 // --- helpers ----------------------------------------------------------------
-
-func pathUUID(request *http.Request, name string) (uuid.UUID, error) {
-	return parseUUID(request.PathValue(name), name)
-}
 
 func parseUUID(raw, name string) (uuid.UUID, error) {
 	id, err := uuid.Parse(raw)
@@ -357,25 +366,10 @@ func parseUUID(raw, name string) (uuid.UUID, error) {
 	return id, nil
 }
 
-func decodeJSON(writer http.ResponseWriter, request *http.Request, dst any) error {
-	dec := json.NewDecoder(request.Body)
-	dec.DisallowUnknownFields() // a typo'd field is a 400, not a silently ignored value
-	if err := dec.Decode(dst); err != nil {
-		return &badRequestError{msg: "invalid request body: " + err.Error()}
-	}
-	return nil
-}
-
 func actionStrings(actions []booking.Action) []string {
 	names := make([]string, len(actions))
 	for index, action := range actions {
 		names[index] = action.String()
 	}
 	return names
-}
-
-// writeJSON is the transport layer's local alias for the shared response helper, so handler
-// code reads naturally without importing the shared package everywhere.
-func writeJSON(writer http.ResponseWriter, statusCode int, payload any) {
-	response.JSON(writer, statusCode, payload)
 }

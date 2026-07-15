@@ -1,11 +1,14 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
@@ -19,23 +22,29 @@ import (
 type PhotoHandler struct {
 	verification *verification.Service
 	cloudinary   *media.Cloudinary
-	signer       *auth.Signer
 	log          *slog.Logger
 }
 
-func NewPhotoHandler(verifier *verification.Service, cloudinary *media.Cloudinary, signer *auth.Signer, log *slog.Logger) *PhotoHandler {
-	return &PhotoHandler{verification: verifier, cloudinary: cloudinary, signer: signer, log: log}
+func NewPhotoHandler(verifier *verification.Service, cloudinary *media.Cloudinary, log *slog.Logger) *PhotoHandler {
+	return &PhotoHandler{verification: verifier, cloudinary: cloudinary, log: log}
 }
 
-func (handler *PhotoHandler) Register(mux *http.ServeMux) {
-	// The assigned technician mints an upload signature, then records the uploaded result.
-	mux.Handle("POST /bookings/{id}/photos/signature",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.sign))))
-	mux.Handle("POST /bookings/{id}/photos",
-		handler.signer.RequireAuth(auth.RequireRole(identity.RoleTechnician, http.HandlerFunc(handler.record))))
-	// The booking's customer, its technician, or an admin may view the evidence.
-	mux.Handle("GET /bookings/{id}/photos",
-		handler.signer.RequireAuth(http.HandlerFunc(handler.list)))
+func (handler *PhotoHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "signPhotoUpload", Method: http.MethodPost, Path: "/bookings/{id}/photos/signature",
+		Summary: "Sign a work-photo upload", Tags: []string{"Photos"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.sign)
+	huma.Register(api, huma.Operation{
+		OperationID: "recordPhoto", Method: http.MethodPost, Path: "/bookings/{id}/photos",
+		Summary: "Record an uploaded work photo", Tags: []string{"Photos"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.record)
+	huma.Register(api, huma.Operation{
+		OperationID: "listPhotos", Method: http.MethodGet, Path: "/bookings/{id}/photos",
+		Summary: "List a booking's work photos", Tags: []string{"Photos"},
+		Security: bearerSecurity(),
+	}, handler.list)
 }
 
 type signatureResponse struct {
@@ -46,32 +55,34 @@ type signatureResponse struct {
 	Signature string `json:"signature"`
 }
 
+type signPhotoInput struct {
+	ID string `path:"id" format:"uuid" doc:"Booking id"`
+}
+
+type signPhotoOutput struct {
+	Body signatureResponse
+}
+
 // sign mints the parameters the client needs for a Cloudinary signed upload, scoped to a folder
 // for this booking. Only the assigned technician may request one.
-func (handler *PhotoHandler) sign(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
+func (handler *PhotoHandler) sign(ctx context.Context, input *signPhotoInput) (*signPhotoOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	caller, ok := auth.UserFrom(request.Context())
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
 	if !handler.cloudinary.Configured() {
-		writeJSON(writer, http.StatusServiceUnavailable, map[string]string{"error": "photo uploads are not configured"})
-		return
+		return nil, huma.Error503ServiceUnavailable("photo uploads are not configured")
 	}
-
-	parties, err := handler.verification.BookingParties(request.Context(), bookingID)
+	parties, err := handler.verification.BookingParties(ctx, bookingID)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
 	if parties.TechnicianID == nil || *parties.TechnicianID != caller.ID {
-		writeError(writer, handler.log, &forbiddenError{msg: "only the assigned technician may upload photos for this booking"})
-		return
+		return nil, toHumaError(handler.log, &forbiddenError{msg: "only the assigned technician may upload photos for this booking"})
 	}
 
 	timestamp := time.Now().Unix()
@@ -80,13 +91,13 @@ func (handler *PhotoHandler) sign(writer http.ResponseWriter, request *http.Requ
 		"folder":    folder,
 		"timestamp": strconv.FormatInt(timestamp, 10),
 	})
-	writeJSON(writer, http.StatusOK, signatureResponse{
+	return &signPhotoOutput{Body: signatureResponse{
 		CloudName: handler.cloudinary.CloudName(),
 		APIKey:    handler.cloudinary.APIKey(),
 		Timestamp: timestamp,
 		Folder:    folder,
 		Signature: signature,
-	})
+	}}, nil
 }
 
 type recordRequest struct {
@@ -97,48 +108,50 @@ type recordRequest struct {
 	SecureURL string `json:"secure_url"`
 }
 
+type recordPhotoInput struct {
+	ID   string `path:"id" format:"uuid" doc:"Booking id"`
+	Body recordRequest
+}
+
+type recordPhotoOutput struct {
+	Body struct {
+		Status string `json:"status"`
+		Kind   string `json:"kind"`
+	}
+}
+
 // record stores an uploaded photo AFTER verifying it really came from a Cloudinary upload to our
 // account — the returned signature must check out, and the URL must be one of ours and name the
 // signed public_id. This is what stops a technician from pasting an arbitrary URL.
-func (handler *PhotoHandler) record(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
+func (handler *PhotoHandler) record(ctx context.Context, input *recordPhotoInput) (*recordPhotoOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	caller, ok := auth.UserFrom(request.Context())
+	caller, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-	var req recordRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-
-	kind, err := verification.ParseWorkPhotoKind(req.Kind)
+	kind, err := verification.ParseWorkPhotoKind(input.Body.Kind)
 	if err != nil {
-		writeError(writer, handler.log, &badRequestError{msg: "kind must be BEFORE or AFTER"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "kind must be BEFORE or AFTER"})
 	}
-	if !handler.cloudinary.VerifyUpload(req.PublicID, req.Version, req.Signature) {
-		writeError(writer, handler.log, &badRequestError{msg: "could not verify the upload signature"})
-		return
+	if !handler.cloudinary.VerifyUpload(input.Body.PublicID, input.Body.Version, input.Body.Signature) {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "could not verify the upload signature"})
 	}
 	// The signature covers public_id/version, not the whole URL — so also require the URL to be
 	// one of ours and to name the signed public_id, closing the gap between the two.
 	expectedHost := "https://res.cloudinary.com/" + handler.cloudinary.CloudName() + "/"
-	if !strings.HasPrefix(req.SecureURL, expectedHost) || !strings.Contains(req.SecureURL, req.PublicID) {
-		writeError(writer, handler.log, &badRequestError{msg: "secure_url does not match the signed upload"})
-		return
+	if !strings.HasPrefix(input.Body.SecureURL, expectedHost) || !strings.Contains(input.Body.SecureURL, input.Body.PublicID) {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "secure_url does not match the signed upload"})
 	}
-
-	if err := handler.verification.SaveWorkPhoto(request.Context(), bookingID, caller.ID, kind, req.SecureURL); err != nil {
-		writeError(writer, handler.log, err)
-		return
+	if err := handler.verification.SaveWorkPhoto(ctx, bookingID, caller.ID, kind, input.Body.SecureURL); err != nil {
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusCreated, map[string]any{"status": "recorded", "kind": kind.String()})
+	out := &recordPhotoOutput{}
+	out.Body.Status = "recorded"
+	out.Body.Kind = kind.String()
+	return out, nil
 }
 
 type photoResponse struct {
@@ -148,43 +161,47 @@ type photoResponse struct {
 	CreatedAt string `json:"created_at"`
 }
 
-func (handler *PhotoHandler) list(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	caller, ok := auth.UserFrom(request.Context())
-	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
-	}
+type listPhotosInput struct {
+	ID string `path:"id" format:"uuid" doc:"Booking id"`
+}
 
-	parties, err := handler.verification.BookingParties(request.Context(), bookingID)
+type listPhotosOutput struct {
+	Body struct {
+		Photos []photoResponse `json:"photos"`
+	}
+}
+
+func (handler *PhotoHandler) list(ctx context.Context, input *listPhotosInput) (*listPhotosOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
+	}
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	parties, err := handler.verification.BookingParties(ctx, bookingID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
 	}
 	if !mayViewBooking(caller, parties) {
-		writeError(writer, handler.log, &forbiddenError{msg: "these photos are not yours to view"})
-		return
+		return nil, toHumaError(handler.log, &forbiddenError{msg: "these photos are not yours to view"})
 	}
-
-	photos, err := handler.verification.ListWorkPhotos(request.Context(), bookingID)
+	photos, err := handler.verification.ListWorkPhotos(ctx, bookingID)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]photoResponse, len(photos))
+	out := &listPhotosOutput{}
+	out.Body.Photos = make([]photoResponse, len(photos))
 	for index, photo := range photos {
-		payload[index] = photoResponse{
+		out.Body.Photos[index] = photoResponse{
 			ID:        photo.ID.String(),
 			Kind:      photo.Kind.String(),
 			URL:       photo.URL,
 			CreatedAt: photo.CreatedAt.Format(time.RFC3339),
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"photos": payload})
+	return out, nil
 }
 
 // mayViewBooking allows the booking's own customer, its assigned technician, or an admin.

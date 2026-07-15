@@ -1,40 +1,58 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
-	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
+	"github.com/danielgtaylor/huma/v2"
+
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
-// CatalogHandler serves the catalog: public browse endpoints, and admin-only management.
+// CatalogHandler serves the catalog: public browse operations, and admin-only management.
 type CatalogHandler struct {
 	catalog *catalog.Catalog
-	signer  *auth.Signer
 	log     *slog.Logger
 }
 
-func NewCatalogHandler(c *catalog.Catalog, signer *auth.Signer, log *slog.Logger) *CatalogHandler {
-	return &CatalogHandler{catalog: c, signer: signer, log: log}
+func NewCatalogHandler(catalogService *catalog.Catalog, log *slog.Logger) *CatalogHandler {
+	return &CatalogHandler{catalog: catalogService, log: log}
 }
 
-func (handler *CatalogHandler) Register(mux *http.ServeMux) {
-	// Public browse — a customer looks at services before logging in.
-	mux.HandleFunc("GET /categories", handler.listCategories)
-	mux.HandleFunc("GET /services", handler.listServices)
-	mux.HandleFunc("GET /services/{id}", handler.getService)
+// RegisterHuma registers the catalog operations on the huma API. Public browse needs no auth; the
+// management operations declare the bearer scheme and the ADMIN role right here at the route.
+func (handler *CatalogHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "listCategories", Method: http.MethodGet, Path: "/categories",
+		Summary: "List service categories", Tags: []string{"Catalog"},
+	}, handler.listCategories)
+	huma.Register(api, huma.Operation{
+		OperationID: "listServices", Method: http.MethodGet, Path: "/services",
+		Summary: "List services", Tags: []string{"Catalog"},
+	}, handler.listServices)
+	huma.Register(api, huma.Operation{
+		OperationID: "getService", Method: http.MethodGet, Path: "/services/{id}",
+		Summary: "Get a service", Tags: []string{"Catalog"},
+	}, handler.getService)
 
-	// Admin management. RequireRole(ADMIN) is what finally exercises role-based
-	// authorization end to end.
-	admin := func(fn http.HandlerFunc) http.Handler {
-		return handler.signer.RequireAuth(auth.RequireRole(identity.RoleAdmin, fn))
-	}
-	mux.Handle("POST /categories", admin(handler.createCategory))
-	mux.Handle("POST /services", admin(handler.createService))
-	mux.Handle("POST /services/{id}/variants", admin(handler.createVariant))
+	huma.Register(api, huma.Operation{
+		OperationID: "createCategory", Method: http.MethodPost, Path: "/categories",
+		Summary: "Create a category", Tags: []string{"Catalog"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.createCategory)
+	huma.Register(api, huma.Operation{
+		OperationID: "createService", Method: http.MethodPost, Path: "/services",
+		Summary: "Create a service", Tags: []string{"Catalog"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.createService)
+	huma.Register(api, huma.Operation{
+		OperationID: "createVariant", Method: http.MethodPost, Path: "/services/{id}/variants",
+		Summary: "Create a service variant", Tags: []string{"Catalog"}, DefaultStatus: http.StatusCreated,
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.createVariant)
 }
 
 // ---- DTOs ------------------------------------------------------------------
@@ -93,49 +111,67 @@ func toService(service catalog.Service) serviceResponse {
 	}
 }
 
-// ---- read handlers ---------------------------------------------------------
+// ---- read operations -------------------------------------------------------
 
-func (handler *CatalogHandler) listCategories(writer http.ResponseWriter, request *http.Request) {
-	cats, err := handler.catalog.ListCategories(request.Context())
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+type listCategoriesOutput struct {
+	Body struct {
+		Categories []categoryResponse `json:"categories"`
 	}
-	payload := make([]categoryResponse, len(cats))
-	for index, category := range cats {
-		payload[index] = categoryResponse{ID: category.ID.String(), Name: category.Name, Slug: category.Slug, SortOrder: category.SortOrder}
-	}
-	writeJSON(writer, http.StatusOK, map[string]any{"categories": payload})
 }
 
-func (handler *CatalogHandler) listServices(writer http.ResponseWriter, request *http.Request) {
-	services, err := handler.catalog.ListServices(request.Context())
+func (handler *CatalogHandler) listCategories(ctx context.Context, _ *struct{}) (*listCategoriesOutput, error) {
+	categories, err := handler.catalog.ListCategories(ctx)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]serviceResponse, len(services))
+	out := &listCategoriesOutput{}
+	out.Body.Categories = make([]categoryResponse, len(categories))
+	for index, category := range categories {
+		out.Body.Categories[index] = categoryResponse{ID: category.ID.String(), Name: category.Name, Slug: category.Slug, SortOrder: category.SortOrder}
+	}
+	return out, nil
+}
+
+type listServicesOutput struct {
+	Body struct {
+		Services []serviceResponse `json:"services"`
+	}
+}
+
+func (handler *CatalogHandler) listServices(ctx context.Context, _ *struct{}) (*listServicesOutput, error) {
+	services, err := handler.catalog.ListServices(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &listServicesOutput{}
+	out.Body.Services = make([]serviceResponse, len(services))
 	for index, service := range services {
-		payload[index] = toService(service)
+		out.Body.Services[index] = toService(service)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"services": payload})
+	return out, nil
 }
 
-func (handler *CatalogHandler) getService(writer http.ResponseWriter, request *http.Request) {
-	id, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	s, err := handler.catalog.GetService(request.Context(), id)
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	writeJSON(writer, http.StatusOK, toService(s))
+type serviceIDInput struct {
+	ID string `path:"id" format:"uuid" doc:"Service id"`
 }
 
-// ---- admin write handlers --------------------------------------------------
+type serviceOutput struct {
+	Body serviceResponse
+}
+
+func (handler *CatalogHandler) getService(ctx context.Context, input *serviceIDInput) (*serviceOutput, error) {
+	id, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	service, err := handler.catalog.GetService(ctx, id)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &serviceOutput{Body: toService(service)}, nil
+}
+
+// ---- admin write operations ------------------------------------------------
 
 type createCategoryRequest struct {
 	Name      string `json:"name"`
@@ -143,22 +179,23 @@ type createCategoryRequest struct {
 	SortOrder int32  `json:"sort_order"`
 }
 
-func (handler *CatalogHandler) createCategory(writer http.ResponseWriter, request *http.Request) {
-	var req createCategoryRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
+type createCategoryInput struct {
+	Body createCategoryRequest
+}
+
+type categoryOutput struct {
+	Body categoryResponse
+}
+
+func (handler *CatalogHandler) createCategory(ctx context.Context, input *createCategoryInput) (*categoryOutput, error) {
+	if input.Body.Name == "" || input.Body.Slug == "" {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "name and slug are required"})
 	}
-	if req.Name == "" || req.Slug == "" {
-		writeError(writer, handler.log, &badRequestError{msg: "name and slug are required"})
-		return
-	}
-	cat, err := handler.catalog.CreateCategory(request.Context(), catalog.NewCategory{Name: req.Name, Slug: req.Slug, SortOrder: req.SortOrder})
+	category, err := handler.catalog.CreateCategory(ctx, catalog.NewCategory{Name: input.Body.Name, Slug: input.Body.Slug, SortOrder: input.Body.SortOrder})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusCreated, categoryResponse{ID: cat.ID.String(), Name: cat.Name, Slug: cat.Slug, SortOrder: cat.SortOrder})
+	return &categoryOutput{Body: categoryResponse{ID: category.ID.String(), Name: category.Name, Slug: category.Slug, SortOrder: category.SortOrder}}, nil
 }
 
 type createServiceRequest struct {
@@ -170,60 +207,59 @@ type createServiceRequest struct {
 	EstimatedMinutes int32  `json:"estimated_minutes"`
 }
 
-func (handler *CatalogHandler) createService(writer http.ResponseWriter, request *http.Request) {
-	var req createServiceRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	categoryID, err := parseUUID(req.CategoryID, "category_id")
+type createServiceInput struct {
+	Body createServiceRequest
+}
+
+func (handler *CatalogHandler) createService(ctx context.Context, input *createServiceInput) (*serviceOutput, error) {
+	categoryID, err := parseUUID(input.Body.CategoryID, "category_id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	mode := catalog.AssignmentMode(req.AssignmentMode)
-	if req.AssignmentMode == "" {
+	mode := catalog.AssignmentMode(input.Body.AssignmentMode)
+	if input.Body.AssignmentMode == "" {
 		mode = catalog.AssignmentAuto
 	}
-	if req.EstimatedMinutes <= 0 {
-		req.EstimatedMinutes = 60
+	estimatedMinutes := input.Body.EstimatedMinutes
+	if estimatedMinutes <= 0 {
+		estimatedMinutes = 60
 	}
-	svc, err := handler.catalog.CreateService(request.Context(), catalog.NewService{
-		CategoryID: categoryID, Name: req.Name, Slug: req.Slug, Description: req.Description,
-		AssignmentMode: mode, EstimatedMinutes: req.EstimatedMinutes,
+	service, err := handler.catalog.CreateService(ctx, catalog.NewService{
+		CategoryID: categoryID, Name: input.Body.Name, Slug: input.Body.Slug, Description: input.Body.Description,
+		AssignmentMode: mode, EstimatedMinutes: estimatedMinutes,
 	})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusCreated, toService(svc))
+	return &serviceOutput{Body: toService(service)}, nil
 }
 
 type createVariantRequest struct {
 	Name  string `json:"name"`
-	Price string `json:"price"` // rupees, e.g. "599" or "499.99"
+	Price string `json:"price" doc:"Rupees, e.g. \"599\" or \"499.99\""`
 }
 
-func (handler *CatalogHandler) createVariant(writer http.ResponseWriter, request *http.Request) {
-	serviceID, err := pathUUID(request, "id")
+type createVariantInput struct {
+	ID   string `path:"id" format:"uuid" doc:"Service id"`
+	Body createVariantRequest
+}
+
+type variantOutput struct {
+	Body variantResponse
+}
+
+func (handler *CatalogHandler) createVariant(ctx context.Context, input *createVariantInput) (*variantOutput, error) {
+	serviceID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	var req createVariantRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-	price, err := money.FromRupees(req.Price)
+	price, err := money.FromRupees(input.Body.Price)
 	if err != nil {
-		writeError(writer, handler.log, &badRequestError{msg: "price must be rupees like \"599\" or \"499.99\""})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "price must be rupees like \"599\" or \"499.99\""})
 	}
-	v, err := handler.catalog.CreateVariant(request.Context(), catalog.NewVariant{ServiceID: serviceID, Name: req.Name, Price: price})
+	variant, err := handler.catalog.CreateVariant(ctx, catalog.NewVariant{ServiceID: serviceID, Name: input.Body.Name, Price: price})
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusCreated, toVariant(v))
+	return &variantOutput{Body: toVariant(variant)}, nil
 }

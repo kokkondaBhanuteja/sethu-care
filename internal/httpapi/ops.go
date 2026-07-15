@@ -1,35 +1,44 @@
 package httpapi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
-	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 )
 
-// OpsHandler serves the operations console. Every route is ADMIN-only.
+// OpsHandler serves the operations console. Every operation is ADMIN-only.
 type OpsHandler struct {
-	ops    *ops.Service
-	signer *auth.Signer
-	log    *slog.Logger
+	ops *ops.Service
+	log *slog.Logger
 }
 
-func NewOpsHandler(opsService *ops.Service, signer *auth.Signer, log *slog.Logger) *OpsHandler {
-	return &OpsHandler{ops: opsService, signer: signer, log: log}
+func NewOpsHandler(opsService *ops.Service, log *slog.Logger) *OpsHandler {
+	return &OpsHandler{ops: opsService, log: log}
 }
 
-func (handler *OpsHandler) Register(mux *http.ServeMux) {
-	adminOnly := func(fn http.HandlerFunc) http.Handler {
-		return handler.signer.RequireAuth(auth.RequireRole(identity.RoleAdmin, fn))
-	}
-	mux.Handle("GET /ops/assignment-queue", adminOnly(handler.queue))
-	mux.Handle("GET /ops/bookings/{id}/candidates", adminOnly(handler.candidates))
-	mux.Handle("POST /ops/bookings/{id}/assign", adminOnly(handler.assign))
+func (handler *OpsHandler) RegisterHuma(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "assignmentQueue", Method: http.MethodGet, Path: "/ops/assignment-queue",
+		Summary: "List the assignment queue", Tags: []string{"Ops"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.queue)
+	huma.Register(api, huma.Operation{
+		OperationID: "bookingCandidates", Method: http.MethodGet, Path: "/ops/bookings/{id}/candidates",
+		Summary: "List eligible technicians for a booking", Tags: []string{"Ops"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.candidates)
+	huma.Register(api, huma.Operation{
+		OperationID: "assignBooking", Method: http.MethodPost, Path: "/ops/bookings/{id}/assign",
+		Summary: "Assign a technician to a booking", Tags: []string{"Ops"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.assign)
 }
 
 type queueEntryResponse struct {
@@ -45,15 +54,21 @@ type queueEntryResponse struct {
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
-func (handler *OpsHandler) queue(writer http.ResponseWriter, request *http.Request) {
-	entries, err := handler.ops.Queue(request.Context())
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+type queueOutput struct {
+	Body struct {
+		Queue []queueEntryResponse `json:"queue"`
 	}
-	payload := make([]queueEntryResponse, len(entries))
+}
+
+func (handler *OpsHandler) queue(ctx context.Context, _ *struct{}) (*queueOutput, error) {
+	entries, err := handler.ops.Queue(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &queueOutput{}
+	out.Body.Queue = make([]queueEntryResponse, len(entries))
 	for index, entry := range entries {
-		payload[index] = queueEntryResponse{
+		out.Body.Queue[index] = queueEntryResponse{
 			BookingID:     entry.BookingID.String(),
 			State:         entry.State,
 			CustomerName:  entry.CustomerName,
@@ -66,7 +81,7 @@ func (handler *OpsHandler) queue(writer http.ResponseWriter, request *http.Reque
 			CreatedAt:     entry.CreatedAt,
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"queue": payload})
+	return out, nil
 }
 
 type candidateResponse struct {
@@ -79,20 +94,29 @@ type candidateResponse struct {
 	ActiveJobs        int32   `json:"active_jobs"`
 }
 
-func (handler *OpsHandler) candidates(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+type bookingIDInput struct {
+	ID string `path:"id" format:"uuid" doc:"Booking id"`
+}
+
+type candidatesOutput struct {
+	Body struct {
+		Candidates []candidateResponse `json:"candidates"`
 	}
-	found, err := handler.ops.Candidates(request.Context(), bookingID)
+}
+
+func (handler *OpsHandler) candidates(ctx context.Context, input *bookingIDInput) (*candidatesOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	payload := make([]candidateResponse, len(found))
+	found, err := handler.ops.Candidates(ctx, bookingID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &candidatesOutput{}
+	out.Body.Candidates = make([]candidateResponse, len(found))
 	for index, candidate := range found {
-		payload[index] = candidateResponse{
+		out.Body.Candidates[index] = candidateResponse{
 			TechnicianID:      candidate.TechnicianID.String(),
 			Name:              candidate.Name,
 			City:              candidate.City,
@@ -102,38 +126,40 @@ func (handler *OpsHandler) candidates(writer http.ResponseWriter, request *http.
 			ActiveJobs:        candidate.ActiveJobs,
 		}
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{"candidates": payload})
+	return out, nil
 }
 
 type assignRequest struct {
 	TechnicianID uuid.UUID `json:"technician_id"`
 }
 
-func (handler *OpsHandler) assign(writer http.ResponseWriter, request *http.Request) {
-	bookingID, err := pathUUID(request, "id")
-	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+type assignInput struct {
+	ID   string `path:"id" format:"uuid" doc:"Booking id"`
+	Body assignRequest
+}
+
+type assignOutput struct {
+	Body struct {
+		BookingID string `json:"booking_id"`
+		State     string `json:"state"`
 	}
-	admin, ok := auth.UserFrom(request.Context())
+}
+
+func (handler *OpsHandler) assign(ctx context.Context, input *assignInput) (*assignOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
 	if !ok {
-		writeError(writer, handler.log, &badRequestError{msg: "authentication required"})
-		return
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
-
-	var req assignRequest
-	if err := decodeJSON(writer, request, &req); err != nil {
-		writeError(writer, handler.log, err)
-		return
-	}
-
-	newState, err := handler.ops.Assign(request.Context(), bookingID, req.TechnicianID, admin.ID)
+	newState, err := handler.ops.Assign(ctx, bookingID, input.Body.TechnicianID, admin.ID)
 	if err != nil {
-		writeError(writer, handler.log, err)
-		return
+		return nil, toHumaError(handler.log, err)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{
-		"booking_id": bookingID.String(),
-		"state":      newState.String(),
-	})
+	out := &assignOutput{}
+	out.Body.BookingID = bookingID.String()
+	out.Body.State = newState.String()
+	return out, nil
 }
