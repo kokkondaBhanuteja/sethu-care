@@ -20,9 +20,9 @@ func NewAddressHandler(a *address.Service, signer *auth.Signer, log *slog.Logger
 	return &AddressHandler{addresses: a, signer: signer, log: log}
 }
 
-func (h *AddressHandler) Register(mux *http.ServeMux) {
-	mux.Handle("POST /addresses", h.signer.RequireAuth(http.HandlerFunc(h.create)))
-	mux.Handle("GET /addresses", h.signer.RequireAuth(http.HandlerFunc(h.list)))
+func (handler *AddressHandler) Register(mux *http.ServeMux) {
+	mux.Handle("POST /addresses", handler.signer.RequireAuth(http.HandlerFunc(handler.create)))
+	mux.Handle("GET /addresses", handler.signer.RequireAuth(http.HandlerFunc(handler.list)))
 }
 
 type addressResponse struct {
@@ -55,24 +55,24 @@ type createAddressRequest struct {
 	IsDefault bool    `json:"is_default"`
 }
 
-func (h *AddressHandler) create(w http.ResponseWriter, r *http.Request) {
+func (handler *AddressHandler) create(w http.ResponseWriter, r *http.Request) {
 	caller, ok := auth.UserFrom(r.Context())
 	if !ok {
-		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 
 	var req createAddressRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 	if req.Line1 == "" || req.City == "" {
-		writeError(w, h.log, &badRequestError{msg: "line1 and city are required"})
+		writeError(w, handler.log, &badRequestError{msg: "line1 and city are required"})
 		return
 	}
 
-	addr, err := h.addresses.Create(r.Context(), address.NewAddress{
+	addr, err := handler.addresses.Create(r.Context(), address.NewAddress{
 		UserID:    caller.ID, // the owner is the caller, never a body field
 		Label:     req.Label,
 		Line1:     req.Line1,
@@ -84,21 +84,21 @@ func (h *AddressHandler) create(w http.ResponseWriter, r *http.Request) {
 		IsDefault: req.IsDefault,
 	})
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toAddress(addr))
 }
 
-func (h *AddressHandler) list(w http.ResponseWriter, r *http.Request) {
+func (handler *AddressHandler) list(w http.ResponseWriter, r *http.Request) {
 	caller, ok := auth.UserFrom(r.Context())
 	if !ok {
-		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
-	addrs, err := h.addresses.List(r.Context(), caller.ID)
+	addrs, err := handler.addresses.List(r.Context(), caller.ID)
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 	out := make([]addressResponse, len(addrs))

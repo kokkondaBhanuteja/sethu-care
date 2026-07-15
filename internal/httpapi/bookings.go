@@ -36,13 +36,13 @@ func New(bookings *booking.Service, signer *auth.Signer, log *slog.Logger) *Hand
 // transitioning require only authentication. Per-action RBAC on transitions (only a
 // technician may ARRIVE, only an admin may ASSIGN) is a P1 refinement — the RequireRole
 // mechanism it needs already exists and is tested.
-func (h *Handler) Register(mux *http.ServeMux) {
+func (handler *Handler) Register(mux *http.ServeMux) {
 	mux.Handle("POST /bookings",
-		h.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(h.create))))
+		handler.signer.RequireAuth(auth.RequireRole(identity.RoleCustomer, http.HandlerFunc(handler.create))))
 	mux.Handle("GET /bookings/{id}",
-		h.signer.RequireAuth(http.HandlerFunc(h.get)))
+		handler.signer.RequireAuth(http.HandlerFunc(handler.get)))
 	mux.Handle("POST /bookings/{id}/transitions",
-		h.signer.RequireAuth(http.HandlerFunc(h.transition)))
+		handler.signer.RequireAuth(http.HandlerFunc(handler.transition)))
 }
 
 // --- POST /bookings ---------------------------------------------------------
@@ -63,27 +63,27 @@ type bookingResponse struct {
 	AllowedActions   []string  `json:"allowed_actions,omitempty"`
 }
 
-func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) create(w http.ResponseWriter, r *http.Request) {
 	caller, ok := auth.UserFrom(r.Context())
 	if !ok {
-		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 
 	var req createRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
-	created, err := h.bookings.Create(r.Context(), booking.CreateInput{
+	created, err := handler.bookings.Create(r.Context(), booking.CreateInput{
 		CustomerID: caller.ID, // the booker is the authenticated caller, never a body field
 		AddressID:  req.AddressID,
 		VariantID:  req.VariantID,
 		Quantity:   req.Quantity,
 	})
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
@@ -98,16 +98,16 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 
 // --- GET /bookings/{id} -----------------------------------------------------
 
-func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) get(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "id")
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
-	view, err := h.bookings.Get(r.Context(), id)
+	view, err := handler.bookings.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
@@ -126,22 +126,22 @@ type transitionRequest struct {
 	Technician *uuid.UUID `json:"technician_id,omitempty"`
 }
 
-func (h *Handler) transition(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) transition(w http.ResponseWriter, r *http.Request) {
 	id, err := pathUUID(r, "id")
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
 	var req transitionRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
 	action := booking.Action(req.Action)
 	if !action.Valid() {
-		writeError(w, h.log, &badRequestError{msg: "unknown action: " + req.Action})
+		writeError(w, handler.log, &badRequestError{msg: "unknown action: " + req.Action})
 		return
 	}
 
@@ -149,17 +149,17 @@ func (h *Handler) transition(w http.ResponseWriter, r *http.Request) {
 	// forgery-proof, because it comes from the verified token, not a header.
 	caller, ok := auth.UserFrom(r.Context())
 	if !ok {
-		writeError(w, h.log, &badRequestError{msg: "authentication required"})
+		writeError(w, handler.log, &badRequestError{msg: "authentication required"})
 		return
 	}
 	actor := caller.ID
 
-	newState, err := h.bookings.Apply(r.Context(), id, action, booking.TransitionInput{
+	newState, err := handler.bookings.Apply(r.Context(), id, action, booking.TransitionInput{
 		Actor:            &actor,
 		AssignTechnician: req.Technician,
 	})
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 

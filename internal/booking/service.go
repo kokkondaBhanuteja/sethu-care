@@ -41,8 +41,8 @@ type ConflictError struct {
 	Action    Action
 }
 
-func (e *ConflictError) Error() string {
-	return fmt.Sprintf("booking %s was modified concurrently; %s did not apply", e.BookingID, e.Action)
+func (conflict *ConflictError) Error() string {
+	return fmt.Sprintf("booking %s was modified concurrently; %s did not apply", conflict.BookingID, conflict.Action)
 }
 
 // Service is the only way to change a booking. It owns the bookings aggregate (ROADMAP
@@ -83,13 +83,13 @@ type Created struct {
 // purchase from visit (a cart of several services fanning out to several bookings), order
 // creation moves to an order service and this composes with it — but the seam (a separate
 // orders row that money attaches to) is already here.
-func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
+func (service *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 	if in.Quantity < 1 {
 		return Created{}, ErrInvalidQuantity
 	}
 
 	var out Created
-	err := storage.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
 
 		variant, err := q.GetServiceVariant(ctx, in.VariantID)
@@ -184,8 +184,8 @@ type View struct {
 }
 
 // Get reads a booking and the actions currently legal on it.
-func (s *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, error) {
-	row, err := sqlcgen.New(s.pool).GetBooking(ctx, bookingID)
+func (service *Service) Get(ctx context.Context, bookingID uuid.UUID) (View, error) {
+	row, err := sqlcgen.New(service.pool).GetBooking(ctx, bookingID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return View{}, ErrBookingNotFound
 	}
@@ -225,10 +225,10 @@ type TransitionInput struct {
 //   - *IllegalTransitionError — the action is not legal from the current state (nothing written)
 //   - *ConflictError          — someone else moved the booking first (nothing written)
 //   - ErrBookingNotFound      — no such booking
-func (s *Service) Apply(ctx context.Context, bookingID uuid.UUID, action Action, in TransitionInput) (State, error) {
+func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action Action, in TransitionInput) (State, error) {
 	var newState State
 
-	err := storage.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
 
 		current, err := q.GetBookingState(ctx, bookingID)

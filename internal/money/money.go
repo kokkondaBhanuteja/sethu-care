@@ -134,7 +134,7 @@ func MustFromRupees(s string) Money {
 }
 
 // Paise returns the raw amount, for the database and for Razorpay.
-func (m Money) Paise() int64 { return int64(m) }
+func (amount Money) Paise() int64 { return int64(amount) }
 
 // GO LESSON — value receivers, not pointer receivers.
 //
@@ -148,40 +148,40 @@ func (m Money) Paise() int64 { return int64(m) }
 // A panic is a crash; a wrapped int64 is a corrupt ledger row that can never be edited.
 // The crash is strictly better. (In practice this is unreachable: int64 paise tops out
 // around ₹92 quadrillion.)
-func (m Money) Add(other Money) Money {
-	sum := m + other
-	if (sum > m) != (other > 0) && other != 0 {
-		panic(fmt.Errorf("%w: %d + %d", ErrOverflow, m, other))
+func (amount Money) Add(other Money) Money {
+	sum := amount + other
+	if (sum > amount) != (other > 0) && other != 0 {
+		panic(fmt.Errorf("%w: %d + %d", ErrOverflow, amount, other))
 	}
 	return sum
 }
 
 // Sub returns m - other. May be negative: that is how the ledger corrects itself.
-func (m Money) Sub(other Money) Money {
-	diff := m - other
-	if (diff < m) != (other > 0) && other != 0 {
-		panic(fmt.Errorf("%w: %d - %d", ErrOverflow, m, other))
+func (amount Money) Sub(other Money) Money {
+	diff := amount - other
+	if (diff < amount) != (other > 0) && other != 0 {
+		panic(fmt.Errorf("%w: %d - %d", ErrOverflow, amount, other))
 	}
 	return diff
 }
 
 // Mul scales by a quantity — a booking line of 3 units, say.
-func (m Money) Mul(quantity int) Money {
-	if m == 0 || quantity == 0 {
+func (amount Money) Mul(quantity int) Money {
+	if amount == 0 || quantity == 0 {
 		return Zero
 	}
-	product := m * Money(quantity)
-	if product/Money(quantity) != m {
-		panic(fmt.Errorf("%w: %d × %d", ErrOverflow, m, quantity))
+	product := amount * Money(quantity)
+	if product/Money(quantity) != amount {
+		panic(fmt.Errorf("%w: %d × %d", ErrOverflow, amount, quantity))
 	}
 	return product
 }
 
 // IsZero reports whether payment should be skipped entirely — a warranty job (ROADMAP §6).
-func (m Money) IsZero() bool { return m == 0 }
+func (amount Money) IsZero() bool { return amount == 0 }
 
 // IsNegative reports a credit or a correcting entry.
-func (m Money) IsNegative() bool { return m < 0 }
+func (amount Money) IsNegative() bool { return amount < 0 }
 
 // RequireNonNegative guards the columns where a negative amount is nonsense: a quoted
 // total, a base price.
@@ -190,16 +190,16 @@ func (m Money) IsNegative() bool { return m < 0 }
 // negative offsetting rows, and that is by design (ROADMAP §6 — the ledger is
 // append-only; you never mutate a row, you offset it). So negative Money must be
 // constructible, and it is the specific callers who opt in to the guard.
-func (m Money) RequireNonNegative() error {
-	if m.IsNegative() {
-		return fmt.Errorf("%w: %s", ErrNegative, m)
+func (amount Money) RequireNonNegative() error {
+	if amount.IsNegative() {
+		return fmt.Errorf("%w: %s", ErrNegative, amount)
 	}
 	return nil
 }
 
 // Rupees renders the bare number for APIs and CSVs: "499.99".
-func (m Money) Rupees() string {
-	sign, n := "", int64(m)
+func (amount Money) Rupees() string {
+	sign, n := "", int64(amount)
 	if n < 0 {
 		sign, n = "-", -n
 	}
@@ -211,7 +211,7 @@ func (m Money) Rupees() string {
 // GO LESSON — declaring String() makes Money satisfy fmt.Stringer implicitly. There is
 // no `implements` keyword: if the method set matches, the type satisfies the interface.
 // fmt.Printf("%v", someMoney) now prints ₹499.99 with no further wiring.
-func (m Money) String() string { return "₹" + m.Rupees() }
+func (amount Money) String() string { return "₹" + amount.Rupees() }
 
 func allDigits(s string) bool {
 	for _, r := range s {

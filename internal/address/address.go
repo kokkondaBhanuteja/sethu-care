@@ -57,13 +57,13 @@ type NewAddress struct {
 // Create saves an address. The FIRST address a customer saves becomes their default
 // automatically; otherwise IsDefault is honoured. Setting a new default clears the old one in
 // the SAME transaction, so the partial unique index (one default per user) is never violated.
-func (s *Service) Create(ctx context.Context, in NewAddress) (Address, error) {
+func (service *Service) Create(ctx context.Context, in NewAddress) (Address, error) {
 	if in.Lat < -90 || in.Lat > 90 || in.Lng < -180 || in.Lng > 180 {
 		return Address{}, ErrInvalidCoordinates
 	}
 
 	var out Address
-	err := storage.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
 
 		count, err := q.CountAddressesByUser(ctx, in.UserID)
@@ -112,8 +112,8 @@ func (s *Service) Create(ctx context.Context, in NewAddress) (Address, error) {
 var ErrInvalidAddress = errors.New("address: invalid")
 
 // List returns a customer's addresses, default first.
-func (s *Service) List(ctx context.Context, userID uuid.UUID) ([]Address, error) {
-	rows, err := sqlcgen.New(s.pool).ListAddressesByUser(ctx, userID)
+func (service *Service) List(ctx context.Context, userID uuid.UUID) ([]Address, error) {
+	rows, err := sqlcgen.New(service.pool).ListAddressesByUser(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("listing addresses: %w", err)
 	}

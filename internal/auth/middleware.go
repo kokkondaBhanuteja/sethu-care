@@ -27,7 +27,7 @@ func UserFrom(ctx context.Context) (AuthedUser, bool) {
 // GO LESSON — middleware in Go is just a function that takes an http.Handler and returns
 // one. Wrapping composes: RequireRole(ADMIN) wraps RequireAuth wraps the handler, and the
 // request falls through each layer in order.
-func (s *Signer) RequireAuth(next http.Handler) http.Handler {
+func (signer *Signer) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, ok := bearerToken(r)
 		if !ok {
@@ -35,7 +35,7 @@ func (s *Signer) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := s.Parse(raw)
+		user, err := signer.Parse(raw)
 		if err != nil {
 			// Deliberately vague: never tell the caller whether the token was expired,
 			// tampered, or nonsense.

@@ -17,15 +17,15 @@ const (
 func AllRoles() []Role { return []Role{RoleCustomer, RoleTechnician, RoleAdmin} }
 
 // Valid — the switch the `exhaustive` linter watches.
-func (r Role) Valid() bool {
-	switch r {
+func (role Role) Valid() bool {
+	switch role {
 	case RoleCustomer, RoleTechnician, RoleAdmin:
 		return true
 	}
 	return false
 }
 
-func (r Role) String() string { return string(r) }
+func (role Role) String() string { return string(role) }
 
 // ParseRole is the only place a raw string may become a Role.
 func ParseRole(s string) (Role, error) {

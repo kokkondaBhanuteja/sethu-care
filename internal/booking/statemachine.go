@@ -12,8 +12,8 @@ type IllegalTransitionError struct {
 	Action Action
 }
 
-func (e *IllegalTransitionError) Error() string {
-	return fmt.Sprintf("cannot %s a booking in state %s", e.Action, e.From)
+func (illegal *IllegalTransitionError) Error() string {
+	return fmt.Sprintf("cannot %s a booking in state %s", illegal.Action, illegal.From)
 }
 
 // UnknownStateError guards the boundary where a string from the database becomes a State.
@@ -21,8 +21,8 @@ func (e *IllegalTransitionError) Error() string {
 // constraint and the drift test exist to prevent. It is a last line of defence.
 type UnknownStateError struct{ Value string }
 
-func (e *UnknownStateError) Error() string {
-	return fmt.Sprintf("unknown booking state %q", e.Value)
+func (unknown *UnknownStateError) Error() string {
+	return fmt.Sprintf("unknown booking state %q", unknown.Value)
 }
 
 // transition is the map key: a state and the thing you are trying to do to it.

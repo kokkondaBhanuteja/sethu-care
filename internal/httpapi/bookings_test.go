@@ -253,22 +253,22 @@ func newServer(t *testing.T) *testEnv {
 
 // staffToken provisions a user of the given role and returns a token for them — for testing
 // routes that need a specific role (e.g. admin-only catalog writes).
-func (e *testEnv) staffToken(t *testing.T, role identity.Role) string {
+func (env *testEnv) staffToken(t *testing.T, role identity.Role) string {
 	t.Helper()
 	id := uuid.New()
-	e.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'Staff', $3)",
+	env.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'Staff', $3)",
 		id, "+9199"+id.String()[:8], string(role))
-	return e.token(t, id.String(), role)
+	return env.token(t, id.String(), role)
 }
 
 // token mints a Bearer token for a user id and role.
-func (e *testEnv) token(t *testing.T, id string, role identity.Role) string {
+func (env *testEnv) token(t *testing.T, id string, role identity.Role) string {
 	t.Helper()
 	uid, err := uuid.Parse(id)
 	if err != nil {
 		t.Fatalf("bad uuid %q: %v", id, err)
 	}
-	tok, err := e.signer.Issue(auth.AuthedUser{ID: uid, Role: role})
+	tok, err := env.signer.Issue(auth.AuthedUser{ID: uid, Role: role})
 	if err != nil {
 		t.Fatalf("issuing token: %v", err)
 	}
@@ -282,15 +282,15 @@ type result struct {
 }
 
 // do issues a request; a non-empty token is sent as a Bearer Authorization header.
-func (e *testEnv) do(t *testing.T, method, path, body, token string) result {
+func (env *testEnv) do(t *testing.T, method, path, body, token string) result {
 	t.Helper()
 
 	var r *http.Request
 	var err error
 	if body == "" {
-		r, err = http.NewRequest(method, e.srv.URL+path, nil)
+		r, err = http.NewRequest(method, env.srv.URL+path, nil)
 	} else {
-		r, err = http.NewRequest(method, e.srv.URL+path, strings.NewReader(body))
+		r, err = http.NewRequest(method, env.srv.URL+path, strings.NewReader(body))
 	}
 	if err != nil {
 		t.Fatalf("building request: %v", err)
@@ -299,7 +299,7 @@ func (e *testEnv) do(t *testing.T, method, path, body, token string) result {
 		r.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	resp, err := e.srv.Client().Do(r)
+	resp, err := env.srv.Client().Do(r)
 	if err != nil {
 		t.Fatalf("doing request: %v", err)
 	}
@@ -372,32 +372,32 @@ func assertAllowed(t *testing.T, body map[string]any, want ...string) {
 	}
 }
 
-func (e *testEnv) seedCustomerAndAddress(t *testing.T) (customer, address string) {
+func (env *testEnv) seedCustomerAndAddress(t *testing.T) (customer, address string) {
 	t.Helper()
 	c := uuid.New()
 	a := uuid.New()
-	e.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'C', 'CUSTOMER')", c, "+9190"+c.String()[:8])
-	e.exec(t, `INSERT INTO addresses (id, user_id, line1, city, pincode, geog)
+	env.exec(t, "INSERT INTO users (id, phone, name, role) VALUES ($1, $2, 'C', 'CUSTOMER')", c, "+9190"+c.String()[:8])
+	env.exec(t, `INSERT INTO addresses (id, user_id, line1, city, pincode, geog)
 		VALUES ($1, $2, '1 Rd', 'Bengaluru', '560001', ST_MakePoint(77.59,12.97)::geography)`, a, c)
 	return c.String(), a.String()
 }
 
-func (e *testEnv) seedService(t *testing.T, rupees string) string {
+func (env *testEnv) seedService(t *testing.T, rupees string) string {
 	t.Helper()
 	cat, svc, variant := uuid.New(), uuid.New(), uuid.New()
-	e.exec(t, "INSERT INTO categories (id, name, slug) VALUES ($1, 'AC', $2)", cat, "ac-"+cat.String()[:8])
-	e.exec(t, "INSERT INTO services (id, category_id, name, slug) VALUES ($1, $2, 'AC Service', $3)", svc, cat, "svc-"+svc.String()[:8])
+	env.exec(t, "INSERT INTO categories (id, name, slug) VALUES ($1, 'AC', $2)", cat, "ac-"+cat.String()[:8])
+	env.exec(t, "INSERT INTO services (id, category_id, name, slug) VALUES ($1, $2, 'AC Service', $3)", svc, cat, "svc-"+svc.String()[:8])
 	price, err := money.FromRupees(rupees)
 	if err != nil {
 		t.Fatalf("bad seed price %q: %v", rupees, err)
 	}
-	e.exec(t, "INSERT INTO service_variants (id, service_id, name, base_price_paise) VALUES ($1, $2, 'Standard', $3)", variant, svc, price.Paise())
+	env.exec(t, "INSERT INTO service_variants (id, service_id, name, base_price_paise) VALUES ($1, $2, 'Standard', $3)", variant, svc, price.Paise())
 	return variant.String()
 }
 
-func (e *testEnv) exec(t *testing.T, sql string, args ...any) {
+func (env *testEnv) exec(t *testing.T, sql string, args ...any) {
 	t.Helper()
-	if _, err := e.pool.Exec(context.Background(), sql, args...); err != nil {
+	if _, err := env.pool.Exec(context.Background(), sql, args...); err != nil {
 		t.Fatalf("seed exec: %v\n  %s", err, sql)
 	}
 }

@@ -38,8 +38,8 @@ func AllEntryKinds() []EntryKind {
 	}
 }
 
-func (k EntryKind) Valid() bool {
-	switch k {
+func (kind EntryKind) Valid() bool {
+	switch kind {
 	case EntryRevenue, EntryCashCustody, EntryCashDeposit, EntryCreditIssued, EntryCreditRedeemed:
 		return true
 	}
@@ -50,8 +50,8 @@ func (k EntryKind) Valid() bool {
 // VISIT. The database enforces the same split
 // (ledger_entries_money_attaches_at_the_right_level) — this method exists so the code
 // cannot disagree with it.
-func (k EntryKind) AttachesToOrder() bool {
-	switch k {
+func (kind EntryKind) AttachesToOrder() bool {
+	switch kind {
 	case EntryRevenue, EntryCreditIssued, EntryCreditRedeemed:
 		return true
 	case EntryCashCustody, EntryCashDeposit:
@@ -64,8 +64,8 @@ func (k EntryKind) AttachesToOrder() bool {
 // CASH_CUSTODY entry paid by UPI is a contradiction: with UPI the money lands directly in
 // the company account and the technician never touches it, so there is nothing to be in
 // custody OF.
-func (k EntryKind) IsCash() bool {
-	switch k {
+func (kind EntryKind) IsCash() bool {
+	switch kind {
 	case EntryCashCustody, EntryCashDeposit:
 		return true
 	case EntryRevenue, EntryCreditIssued, EntryCreditRedeemed:
@@ -74,7 +74,7 @@ func (k EntryKind) IsCash() bool {
 	return false
 }
 
-func (k EntryKind) String() string { return string(k) }
+func (kind EntryKind) String() string { return string(kind) }
 
 func ParseEntryKind(s string) (EntryKind, error) {
 	kind := EntryKind(s)
@@ -103,15 +103,15 @@ func AllPaymentMethods() []PaymentMethod {
 	return []PaymentMethod{PaymentUPI, PaymentCash, PaymentOnline}
 }
 
-func (m PaymentMethod) Valid() bool {
-	switch m {
+func (method PaymentMethod) Valid() bool {
+	switch method {
 	case PaymentUPI, PaymentCash, PaymentOnline:
 		return true
 	}
 	return false
 }
 
-func (m PaymentMethod) String() string { return string(m) }
+func (method PaymentMethod) String() string { return string(method) }
 
 func ParsePaymentMethod(s string) (PaymentMethod, error) {
 	method := PaymentMethod(s)

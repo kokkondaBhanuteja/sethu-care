@@ -24,15 +24,15 @@ func AllAssignmentModes() []AssignmentMode {
 	return []AssignmentMode{AssignmentAuto, AssignmentManual}
 }
 
-func (m AssignmentMode) Valid() bool {
-	switch m {
+func (mode AssignmentMode) Valid() bool {
+	switch mode {
 	case AssignmentAuto, AssignmentManual:
 		return true
 	}
 	return false
 }
 
-func (m AssignmentMode) String() string { return string(m) }
+func (mode AssignmentMode) String() string { return string(mode) }
 
 func ParseAssignmentMode(s string) (AssignmentMode, error) {
 	mode := AssignmentMode(s)
@@ -59,8 +59,8 @@ func AllQuestionKinds() []QuestionKind {
 	return []QuestionKind{QuestionText, QuestionSingleChoice, QuestionPhoto}
 }
 
-func (k QuestionKind) Valid() bool {
-	switch k {
+func (kind QuestionKind) Valid() bool {
+	switch kind {
 	case QuestionText, QuestionSingleChoice, QuestionPhoto:
 		return true
 	}
@@ -71,8 +71,8 @@ func (k QuestionKind) Valid() bool {
 // The database enforces the same rule (question_defs_single_choice_needs_options): a
 // SINGLE_CHOICE question with no options is a dead end in the booking flow that nobody
 // notices until a customer hits it.
-func (k QuestionKind) RequiresOptions() bool {
-	switch k {
+func (kind QuestionKind) RequiresOptions() bool {
+	switch kind {
 	case QuestionSingleChoice:
 		return true
 	case QuestionText, QuestionPhoto:
@@ -81,7 +81,7 @@ func (k QuestionKind) RequiresOptions() bool {
 	return false
 }
 
-func (k QuestionKind) String() string { return string(k) }
+func (kind QuestionKind) String() string { return string(kind) }
 
 func ParseQuestionKind(s string) (QuestionKind, error) {
 	kind := QuestionKind(s)

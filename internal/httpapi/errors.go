@@ -14,7 +14,7 @@ import (
 // an unknown action. Domain errors are mapped separately, below.
 type badRequestError struct{ msg string }
 
-func (e *badRequestError) Error() string { return e.msg }
+func (badRequest *badRequestError) Error() string { return badRequest.msg }
 
 // writeError is the ONE place domain errors become HTTP status codes. Centralising it means
 // a new error type is mapped once, here, rather than in every handler — and no handler can

@@ -33,15 +33,15 @@ func AllStatuses() []Status {
 	return []Status{StatusPending, StatusPaid, StatusRefunded, StatusCancelled}
 }
 
-func (s Status) Valid() bool {
-	switch s {
+func (status Status) Valid() bool {
+	switch status {
 	case StatusPending, StatusPaid, StatusRefunded, StatusCancelled:
 		return true
 	}
 	return false
 }
 
-func (s Status) String() string { return string(s) }
+func (status Status) String() string { return string(status) }
 
 func ParseStatus(s string) (Status, error) {
 	status := Status(s)

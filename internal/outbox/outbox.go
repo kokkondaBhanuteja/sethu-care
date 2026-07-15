@@ -55,18 +55,18 @@ func NewDispatcher() *Dispatcher {
 }
 
 // Subscribe registers a handler for one event type — e.g. Ledger for "booking.completed".
-func (d *Dispatcher) Subscribe(eventType string, h Handler) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.byType[eventType] = append(d.byType[eventType], h)
+func (dispatcher *Dispatcher) Subscribe(eventType string, h Handler) {
+	dispatcher.mu.Lock()
+	defer dispatcher.mu.Unlock()
+	dispatcher.byType[eventType] = append(dispatcher.byType[eventType], h)
 }
 
 // SubscribeAll registers a handler for EVERY event — for cross-cutting consumers like
 // logging and, later, analytics, which do not care about the specific type.
-func (d *Dispatcher) SubscribeAll(h Handler) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.all = append(d.all, h)
+func (dispatcher *Dispatcher) SubscribeAll(h Handler) {
+	dispatcher.mu.Lock()
+	defer dispatcher.mu.Unlock()
+	dispatcher.all = append(dispatcher.all, h)
 }
 
 // dispatch delivers to every matching handler. If any fails, the event is considered
@@ -74,12 +74,12 @@ func (d *Dispatcher) SubscribeAll(h Handler) {
 //
 // errors.Join collects every handler's failure rather than stopping at the first: one
 // broken consumer should not hide that a second one also broke.
-func (d *Dispatcher) dispatch(ctx context.Context, e Event) error {
-	d.mu.RLock()
-	handlers := make([]Handler, 0, len(d.all)+len(d.byType[e.EventType]))
-	handlers = append(handlers, d.all...)
-	handlers = append(handlers, d.byType[e.EventType]...)
-	d.mu.RUnlock()
+func (dispatcher *Dispatcher) dispatch(ctx context.Context, e Event) error {
+	dispatcher.mu.RLock()
+	handlers := make([]Handler, 0, len(dispatcher.all)+len(dispatcher.byType[e.EventType]))
+	handlers = append(handlers, dispatcher.all...)
+	handlers = append(handlers, dispatcher.byType[e.EventType]...)
+	dispatcher.mu.RUnlock()
 
 	var errs []error
 	for _, h := range handlers {
@@ -128,13 +128,13 @@ func WithLogger(l *slog.Logger) Option    { return func(w *Worker) { w.log = l }
 // LOCKED, so the rows are locked to this worker for the duration; a concurrent worker skips
 // them. Each row is dispatched and then marked published (success) or has its failure
 // recorded (leaving it unpublished for the next poll). The lock releases on commit.
-func (w *Worker) Poll(ctx context.Context) (int, error) {
+func (worker *Worker) Poll(ctx context.Context) (int, error) {
 	var delivered int
 
-	err := storage.InTx(ctx, w.pool, func(tx pgx.Tx) error {
+	err := storage.InTx(ctx, worker.pool, func(tx pgx.Tx) error {
 		q := sqlcgen.New(tx)
 
-		rows, err := q.ClaimUnpublishedOutbox(ctx, w.batchSize)
+		rows, err := q.ClaimUnpublishedOutbox(ctx, worker.batchSize)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func (w *Worker) Poll(ctx context.Context) (int, error) {
 				Attempts:      r.Attempts,
 			}
 
-			if derr := w.dispatcher.dispatch(ctx, event); derr != nil {
+			if derr := worker.dispatcher.dispatch(ctx, event); derr != nil {
 				// A handler refused. Record the failure and MOVE ON — leaving the row
 				// unpublished so the next poll retries it. We do not return the error,
 				// because that would roll back the whole batch and lose the successful
@@ -161,7 +161,7 @@ func (w *Worker) Poll(ctx context.Context) (int, error) {
 				}); ferr != nil {
 					return ferr // a DB failure IS fatal to the batch
 				}
-				w.log.Warn("outbox delivery failed; will retry",
+				worker.log.Warn("outbox delivery failed; will retry",
 					"event_type", event.EventType, "event_id", event.ID,
 					"attempts", event.Attempts+1, "err", msg)
 				continue
@@ -184,34 +184,34 @@ func (w *Worker) Poll(ctx context.Context) (int, error) {
 //
 // GO LESSON — the select-on-ctx.Done() loop is the standard shape of a long-running Go
 // worker. ctx is wired to SIGTERM in main, so a deploy stops this cleanly between batches.
-func (w *Worker) Run(ctx context.Context) error {
-	w.log.Info("outbox worker started", "interval", w.interval, "batch_size", w.batchSize)
+func (worker *Worker) Run(ctx context.Context) error {
+	worker.log.Info("outbox worker started", "interval", worker.interval, "batch_size", worker.batchSize)
 
-	ticker := time.NewTicker(w.interval)
+	ticker := time.NewTicker(worker.interval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			w.log.Info("outbox worker stopping")
+			worker.log.Info("outbox worker stopping")
 			return ctx.Err()
 		case <-ticker.C:
-			w.drain(ctx)
+			worker.drain(ctx)
 		}
 	}
 }
 
-func (w *Worker) drain(ctx context.Context) {
+func (worker *Worker) drain(ctx context.Context) {
 	for {
-		n, err := w.Poll(ctx)
+		n, err := worker.Poll(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return // shutting down; not an error worth logging
 			}
-			w.log.Error("outbox poll failed", "err", err)
+			worker.log.Error("outbox poll failed", "err", err)
 			return
 		}
-		if n < int(w.batchSize) {
+		if n < int(worker.batchSize) {
 			return // a short batch means the backlog is drained
 		}
 	}

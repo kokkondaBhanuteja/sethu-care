@@ -28,9 +28,9 @@ func NewAuthHandler(id *identity.Service, signer *auth.Signer, log *slog.Logger,
 	return &AuthHandler{identity: id, signer: signer, log: log, devEcho: devEcho}
 }
 
-func (h *AuthHandler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("POST /auth/otp", h.requestOTP)
-	mux.HandleFunc("POST /auth/verify", h.verifyOTP)
+func (handler *AuthHandler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("POST /auth/otp", handler.requestOTP)
+	mux.HandleFunc("POST /auth/verify", handler.verifyOTP)
 }
 
 type otpRequest struct {
@@ -43,27 +43,27 @@ type otpResponse struct {
 	DevCode string `json:"dev_code,omitempty"`
 }
 
-func (h *AuthHandler) requestOTP(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) requestOTP(w http.ResponseWriter, r *http.Request) {
 	var req otpRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 	if !e164ish.MatchString(req.Phone) {
-		writeError(w, h.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
+		writeError(w, handler.log, &badRequestError{msg: "phone must be E.164, e.g. +919000000001"})
 		return
 	}
 
-	code, err := h.identity.RequestOTP(r.Context(), req.Phone)
+	code, err := handler.identity.RequestOTP(r.Context(), req.Phone)
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
 	// In dev, make the code reachable without an SMS provider. Never in production.
 	resp := otpResponse{Sent: true}
-	if h.devEcho {
-		h.log.Info("DEV otp issued", "phone", req.Phone, "code", code)
+	if handler.devEcho {
+		handler.log.Info("DEV otp issued", "phone", req.Phone, "code", code)
 		resp.DevCode = code
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -80,22 +80,22 @@ type verifyResponse struct {
 	Name  string `json:"name"`
 }
 
-func (h *AuthHandler) verifyOTP(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) verifyOTP(w http.ResponseWriter, r *http.Request) {
 	var req verifyRequest
 	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
-	user, err := h.identity.VerifyOTP(r.Context(), req.Phone, req.Code)
+	user, err := handler.identity.VerifyOTP(r.Context(), req.Phone, req.Code)
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 
-	token, err := h.signer.Issue(auth.AuthedUser{ID: user.ID, Role: user.Role})
+	token, err := handler.signer.Issue(auth.AuthedUser{ID: user.ID, Role: user.Role})
 	if err != nil {
-		writeError(w, h.log, err)
+		writeError(w, handler.log, err)
 		return
 	}
 

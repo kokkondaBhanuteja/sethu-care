@@ -58,8 +58,8 @@ func NewService(pool *pgxpool.Pool) *Service {
 // goes to the database. In dev the HTTP layer logs it; in production it is sent by SMS and
 // never appears in a response or a log. This split is why the code lives in a return value
 // and not in the struct.
-func (s *Service) RequestOTP(ctx context.Context, phone string) (string, error) {
-	q := sqlcgen.New(s.pool)
+func (service *Service) RequestOTP(ctx context.Context, phone string) (string, error) {
+	q := sqlcgen.New(service.pool)
 
 	recent, err := q.CountRecentOtpChallenges(ctx, sqlcgen.CountRecentOtpChallengesParams{
 		Phone:         phone,
@@ -101,8 +101,8 @@ func (s *Service) RequestOTP(ctx context.Context, phone string) (string, error) 
 // VerifyOTP checks a code and, on success, returns the user — creating a CUSTOMER on first
 // login. Staff (TECHNICIAN, ADMIN) are provisioned ahead of time, so an unknown phone is
 // always a new customer.
-func (s *Service) VerifyOTP(ctx context.Context, phone, code string) (User, error) {
-	q := sqlcgen.New(s.pool)
+func (service *Service) VerifyOTP(ctx context.Context, phone, code string) (User, error) {
+	q := sqlcgen.New(service.pool)
 
 	challenge, err := q.GetLiveOtpChallenge(ctx, sqlcgen.GetLiveOtpChallengeParams{
 		Phone:   phone,
@@ -136,10 +136,10 @@ func (s *Service) VerifyOTP(ctx context.Context, phone, code string) (User, erro
 		return User{}, fmt.Errorf("consuming otp: %w", err)
 	}
 
-	return s.findOrCreateCustomer(ctx, q, phone)
+	return service.findOrCreateCustomer(ctx, q, phone)
 }
 
-func (s *Service) findOrCreateCustomer(ctx context.Context, q *sqlcgen.Queries, phone string) (User, error) {
+func (service *Service) findOrCreateCustomer(ctx context.Context, q *sqlcgen.Queries, phone string) (User, error) {
 	existing, err := q.GetUserByPhone(ctx, phone)
 	switch {
 	case err == nil:

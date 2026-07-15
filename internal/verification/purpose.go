@@ -31,8 +31,8 @@ func AllPurposes() []Purpose {
 	return []Purpose{PurposeLogin, PurposeStart, PurposeCompletion}
 }
 
-func (p Purpose) Valid() bool {
-	switch p {
+func (purpose Purpose) Valid() bool {
+	switch purpose {
 	case PurposeLogin, PurposeStart, PurposeCompletion:
 		return true
 	}
@@ -42,8 +42,8 @@ func (p Purpose) Valid() bool {
 // RequiresBooking reports whether this purpose is meaningless without a job attached. The
 // database enforces the same rule (otp_challenges_purpose_matches_booking): a job OTP with
 // no job is exactly the ambiguity that lets a START challenge be replayed as a COMPLETION.
-func (p Purpose) RequiresBooking() bool {
-	switch p {
+func (purpose Purpose) RequiresBooking() bool {
+	switch purpose {
 	case PurposeStart, PurposeCompletion:
 		return true
 	case PurposeLogin:
@@ -52,7 +52,7 @@ func (p Purpose) RequiresBooking() bool {
 	return false
 }
 
-func (p Purpose) String() string { return string(p) }
+func (purpose Purpose) String() string { return string(purpose) }
 
 func ParsePurpose(s string) (Purpose, error) {
 	purpose := Purpose(s)

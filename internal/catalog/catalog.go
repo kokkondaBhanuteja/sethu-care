@@ -70,8 +70,8 @@ func New(pool *pgxpool.Pool) *Catalog {
 
 // ---- reads (public browse) -------------------------------------------------
 
-func (c *Catalog) ListCategories(ctx context.Context) ([]Category, error) {
-	rows, err := sqlcgen.New(c.pool).ListActiveCategories(ctx)
+func (catalog *Catalog) ListCategories(ctx context.Context) ([]Category, error) {
+	rows, err := sqlcgen.New(catalog.pool).ListActiveCategories(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing categories: %w", err)
 	}
@@ -84,8 +84,8 @@ func (c *Catalog) ListCategories(ctx context.Context) ([]Category, error) {
 
 // ListServices returns every active service with its active variants, assembled from two
 // queries (services + all variants) rather than one query per service.
-func (c *Catalog) ListServices(ctx context.Context) ([]Service, error) {
-	q := sqlcgen.New(c.pool)
+func (catalog *Catalog) ListServices(ctx context.Context) ([]Service, error) {
+	q := sqlcgen.New(catalog.pool)
 
 	serviceRows, err := q.ListActiveServices(ctx)
 	if err != nil {
@@ -119,8 +119,8 @@ func (c *Catalog) ListServices(ctx context.Context) ([]Service, error) {
 }
 
 // GetService returns one service with its variants and its booking-time questions.
-func (c *Catalog) GetService(ctx context.Context, id uuid.UUID) (Service, error) {
-	q := sqlcgen.New(c.pool)
+func (catalog *Catalog) GetService(ctx context.Context, id uuid.UUID) (Service, error) {
+	q := sqlcgen.New(catalog.pool)
 
 	s, err := q.GetService(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -171,8 +171,8 @@ type NewCategory struct {
 	SortOrder int32
 }
 
-func (c *Catalog) CreateCategory(ctx context.Context, in NewCategory) (Category, error) {
-	row, err := sqlcgen.New(c.pool).CreateCategory(ctx, sqlcgen.CreateCategoryParams{
+func (catalog *Catalog) CreateCategory(ctx context.Context, in NewCategory) (Category, error) {
+	row, err := sqlcgen.New(catalog.pool).CreateCategory(ctx, sqlcgen.CreateCategoryParams{
 		Name: in.Name, Slug: in.Slug, SortOrder: in.SortOrder,
 	})
 	if err != nil {
@@ -190,11 +190,11 @@ type NewService struct {
 	EstimatedMinutes int32
 }
 
-func (c *Catalog) CreateService(ctx context.Context, in NewService) (Service, error) {
+func (catalog *Catalog) CreateService(ctx context.Context, in NewService) (Service, error) {
 	if !in.AssignmentMode.Valid() {
 		return Service{}, fmt.Errorf("catalog: invalid assignment mode %q", in.AssignmentMode)
 	}
-	row, err := sqlcgen.New(c.pool).CreateService(ctx, sqlcgen.CreateServiceParams{
+	row, err := sqlcgen.New(catalog.pool).CreateService(ctx, sqlcgen.CreateServiceParams{
 		CategoryID:       in.CategoryID,
 		Name:             in.Name,
 		Slug:             in.Slug,
@@ -226,11 +226,11 @@ type NewVariant struct {
 	Price     money.Money
 }
 
-func (c *Catalog) CreateVariant(ctx context.Context, in NewVariant) (Variant, error) {
+func (catalog *Catalog) CreateVariant(ctx context.Context, in NewVariant) (Variant, error) {
 	if err := in.Price.RequireNonNegative(); err != nil {
 		return Variant{}, err
 	}
-	row, err := sqlcgen.New(c.pool).CreateVariant(ctx, sqlcgen.CreateVariantParams{
+	row, err := sqlcgen.New(catalog.pool).CreateVariant(ctx, sqlcgen.CreateVariantParams{
 		ServiceID: in.ServiceID, Name: in.Name, BasePricePaise: in.Price,
 	})
 	if isForeignKeyViolation(err) {

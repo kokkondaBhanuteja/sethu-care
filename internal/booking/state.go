@@ -90,8 +90,8 @@ func AllActions() []Action {
 // closest thing Go gives us to Java's compiler-checked enum, and it only works because
 // we set default-signifies-exhaustive=false — otherwise a `default:` would silently
 // excuse the missing case.
-func (s State) Valid() bool {
-	switch s {
+func (state State) Valid() bool {
+	switch state {
 	case StateDraft, StateConfirmed, StateSearching, StateAssigned, StateEnRoute,
 		StateArrived, StateInProgress, StateAwaitingCompletion, StateCompleted,
 		StateEscalated, StateRescheduled, StateCancelled, StateFailed:
@@ -102,8 +102,8 @@ func (s State) Valid() bool {
 
 // IsTerminal reports whether the booking is finished forever. A terminal booking has no
 // legal transitions out of it — not even CANCEL.
-func (s State) IsTerminal() bool {
-	switch s {
+func (state State) IsTerminal() bool {
+	switch state {
 	case StateCompleted, StateCancelled, StateFailed:
 		return true
 	case StateDraft, StateConfirmed, StateSearching, StateAssigned, StateEnRoute,
@@ -115,8 +115,8 @@ func (s State) IsTerminal() bool {
 }
 
 // Valid reports whether a is one of the thirteen actions.
-func (a Action) Valid() bool {
-	switch a {
+func (action Action) Valid() bool {
+	switch action {
 	case ActionConfirm, ActionSearch, ActionAssign, ActionDepart, ActionArrive,
 		ActionVerifyStart, ActionRequestCompletion, ActionVerifyCompletion,
 		ActionResume, ActionEscalate, ActionReschedule, ActionCancel, ActionFail:
@@ -125,5 +125,5 @@ func (a Action) Valid() bool {
 	return false
 }
 
-func (s State) String() string  { return string(s) }
-func (a Action) String() string { return string(a) }
+func (state State) String() string   { return string(state) }
+func (action Action) String() string { return string(action) }

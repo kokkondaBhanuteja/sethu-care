@@ -60,17 +60,17 @@ type claims struct {
 }
 
 // Issue mints a signed token for a user.
-func (s *Signer) Issue(user AuthedUser) (string, error) {
-	now := s.now()
+func (signer *Signer) Issue(user AuthedUser) (string, error) {
+	now := signer.now()
 	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.ID.String(),
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(signer.ttl)),
 		},
 	})
-	signed, err := tok.SignedString(s.secret)
+	signed, err := tok.SignedString(signer.secret)
 	if err != nil {
 		return "", fmt.Errorf("auth: signing token: %w", err)
 	}
@@ -83,13 +83,13 @@ func (s *Signer) Issue(user AuthedUser) (string, error) {
 // re-signs the token with alg=none, or with alg=RS256 using our public key as the HMAC
 // secret, and the library would happily accept it. Refusing any method but the one we issue
 // closes that door.
-func (s *Signer) Parse(token string) (AuthedUser, error) {
+func (signer *Signer) Parse(token string) (AuthedUser, error) {
 	parsed, err := jwt.ParseWithClaims(token, &claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("%w: unexpected signing method %v", ErrInvalidToken, t.Header["alg"])
 		}
-		return s.secret, nil
-	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithTimeFunc(s.now))
+		return signer.secret, nil
+	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithTimeFunc(signer.now))
 	if err != nil {
 		return AuthedUser{}, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
