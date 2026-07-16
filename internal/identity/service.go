@@ -231,6 +231,18 @@ func (service *Service) RecomputeTechnicianRating(ctx context.Context, technicia
 	return nil
 }
 
+// SetAvailability toggles a technician's online status — the provider app's online/offline switch.
+// Scoped to the technician's own row (the caller's id), so one technician cannot flip another's.
+func (service *Service) SetAvailability(ctx context.Context, technicianID uuid.UUID, online bool) error {
+	if err := sqlcgen.New(service.pool).SetTechnicianAvailability(ctx, sqlcgen.SetTechnicianAvailabilityParams{
+		IsOnline: online,
+		UserID:   technicianID,
+	}); err != nil {
+		return fmt.Errorf("setting availability: %w", err)
+	}
+	return nil
+}
+
 // randomCode returns a numeric code of the given length using crypto/rand — NOT math/rand,
 // whose output is predictable and would make codes guessable.
 func randomCode(length int) (string, error) {

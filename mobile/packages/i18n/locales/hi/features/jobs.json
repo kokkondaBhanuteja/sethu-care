@@ -1,4 +1,12 @@
 {
+  "status": {
+    "online": "ऑनलाइन",
+    "offline": "ऑफ़लाइन"
+  },
+  "earnings": {
+    "title": "जमा करने योग्य नकद",
+    "outstanding": "आपके पास {{amount}} है"
+  },
   "list": {
     "title": "मेरे काम",
     "subtitle": "आपकी असाइन की गई सर्विस विज़िट",

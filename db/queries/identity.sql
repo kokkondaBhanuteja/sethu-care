@@ -62,3 +62,10 @@ UPDATE users
        phone = @scrubbed_phone,
        deleted_at = now()
  WHERE id = @id AND deleted_at IS NULL;
+
+-- name: SetTechnicianAvailability :exec
+-- The provider app's online/offline switch. Scoped to the technician's own row; when online (and
+-- not on leave) they enter the dispatch pool the candidate ranking draws from.
+UPDATE technicians
+   SET is_online = @is_online, updated_at = now()
+ WHERE user_id = @user_id;

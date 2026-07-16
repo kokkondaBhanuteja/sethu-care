@@ -1,4 +1,12 @@
 {
+  "status": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "earnings": {
+    "title": "Cash to deposit",
+    "outstanding": "You are holding {{amount}}"
+  },
   "list": {
     "title": "My jobs",
     "subtitle": "Your assigned service visits",

@@ -29,6 +29,14 @@ JOIN users u ON u.id = position.technician_id
 WHERE position.outstanding_paise > 0
 ORDER BY position.oldest_collection_at;
 
+-- name: GetTechnicianCashPosition :one
+-- One technician's own cash standing, for the provider app's cash-held summary. Returns no row
+-- when they have never collected cash — the caller reads that as an all-zero position.
+SELECT
+  position.collected_paise, position.deposited_paise, position.outstanding_paise
+FROM technician_cash_position position
+WHERE position.technician_id = @technician_id;
+
 -- name: CreditExistsForOrder :one
 -- Idempotency guard for the failed-booking credit consumer.
 SELECT EXISTS (

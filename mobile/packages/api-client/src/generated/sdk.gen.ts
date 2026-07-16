@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, MyCashPositionData, MyCashPositionErrors, MyCashPositionResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SetAvailabilityData, SetAvailabilityErrors, SetAvailabilityResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -180,11 +180,33 @@ export const deleteAccount = <ThrowOnError extends boolean = false>(options?: Op
 });
 
 /**
+ * Set my online availability
+ */
+export const setAvailability = <ThrowOnError extends boolean = false>(options: Options<SetAvailabilityData, ThrowOnError>): RequestResult<SetAvailabilityResponses, SetAvailabilityErrors, ThrowOnError> => (options.client ?? client).post<SetAvailabilityResponses, SetAvailabilityErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/me/availability',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List my bookings
  */
 export const listMyBookings = <ThrowOnError extends boolean = false>(options?: Options<ListMyBookingsData, ThrowOnError>): RequestResult<ListMyBookingsResponses, ListMyBookingsErrors, ThrowOnError> => (options?.client ?? client).get<ListMyBookingsResponses, ListMyBookingsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/me/bookings',
+    ...options
+});
+
+/**
+ * My cash held and deposited
+ */
+export const myCashPosition = <ThrowOnError extends boolean = false>(options?: Options<MyCashPositionData, ThrowOnError>): RequestResult<MyCashPositionResponses, MyCashPositionErrors, ThrowOnError> => (options?.client ?? client).get<MyCashPositionResponses, MyCashPositionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/me/cash',
     ...options
 });
 

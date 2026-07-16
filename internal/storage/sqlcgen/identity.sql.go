@@ -216,3 +216,21 @@ func (q *Queries) ScrubUser(ctx context.Context, arg ScrubUserParams) error {
 	_, err := q.db.Exec(ctx, scrubUser, arg.ScrubbedPhone, arg.ID)
 	return err
 }
+
+const setTechnicianAvailability = `-- name: SetTechnicianAvailability :exec
+UPDATE technicians
+   SET is_online = $1, updated_at = now()
+ WHERE user_id = $2
+`
+
+type SetTechnicianAvailabilityParams struct {
+	IsOnline bool
+	UserID   uuid.UUID
+}
+
+// The provider app's online/offline switch. Scoped to the technician's own row; when online (and
+// not on leave) they enter the dispatch pool the candidate ranking draws from.
+func (q *Queries) SetTechnicianAvailability(ctx context.Context, arg SetTechnicianAvailabilityParams) error {
+	_, err := q.db.Exec(ctx, setTechnicianAvailability, arg.IsOnline, arg.UserID)
+	return err
+}
