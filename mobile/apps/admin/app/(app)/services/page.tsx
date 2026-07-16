@@ -10,6 +10,7 @@ import {
 import type { ListServicesResponse } from "@sethu/api-client";
 
 import { Button, Card, PageHeader, StatusPill } from "@/components/ui";
+import { NewCategoryForm, NewServiceForm } from "@/components/catalog-forms";
 
 type Service = NonNullable<ListServicesResponse["services"]>[number];
 
@@ -19,10 +20,24 @@ type Service = NonNullable<ListServicesResponse["services"]>[number];
 export default function ServicesPage() {
   const { data, isLoading } = useQuery(listServicesOptions());
   const services = data?.services ?? [];
+  const [managing, setManaging] = useState(false);
 
   return (
     <div>
-      <PageHeader title="Services" subtitle="Catalog and pricing" />
+      <div className="mb-lg flex items-center justify-between">
+        <PageHeader title="Services" subtitle="Catalog and pricing" />
+        <Button variant="secondary" onClick={() => setManaging((open) => !open)}>
+          {managing ? "Done" : "Manage catalog"}
+        </Button>
+      </div>
+
+      {managing ? (
+        <div className="mb-lg grid grid-cols-1 gap-lg lg:grid-cols-2">
+          <NewCategoryForm />
+          <NewServiceForm />
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-lg">
         {services.length === 0 ? (
           <Card>{isLoading ? "Loading…" : "No services yet."}</Card>

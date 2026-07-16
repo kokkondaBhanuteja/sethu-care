@@ -82,3 +82,7 @@ jobs:
       - name: Format check
         if: steps.changes.outputs.mobile == 'true'
         run: pnpm format:check
+
+      - name: i18n locales in sync
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm i18n:check

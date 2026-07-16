@@ -36,5 +36,13 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  {
+    // Node utility scripts (e.g. scripts/check-i18n.mjs) run under Node, not RN/browser — give them
+    // the Node globals so process/console/URL aren't flagged as undefined.
+    files: ["scripts/**/*.{js,mjs}"],
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly", URL: "readonly" },
+    },
+  },
   prettier,
 );

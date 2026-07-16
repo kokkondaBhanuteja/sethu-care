@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { assignBooking, assignmentQueue, bookingCandidates, capturePayment, cashReconciliation, createAddress, createBooking, createCategory, createService, createVariant, deleteAccount, depositCash, getBooking, getPayment, getService, listAddresses, listCategories, listMyBookings, listMyJobs, listPhotos, listServices, myCashPosition, type Options, pendingPayments, recordPhoto, requestOtp, reviewBooking, setAvailability, signPhotoUpload, transitionBooking, verifyOtp } from '../sdk.gen';
-import type { AssignBookingData, AssignBookingError, AssignBookingResponse, AssignmentQueueData, AssignmentQueueError, AssignmentQueueResponse, BookingCandidatesData, BookingCandidatesError, BookingCandidatesResponse, CapturePaymentData, CapturePaymentError, CapturePaymentResponse, CashReconciliationData, CashReconciliationError, CashReconciliationResponse, CreateAddressData, CreateAddressError, CreateAddressResponse, CreateBookingData, CreateBookingError, CreateBookingResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateServiceData, CreateServiceError, CreateServiceResponse, CreateVariantData, CreateVariantError, CreateVariantResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DepositCashData, DepositCashError, DepositCashResponse, GetBookingData, GetBookingError, GetBookingResponse, GetPaymentData, GetPaymentError, GetPaymentResponse, GetServiceData, GetServiceError, GetServiceResponse, ListAddressesData, ListAddressesError, ListAddressesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListMyBookingsData, ListMyBookingsError, ListMyBookingsResponse, ListMyJobsData, ListMyJobsError, ListMyJobsResponse, ListPhotosData, ListPhotosError, ListPhotosResponse, ListServicesData, ListServicesError, ListServicesResponse, MyCashPositionData, MyCashPositionError, MyCashPositionResponse, PendingPaymentsData, PendingPaymentsError, PendingPaymentsResponse, RecordPhotoData, RecordPhotoError, RecordPhotoResponse, RequestOtpData, RequestOtpError, RequestOtpResponse, ReviewBookingData, ReviewBookingError, ReviewBookingResponse, SetAvailabilityData, SetAvailabilityError, SetAvailabilityResponse, SignPhotoUploadData, SignPhotoUploadError, SignPhotoUploadResponse, TransitionBookingData, TransitionBookingError, TransitionBookingResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { assignBooking, assignmentQueue, bookingCandidates, capturePayment, cashReconciliation, createAddress, createBooking, createCategory, createService, createVariant, deleteAccount, depositCash, getBooking, getPayment, getService, listAddresses, listCategories, listMyBookings, listMyJobs, listPhotos, listServices, listTechnicians, myCashPosition, type Options, pendingPayments, recordPhoto, requestOtp, reviewBooking, setAvailability, signPhotoUpload, transitionBooking, verifyOtp } from '../sdk.gen';
+import type { AssignBookingData, AssignBookingError, AssignBookingResponse, AssignmentQueueData, AssignmentQueueError, AssignmentQueueResponse, BookingCandidatesData, BookingCandidatesError, BookingCandidatesResponse, CapturePaymentData, CapturePaymentError, CapturePaymentResponse, CashReconciliationData, CashReconciliationError, CashReconciliationResponse, CreateAddressData, CreateAddressError, CreateAddressResponse, CreateBookingData, CreateBookingError, CreateBookingResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateServiceData, CreateServiceError, CreateServiceResponse, CreateVariantData, CreateVariantError, CreateVariantResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DepositCashData, DepositCashError, DepositCashResponse, GetBookingData, GetBookingError, GetBookingResponse, GetPaymentData, GetPaymentError, GetPaymentResponse, GetServiceData, GetServiceError, GetServiceResponse, ListAddressesData, ListAddressesError, ListAddressesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListMyBookingsData, ListMyBookingsError, ListMyBookingsResponse, ListMyJobsData, ListMyJobsError, ListMyJobsResponse, ListPhotosData, ListPhotosError, ListPhotosResponse, ListServicesData, ListServicesError, ListServicesResponse, ListTechniciansData, ListTechniciansError, ListTechniciansResponse, MyCashPositionData, MyCashPositionError, MyCashPositionResponse, PendingPaymentsData, PendingPaymentsError, PendingPaymentsResponse, RecordPhotoData, RecordPhotoError, RecordPhotoResponse, RequestOtpData, RequestOtpError, RequestOtpResponse, ReviewBookingData, ReviewBookingError, ReviewBookingResponse, SetAvailabilityData, SetAvailabilityError, SetAvailabilityResponse, SignPhotoUploadData, SignPhotoUploadError, SignPhotoUploadResponse, TransitionBookingData, TransitionBookingError, TransitionBookingResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -474,6 +474,24 @@ export const pendingPaymentsOptions = (options?: Options<PendingPaymentsData>) =
         return data;
     },
     queryKey: pendingPaymentsQueryKey(options)
+});
+
+export const listTechniciansQueryKey = (options?: Options<ListTechniciansData>) => createQueryKey('listTechnicians', options);
+
+/**
+ * List technicians and their load
+ */
+export const listTechniciansOptions = (options?: Options<ListTechniciansData>) => queryOptions<ListTechniciansResponse, ListTechniciansError, ListTechniciansResponse, ReturnType<typeof listTechniciansQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listTechnicians({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listTechniciansQueryKey(options)
 });
 
 /**

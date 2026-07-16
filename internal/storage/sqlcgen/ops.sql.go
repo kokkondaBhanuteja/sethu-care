@@ -164,6 +164,67 @@ func (q *Queries) ListCandidateTechnicians(ctx context.Context, id uuid.UUID) ([
 	return items, nil
 }
 
+const listTechnicians = `-- name: ListTechnicians :many
+WITH active_jobs AS (
+  SELECT technician_id, count(*) AS count
+  FROM bookings
+  WHERE technician_id IS NOT NULL
+    AND state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+  GROUP BY technician_id
+)
+SELECT
+  t.user_id, u.name, t.city, t.is_online, t.on_leave,
+  t.acceptance_rate, t.rating, t.max_concurrent_jobs,
+  COALESCE(aj.count, 0)::int AS active_jobs
+FROM technicians t
+JOIN users u ON u.id = t.user_id
+LEFT JOIN active_jobs aj ON aj.technician_id = t.user_id
+ORDER BY u.name
+`
+
+type ListTechniciansRow struct {
+	UserID            uuid.UUID
+	Name              string
+	City              string
+	IsOnline          bool
+	OnLeave           bool
+	AcceptanceRate    pgtype.Numeric
+	Rating            pgtype.Numeric
+	MaxConcurrentJobs int32
+	ActiveJobs        int32
+}
+
+// Every technician with their status and current load — the admin console's Employees view.
+func (q *Queries) ListTechnicians(ctx context.Context) ([]ListTechniciansRow, error) {
+	rows, err := q.db.Query(ctx, listTechnicians)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTechniciansRow{}
+	for rows.Next() {
+		var i ListTechniciansRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.Name,
+			&i.City,
+			&i.IsOnline,
+			&i.OnLeave,
+			&i.AcceptanceRate,
+			&i.Rating,
+			&i.MaxConcurrentJobs,
+			&i.ActiveJobs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const technicianExists = `-- name: TechnicianExists :one
 SELECT EXISTS (SELECT 1 FROM technicians WHERE user_id = $1) AS exists
 `

@@ -39,6 +39,52 @@ func (handler *OpsHandler) RegisterHuma(api huma.API) {
 		Summary: "Assign a technician to a booking", Tags: []string{"Ops"},
 		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
 	}, handler.assign)
+	huma.Register(api, huma.Operation{
+		OperationID: "listTechnicians", Method: http.MethodGet, Path: "/ops/technicians",
+		Summary: "List technicians and their load", Tags: []string{"Ops"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.technicians)
+}
+
+type technicianResponse struct {
+	TechnicianID      string  `json:"technician_id"`
+	Name              string  `json:"name"`
+	City              string  `json:"city"`
+	IsOnline          bool    `json:"is_online"`
+	OnLeave           bool    `json:"on_leave"`
+	AcceptanceRate    float64 `json:"acceptance_rate"`
+	Rating            float64 `json:"rating"`
+	MaxConcurrentJobs int32   `json:"max_concurrent_jobs"`
+	ActiveJobs        int32   `json:"active_jobs"`
+}
+
+type techniciansOutput struct {
+	Body struct {
+		Technicians []technicianResponse `json:"technicians"`
+	}
+}
+
+func (handler *OpsHandler) technicians(ctx context.Context, _ *struct{}) (*techniciansOutput, error) {
+	found, err := handler.ops.Technicians(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &techniciansOutput{}
+	out.Body.Technicians = make([]technicianResponse, len(found))
+	for index, technician := range found {
+		out.Body.Technicians[index] = technicianResponse{
+			TechnicianID:      technician.TechnicianID.String(),
+			Name:              technician.Name,
+			City:              technician.City,
+			IsOnline:          technician.IsOnline,
+			OnLeave:           technician.OnLeave,
+			AcceptanceRate:    technician.AcceptanceRate,
+			Rating:            technician.Rating,
+			MaxConcurrentJobs: technician.MaxConcurrentJobs,
+			ActiveJobs:        technician.ActiveJobs,
+		}
+	}
+	return out, nil
 }
 
 type queueEntryResponse struct {

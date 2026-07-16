@@ -66,3 +66,21 @@ ORDER BY t.acceptance_rate DESC, t.rating DESC;
 
 -- name: TechnicianExists :one
 SELECT EXISTS (SELECT 1 FROM technicians WHERE user_id = $1) AS exists;
+
+-- name: ListTechnicians :many
+-- Every technician with their status and current load — the admin console's Employees view.
+WITH active_jobs AS (
+  SELECT technician_id, count(*) AS count
+  FROM bookings
+  WHERE technician_id IS NOT NULL
+    AND state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+  GROUP BY technician_id
+)
+SELECT
+  t.user_id, u.name, t.city, t.is_online, t.on_leave,
+  t.acceptance_rate, t.rating, t.max_concurrent_jobs,
+  COALESCE(aj.count, 0)::int AS active_jobs
+FROM technicians t
+JOIN users u ON u.id = t.user_id
+LEFT JOIN active_jobs aj ON aj.technician_id = t.user_id
+ORDER BY u.name;
