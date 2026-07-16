@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
@@ -28,11 +29,26 @@ const (
 type Service struct {
 	pool   *pgxpool.Pool
 	sender Sender
+	otp    sms.Sender // optional: dedicated OTP transport (e.g. MSG91's DLT template)
 	log    *slog.Logger
 }
 
-func NewService(pool *pgxpool.Pool, sender Sender, log *slog.Logger) *Service {
-	return &Service{pool: pool, sender: sender, log: log}
+// Option configures the Service at construction.
+type Option func(*Service)
+
+// WithOTPSender routes job start/completion codes through a dedicated OTP transport (MSG91's
+// approved template) instead of the generic notification Sender. Without it, job codes fall back
+// to the generic Sender (dev/logging).
+func WithOTPSender(sender sms.Sender) Option {
+	return func(service *Service) { service.otp = sender }
+}
+
+func NewService(pool *pgxpool.Pool, sender Sender, log *slog.Logger, opts ...Option) *Service {
+	service := &Service{pool: pool, sender: sender, log: log}
+	for _, opt := range opts {
+		opt(service)
+	}
+	return service
 }
 
 // Notify sends the customer the message for a booking event, if that event has one. It is an
@@ -86,6 +102,11 @@ func (service *Service) SendJobCode(ctx context.Context, bookingID uuid.UUID, pu
 	recipient, err := sqlcgen.New(service.pool).GetNotificationRecipient(ctx, bookingID)
 	if err != nil {
 		return fmt.Errorf("finding otp recipient: %w", err)
+	}
+	// A dedicated OTP transport (MSG91) owns the message text via its approved template, so it takes
+	// only the code. Without one, fall back to the generic Sender with our own copy (dev/logging).
+	if service.otp != nil {
+		return service.otp.SendOTP(ctx, recipient.Phone, code)
 	}
 	return service.sender.Send(ctx, Outbound{
 		Channel:   ChannelSMS,

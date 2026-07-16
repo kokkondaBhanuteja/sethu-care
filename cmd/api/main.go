@@ -37,6 +37,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -101,7 +102,17 @@ func run() error {
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
-	notificationService := notifications.NewService(pool, notifications.NewLogSender(logger), logger)
+
+	// OTP delivery: real SMS via MSG91 when configured, otherwise the code is only logged (dev).
+	// The same sender carries both login codes and job start/completion codes.
+	var otpSender sms.Sender = sms.NewLogSender(logger)
+	if settings.MSG91AuthKey != "" && settings.MSG91TemplateID != "" {
+		otpSender = sms.NewMSG91(settings.MSG91AuthKey, settings.MSG91TemplateID)
+		logger.Info("MSG91 SMS enabled for OTP delivery")
+	}
+
+	notificationService := notifications.NewService(pool, notifications.NewLogSender(logger), logger,
+		notifications.WithOTPSender(otpSender))
 
 	// The outbox consumers (auto-search, dual-OTP, billing, credits, notifications, ratings) are
 	// wired in one place — internal/app — so this composition root stays thin as they multiply.
@@ -150,6 +161,7 @@ func run() error {
 			addressService:      addressService,
 			opsService:          opsService,
 			signer:              signer,
+			otpSender:           otpSender,
 			devEchoOTP:          settings.DevEchoOTP,
 			upiVPA:              settings.UPIVirtualAddress,
 			upiPayee:            settings.UPIPayeeName,
@@ -213,6 +225,7 @@ type routerDependencies struct {
 	addressService      *address.Service
 	opsService          *ops.Service
 	signer              *auth.Signer
+	otpSender           sms.Sender
 	devEchoOTP          bool
 	upiVPA              string
 	upiPayee            string
@@ -240,6 +253,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Reviews:      dependencies.reviewService,
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,
+		OTPSender:    dependencies.otpSender,
 		UPIVPA:       dependencies.upiVPA,
 		UPIPayee:     dependencies.upiPayee,
 		DevEchoOTP:   dependencies.devEchoOTP,
