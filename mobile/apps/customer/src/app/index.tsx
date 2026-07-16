@@ -1,16 +1,16 @@
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
-import { Screen, Text } from "@sethu/ui";
+import { Screen, Text, Skeleton, EmptyState, ErrorState } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 import { useServices, ServiceCard } from "@/features/catalog";
 
 // Authenticated home — the service catalog (real read path via the generated query hook, rendered
-// on FlashList). Booking a service (optimistic) and the address/confirm flow follow next.
+// on FlashList). Loading shows skeletons; a failed load offers a retry.
 export default function Home() {
   const { t } = useTranslation(["common", "booking"]);
   const router = useRouter();
-  const { data, isLoading } = useServices();
+  const { data, isLoading, isError, refetch } = useServices();
   const services = data?.services ?? [];
 
   return (
@@ -33,20 +33,34 @@ export default function Home() {
             </Pressable>
           </View>
         </View>
-        <FlashList
-          data={services}
-          keyExtractor={(item, index) => item.id ?? String(index)}
-          renderItem={({ item }) => (
-            <ServiceCard
-              service={item}
-              onPress={() =>
-                item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })
-              }
-            />
-          )}
-          ItemSeparatorComponent={() => <View className="h-md" />}
-          ListEmptyComponent={isLoading ? null : <Text tone="muted">{t("empty.title")}</Text>}
-        />
+        {isError ? (
+          <ErrorState
+            title={t("common:errors.generic")}
+            retryLabel={t("common:actions.retry")}
+            onRetry={() => void refetch()}
+          />
+        ) : isLoading ? (
+          <View className="gap-md pt-sm">
+            {[0, 1, 2, 3].map((row) => (
+              <Skeleton key={row} className="h-24 w-full" />
+            ))}
+          </View>
+        ) : (
+          <FlashList
+            data={services}
+            keyExtractor={(item, index) => item.id ?? String(index)}
+            renderItem={({ item }) => (
+              <ServiceCard
+                service={item}
+                onPress={() =>
+                  item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })
+                }
+              />
+            )}
+            ItemSeparatorComponent={() => <View className="h-md" />}
+            ListEmptyComponent={<EmptyState title={t("common:empty.title")} />}
+          />
+        )}
       </View>
     </Screen>
   );
