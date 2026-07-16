@@ -28,4 +28,16 @@ export type { ScreenProps } from "./components/Screen";
 export { GlassSurface } from "./components/GlassSurface";
 export type { GlassSurfaceProps } from "./components/GlassSurface";
 
+export { Icon } from "./components/Icon";
+export type { IconProps, IconName, IconTone } from "./components/Icon";
+
+export { Card } from "./components/Card";
+export type { CardProps } from "./components/Card";
+
+export { AppHeader } from "./components/AppHeader";
+export type { AppHeaderProps } from "./components/AppHeader";
+
+export { Avatar } from "./components/Avatar";
+export type { AvatarProps } from "./components/Avatar";
+
 export { useTheme } from "./theme/use-theme";

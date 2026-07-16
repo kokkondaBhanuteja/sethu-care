@@ -5,15 +5,16 @@ import { tv, type VariantProps } from "tailwind-variants";
 import { color } from "@sethu/tokens";
 
 import { Text } from "./Text";
+import { Icon, type IconName } from "./Icon";
 
-// Pill buttons matching the design. The primary variant is the Indigo→Violet gradient CTA; the
-// others are solid/glass. Variant-driven, ref-forwarded, and accessible by default.
+// Pill buttons. The primary variant is the teal→blue gradient CTA; the others are solid/outline.
+// Variant-driven, ref-forwarded, accessible, and support an optional leading icon.
 const container = tv({
-  base: "flex-row items-center justify-center rounded-full overflow-hidden",
+  base: "flex-row items-center justify-center gap-xs rounded-full overflow-hidden",
   variants: {
     variant: {
       primary: "",
-      secondary: "bg-surface-container border border-outline-variant",
+      secondary: "bg-surface-container-lowest border border-outline-variant",
       ghost: "bg-transparent",
       destructive: "bg-error",
     },
@@ -37,8 +38,11 @@ const labelTone: Record<ButtonVariant, "inverse" | "default" | "primary"> = {
   destructive: "inverse",
 };
 
+const iconTone: Record<ButtonVariant, "inverse" | "default" | "primary"> = labelTone;
+
 export type ButtonProps = Omit<VariantProps<typeof container>, "isDisabled"> & {
   label: string;
+  icon?: IconName;
   onPress?: PressableProps["onPress"];
   disabled?: boolean;
   loading?: boolean;
@@ -48,6 +52,7 @@ export type ButtonProps = Omit<VariantProps<typeof container>, "isDisabled"> & {
 export const Button = forwardRef<View, ButtonProps>(function Button(
   {
     label,
+    icon,
     variant = "primary",
     size = "md",
     fullWidth,
@@ -59,6 +64,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
   ref,
 ) {
   const isDisabled = Boolean(disabled) || Boolean(loading);
+  const resolvedVariant = variant ?? "primary";
 
   return (
     <Pressable
@@ -70,7 +76,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       onPress={onPress}
       className={container({ variant, size, fullWidth, isDisabled })}
     >
-      {variant === "primary" ? (
+      {resolvedVariant === "primary" ? (
         <LinearGradient
           colors={[color.primary, color.secondary] as const}
           start={{ x: 0, y: 0 }}
@@ -78,7 +84,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <Text variant="label" tone={labelTone[variant ?? "primary"]}>
+      {icon && !loading ? <Icon name={icon} size={18} tone={iconTone[resolvedVariant]} /> : null}
+      <Text variant="label" tone={labelTone[resolvedVariant]}>
         {loading ? "…" : label}
       </Text>
     </Pressable>

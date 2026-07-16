@@ -85,10 +85,14 @@ export const radius = {
   full: 9999,
 } as const;
 
+// Inter, loaded via @expo-google-fonts/inter. On React Native each WEIGHT is its own family (font
+// weight alone does not render bold), so we name the weighted families and use them per role.
 export const fontFamily = {
-  display: "Plus Jakarta Sans",
-  heading: "Plus Jakarta Sans",
-  body: "Inter",
+  display: "Inter_800ExtraBold",
+  heading: "Inter_700Bold",
+  semibold: "Inter_600SemiBold",
+  medium: "Inter_500Medium",
+  body: "Inter_400Regular",
 } as const;
 
 /** Type scale: [fontSize px, { lineHeight, fontWeight, letterSpacing? }]. */
@@ -140,14 +144,14 @@ export const typography = {
     lineHeight: 1.2,
     fontWeight: "600",
     letterSpacing: 0.05,
-    family: fontFamily.body,
+    family: fontFamily.semibold,
   },
   labelSm: {
     fontSize: 12,
     lineHeight: 1.2,
     fontWeight: "500",
     letterSpacing: 0,
-    family: fontFamily.body,
+    family: fontFamily.medium,
   },
 } as const;
 

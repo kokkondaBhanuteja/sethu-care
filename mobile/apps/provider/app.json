@@ -50,7 +50,8 @@
         {
           "locationWhenInUsePermission": "SETHU-CARE Partner shares your location while you travel to a job so the customer can see you approaching."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

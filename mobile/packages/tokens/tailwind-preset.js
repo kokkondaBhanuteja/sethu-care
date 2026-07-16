@@ -81,9 +81,12 @@ module.exports = {
         "container-max": "1280px",
       },
       fontFamily: {
-        display: ["Plus Jakarta Sans"],
-        heading: ["Plus Jakarta Sans"],
-        body: ["Inter"],
+        // Inter, per weight (each weight is its own RN family). Loaded via @expo-google-fonts/inter.
+        display: ["Inter_800ExtraBold"],
+        heading: ["Inter_700Bold"],
+        semibold: ["Inter_600SemiBold"],
+        medium: ["Inter_500Medium"],
+        body: ["Inter_400Regular"],
       },
       fontSize: {
         "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],

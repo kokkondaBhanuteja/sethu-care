@@ -18,6 +18,7 @@
     "expo-blur": "*",
     "expo-glass-effect": "*",
     "expo-linear-gradient": "*",
+    "lucide-react-native": "*",
     "nativewind": "*",
     "react": "*",
     "react-native": "*",
