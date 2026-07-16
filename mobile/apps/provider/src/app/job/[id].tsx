@@ -7,6 +7,7 @@ import { Screen, Text, Button, StatusPill, TextField } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 import { useMyJobs, useTransitionJob } from "@/features/jobs";
+import { JobMap } from "@/features/jobs/components/job-map";
 import { useBookingPayment, useDepositCash } from "@/features/payment";
 import { usePhotos, useAddWorkPhoto } from "@/features/photos";
 
@@ -102,6 +103,9 @@ export default function JobDetail() {
             <Text variant="body">
               {[info?.line1, info?.city, info?.pincode].filter(Boolean).join(", ")}
             </Text>
+            <View className="pt-sm">
+              <JobMap lat={info?.lat} lng={info?.lng} label={info?.customer_name ?? undefined} />
+            </View>
             {info?.quoted_total ? (
               <Text variant="label" tone="primary" className="pt-sm">
                 {t("jobs:detail.total", { amount: `₹${info.quoted_total}` })}
