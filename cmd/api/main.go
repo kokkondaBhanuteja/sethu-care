@@ -178,6 +178,7 @@ func run() error {
 	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancelShutdown()
 
+	logger.Info("draining http server")
 	if err := server.Shutdown(shutdownContext); err != nil {
 		return fmt.Errorf("draining http server: %w", err)
 	}
