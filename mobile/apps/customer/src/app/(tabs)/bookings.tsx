@@ -1,7 +1,16 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
-import { Screen, Text, StatusPill, Skeleton, EmptyState, ErrorState } from "@sethu/ui";
+import {
+  Screen,
+  Text,
+  Card,
+  StatusPill,
+  Skeleton,
+  EmptyState,
+  ErrorState,
+  PressableScale,
+} from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 import { useMyBookings } from "@/features/booking";
 
@@ -36,26 +45,26 @@ export default function Bookings() {
             data={bookings}
             keyExtractor={(item, index) => item.booking_id ?? String(index)}
             ItemSeparatorComponent={() => <View className="h-sm" />}
-            ListEmptyComponent={<EmptyState title={t("booking:history.empty")} />}
+            ListEmptyComponent={<EmptyState icon="bookings" title={t("booking:history.empty")} />}
             renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="button"
+              <PressableScale
                 onPress={() =>
                   item.booking_id &&
                   router.push({ pathname: "/booking/[id]", params: { id: item.booking_id } })
                 }
-                className="rounded-card border border-outline-variant bg-surface-container-lowest p-md"
               >
-                <View className="flex-row items-center justify-between">
-                  <Text variant="label">{item.service_name ?? ""}</Text>
-                  <StatusPill label={item.state ?? ""} tone="neutral" />
-                </View>
-                {item.quoted_total ? (
-                  <Text variant="caption" tone="muted">
-                    ₹{item.quoted_total}
-                  </Text>
-                ) : null}
-              </Pressable>
+                <Card className="gap-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text variant="label">{item.service_name ?? ""}</Text>
+                    <StatusPill label={item.state ?? ""} tone="neutral" />
+                  </View>
+                  {item.quoted_total ? (
+                    <Text variant="caption" tone="muted">
+                      ₹{item.quoted_total}
+                    </Text>
+                  ) : null}
+                </Card>
+              </PressableScale>
             )}
           />
         )}

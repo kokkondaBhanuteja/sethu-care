@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Switch, View } from "react-native";
+import { Switch, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import {
@@ -12,6 +12,7 @@ import {
   Skeleton,
   EmptyState,
   ErrorState,
+  PressableScale,
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
@@ -60,7 +61,7 @@ export default function Jobs() {
 
       <View className="flex-1 px-mobile-margin pt-md">
         {holdingCash ? (
-          <Pressable onPress={() => router.push("/earnings")} accessibilityRole="button">
+          <PressableScale onPress={() => router.push("/earnings")}>
             <Card className="mb-md flex-row items-center gap-md">
               <View className="h-11 w-11 items-center justify-center rounded-card bg-primary-container">
                 <Icon name="payment" tone="primary" />
@@ -75,7 +76,7 @@ export default function Jobs() {
               </View>
               <Icon name="chevronRight" tone="muted" />
             </Card>
-          </Pressable>
+          </PressableScale>
         ) : null}
 
         {isError ? (
@@ -98,8 +99,7 @@ export default function Jobs() {
             ItemSeparatorComponent={() => <View className="h-sm" />}
             ListEmptyComponent={<EmptyState icon="package" title={t("jobs:list.empty")} />}
             renderItem={({ item: job }) => (
-              <Pressable
-                accessibilityRole="button"
+              <PressableScale
                 onPress={() =>
                   job.booking_id &&
                   router.push({ pathname: "/job/[id]", params: { id: job.booking_id } })
@@ -126,7 +126,7 @@ export default function Jobs() {
                     </Text>
                   ) : null}
                 </Card>
-              </Pressable>
+              </PressableScale>
             )}
           />
         )}

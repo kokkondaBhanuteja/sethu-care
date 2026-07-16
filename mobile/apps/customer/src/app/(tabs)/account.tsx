@@ -1,9 +1,9 @@
-import { Alert, Pressable, View } from "react-native";
+import { Alert, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteAccountMutation } from "@sethu/api-client";
 import { useSession } from "@sethu/core";
-import { Screen, Text, Button, Card, Avatar, Icon } from "@sethu/ui";
+import { Screen, Text, Button, Card, Avatar, Icon, PressableScale } from "@sethu/ui";
 import { useTranslation, supportedLanguages, type SupportedLanguage } from "@sethu/i18n";
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
@@ -64,7 +64,7 @@ export default function Account() {
           </View>
         </Card>
 
-        <Pressable onPress={cycleLanguage} accessibilityRole="button">
+        <PressableScale onPress={cycleLanguage}>
           <Card className="flex-row items-center gap-md">
             <Icon name="settings" tone="primary" />
             <View className="flex-1">
@@ -75,7 +75,7 @@ export default function Account() {
             </View>
             <Icon name="chevronRight" tone="muted" />
           </Card>
-        </Pressable>
+        </PressableScale>
 
         <View className="flex-1 justify-end gap-md pb-xl">
           <Button

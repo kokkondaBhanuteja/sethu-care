@@ -52,4 +52,7 @@ export type { SearchFieldProps } from "./components/SearchField";
 export { BrandMark } from "./components/BrandMark";
 export type { BrandMarkProps } from "./components/BrandMark";
 
+export { PressableScale } from "./components/PressableScale";
+export type { PressableScaleProps } from "./components/PressableScale";
+
 export { useTheme } from "./theme/use-theme";

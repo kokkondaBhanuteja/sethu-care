@@ -1,5 +1,5 @@
-import { Pressable, View } from "react-native";
-import { Text, Card, Icon } from "@sethu/ui";
+import { View } from "react-native";
+import { Text, Card, Icon, PressableScale } from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import type { ServiceResponse } from "@sethu/api-client";
 
@@ -16,7 +16,7 @@ export function ServiceCard({
   const price = firstVariant?.price_paise != null ? formatPaise(firstVariant.price_paise) : null;
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={service.name}>
+    <PressableScale onPress={onPress} accessibilityLabel={service.name}>
       <Card className="flex-row items-center gap-md">
         <View className="h-12 w-12 items-center justify-center rounded-card bg-primary-container">
           <Icon name="service" tone="primary" size={24} />
@@ -36,6 +36,6 @@ export function ServiceCard({
         </View>
         <Icon name="chevronRight" tone="muted" />
       </Card>
-    </Pressable>
+    </PressableScale>
   );
 }
