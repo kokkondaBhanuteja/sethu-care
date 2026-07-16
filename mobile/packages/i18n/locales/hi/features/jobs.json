@@ -1,0 +1,46 @@
+{
+  "list": {
+    "title": "मेरे काम",
+    "subtitle": "आपकी असाइन की गई सर्विस विज़िट",
+    "empty": "अभी कोई काम असाइन नहीं हुआ"
+  },
+  "detail": {
+    "customer": "ग्राहक",
+    "service": "सेवा",
+    "address": "पता",
+    "total": "कुल {{amount}}",
+    "call": "ग्राहक को कॉल करें",
+    "navigate": "रास्ता देखें"
+  },
+  "actions": {
+    "depart": "निकलना शुरू करें",
+    "arrive": "मैं पहुँच गया",
+    "verifyStart": "काम शुरू करें",
+    "requestCompletion": "काम पूरा हुआ",
+    "verifyCompletion": "पूरा करें और भुगतान लें",
+    "cancel": "रद्द करें",
+    "fail": "समस्या बताएँ"
+  },
+  "otp": {
+    "startTitle": "ग्राहक का प्रारंभ कोड दर्ज करें",
+    "startHint": "ग्राहक के फ़ोन पर भेजा गया 6 अंकों का कोड पूछें।",
+    "completionTitle": "ग्राहक का समापन कोड दर्ज करें",
+    "codeLabel": "6 अंकों का कोड",
+    "verifyStart": "सत्यापित करें और शुरू करें",
+    "verifyComplete": "सत्यापित करें और पूरा करें"
+  },
+  "payment": {
+    "methodTitle": "ग्राहक कैसे भुगतान कर रहा है?",
+    "upi": "यूपीआई",
+    "cash": "नकद",
+    "online": "ऑनलाइन",
+    "collectTitle": "भुगतान लें",
+    "amount": "राशि {{amount}}",
+    "reference": "संदर्भ {{reference}}",
+    "openUpi": "यूपीआई ऐप खोलें",
+    "paid": "भुगतान प्राप्त हुआ",
+    "cashHeld": "यह नकद आपके पास है",
+    "deposit": "नकद जमा करें",
+    "deposited": "नकद जमा हो गया"
+  }
+}
