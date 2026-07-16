@@ -13,7 +13,9 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
@@ -31,6 +33,8 @@ type Dependencies struct {
 	Reviews      *reviews.Service
 	Cloudinary   *media.Cloudinary
 	Signer       *auth.Signer
+	OTPSender    sms.Sender
+	Razorpay     *razorpay.Client
 	UPIVPA       string
 	UPIPayee     string
 	DevEchoOTP   bool
@@ -45,12 +49,12 @@ type Dependencies struct {
 // each operation's input/output TYPES to build the schema and never invokes a handler, so the
 // services are not needed to produce the spec.
 func RegisterAll(api huma.API, deps Dependencies) {
-	NewAuthHandler(deps.Identity, deps.Signer, deps.Logger, deps.DevEchoOTP).RegisterHuma(api)
+	NewAuthHandler(deps.Identity, deps.Signer, deps.OTPSender, deps.Logger, deps.DevEchoOTP).RegisterHuma(api)
 	NewCatalogHandler(deps.Catalog, deps.Logger).RegisterHuma(api)
 	NewAddressHandler(deps.Address, deps.Logger).RegisterHuma(api)
 	NewOpsHandler(deps.Ops, deps.Logger).RegisterHuma(api)
 	NewCashHandler(deps.Ledger, deps.Logger).RegisterHuma(api)
-	NewPaymentHandler(deps.Ledger, deps.UPIVPA, deps.UPIPayee, deps.Logger).RegisterHuma(api)
+	NewPaymentHandler(deps.Ledger, deps.Razorpay, deps.UPIVPA, deps.UPIPayee, deps.Logger).RegisterHuma(api)
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	New(deps.Booking, deps.Verification, deps.Reviews, deps.Logger).RegisterHuma(api)
 }

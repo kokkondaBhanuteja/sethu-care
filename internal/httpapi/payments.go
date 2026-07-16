@@ -11,20 +11,23 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
 )
 
-// PaymentHandler serves the UPI collection surfaces: the customer (or the assigned technician)
-// fetches the booking-specific QR to pay/show, and the payment provider — an admin, standing in
-// for the PSP webhook in P1 — confirms the money landed.
+// PaymentHandler serves the collection surfaces: the customer (or the assigned technician) fetches
+// the payment link/QR, and the provider confirms the money landed. When Razorpay is configured the
+// customer pays via a hosted payment link captured by webhook; otherwise the fallback is a upi://
+// intent an admin captures by hand.
 type PaymentHandler struct {
 	ledger   *ledger.Service
+	razorpay *razorpay.Client
 	upiVPA   string
 	upiPayee string
 	log      *slog.Logger
 }
 
-func NewPaymentHandler(ledgerService *ledger.Service, upiVPA, upiPayee string, log *slog.Logger) *PaymentHandler {
-	return &PaymentHandler{ledger: ledgerService, upiVPA: upiVPA, upiPayee: upiPayee, log: log}
+func NewPaymentHandler(ledgerService *ledger.Service, razorpayClient *razorpay.Client, upiVPA, upiPayee string, log *slog.Logger) *PaymentHandler {
+	return &PaymentHandler{ledger: ledgerService, razorpay: razorpayClient, upiVPA: upiVPA, upiPayee: upiPayee, log: log}
 }
 
 func (handler *PaymentHandler) RegisterHuma(api huma.API) {
@@ -121,11 +124,34 @@ func (handler *PaymentHandler) get(ctx context.Context, input *getPaymentInput) 
 		Amount:    collection.Amount.Rupees(),
 		Status:    collection.Status.String(),
 	}
-	// The deep link is only meaningful while there is still money to collect.
+	// The link is only meaningful while there is still money to collect.
 	if collection.Status == ledger.PaymentPending {
-		response.UPILink = handler.upiLink(collection)
+		response.UPILink = handler.paymentLink(ctx, collection)
 	}
 	return &getPaymentOutput{Body: response}, nil
+}
+
+// paymentLink returns the URL the customer opens (or the technician shows as a QR). With Razorpay
+// configured it is a hosted payment link — created once and persisted, reused thereafter — so a
+// webhook captures the payment. Without Razorpay (or if link creation fails) it falls back to the
+// upi:// intent an admin captures by hand.
+func (handler *PaymentHandler) paymentLink(ctx context.Context, collection ledger.Collection) string {
+	if handler.razorpay == nil || !handler.razorpay.Configured() {
+		return handler.upiLink(collection)
+	}
+	if collection.PaymentLinkURL != "" {
+		return collection.PaymentLinkURL
+	}
+	description := "SETHU-CARE service payment"
+	url, err := handler.razorpay.CreatePaymentLink(ctx, collection.Amount.Paise(), collection.Reference, description)
+	if err != nil {
+		handler.log.Error("creating razorpay payment link", "err", err)
+		return handler.upiLink(collection) // degrade gracefully
+	}
+	if err := handler.ledger.SetPaymentLink(ctx, collection.Reference, url); err != nil {
+		handler.log.Error("persisting razorpay payment link", "err", err)
+	}
+	return url
 }
 
 // mayView allows the booking's own customer, its assigned technician, or an admin to see the

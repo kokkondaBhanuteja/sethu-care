@@ -16,7 +16,7 @@ import (
 const getPaymentByBooking = `-- name: GetPaymentByBooking :one
 SELECT
   p.id, p.booking_id, p.order_id, p.amount_paise, p.reference, p.status,
-  p.provider_ref, p.created_at, p.captured_at,
+  p.provider_ref, p.payment_link_url, p.created_at, p.captured_at,
   b.customer_id, b.technician_id
 FROM payments p
 JOIN bookings b ON b.id = p.booking_id
@@ -24,17 +24,18 @@ WHERE p.booking_id = $1
 `
 
 type GetPaymentByBookingRow struct {
-	ID           uuid.UUID
-	BookingID    uuid.UUID
-	OrderID      uuid.UUID
-	AmountPaise  money.Money
-	Reference    string
-	Status       string
-	ProviderRef  *string
-	CreatedAt    pgtype.Timestamptz
-	CapturedAt   pgtype.Timestamptz
-	CustomerID   uuid.UUID
-	TechnicianID *uuid.UUID
+	ID             uuid.UUID
+	BookingID      uuid.UUID
+	OrderID        uuid.UUID
+	AmountPaise    money.Money
+	Reference      string
+	Status         string
+	ProviderRef    *string
+	PaymentLinkUrl string
+	CreatedAt      pgtype.Timestamptz
+	CapturedAt     pgtype.Timestamptz
+	CustomerID     uuid.UUID
+	TechnicianID   *uuid.UUID
 }
 
 // The collection for a booking, joined to the booking's parties so the caller can authorize a
@@ -50,6 +51,7 @@ func (q *Queries) GetPaymentByBooking(ctx context.Context, bookingID uuid.UUID) 
 		&i.Reference,
 		&i.Status,
 		&i.ProviderRef,
+		&i.PaymentLinkUrl,
 		&i.CreatedAt,
 		&i.CapturedAt,
 		&i.CustomerID,
@@ -64,9 +66,21 @@ FROM payments
 WHERE reference = $1
 `
 
-func (q *Queries) GetPaymentByReference(ctx context.Context, reference string) (Payment, error) {
+type GetPaymentByReferenceRow struct {
+	ID          uuid.UUID
+	BookingID   uuid.UUID
+	OrderID     uuid.UUID
+	AmountPaise money.Money
+	Reference   string
+	Status      string
+	ProviderRef *string
+	CreatedAt   pgtype.Timestamptz
+	CapturedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetPaymentByReference(ctx context.Context, reference string) (GetPaymentByReferenceRow, error) {
 	row := q.db.QueryRow(ctx, getPaymentByReference, reference)
-	var i Payment
+	var i GetPaymentByReferenceRow
 	err := row.Scan(
 		&i.ID,
 		&i.BookingID,
@@ -142,6 +156,21 @@ func (q *Queries) MarkPaymentCaptured(ctx context.Context, arg MarkPaymentCaptur
 	return err
 }
 
+const setPaymentLink = `-- name: SetPaymentLink :exec
+UPDATE payments SET payment_link_url = $1 WHERE reference = $2
+`
+
+type SetPaymentLinkParams struct {
+	PaymentLinkUrl string
+	Reference      string
+}
+
+// Persist the provider's hosted payment-link URL for a collection (created lazily on first fetch).
+func (q *Queries) SetPaymentLink(ctx context.Context, arg SetPaymentLinkParams) error {
+	_, err := q.db.Exec(ctx, setPaymentLink, arg.PaymentLinkUrl, arg.Reference)
+	return err
+}
+
 const upsertPendingPayment = `-- name: UpsertPendingPayment :one
 INSERT INTO payments (booking_id, order_id, amount_paise, reference)
 VALUES ($1, $2, $3, $4)
@@ -156,17 +185,29 @@ type UpsertPendingPaymentParams struct {
 	Reference   string
 }
 
+type UpsertPendingPaymentRow struct {
+	ID          uuid.UUID
+	BookingID   uuid.UUID
+	OrderID     uuid.UUID
+	AmountPaise money.Money
+	Reference   string
+	Status      string
+	ProviderRef *string
+	CreatedAt   pgtype.Timestamptz
+	CapturedAt  pgtype.Timestamptz
+}
+
 // Create the UPI collection for a booking, or return the existing one. The ON CONFLICT no-op
 // update (booking_id is UNIQUE) makes this idempotent: a redelivered booking.completed event
 // does not create a second collection, and RETURNING still yields the row either way.
-func (q *Queries) UpsertPendingPayment(ctx context.Context, arg UpsertPendingPaymentParams) (Payment, error) {
+func (q *Queries) UpsertPendingPayment(ctx context.Context, arg UpsertPendingPaymentParams) (UpsertPendingPaymentRow, error) {
 	row := q.db.QueryRow(ctx, upsertPendingPayment,
 		arg.BookingID,
 		arg.OrderID,
 		arg.AmountPaise,
 		arg.Reference,
 	)
-	var i Payment
+	var i UpsertPendingPaymentRow
 	err := row.Scan(
 		&i.ID,
 		&i.BookingID,
