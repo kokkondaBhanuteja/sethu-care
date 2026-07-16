@@ -89,7 +89,7 @@ func Load() (Config, error) {
 		DemoOTP:                  os.Getenv("SETHU_DEMO_OTP"),
 		MSG91AuthKey:             os.Getenv("MSG91_AUTH_KEY"),
 		MSG91SenderID:            os.Getenv("MSG91_SENDER_ID"),
-		MSG91TemplateID:          os.Getenv("MSG91_TEMPLATE_ID"),
+		MSG91TemplateID:          os.Getenv("MSG91_OTP_TEMPLATE_ID"),
 	}
 	return configuration, nil
 }
