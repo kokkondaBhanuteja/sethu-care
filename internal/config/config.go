@@ -54,6 +54,13 @@ type Config struct {
 	MSG91AuthKey    string
 	MSG91SenderID   string
 	MSG91TemplateID string
+
+	// Razorpay credentials for hosted payment links + webhook capture. When KeyID/KeySecret are
+	// set, a real payment link is created; otherwise the customer gets a upi:// intent and an admin
+	// captures by hand. WebhookSecret authenticates the capture callback.
+	RazorpayKeyID         string
+	RazorpayKeySecret     string
+	RazorpayWebhookSecret string
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -90,6 +97,9 @@ func Load() (Config, error) {
 		MSG91AuthKey:             os.Getenv("MSG91_AUTH_KEY"),
 		MSG91SenderID:            os.Getenv("MSG91_SENDER_ID"),
 		MSG91TemplateID:          os.Getenv("MSG91_OTP_TEMPLATE_ID"),
+		RazorpayKeyID:            os.Getenv("RAZORPAY_KEY_ID"),
+		RazorpayKeySecret:        os.Getenv("RAZORPAY_KEY_SECRET"),
+		RazorpayWebhookSecret:    os.Getenv("RAZORPAY_WEBHOOK_SECRET"),
 	}
 	return configuration, nil
 }

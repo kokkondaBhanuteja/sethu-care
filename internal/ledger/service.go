@@ -260,13 +260,14 @@ var ErrPaymentNotFound = errors.New("ledger: payment not found")
 // UPI `tr`), and where it stands. CustomerID and TechnicianID ride along so a read can be
 // authorized to the owning customer or the assigned technician.
 type Collection struct {
-	Reference    string
-	Amount       money.Money
-	Status       PaymentStatus
-	BookingID    uuid.UUID
-	OrderID      uuid.UUID
-	CustomerID   uuid.UUID
-	TechnicianID *uuid.UUID
+	Reference      string
+	Amount         money.Money
+	Status         PaymentStatus
+	BookingID      uuid.UUID
+	OrderID        uuid.UUID
+	CustomerID     uuid.UUID
+	TechnicianID   *uuid.UUID
+	PaymentLinkURL string
 }
 
 // PendingPayment is a UPI collection still awaiting capture, for the ops payments queue.
@@ -310,14 +311,27 @@ func (service *Service) CollectionForBooking(ctx context.Context, bookingID uuid
 		return Collection{}, fmt.Errorf("reading collection: %w", err)
 	}
 	return Collection{
-		Reference:    row.Reference,
-		Amount:       row.AmountPaise,
-		Status:       PaymentStatus(row.Status),
-		BookingID:    row.BookingID,
-		OrderID:      row.OrderID,
-		CustomerID:   row.CustomerID,
-		TechnicianID: row.TechnicianID,
+		Reference:      row.Reference,
+		Amount:         row.AmountPaise,
+		Status:         PaymentStatus(row.Status),
+		BookingID:      row.BookingID,
+		OrderID:        row.OrderID,
+		CustomerID:     row.CustomerID,
+		TechnicianID:   row.TechnicianID,
+		PaymentLinkURL: row.PaymentLinkUrl,
 	}, nil
+}
+
+// SetPaymentLink persists the provider's hosted payment-link URL for a collection, so the same link
+// is reused on every fetch instead of a new one being created each time.
+func (service *Service) SetPaymentLink(ctx context.Context, reference, url string) error {
+	if err := sqlcgen.New(service.pool).SetPaymentLink(ctx, sqlcgen.SetPaymentLinkParams{
+		Reference:      reference,
+		PaymentLinkUrl: url,
+	}); err != nil {
+		return fmt.Errorf("saving payment link: %w", err)
+	}
+	return nil
 }
 
 // CaptureUPIPayment records that the customer's UPI payment landed in the company account. It

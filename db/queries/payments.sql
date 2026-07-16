@@ -12,11 +12,15 @@ RETURNING id, booking_id, order_id, amount_paise, reference, status, provider_re
 -- read (the owning customer or the assigned technician may see the QR).
 SELECT
   p.id, p.booking_id, p.order_id, p.amount_paise, p.reference, p.status,
-  p.provider_ref, p.created_at, p.captured_at,
+  p.provider_ref, p.payment_link_url, p.created_at, p.captured_at,
   b.customer_id, b.technician_id
 FROM payments p
 JOIN bookings b ON b.id = p.booking_id
 WHERE p.booking_id = $1;
+
+-- name: SetPaymentLink :exec
+-- Persist the provider's hosted payment-link URL for a collection (created lazily on first fetch).
+UPDATE payments SET payment_link_url = @payment_link_url WHERE reference = @reference;
 
 -- name: GetPaymentByReference :one
 SELECT id, booking_id, order_id, amount_paise, reference, status, provider_ref, created_at, captured_at

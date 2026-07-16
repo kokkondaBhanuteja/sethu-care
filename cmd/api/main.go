@@ -35,6 +35,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
@@ -147,6 +148,10 @@ func run() error {
 
 	catalogService := catalog.New(pool)
 	addressService := address.New(pool)
+	razorpayClient := razorpay.New(settings.RazorpayKeyID, settings.RazorpayKeySecret, settings.RazorpayWebhookSecret)
+	if razorpayClient.Configured() {
+		logger.Info("Razorpay enabled for payment collection")
+	}
 
 	server := &http.Server{
 		Addr: settings.ListenAddr,
@@ -166,6 +171,7 @@ func run() error {
 			upiVPA:              settings.UPIVirtualAddress,
 			upiPayee:            settings.UPIPayeeName,
 			cloudinary:          media.NewCloudinary(settings.CloudinaryCloudName, settings.CloudinaryAPIKey, settings.CloudinaryAPISecret),
+			razorpay:            razorpayClient,
 			logger:              logger,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -230,6 +236,7 @@ type routerDependencies struct {
 	upiVPA              string
 	upiPayee            string
 	cloudinary          *media.Cloudinary
+	razorpay            *razorpay.Client
 	logger              *slog.Logger
 }
 
@@ -254,11 +261,17 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,
 		OTPSender:    dependencies.otpSender,
+		Razorpay:     dependencies.razorpay,
 		UPIVPA:       dependencies.upiVPA,
 		UPIPayee:     dependencies.upiPayee,
 		DevEchoOTP:   dependencies.devEchoOTP,
 		Logger:       dependencies.logger,
 	})
+
+	// Razorpay's payment webhook — a RAW route (not huma): it needs the exact bytes for its HMAC
+	// signature and carries no bearer token. Kept out of the OpenAPI contract on purpose.
+	mux.Handle("POST /webhooks/razorpay", httpapi.NewRazorpayWebhookHandler(
+		dependencies.razorpay, dependencies.ledgerService, dependencies.logger))
 
 	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)

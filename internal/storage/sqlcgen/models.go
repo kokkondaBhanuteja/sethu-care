@@ -137,15 +137,16 @@ type Outbox struct {
 }
 
 type Payment struct {
-	ID          uuid.UUID
-	BookingID   uuid.UUID
-	OrderID     uuid.UUID
-	AmountPaise money.Money
-	Reference   string
-	Status      string
-	ProviderRef *string
-	CreatedAt   pgtype.Timestamptz
-	CapturedAt  pgtype.Timestamptz
+	ID             uuid.UUID
+	BookingID      uuid.UUID
+	OrderID        uuid.UUID
+	AmountPaise    money.Money
+	Reference      string
+	Status         string
+	ProviderRef    *string
+	CreatedAt      pgtype.Timestamptz
+	CapturedAt     pgtype.Timestamptz
+	PaymentLinkUrl string
 }
 
 type ProductModel struct {
