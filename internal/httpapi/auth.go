@@ -11,6 +11,7 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
@@ -22,14 +23,15 @@ var e164ish = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)
 // logs it — a dev convenience, since there is no SMS provider yet. It MUST be false in
 // production, or every login code is handed straight to the caller.
 type AuthHandler struct {
-	identity *identity.Service
-	signer   *auth.Signer
-	log      *slog.Logger
-	devEcho  bool
+	identity  *identity.Service
+	signer    *auth.Signer
+	otpSender sms.Sender
+	log       *slog.Logger
+	devEcho   bool
 }
 
-func NewAuthHandler(identityService *identity.Service, signer *auth.Signer, log *slog.Logger, devEcho bool) *AuthHandler {
-	return &AuthHandler{identity: identityService, signer: signer, log: log, devEcho: devEcho}
+func NewAuthHandler(identityService *identity.Service, signer *auth.Signer, otpSender sms.Sender, log *slog.Logger, devEcho bool) *AuthHandler {
+	return &AuthHandler{identity: identityService, signer: signer, otpSender: otpSender, log: log, devEcho: devEcho}
 }
 
 func (handler *AuthHandler) RegisterHuma(api huma.API) {
@@ -122,6 +124,19 @@ func (handler *AuthHandler) requestOTP(ctx context.Context, input *requestOTPInp
 	if err != nil {
 		return nil, toHumaError(handler.log, err)
 	}
+
+	// Deliver the code by SMS — except to the reserved review number, which cannot receive one
+	// (that is why the bypass exists). A send failure is fatal in production (the user can't log in
+	// without the code); in dev it is only logged, because the code is echoed below anyway.
+	if handler.otpSender != nil && !handler.identity.IsDemoPhone(input.Body.Phone) {
+		if err := handler.otpSender.SendOTP(ctx, input.Body.Phone, code); err != nil {
+			handler.log.Error("sending login otp", "err", err)
+			if !handler.devEcho {
+				return nil, huma.Error502BadGateway("could not send the verification code; please try again")
+			}
+		}
+	}
+
 	// In dev, make the code reachable without an SMS provider. Never in production.
 	out := &requestOTPOutput{Body: otpResponse{Sent: true}}
 	if handler.devEcho {

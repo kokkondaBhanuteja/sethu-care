@@ -48,6 +48,12 @@ type Config struct {
 	// can log in without a real SMS. Both empty = disabled. Never point at a real user's phone.
 	DemoPhone string
 	DemoOTP   string
+
+	// MSG91 credentials for delivering OTP SMS via a DLT-approved template. When AuthKey and
+	// TemplateID are set, real SMS is sent; otherwise codes are only logged (dev).
+	MSG91AuthKey    string
+	MSG91SenderID   string
+	MSG91TemplateID string
 }
 
 // Load reads the environment, applies defaults, validates, and returns a Config. The only
@@ -81,6 +87,9 @@ func Load() (Config, error) {
 		CloudinaryAPISecret:      os.Getenv("CLOUDINARY_API_SECRET"),
 		DemoPhone:                os.Getenv("SETHU_DEMO_PHONE"),
 		DemoOTP:                  os.Getenv("SETHU_DEMO_OTP"),
+		MSG91AuthKey:             os.Getenv("MSG91_AUTH_KEY"),
+		MSG91SenderID:            os.Getenv("MSG91_SENDER_ID"),
+		MSG91TemplateID:          os.Getenv("MSG91_TEMPLATE_ID"),
 	}
 	return configuration, nil
 }
