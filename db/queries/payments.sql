@@ -29,3 +29,11 @@ WHERE reference = $1;
 UPDATE payments
    SET status = 'CAPTURED', provider_ref = @provider_ref, captured_at = now()
  WHERE reference = @reference AND status = 'PENDING';
+
+-- name: ListPendingPayments :many
+-- Every UPI collection still awaiting capture, oldest first — the ops payments queue. In production
+-- the PSP webhook captures these; the console lets an admin confirm one by hand in P1.
+SELECT reference, booking_id, amount_paise, status, created_at
+FROM payments
+WHERE status = 'PENDING'
+ORDER BY created_at;

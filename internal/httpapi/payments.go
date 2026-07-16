@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -41,6 +42,45 @@ func (handler *PaymentHandler) RegisterHuma(api huma.API) {
 		Summary: "Confirm a UPI payment landed", Tags: []string{"Payments"},
 		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
 	}, handler.capture)
+	// The admin console's payments queue: every collection still awaiting capture.
+	huma.Register(api, huma.Operation{
+		OperationID: "pendingPayments", Method: "GET", Path: "/ops/payments",
+		Summary: "List UPI collections awaiting capture", Tags: []string{"Payments"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
+	}, handler.pending)
+}
+
+type pendingPaymentResponse struct {
+	Reference string `json:"reference"`
+	BookingID string `json:"booking_id"`
+	Amount    string `json:"amount"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+}
+
+type pendingPaymentsOutput struct {
+	Body struct {
+		Payments []pendingPaymentResponse `json:"payments"`
+	}
+}
+
+func (handler *PaymentHandler) pending(ctx context.Context, _ *struct{}) (*pendingPaymentsOutput, error) {
+	payments, err := handler.ledger.PendingPayments(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &pendingPaymentsOutput{}
+	out.Body.Payments = make([]pendingPaymentResponse, len(payments))
+	for index, payment := range payments {
+		out.Body.Payments[index] = pendingPaymentResponse{
+			Reference: payment.Reference,
+			BookingID: payment.BookingID.String(),
+			Amount:    payment.AmountPaise.Rupees(),
+			Status:    payment.Status.String(),
+			CreatedAt: payment.CreatedAt.Format(time.RFC3339),
+		}
+	}
+	return out, nil
 }
 
 type paymentResponse struct {
