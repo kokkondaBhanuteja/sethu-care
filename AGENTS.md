@@ -211,9 +211,11 @@ Grouped by surface. `[ ]` = not started, `[~]` = partial/seam-in-place.
 
 ## 7. Gotchas (quick reference)
 
-- Backend on **`:8090`**, health at **`/health`**, Postgres on **`127.0.0.1:5434`**. Run with the
-  env that enables local testing: `ADDR=:8090 SETHU_DEV_OTP=true SETHU_DEMO_PHONE=<phone>
-  SETHU_DEMO_OTP=000000 go run ./cmd/api`.
+- Backend on **`:8090`**, health at **`/health`**, Postgres on **`127.0.0.1:5434`**.
+- **Config/secrets:** `cp .env.example .env` and fill it in — `.env` (gitignored) is auto-loaded on
+  startup (`godotenv` in `cmd/api/main.go`; prod-safe, never overrides real env). `.env.example`
+  (committed) documents every key. All config is read in `internal/config/config.go`. For local
+  testing set `ADDR=:8090`, `SETHU_DEV_OTP=true`, and a `SETHU_DEMO_PHONE`/`SETHU_DEMO_OTP`.
 - **Admin console:** `pnpm --filter admin dev` → `localhost:3000` (or 3001 if taken). Admin login is
   phone+OTP; with `SETHU_DEV_OTP=true` the login screen shows the code (no SMS).
 - **Demo bypass** = the single `SETHU_DEMO_PHONE` number logs in with the fixed `SETHU_DEMO_OTP`, and

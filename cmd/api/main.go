@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/app"
@@ -54,6 +55,14 @@ func main() {
 func run() error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
+
+	// Load .env for local development. This is 12-factor-safe: godotenv.Load NEVER overrides a
+	// variable already set in the process environment, so in production (where the platform injects
+	// real secrets) it is a harmless no-op, and a missing file is fine. Secrets live in .env
+	// (gitignored); .env.example documents every key.
+	if err := godotenv.Load(); err == nil {
+		logger.Info("loaded .env")
+	}
 
 	settings, err := config.Load()
 	if err != nil {
