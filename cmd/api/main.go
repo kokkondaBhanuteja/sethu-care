@@ -185,7 +185,7 @@ func run() error {
 	// rootContext is already cancelled, so the worker is on its way out; wait for its current
 	// batch to finish before we close the pool under it.
 	workerDone.Wait()
-
+	//GO LESSON — Wait() blocks until the WaitGroup counter is zero. It's a simple way to
 	logger.Info("stopped cleanly")
 	return nil
 }
