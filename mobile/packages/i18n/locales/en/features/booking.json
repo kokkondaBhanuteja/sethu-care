@@ -26,5 +26,18 @@
     "startTitle": "Share your start code",
     "startHint": "Read this code to your technician to begin.",
     "completionTitle": "Share your completion code"
+  },
+  "payment": {
+    "title": "Payment",
+    "amount": "Amount {{amount}}",
+    "reference": "Ref {{reference}}",
+    "payNow": "Pay with UPI",
+    "paid": "Paid"
+  },
+  "review": {
+    "title": "Rate your service",
+    "commentPlaceholder": "Add a comment (optional)",
+    "submit": "Submit rating",
+    "thanks": "Thanks for your feedback!"
   }
 }
