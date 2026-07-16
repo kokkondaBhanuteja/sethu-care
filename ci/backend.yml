@@ -1,58 +1,76 @@
-# Move to .github/workflows/backend.yml (replacing the old one)
+# Copy to .github/workflows/backend.yml
 name: backend
 
+# Runs on every push to the integration branches and every PR. It ALWAYS starts (no `paths:`
+# filter) so the REQUIRED "backend" check always reports — a path-filtered required check hangs on
+# GitHub as "Expected — waiting for status to be reported" on PRs that don't touch the backend,
+# blocking the merge. Instead we detect backend changes in the first step and skip the heavy work
+# when there are none; the job still completes green, satisfying the required check in seconds.
 on:
   push:
     branches: [developer, main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "db/**"
-      - "api/**"
-      - ".golangci.yml"
-      - "Makefile"
-      - "sqlc.yaml"
-      - ".github/workflows/backend.yml"
   pull_request:
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "db/**"
-      - "api/**"
-      - ".golangci.yml"
-      - "Makefile"
-      - "sqlc.yaml"
-      - ".github/workflows/backend.yml"
 
 jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history so change detection can diff against the base
+
+      # Self-contained change detection (no third-party action → no Node-runtime deprecation).
+      - name: Detect backend changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+          # First push / missing base commit → don't risk skipping; run the checks.
+          if ! git cat-file -e "$base" 2>/dev/null; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --name-only "$base" "$head" \
+            | grep -qE '(\.go$|^go\.(mod|sum)$|^db/|^api/|^\.golangci\.yml$|^Makefile$|^sqlc\.yaml$|^\.github/workflows/backend\.yml$)'; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: No backend changes — reporting success
+        if: steps.changes.outputs.backend != 'true'
+        run: echo "No backend files changed; skipping backend checks."
 
       - uses: actions/setup-go@v5
+        if: steps.changes.outputs.backend == 'true'
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Build
+        if: steps.changes.outputs.backend == 'true'
         run: go build ./...
 
       # golangci-lint installed directly (v2, matching .golangci.yml) instead of
       # golangci/golangci-lint-action, which pinned the now-removed Node 20 runtime and
-      # targeted golangci-lint v1. This step has no Node dependency.
+      # shipped golangci-lint v1 built with Go 1.24 — too old for go 1.26.5 in go.mod.
       - name: Lint (golangci-lint v2, incl. depguard dependency rules)
+        if: steps.changes.outputs.backend == 'true'
         run: |
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
           golangci-lint run
 
       - name: OpenAPI contract is up to date (drift guard)
+        if: steps.changes.outputs.backend == 'true'
         run: |
           go run ./cmd/genopenapi > /tmp/openapi.gen.yaml
           diff -u api/openapi.yaml /tmp/openapi.gen.yaml \
             || (echo "::error::api/openapi.yaml is stale — run 'make openapi' and commit." && exit 1)
 
       - name: Test (race detector; testcontainers use the runner's Docker)
+        if: steps.changes.outputs.backend == 'true'
         run: go test -race ./...

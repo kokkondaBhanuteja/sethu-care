@@ -227,6 +227,25 @@ func (service *Service) Reconciliation(ctx context.Context) ([]CashPosition, err
 	return positions, nil
 }
 
+// PositionForTechnician returns one technician's own cash standing (for the provider app's
+// cash-held summary). A technician who has never collected cash has no ledger rows, which reads as
+// an all-zero position rather than an error.
+func (service *Service) PositionForTechnician(ctx context.Context, technicianID uuid.UUID) (CashPosition, error) {
+	row, err := sqlcgen.New(service.pool).GetTechnicianCashPosition(ctx, &technicianID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return CashPosition{TechnicianID: technicianID}, nil
+	}
+	if err != nil {
+		return CashPosition{}, fmt.Errorf("reading cash position: %w", err)
+	}
+	return CashPosition{
+		TechnicianID:     technicianID,
+		CollectedPaise:   row.CollectedPaise,
+		DepositedPaise:   row.DepositedPaise,
+		OutstandingPaise: row.OutstandingPaise,
+	}, nil
+}
+
 func timePointer(timestamp pgtype.Timestamptz) *time.Time {
 	if !timestamp.Valid {
 		return nil

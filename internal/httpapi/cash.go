@@ -35,6 +35,37 @@ func (handler *CashHandler) RegisterHuma(api huma.API) {
 		Summary: "Cash reconciliation across technicians", Tags: []string{"Cash"},
 		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleAdmin),
 	}, handler.reconciliation)
+	huma.Register(api, huma.Operation{
+		OperationID: "myCashPosition", Method: http.MethodGet, Path: "/me/cash",
+		Summary: "My cash held and deposited", Tags: []string{"Cash"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.myCash)
+}
+
+type myCashOutput struct {
+	Body struct {
+		Collected   string `json:"collected"`
+		Deposited   string `json:"deposited"`
+		Outstanding string `json:"outstanding"`
+	}
+}
+
+// myCash returns the caller technician's own cash standing — what they have collected, deposited,
+// and still owe — for the provider app's cash-held summary.
+func (handler *CashHandler) myCash(ctx context.Context, _ *struct{}) (*myCashOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	position, err := handler.ledger.PositionForTechnician(ctx, caller.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &myCashOutput{}
+	out.Body.Collected = position.CollectedPaise.Rupees()
+	out.Body.Deposited = position.DepositedPaise.Rupees()
+	out.Body.Outstanding = position.OutstandingPaise.Rupees()
+	return out, nil
 }
 
 type depositRequest struct {

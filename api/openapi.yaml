@@ -38,6 +38,12 @@ components:
         technician_id:
           type: string
       type: object
+    AvailabilityRequest:
+      additionalProperties: false
+      properties:
+        online:
+          type: boolean
+      type: object
     BookingResponse:
       additionalProperties: false
       properties:
@@ -352,6 +358,16 @@ components:
             - array
             - "null"
       type: object
+    MyCashOutputBody:
+      additionalProperties: false
+      properties:
+        collected:
+          type: string
+        deposited:
+          type: string
+        outstanding:
+          type: string
+      type: object
     MyJobsOutputBody:
       additionalProperties: false
       properties:
@@ -527,6 +543,12 @@ components:
           type:
             - array
             - "null"
+      type: object
+    SetAvailabilityOutputBody:
+      additionalProperties: false
+      properties:
+        online:
+          type: boolean
       type: object
     SignatureResponse:
       additionalProperties: false
@@ -1035,6 +1057,33 @@ paths:
       summary: Delete my account
       tags:
         - Auth
+  /me/availability:
+    post:
+      operationId: setAvailability
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAvailabilityOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Set my online availability
+      tags:
+        - Auth
   /me/bookings:
     get:
       operationId: listMyBookings
@@ -1056,6 +1105,27 @@ paths:
       summary: List my bookings
       tags:
         - Bookings
+  /me/cash:
+    get:
+      operationId: myCashPosition
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyCashOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: My cash held and deposited
+      tags:
+        - Cash
   /me/cash/deposit:
     post:
       operationId: depositCash

@@ -25,6 +25,10 @@ export type AssignRequest = {
     technician_id?: string;
 };
 
+export type AvailabilityRequest = {
+    online?: boolean;
+};
+
 export type BookingResponse = {
     allowed_actions?: Array<string> | null;
     booking_id?: string;
@@ -197,6 +201,12 @@ export type MyBookingsOutputBody = {
     bookings?: Array<SummaryResponse> | null;
 };
 
+export type MyCashOutputBody = {
+    collected?: string;
+    deposited?: string;
+    outstanding?: string;
+};
+
 export type MyJobsOutputBody = {
     jobs?: Array<JobResponse> | null;
 };
@@ -282,6 +292,10 @@ export type ServiceResponse = {
     questions?: Array<QuestionResponse> | null;
     slug?: string;
     variants?: Array<VariantResponse> | null;
+};
+
+export type SetAvailabilityOutputBody = {
+    online?: boolean;
 };
 
 export type SignatureResponse = {
@@ -741,6 +755,31 @@ export type DeleteAccountResponses = {
 
 export type DeleteAccountResponse = DeleteAccountResponses[keyof DeleteAccountResponses];
 
+export type SetAvailabilityData = {
+    body: AvailabilityRequest;
+    path?: never;
+    query?: never;
+    url: '/me/availability';
+};
+
+export type SetAvailabilityErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type SetAvailabilityError = SetAvailabilityErrors[keyof SetAvailabilityErrors];
+
+export type SetAvailabilityResponses = {
+    /**
+     * OK
+     */
+    200: SetAvailabilityOutputBody;
+};
+
+export type SetAvailabilityResponse = SetAvailabilityResponses[keyof SetAvailabilityResponses];
+
 export type ListMyBookingsData = {
     body?: never;
     path?: never;
@@ -765,6 +804,31 @@ export type ListMyBookingsResponses = {
 };
 
 export type ListMyBookingsResponse = ListMyBookingsResponses[keyof ListMyBookingsResponses];
+
+export type MyCashPositionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/me/cash';
+};
+
+export type MyCashPositionErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type MyCashPositionError = MyCashPositionErrors[keyof MyCashPositionErrors];
+
+export type MyCashPositionResponses = {
+    /**
+     * OK
+     */
+    200: MyCashOutputBody;
+};
+
+export type MyCashPositionResponse = MyCashPositionResponses[keyof MyCashPositionResponses];
 
 export type DepositCashData = {
     body: DepositRequest;

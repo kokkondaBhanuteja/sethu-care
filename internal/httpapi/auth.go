@@ -46,6 +46,40 @@ func (handler *AuthHandler) RegisterHuma(api huma.API) {
 		Summary: "Delete my account", Tags: []string{"Auth"}, DefaultStatus: http.StatusNoContent,
 		Security: bearerSecurity(),
 	}, handler.deleteAccount)
+	huma.Register(api, huma.Operation{
+		OperationID: "setAvailability", Method: http.MethodPost, Path: "/me/availability",
+		Summary: "Set my online availability", Tags: []string{"Auth"},
+		Security: bearerSecurity(), Metadata: roleMetadata(identity.RoleTechnician),
+	}, handler.setAvailability)
+}
+
+type availabilityRequest struct {
+	Online bool `json:"online"`
+}
+
+type setAvailabilityInput struct {
+	Body availabilityRequest
+}
+
+type setAvailabilityOutput struct {
+	Body struct {
+		Online bool `json:"online"`
+	}
+}
+
+// setAvailability flips the caller technician's online status — the provider app's online/offline
+// switch. The technician is the authenticated caller, so one cannot change another's availability.
+func (handler *AuthHandler) setAvailability(ctx context.Context, input *setAvailabilityInput) (*setAvailabilityOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	if err := handler.identity.SetAvailability(ctx, caller.ID, input.Body.Online); err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	out := &setAvailabilityOutput{}
+	out.Body.Online = input.Body.Online
+	return out, nil
 }
 
 // deleteAccountOutput has no body — a 204 No Content on success.

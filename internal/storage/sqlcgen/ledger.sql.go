@@ -84,6 +84,28 @@ func (q *Queries) GetBookingCashCustody(ctx context.Context, bookingID *uuid.UUI
 	return i, err
 }
 
+const getTechnicianCashPosition = `-- name: GetTechnicianCashPosition :one
+SELECT
+  position.collected_paise, position.deposited_paise, position.outstanding_paise
+FROM technician_cash_position position
+WHERE position.technician_id = $1
+`
+
+type GetTechnicianCashPositionRow struct {
+	CollectedPaise   money.Money
+	DepositedPaise   money.Money
+	OutstandingPaise money.Money
+}
+
+// One technician's own cash standing, for the provider app's cash-held summary. Returns no row
+// when they have never collected cash — the caller reads that as an all-zero position.
+func (q *Queries) GetTechnicianCashPosition(ctx context.Context, technicianID *uuid.UUID) (GetTechnicianCashPositionRow, error) {
+	row := q.db.QueryRow(ctx, getTechnicianCashPosition, technicianID)
+	var i GetTechnicianCashPositionRow
+	err := row.Scan(&i.CollectedPaise, &i.DepositedPaise, &i.OutstandingPaise)
+	return i, err
+}
+
 const insertLedgerEntry = `-- name: InsertLedgerEntry :exec
 INSERT INTO ledger_entries (kind, amount_paise, order_id, booking_id, customer_id, technician_id, method, memo)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

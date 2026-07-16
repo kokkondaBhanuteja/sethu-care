@@ -35,6 +35,15 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "SETHU-CARE Partner needs your camera to take before/after work photos for a job.",
+          "photosPermission": "SETHU-CARE Partner needs your photos to attach work photos to a job."
+        }
       ]
     ],
     "experiments": {

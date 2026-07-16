@@ -3,8 +3,8 @@
 import { queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { assignBooking, assignmentQueue, bookingCandidates, capturePayment, cashReconciliation, createAddress, createBooking, createCategory, createService, createVariant, deleteAccount, depositCash, getBooking, getPayment, getService, listAddresses, listCategories, listMyBookings, listMyJobs, listPhotos, listServices, type Options, recordPhoto, requestOtp, reviewBooking, signPhotoUpload, transitionBooking, verifyOtp } from '../sdk.gen';
-import type { AssignBookingData, AssignBookingError, AssignBookingResponse, AssignmentQueueData, AssignmentQueueError, AssignmentQueueResponse, BookingCandidatesData, BookingCandidatesError, BookingCandidatesResponse, CapturePaymentData, CapturePaymentError, CapturePaymentResponse, CashReconciliationData, CashReconciliationError, CashReconciliationResponse, CreateAddressData, CreateAddressError, CreateAddressResponse, CreateBookingData, CreateBookingError, CreateBookingResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateServiceData, CreateServiceError, CreateServiceResponse, CreateVariantData, CreateVariantError, CreateVariantResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DepositCashData, DepositCashError, DepositCashResponse, GetBookingData, GetBookingError, GetBookingResponse, GetPaymentData, GetPaymentError, GetPaymentResponse, GetServiceData, GetServiceError, GetServiceResponse, ListAddressesData, ListAddressesError, ListAddressesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListMyBookingsData, ListMyBookingsError, ListMyBookingsResponse, ListMyJobsData, ListMyJobsError, ListMyJobsResponse, ListPhotosData, ListPhotosError, ListPhotosResponse, ListServicesData, ListServicesError, ListServicesResponse, RecordPhotoData, RecordPhotoError, RecordPhotoResponse, RequestOtpData, RequestOtpError, RequestOtpResponse, ReviewBookingData, ReviewBookingError, ReviewBookingResponse, SignPhotoUploadData, SignPhotoUploadError, SignPhotoUploadResponse, TransitionBookingData, TransitionBookingError, TransitionBookingResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
+import { assignBooking, assignmentQueue, bookingCandidates, capturePayment, cashReconciliation, createAddress, createBooking, createCategory, createService, createVariant, deleteAccount, depositCash, getBooking, getPayment, getService, listAddresses, listCategories, listMyBookings, listMyJobs, listPhotos, listServices, myCashPosition, type Options, recordPhoto, requestOtp, reviewBooking, setAvailability, signPhotoUpload, transitionBooking, verifyOtp } from '../sdk.gen';
+import type { AssignBookingData, AssignBookingError, AssignBookingResponse, AssignmentQueueData, AssignmentQueueError, AssignmentQueueResponse, BookingCandidatesData, BookingCandidatesError, BookingCandidatesResponse, CapturePaymentData, CapturePaymentError, CapturePaymentResponse, CashReconciliationData, CashReconciliationError, CashReconciliationResponse, CreateAddressData, CreateAddressError, CreateAddressResponse, CreateBookingData, CreateBookingError, CreateBookingResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateServiceData, CreateServiceError, CreateServiceResponse, CreateVariantData, CreateVariantError, CreateVariantResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DepositCashData, DepositCashError, DepositCashResponse, GetBookingData, GetBookingError, GetBookingResponse, GetPaymentData, GetPaymentError, GetPaymentResponse, GetServiceData, GetServiceError, GetServiceResponse, ListAddressesData, ListAddressesError, ListAddressesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListMyBookingsData, ListMyBookingsError, ListMyBookingsResponse, ListMyJobsData, ListMyJobsError, ListMyJobsResponse, ListPhotosData, ListPhotosError, ListPhotosResponse, ListServicesData, ListServicesError, ListServicesResponse, MyCashPositionData, MyCashPositionError, MyCashPositionResponse, RecordPhotoData, RecordPhotoError, RecordPhotoResponse, RequestOtpData, RequestOtpError, RequestOtpResponse, ReviewBookingData, ReviewBookingError, ReviewBookingResponse, SetAvailabilityData, SetAvailabilityError, SetAvailabilityResponse, SignPhotoUploadData, SignPhotoUploadError, SignPhotoUploadResponse, TransitionBookingData, TransitionBookingError, TransitionBookingResponse, VerifyOtpData, VerifyOtpError, VerifyOtpResponse } from '../types.gen';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -299,6 +299,23 @@ export const deleteAccountMutation = (options?: Partial<Options<DeleteAccountDat
     return mutationOptions;
 };
 
+/**
+ * Set my online availability
+ */
+export const setAvailabilityMutation = (options?: Partial<Options<SetAvailabilityData>>): UseMutationOptions<SetAvailabilityResponse, SetAvailabilityError, Options<SetAvailabilityData>> => {
+    const mutationOptions: UseMutationOptions<SetAvailabilityResponse, SetAvailabilityError, Options<SetAvailabilityData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await setAvailability({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const listMyBookingsQueryKey = (options?: Options<ListMyBookingsData>) => createQueryKey('listMyBookings', options);
 
 /**
@@ -315,6 +332,24 @@ export const listMyBookingsOptions = (options?: Options<ListMyBookingsData>) => 
         return data;
     },
     queryKey: listMyBookingsQueryKey(options)
+});
+
+export const myCashPositionQueryKey = (options?: Options<MyCashPositionData>) => createQueryKey('myCashPosition', options);
+
+/**
+ * My cash held and deposited
+ */
+export const myCashPositionOptions = (options?: Options<MyCashPositionData>) => queryOptions<MyCashPositionResponse, MyCashPositionError, MyCashPositionResponse, ReturnType<typeof myCashPositionQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await myCashPosition({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: myCashPositionQueryKey(options)
 });
 
 /**
