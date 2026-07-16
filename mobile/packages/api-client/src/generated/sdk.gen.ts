@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, ListTechniciansData, ListTechniciansErrors, ListTechniciansResponses, MyCashPositionData, MyCashPositionErrors, MyCashPositionResponses, PendingPaymentsData, PendingPaymentsErrors, PendingPaymentsResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SetAvailabilityData, SetAvailabilityErrors, SetAvailabilityResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, ListTechniciansData, ListTechniciansErrors, ListTechniciansResponses, MyCashPositionData, MyCashPositionErrors, MyCashPositionResponses, PendingPaymentsData, PendingPaymentsErrors, PendingPaymentsResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SetAvailabilityData, SetAvailabilityErrors, SetAvailabilityResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TechnicianLocationData, TechnicianLocationErrors, TechnicianLocationResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, UpdateLocationData, UpdateLocationErrors, UpdateLocationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -140,6 +140,15 @@ export const reviewBooking = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
+ * Get the assigned technician's live location
+ */
+export const technicianLocation = <ThrowOnError extends boolean = false>(options: Options<TechnicianLocationData, ThrowOnError>): RequestResult<TechnicianLocationResponses, TechnicianLocationErrors, ThrowOnError> => (options.client ?? client).get<TechnicianLocationResponses, TechnicianLocationErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/bookings/{id}/technician-location',
+    ...options
+});
+
+/**
  * Apply a state transition to a booking
  */
 export const transitionBooking = <ThrowOnError extends boolean = false>(options: Options<TransitionBookingData, ThrowOnError>): RequestResult<TransitionBookingResponses, TransitionBookingErrors, ThrowOnError> => (options.client ?? client).post<TransitionBookingResponses, TransitionBookingErrors, ThrowOnError>({
@@ -230,6 +239,19 @@ export const listMyJobs = <ThrowOnError extends boolean = false>(options?: Optio
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/me/jobs',
     ...options
+});
+
+/**
+ * Update my current location
+ */
+export const updateLocation = <ThrowOnError extends boolean = false>(options: Options<UpdateLocationData, ThrowOnError>): RequestResult<UpdateLocationResponses, UpdateLocationErrors, ThrowOnError> => (options.client ?? client).post<UpdateLocationResponses, UpdateLocationErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/me/location',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

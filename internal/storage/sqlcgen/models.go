@@ -252,6 +252,9 @@ type Technician struct {
 	CreatedAt           pgtype.Timestamptz
 	UpdatedAt           pgtype.Timestamptz
 	Version             int64
+	LastLat             *float64
+	LastLng             *float64
+	LastLocationAt      pgtype.Timestamptz
 }
 
 type TechnicianCashPosition struct {

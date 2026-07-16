@@ -197,6 +197,11 @@ export type ListServicesOutputBody = {
     services?: Array<ServiceResponse> | null;
 };
 
+export type LocationRequest = {
+    lat?: number;
+    lng?: number;
+};
+
 export type MyBookingsOutputBody = {
     bookings?: Array<SummaryResponse> | null;
 };
@@ -332,6 +337,13 @@ export type SummaryResponse = {
     state?: string;
 };
 
+export type TechnicianLocationResponse = {
+    available?: boolean;
+    lat?: number;
+    lng?: number;
+    updated_at?: string;
+};
+
 export type TechnicianResponse = {
     acceptance_rate?: number;
     active_jobs?: number;
@@ -353,6 +365,10 @@ export type TransitionRequest = {
     code?: string;
     payment_method?: string;
     technician_id?: string;
+};
+
+export type UpdateLocationOutputBody = {
+    status?: string;
 };
 
 export type VariantResponse = {
@@ -678,6 +694,36 @@ export type ReviewBookingResponses = {
 
 export type ReviewBookingResponse = ReviewBookingResponses[keyof ReviewBookingResponses];
 
+export type TechnicianLocationData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/bookings/{id}/technician-location';
+};
+
+export type TechnicianLocationErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type TechnicianLocationError = TechnicianLocationErrors[keyof TechnicianLocationErrors];
+
+export type TechnicianLocationResponses = {
+    /**
+     * OK
+     */
+    200: TechnicianLocationResponse;
+};
+
+export type TechnicianLocationResponse2 = TechnicianLocationResponses[keyof TechnicianLocationResponses];
+
 export type TransitionBookingData = {
     body: TransitionRequest;
     path: {
@@ -907,6 +953,31 @@ export type ListMyJobsResponses = {
 };
 
 export type ListMyJobsResponse = ListMyJobsResponses[keyof ListMyJobsResponses];
+
+export type UpdateLocationData = {
+    body: LocationRequest;
+    path?: never;
+    query?: never;
+    url: '/me/location';
+};
+
+export type UpdateLocationErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type UpdateLocationError = UpdateLocationErrors[keyof UpdateLocationErrors];
+
+export type UpdateLocationResponses = {
+    /**
+     * OK
+     */
+    200: UpdateLocationOutputBody;
+};
+
+export type UpdateLocationResponse = UpdateLocationResponses[keyof UpdateLocationResponses];
 
 export type AssignmentQueueData = {
     body?: never;

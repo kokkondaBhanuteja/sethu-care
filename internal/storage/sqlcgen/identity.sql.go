@@ -115,6 +115,27 @@ func (q *Queries) GetLiveOtpChallenge(ctx context.Context, arg GetLiveOtpChallen
 	return i, err
 }
 
+const getTechnicianLocationForBooking = `-- name: GetTechnicianLocationForBooking :one
+SELECT t.last_lat, t.last_lng, t.last_location_at
+  FROM bookings b
+  JOIN technicians t ON t.user_id = b.technician_id
+ WHERE b.id = $1
+`
+
+type GetTechnicianLocationForBookingRow struct {
+	LastLat        *float64
+	LastLng        *float64
+	LastLocationAt pgtype.Timestamptz
+}
+
+// The assigned technician's last-known location for a booking, for the customer's live map.
+func (q *Queries) GetTechnicianLocationForBooking(ctx context.Context, id uuid.UUID) (GetTechnicianLocationForBookingRow, error) {
+	row := q.db.QueryRow(ctx, getTechnicianLocationForBooking, id)
+	var i GetTechnicianLocationForBookingRow
+	err := row.Scan(&i.LastLat, &i.LastLng, &i.LastLocationAt)
+	return i, err
+}
+
 const getUserByPhone = `-- name: GetUserByPhone :one
 SELECT id, phone, name, role, is_active
   FROM users
@@ -232,5 +253,23 @@ type SetTechnicianAvailabilityParams struct {
 // not on leave) they enter the dispatch pool the candidate ranking draws from.
 func (q *Queries) SetTechnicianAvailability(ctx context.Context, arg SetTechnicianAvailabilityParams) error {
 	_, err := q.db.Exec(ctx, setTechnicianAvailability, arg.IsOnline, arg.UserID)
+	return err
+}
+
+const updateTechnicianLocation = `-- name: UpdateTechnicianLocation :exec
+UPDATE technicians
+   SET last_lat = $1, last_lng = $2, last_location_at = now(), updated_at = now()
+ WHERE user_id = $3
+`
+
+type UpdateTechnicianLocationParams struct {
+	Lat    *float64
+	Lng    *float64
+	UserID uuid.UUID
+}
+
+// The technician's live location ping (sent while travelling to a job). Scoped to their own row.
+func (q *Queries) UpdateTechnicianLocation(ctx context.Context, arg UpdateTechnicianLocationParams) error {
+	_, err := q.db.Exec(ctx, updateTechnicianLocation, arg.Lat, arg.Lng, arg.UserID)
 	return err
 }
