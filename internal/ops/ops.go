@@ -48,6 +48,19 @@ type Candidate struct {
 	ActiveJobs        int32
 }
 
+// Technician is one technician's standing for the admin Employees view: status and current load.
+type Technician struct {
+	TechnicianID      uuid.UUID
+	Name              string
+	City              string
+	IsOnline          bool
+	OnLeave           bool
+	AcceptanceRate    float64
+	Rating            float64
+	MaxConcurrentJobs int32
+	ActiveJobs        int32
+}
+
 // Service is the ops back end. It holds the pool for its cross-module reads and the booking
 // service for the one thing it commands: assigning a technician.
 type Service struct {
@@ -102,6 +115,30 @@ func (service *Service) Candidates(ctx context.Context, bookingID uuid.UUID) ([]
 		}
 	}
 	return candidates, nil
+}
+
+// Technicians returns every technician with their status and current load — the admin's Employees
+// view. Unlike Candidates it is not scoped to a booking or filtered by eligibility.
+func (service *Service) Technicians(ctx context.Context) ([]Technician, error) {
+	rows, err := sqlcgen.New(service.pool).ListTechnicians(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reading technicians: %w", err)
+	}
+	technicians := make([]Technician, len(rows))
+	for index, row := range rows {
+		technicians[index] = Technician{
+			TechnicianID:      row.UserID,
+			Name:              row.Name,
+			City:              row.City,
+			IsOnline:          row.IsOnline,
+			OnLeave:           row.OnLeave,
+			AcceptanceRate:    numericToFloat(row.AcceptanceRate),
+			Rating:            numericToFloat(row.Rating),
+			MaxConcurrentJobs: row.MaxConcurrentJobs,
+			ActiveJobs:        row.ActiveJobs,
+		}
+	}
+	return technicians, nil
 }
 
 // Assign puts a technician on a booking. It verifies the technician exists (a clean 404

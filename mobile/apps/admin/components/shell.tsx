@@ -9,6 +9,7 @@ import { clearSession, getSessionToken } from "@/lib/session";
 const NAV = [
   { href: "/", label: "Overview" },
   { href: "/assignments", label: "Assignments" },
+  { href: "/employees", label: "Employees" },
   { href: "/cash", label: "Cash" },
   { href: "/payments", label: "Payments" },
   { href: "/services", label: "Services" },

@@ -332,6 +332,22 @@ export type SummaryResponse = {
     state?: string;
 };
 
+export type TechnicianResponse = {
+    acceptance_rate?: number;
+    active_jobs?: number;
+    city?: string;
+    is_online?: boolean;
+    max_concurrent_jobs?: number;
+    name?: string;
+    on_leave?: boolean;
+    rating?: number;
+    technician_id?: string;
+};
+
+export type TechniciansOutputBody = {
+    technicians?: Array<TechnicianResponse> | null;
+};
+
 export type TransitionRequest = {
     action?: string;
     code?: string;
@@ -1026,6 +1042,31 @@ export type PendingPaymentsResponses = {
 };
 
 export type PendingPaymentsResponse = PendingPaymentsResponses[keyof PendingPaymentsResponses];
+
+export type ListTechniciansData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ops/technicians';
+};
+
+export type ListTechniciansErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type ListTechniciansError = ListTechniciansErrors[keyof ListTechniciansErrors];
+
+export type ListTechniciansResponses = {
+    /**
+     * OK
+     */
+    200: TechniciansOutputBody;
+};
+
+export type ListTechniciansResponse = ListTechniciansResponses[keyof ListTechniciansResponses];
 
 export type CapturePaymentData = {
     body?: CaptureRequest;

@@ -615,6 +615,42 @@ components:
         state:
           type: string
       type: object
+    TechnicianResponse:
+      additionalProperties: false
+      properties:
+        acceptance_rate:
+          format: double
+          type: number
+        active_jobs:
+          format: int32
+          type: integer
+        city:
+          type: string
+        is_online:
+          type: boolean
+        max_concurrent_jobs:
+          format: int32
+          type: integer
+        name:
+          type: string
+        on_leave:
+          type: boolean
+        rating:
+          format: double
+          type: number
+        technician_id:
+          type: string
+      type: object
+    TechniciansOutputBody:
+      additionalProperties: false
+      properties:
+        technicians:
+          items:
+            $ref: "#/components/schemas/TechnicianResponse"
+          type:
+            - array
+            - "null"
+      type: object
     TransitionRequest:
       additionalProperties: false
       properties:
@@ -1327,6 +1363,27 @@ paths:
       summary: List UPI collections awaiting capture
       tags:
         - Payments
+  /ops/technicians:
+    get:
+      operationId: listTechnicians
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechniciansOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List technicians and their load
+      tags:
+        - Ops
   /payments/{reference}/capture:
     post:
       operationId: capturePayment
