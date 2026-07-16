@@ -30,6 +30,12 @@
     "language": "Language",
     "guest": "Guest"
   },
+  "home": {
+    "eyebrow": "SETHU-CARE",
+    "tagline": "Trusted help, at your doorstep",
+    "search": "Search services",
+    "noResults": "No services match your search"
+  },
   "address": {
     "add": "Add address",
     "line1": "Address line 1",

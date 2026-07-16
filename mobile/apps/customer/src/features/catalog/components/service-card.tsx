@@ -1,10 +1,10 @@
 import { Pressable, View } from "react-native";
-import { Text } from "@sethu/ui";
+import { Text, Card, Icon } from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import type { ServiceResponse } from "@sethu/api-client";
 
-// A catalog service card: name, description, and the starting price (first variant). Presentational
-// — the screen wires the tap.
+// A catalog service card: a soft icon tile, the name + description, the starting price (first
+// variant), and a chevron affordance. Presentational — the screen wires the tap.
 export function ServiceCard({
   service,
   onPress,
@@ -17,19 +17,25 @@ export function ServiceCard({
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={service.name}>
-      <View className="rounded-card border border-outline-variant bg-surface-container-lowest p-md">
-        <Text variant="headlineSm">{service.name ?? ""}</Text>
-        {service.description ? (
-          <Text variant="body" tone="muted" className="mt-1">
-            {service.description}
-          </Text>
-        ) : null}
-        {price ? (
-          <Text variant="label" tone="primary" className="mt-sm">
-            {price}
-          </Text>
-        ) : null}
-      </View>
+      <Card className="flex-row items-center gap-md">
+        <View className="h-12 w-12 items-center justify-center rounded-card bg-primary-container">
+          <Icon name="service" tone="primary" size={24} />
+        </View>
+        <View className="flex-1">
+          <Text variant="label">{service.name ?? ""}</Text>
+          {service.description ? (
+            <Text variant="caption" tone="muted" numberOfLines={2}>
+              {service.description}
+            </Text>
+          ) : null}
+          {price ? (
+            <Text variant="label" tone="primary" className="pt-1">
+              {price}
+            </Text>
+          ) : null}
+        </View>
+        <Icon name="chevronRight" tone="muted" />
+      </Card>
     </Pressable>
   );
 }

@@ -43,4 +43,13 @@ export type { AvatarProps } from "./components/Avatar";
 export { TabBar, TabBarButton } from "./components/TabBar";
 export type { TabBarProps, TabBarButtonProps } from "./components/TabBar";
 
+export { Hero } from "./components/Hero";
+export type { HeroProps } from "./components/Hero";
+
+export { SearchField } from "./components/SearchField";
+export type { SearchFieldProps } from "./components/SearchField";
+
+export { BrandMark } from "./components/BrandMark";
+export type { BrandMarkProps } from "./components/BrandMark";
+
 export { useTheme } from "./theme/use-theme";
