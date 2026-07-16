@@ -37,6 +37,13 @@
     "verifyStart": "Verify & start",
     "verifyComplete": "Verify & complete"
   },
+  "photos": {
+    "title": "Work photos",
+    "addBefore": "Add before",
+    "addAfter": "Add after",
+    "error": "Couldn't add the photo. Please try again.",
+    "notConfigured": "Photo uploads aren't set up yet."
+  },
   "payment": {
     "methodTitle": "How is the customer paying?",
     "upi": "UPI",

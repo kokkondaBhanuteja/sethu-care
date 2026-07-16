@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { Image } from "expo-image";
+import QRCode from "react-native-qrcode-svg";
 import { Screen, Text, Button, StatusPill, TextField } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 import { useMyJobs, useTransitionJob } from "@/features/jobs";
 import { useBookingPayment, useDepositCash } from "@/features/payment";
+import { usePhotos, useAddWorkPhoto } from "@/features/photos";
+
+const WORK_STARTED_STATES = ["IN_PROGRESS", "AWAITING_COMPLETION", "COMPLETED"];
 
 const PAYMENT_METHODS = ["UPI", "CASH", "ONLINE"] as const;
 
@@ -55,6 +60,10 @@ export default function JobDetail() {
   const completed = state === "COMPLETED";
   const upiLike = chosenMethod === "UPI" || chosenMethod === "ONLINE";
   const payment = useBookingPayment(bookingId, completed && upiLike);
+
+  const workStarted = WORK_STARTED_STATES.includes(state);
+  const photos = usePhotos(bookingId, workStarted);
+  const addPhoto = useAddWorkPhoto(bookingId);
 
   const apply = (action: string, codeArg?: string, methodArg?: string) =>
     transition.mutate(
@@ -226,17 +235,69 @@ export default function JobDetail() {
                     </Text>
                   ) : null}
                   {payment.data?.upi_link ? (
-                    <Button
-                      label={t("jobs:payment.openUpi")}
-                      onPress={() =>
-                        payment.data?.upi_link &&
-                        void Linking.openURL(payment.data.upi_link).catch(() => {})
-                      }
-                      fullWidth
-                    />
+                    <View className="items-center gap-sm">
+                      {/* Scannable QR of the UPI intent — the customer scans to pay. */}
+                      <View className="rounded-md bg-white p-md">
+                        <QRCode value={payment.data.upi_link} size={180} />
+                      </View>
+                      <Button
+                        label={t("jobs:payment.openUpi")}
+                        onPress={() =>
+                          payment.data?.upi_link &&
+                          void Linking.openURL(payment.data.upi_link).catch(() => {})
+                        }
+                        fullWidth
+                      />
+                    </View>
                   ) : null}
                 </>
               )}
+            </View>
+          ) : null}
+
+          {/* Work photos (BEFORE/AFTER evidence, once work has started) */}
+          {workStarted ? (
+            <View className="gap-sm rounded-card border border-outline-variant p-md">
+              <Text variant="label">{t("jobs:photos.title")}</Text>
+              <View className="flex-row gap-sm">
+                <Button
+                  label={t("jobs:photos.addBefore")}
+                  variant="secondary"
+                  size="sm"
+                  loading={addPhoto.isPending}
+                  onPress={() => addPhoto.mutate("BEFORE")}
+                />
+                <Button
+                  label={t("jobs:photos.addAfter")}
+                  variant="secondary"
+                  size="sm"
+                  loading={addPhoto.isPending}
+                  onPress={() => addPhoto.mutate("AFTER")}
+                />
+              </View>
+              {addPhoto.isError ? (
+                <Text variant="caption" tone="error">
+                  {(addPhoto.error as Error).message === "uploads-not-configured"
+                    ? t("jobs:photos.notConfigured")
+                    : t("jobs:photos.error")}
+                </Text>
+              ) : null}
+              {(photos.data?.photos ?? []).length > 0 ? (
+                <View className="flex-row flex-wrap gap-sm">
+                  {(photos.data?.photos ?? []).map((photo, index) => (
+                    <View key={photo.id ?? String(index)} className="gap-1">
+                      <Image
+                        source={{ uri: photo.url }}
+                        style={{ width: 80, height: 80, borderRadius: 8 }}
+                        contentFit="cover"
+                      />
+                      <Text variant="caption" tone="muted">
+                        {photo.kind ?? ""}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
           ) : null}
 
