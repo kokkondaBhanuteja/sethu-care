@@ -39,16 +39,30 @@ export interface TabBarButtonProps extends Omit<PressableProps, "children"> {
 }
 
 export const TabBarButton = forwardRef<View, TabBarButtonProps>(function TabBarButton(
-  { icon, label, isFocused, href: _href, ...rest },
+  { icon, label, isFocused, href: _href, style, ...rest },
   ref,
 ) {
   const tone = isFocused ? "primary" : "muted";
+  // The TabTrigger slot injects a plain style object; drop the (unused) function form so we can
+  // merge it. Layout goes through this inline style — not className — so our column direction wins
+  // over the row-direction style the slot injects, keeping the icon above the label.
+  const injectedStyle = typeof style === "function" ? undefined : style;
   return (
     <Pressable
       ref={ref}
       accessibilityRole="button"
       accessibilityState={{ selected: Boolean(isFocused) }}
-      className="flex-1 items-center justify-center gap-1 py-xs"
+      style={[
+        injectedStyle,
+        {
+          flex: 1,
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 3,
+          paddingVertical: 6,
+        },
+      ]}
       {...rest}
     >
       <Icon name={icon} size={24} tone={tone} strokeWidth={isFocused ? 2.4 : 2} />
