@@ -18,6 +18,18 @@
   "empty": {
     "title": "Nothing here yet"
   },
+  "nav": {
+    "home": "Home",
+    "bookings": "Bookings",
+    "account": "Account",
+    "jobs": "Jobs",
+    "earnings": "Earnings"
+  },
+  "account": {
+    "title": "Account",
+    "language": "Language",
+    "guest": "Guest"
+  },
   "address": {
     "add": "Add address",
     "line1": "Address line 1",

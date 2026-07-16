@@ -18,6 +18,18 @@
   "empty": {
     "title": "अभी यहाँ कुछ नहीं है"
   },
+  "nav": {
+    "home": "होम",
+    "bookings": "बुकिंग",
+    "account": "खाता",
+    "jobs": "काम",
+    "earnings": "कमाई"
+  },
+  "account": {
+    "title": "खाता",
+    "language": "भाषा",
+    "guest": "अतिथि"
+  },
   "address": {
     "add": "पता जोड़ें",
     "line1": "पता पंक्ति 1",

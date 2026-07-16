@@ -5,7 +5,12 @@
   },
   "earnings": {
     "title": "Cash to deposit",
-    "outstanding": "You are holding {{amount}}"
+    "outstanding": "You are holding {{amount}}",
+    "screenTitle": "Earnings",
+    "collected": "Collected",
+    "deposited": "Deposited",
+    "held": "Outstanding",
+    "allClear": "No cash to deposit right now"
   },
   "list": {
     "title": "My jobs",

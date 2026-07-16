@@ -1,4 +1,4 @@
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { Screen, Text, Skeleton, EmptyState, ErrorState } from "@sethu/ui";
@@ -16,22 +16,10 @@ export default function Home() {
   return (
     <Screen>
       <View className="flex-1 px-mobile-margin">
-        <View className="flex-row items-center justify-between py-md">
+        <View className="py-md">
           <Text variant="headline" tone="primary">
             {t("common:appName")}
           </Text>
-          <View className="flex-row gap-md">
-            <Pressable onPress={() => router.push("/bookings")} accessibilityRole="button">
-              <Text variant="label" tone="primary">
-                {t("booking:history.title")}
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("/settings")} accessibilityRole="button">
-              <Text variant="label" tone="primary">
-                {t("common:actions.settings")}
-              </Text>
-            </Pressable>
-          </View>
         </View>
         {isError ? (
           <ErrorState

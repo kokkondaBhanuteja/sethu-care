@@ -5,7 +5,12 @@
   },
   "earnings": {
     "title": "జమ చేయాల్సిన నగదు",
-    "outstanding": "మీ వద్ద {{amount}} ఉంది"
+    "outstanding": "మీ వద్ద {{amount}} ఉంది",
+    "screenTitle": "సంపాదన",
+    "collected": "వసూలు చేసింది",
+    "deposited": "జమ చేసింది",
+    "held": "బకాయి",
+    "allClear": "ప్రస్తుతం జమ చేయడానికి నగదు లేదు"
   },
   "list": {
     "title": "నా పనులు",
