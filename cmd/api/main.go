@@ -107,7 +107,7 @@ func run() error {
 	// The same sender carries both login codes and job start/completion codes.
 	var otpSender sms.Sender = sms.NewLogSender(logger)
 	if settings.MSG91AuthKey != "" && settings.MSG91TemplateID != "" {
-		otpSender = sms.NewMSG91(settings.MSG91AuthKey, settings.MSG91SenderID, settings.MSG91TemplateID)
+		otpSender = sms.NewMSG91(settings.MSG91AuthKey, settings.MSG91TemplateID)
 		logger.Info("MSG91 SMS enabled for OTP delivery")
 	}
 

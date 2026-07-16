@@ -11,22 +11,21 @@ import (
 )
 
 // msg91FlowURL is MSG91's v5 Flow endpoint: send a DLT-approved template to recipients.
-const msg91FlowURL = "https://control.msg91.com/api/v5/flow/"
+const msg91FlowURL = "https://control.msg91.com/api/v5/flow"
 
 // MSG91 sends OTP SMS through MSG91's Flow API using a DLT-approved template. Under TRAI/DLT rules
 // the message TEXT lives in the approved template on MSG91's side; we supply only the one variable
-// the template declares — the code, as "otp".
+// the template declares — the code, as "OTP" (the flow defines the sender). The payload mirrors the
+// known-working shape: template_id + short_url + realTimeResponse + recipients[{mobiles, OTP}].
 type MSG91 struct {
 	authKey    string
-	senderID   string
 	templateID string
 	client     *http.Client
 }
 
-func NewMSG91(authKey, senderID, templateID string) *MSG91 {
+func NewMSG91(authKey, templateID string) *MSG91 {
 	return &MSG91{
 		authKey:    authKey,
-		senderID:   senderID,
 		templateID: templateID,
 		client:     &http.Client{Timeout: 10 * time.Second},
 	}
@@ -34,13 +33,14 @@ func NewMSG91(authKey, senderID, templateID string) *MSG91 {
 
 type msg91Recipient struct {
 	Mobiles string `json:"mobiles"`
-	OTP     string `json:"otp"`
+	OTP     string `json:"OTP"`
 }
 
 type msg91Request struct {
-	TemplateID string           `json:"template_id"`
-	Sender     string           `json:"sender"`
-	Recipients []msg91Recipient `json:"recipients"`
+	TemplateID       string           `json:"template_id"`
+	ShortURL         string           `json:"short_url"`
+	RealTimeResponse string           `json:"realTimeResponse"`
+	Recipients       []msg91Recipient `json:"recipients"`
 }
 
 type msg91Response struct {
@@ -49,13 +49,14 @@ type msg91Response struct {
 }
 
 // SendOTP posts the code to MSG91 for delivery. MSG91 wants the mobile in international format
-// WITHOUT the leading '+', so +919000000001 becomes 919000000001. MSG91 can return a 200 with a
-// body-level error, so the response type is checked too.
+// WITHOUT the leading '+', so +919347305870 becomes 919347305870. realTimeResponse asks MSG91 to
+// report the actual result synchronously, so a bad variable/template surfaces as an error here.
 func (sender *MSG91) SendOTP(ctx context.Context, phone, code string) (err error) {
 	payload := msg91Request{
-		TemplateID: sender.templateID,
-		Sender:     sender.senderID,
-		Recipients: []msg91Recipient{{Mobiles: strings.TrimPrefix(phone, "+"), OTP: code}},
+		TemplateID:       sender.templateID,
+		ShortURL:         "0",
+		RealTimeResponse: "1",
+		Recipients:       []msg91Recipient{{Mobiles: strings.TrimPrefix(phone, "+"), OTP: code}},
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
