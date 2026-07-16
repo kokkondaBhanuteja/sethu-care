@@ -10,6 +10,9 @@ export type { StatusPillProps, StatusTone } from "./components/StatusPill";
 export { TextField } from "./components/TextField";
 export type { TextFieldProps } from "./components/TextField";
 
+export { Rating } from "./components/Rating";
+export type { RatingProps } from "./components/Rating";
+
 export { Screen } from "./components/Screen";
 export type { ScreenProps } from "./components/Screen";
 
