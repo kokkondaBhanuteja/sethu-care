@@ -69,3 +69,16 @@ UPDATE users
 UPDATE technicians
    SET is_online = @is_online, updated_at = now()
  WHERE user_id = @user_id;
+
+-- name: UpdateTechnicianLocation :exec
+-- The technician's live location ping (sent while travelling to a job). Scoped to their own row.
+UPDATE technicians
+   SET last_lat = @lat, last_lng = @lng, last_location_at = now(), updated_at = now()
+ WHERE user_id = @user_id;
+
+-- name: GetTechnicianLocationForBooking :one
+-- The assigned technician's last-known location for a booking, for the customer's live map.
+SELECT t.last_lat, t.last_lng, t.last_location_at
+  FROM bookings b
+  JOIN technicians t ON t.user_id = b.technician_id
+ WHERE b.id = $1;

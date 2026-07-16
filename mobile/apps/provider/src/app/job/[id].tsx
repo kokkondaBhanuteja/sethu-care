@@ -10,6 +10,7 @@ import { useMyJobs, useTransitionJob } from "@/features/jobs";
 import { JobMap } from "@/features/jobs/components/job-map";
 import { useBookingPayment, useDepositCash } from "@/features/payment";
 import { usePhotos, useAddWorkPhoto } from "@/features/photos";
+import { useShareLocation } from "@/features/tracking/share-location";
 
 const WORK_STARTED_STATES = ["IN_PROGRESS", "AWAITING_COMPLETION", "COMPLETED"];
 
@@ -51,6 +52,9 @@ export default function JobDetail() {
   const [liveActions, setLiveActions] = useState<string[] | null>(null);
   const state = liveState ?? info?.state ?? "";
   const actions = liveActions ?? info?.allowed_actions ?? [];
+
+  // Share the technician's live location while travelling to / at the job, so the customer can watch.
+  useShareLocation(state === "EN_ROUTE" || state === "ARRIVED");
 
   // Inline entry mode for the OTP-gated actions, plus the code and the collected payment method.
   const [mode, setMode] = useState<"idle" | "start" | "complete">("idle");

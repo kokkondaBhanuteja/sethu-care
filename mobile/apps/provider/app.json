@@ -44,6 +44,12 @@
           "cameraPermission": "SETHU-CARE Partner needs your camera to take before/after work photos for a job.",
           "photosPermission": "SETHU-CARE Partner needs your photos to attach work photos to a job."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SETHU-CARE Partner shares your location while you travel to a job so the customer can see you approaching."
+        }
       ]
     ],
     "experiments": {

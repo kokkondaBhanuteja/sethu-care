@@ -348,6 +348,16 @@ components:
             - array
             - "null"
       type: object
+    LocationRequest:
+      additionalProperties: false
+      properties:
+        lat:
+          format: double
+          type: number
+        lng:
+          format: double
+          type: number
+      type: object
     MyBookingsOutputBody:
       additionalProperties: false
       properties:
@@ -615,6 +625,20 @@ components:
         state:
           type: string
       type: object
+    TechnicianLocationResponse:
+      additionalProperties: false
+      properties:
+        available:
+          type: boolean
+        lat:
+          format: double
+          type: number
+        lng:
+          format: double
+          type: number
+        updated_at:
+          type: string
+      type: object
     TechnicianResponse:
       additionalProperties: false
       properties:
@@ -661,6 +685,12 @@ components:
         payment_method:
           type: string
         technician_id:
+          type: string
+      type: object
+    UpdateLocationOutputBody:
+      additionalProperties: false
+      properties:
+        status:
           type: string
       type: object
     VariantResponse:
@@ -1019,6 +1049,36 @@ paths:
       summary: Review a completed booking
       tags:
         - Bookings
+  /bookings/{id}/technician-location:
+    get:
+      operationId: technicianLocation
+      parameters:
+        - description: Booking id
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Booking id
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechnicianLocationResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get the assigned technician's live location
+      tags:
+        - Location
   /bookings/{id}/transitions:
     post:
       operationId: transitionBooking
@@ -1234,6 +1294,33 @@ paths:
       summary: List my assigned jobs
       tags:
         - Bookings
+  /me/location:
+    post:
+      operationId: updateLocation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateLocationOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Update my current location
+      tags:
+        - Location
   /ops/assignment-queue:
     get:
       operationId: assignmentQueue

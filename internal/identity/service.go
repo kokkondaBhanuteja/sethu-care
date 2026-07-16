@@ -249,6 +249,48 @@ func (service *Service) SetAvailability(ctx context.Context, technicianID uuid.U
 	return nil
 }
 
+// TechnicianLocation is a technician's last-known position. Found is false when they have not shared
+// a location yet (nothing to show on the map).
+type TechnicianLocation struct {
+	Lat   float64
+	Lng   float64
+	At    time.Time
+	Found bool
+}
+
+// UpdateTechnicianLocation records a technician's live location ping (sent while travelling).
+func (service *Service) UpdateTechnicianLocation(ctx context.Context, technicianID uuid.UUID, lat, lng float64) error {
+	if err := sqlcgen.New(service.pool).UpdateTechnicianLocation(ctx, sqlcgen.UpdateTechnicianLocationParams{
+		Lat:    &lat,
+		Lng:    &lng,
+		UserID: technicianID,
+	}); err != nil {
+		return fmt.Errorf("updating location: %w", err)
+	}
+	return nil
+}
+
+// TechnicianLocationForBooking returns the assigned technician's last-known location for a booking,
+// for the customer's live map. Found is false when the booking has no technician yet, or the
+// technician has not shared a location.
+func (service *Service) TechnicianLocationForBooking(ctx context.Context, bookingID uuid.UUID) (TechnicianLocation, error) {
+	row, err := sqlcgen.New(service.pool).GetTechnicianLocationForBooking(ctx, bookingID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return TechnicianLocation{}, nil
+	}
+	if err != nil {
+		return TechnicianLocation{}, fmt.Errorf("reading technician location: %w", err)
+	}
+	if row.LastLat == nil || row.LastLng == nil {
+		return TechnicianLocation{}, nil
+	}
+	location := TechnicianLocation{Lat: *row.LastLat, Lng: *row.LastLng, Found: true}
+	if row.LastLocationAt.Valid {
+		location.At = row.LastLocationAt.Time
+	}
+	return location, nil
+}
+
 // randomCode returns a numeric code of the given length using crypto/rand — NOT math/rand,
 // whose output is predictable and would make codes guessable.
 func randomCode(length int) (string, error) {
