@@ -55,4 +55,7 @@ export type { BrandMarkProps } from "./components/BrandMark";
 export { PressableScale } from "./components/PressableScale";
 export type { PressableScaleProps } from "./components/PressableScale";
 
+export { Illustration } from "./components/Illustration";
+export type { IllustrationProps, IllustrationName } from "./components/Illustration";
+
 export { useTheme } from "./theme/use-theme";
