@@ -77,6 +77,12 @@ func (service *Service) isDemo(phone string) bool {
 	return service.demoPhone != "" && phone == service.demoPhone
 }
 
+// IsDemoPhone exposes isDemo to the transport layer, so the login handler can skip sending a real
+// SMS to the reserved review number (which cannot receive one — that is why the bypass exists).
+func (service *Service) IsDemoPhone(phone string) bool {
+	return service.isDemo(phone)
+}
+
 // RequestOTP issues a login code for a phone and returns the PLAINTEXT code.
 //
 // The plaintext is returned to the CALLER (the service), never stored — only its bcrypt hash
