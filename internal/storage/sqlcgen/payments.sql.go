@@ -81,6 +81,49 @@ func (q *Queries) GetPaymentByReference(ctx context.Context, reference string) (
 	return i, err
 }
 
+const listPendingPayments = `-- name: ListPendingPayments :many
+SELECT reference, booking_id, amount_paise, status, created_at
+FROM payments
+WHERE status = 'PENDING'
+ORDER BY created_at
+`
+
+type ListPendingPaymentsRow struct {
+	Reference   string
+	BookingID   uuid.UUID
+	AmountPaise money.Money
+	Status      string
+	CreatedAt   pgtype.Timestamptz
+}
+
+// Every UPI collection still awaiting capture, oldest first — the ops payments queue. In production
+// the PSP webhook captures these; the console lets an admin confirm one by hand in P1.
+func (q *Queries) ListPendingPayments(ctx context.Context) ([]ListPendingPaymentsRow, error) {
+	rows, err := q.db.Query(ctx, listPendingPayments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPendingPaymentsRow{}
+	for rows.Next() {
+		var i ListPendingPaymentsRow
+		if err := rows.Scan(
+			&i.Reference,
+			&i.BookingID,
+			&i.AmountPaise,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markPaymentCaptured = `-- name: MarkPaymentCaptured :exec
 UPDATE payments
    SET status = 'CAPTURED', provider_ref = $1, captured_at = now()

@@ -406,6 +406,30 @@ components:
         upi_link:
           type: string
       type: object
+    PendingPaymentResponse:
+      additionalProperties: false
+      properties:
+        amount:
+          type: string
+        booking_id:
+          type: string
+        created_at:
+          type: string
+        reference:
+          type: string
+        status:
+          type: string
+      type: object
+    PendingPaymentsOutputBody:
+      additionalProperties: false
+      properties:
+        payments:
+          items:
+            $ref: "#/components/schemas/PendingPaymentResponse"
+          type:
+            - array
+            - "null"
+      type: object
     PhotoResponse:
       additionalProperties: false
       properties:
@@ -1282,6 +1306,27 @@ paths:
       summary: Cash reconciliation across technicians
       tags:
         - Cash
+  /ops/payments:
+    get:
+      operationId: pendingPayments
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingPaymentsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List UPI collections awaiting capture
+      tags:
+        - Payments
   /payments/{reference}/capture:
     post:
       operationId: capturePayment

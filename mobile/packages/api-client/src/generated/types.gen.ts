@@ -228,6 +228,18 @@ export type PaymentResponse = {
     upi_link?: string;
 };
 
+export type PendingPaymentResponse = {
+    amount?: string;
+    booking_id?: string;
+    created_at?: string;
+    reference?: string;
+    status?: string;
+};
+
+export type PendingPaymentsOutputBody = {
+    payments?: Array<PendingPaymentResponse> | null;
+};
+
 export type PhotoResponse = {
     created_at?: string;
     id?: string;
@@ -989,6 +1001,31 @@ export type CashReconciliationResponses = {
 };
 
 export type CashReconciliationResponse = CashReconciliationResponses[keyof CashReconciliationResponses];
+
+export type PendingPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ops/payments';
+};
+
+export type PendingPaymentsErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type PendingPaymentsError = PendingPaymentsErrors[keyof PendingPaymentsErrors];
+
+export type PendingPaymentsResponses = {
+    /**
+     * OK
+     */
+    200: PendingPaymentsOutputBody;
+};
+
+export type PendingPaymentsResponse = PendingPaymentsResponses[keyof PendingPaymentsResponses];
 
 export type CapturePaymentData = {
     body?: CaptureRequest;

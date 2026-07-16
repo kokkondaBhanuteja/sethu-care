@@ -135,19 +135,28 @@ optional** — app code guards with `?.`/`??`. Marking response DTOs required (s
 
 ---
 
-## 5. What is built (as of the `feat/technician-slice` merge)
+## 5. What is built
 
-- **Backend — P0/P1 complete, `make check` green.** 27 huma operations across Auth, Catalog,
+- **Backend — P0/P1 complete, `make check` green.** 30 huma operations across Auth, Catalog,
   Addresses, Bookings, Ops, Cash, Payments, Photos. Outbox worker, pure 13-state booking machine,
   dual-OTP guard, append-only ledger, UPI collection + capture, Cloudinary signed-upload signer,
-  manual-assignment ranking, enum-drift + contract-drift CI guards.
-- **Mobile foundation** — pnpm/Turborepo, 3 app shells + 9 shared packages, Indigo-Velvet tokens,
+  manual-assignment ranking, enum-drift + contract-drift CI guards. Added this session:
+  `POST /me/availability` (technician online/offline), `GET /me/cash` (technician cash summary),
+  `GET /ops/payments` (admin payments queue).
+- **Mobile foundation** — pnpm/Turborepo, 3 apps + 9 shared packages, Indigo-Velvet tokens,
   type-safe i18n (en/hi/te), generated api-client, session/secure-store.
-- **Customer app** — auth (OTP + demo bypass, Delete Account) → catalog → service detail → address
-  → optimistic booking → live-polling status → history.
-- **Provider app (Phase 4)** — job list → job detail lifecycle (travel → arrive → start [OTP] →
-  work done → complete [OTP + payment method]) → UPI collection link **or** cash deposit.
-- **Design system** — `Text`, `Button` (gradient CTA), `StatusPill`, `TextField`, `Screen`, `GlassSurface`.
+- **Customer app (Expo)** — auth (OTP + demo bypass, Delete Account) → catalog (skeleton/empty/error
+  states) → service detail → address → optimistic booking → live status → **pay (UPI) + rate** →
+  history. Runs natively on iOS 26.
+- **Provider app (Expo)** — online/offline toggle, cash-to-deposit summary, job list → job detail
+  lifecycle (travel → arrive → start [OTP] → work done → complete [OTP + payment]) → **work photos**
+  (camera → Cloudinary → record) → **UPI QR** or cash deposit. Runs natively on iOS 26.
+- **Admin console (Next.js)** — admin auth + sidebar shell, Overview (live stats), **Assignments**
+  (queue → ranked candidates → assign), **Cash reconciliation**, **Payments** capture, **Services**
+  catalog (list + add variant). On the shared tokens; runs at `localhost:3001` (or 3000).
+- **Design system** — RN: `Text`, `Button` (gradient), `StatusPill`, `TextField`, `Rating`,
+  `Skeleton`, `EmptyState`, `ErrorState`, `Screen`, `GlassSurface`. Web (admin): `Card`, `StatCard`,
+  `StatusPill`, `Button`, `PageHeader`, table bits.
 
 ---
 
@@ -159,64 +168,62 @@ Grouped by surface. `[ ]` = not started, `[~]` = partial/seam-in-place.
 - [ ] **Real notification/OTP delivery.** `notifications.Sender` is `LogSender` only (the log *is* the
       delivery). Plug in MSG91 (SMS) / Firebase (push) at the port. Dual-OTP codes currently only appear
       in backend logs — that's how to read them when testing on device.
-- [~] **Cloudinary credentials.** Signer is built; photo endpoints return **503** until
-      `Configured()` is true. Supply cloud name / API key / secret via config.
+- [~] **Cloudinary credentials.** Signer is built; photo endpoints (and the provider photo flow)
+      return **503** until `Configured()` is true. Supply cloud name / API key / secret via config.
 - [~] **Real UPI capture.** `POST /payments/{reference}/capture` works but is called by an **admin
-      standing in for the PSP webhook**. Wire the actual payment-provider callback.
-- [ ] **Technician availability endpoint.** `technicians.is_online` exists in the DB and drives
-      candidate ranking, but there is **no endpoint to toggle it**. Add `POST /me/availability` (or
-      similar) so the provider app's online/offline switch works.
-- [ ] **Technician live location.** No location-update endpoint; ranking uses the address geography
-      only. Needed before maps tracking.
+      standing in for the PSP webhook** (the admin Payments page). Wire the actual provider callback.
+- [ ] **Technician live location.** No location-update endpoint; ranking uses address geography only.
+      Needed before maps tracking.
 - [ ] **Mark huma response fields required** (removes the `FieldsOptionalByDefault` wart in §4).
 - [ ] **Auth hardening** — refresh-token/rotation, rate-limit `POST /auth/otp`. JWT is a single
-      long-lived token today.
+      long-lived token today. (Note: `/auth/otp` has a 30s per-phone resend guard.)
 - [ ] **Live Activity push tokens** (ActivityKit) — no storage/endpoint yet.
 - [ ] **Observability** — metrics/tracing not wired (documented future work in ARCHITECTURE.md).
 
-### Customer app
-- [ ] **Reviews / rating UI.** `POST /bookings/{id}/review` exists; no `RatingSheet` screen.
-- [ ] **Customer payment UI.** `GET /bookings/{id}/payment` (UPI deep link) exists; no screen for the
-      customer to pay.
+### Customer app — core done; remaining
 - [ ] **Live Activity / Dynamic Island** for live booking status.
 - [ ] **Push notifications** for booking updates.
-- [ ] **Profile** (beyond `settings`), skeleton/error/empty-state polish.
+- [ ] **Profile** (beyond `settings`).
 
-### Provider app (Phase 4 slice shipped; remaining)
-- [ ] **Online/offline toggle** (blocked on the backend availability endpoint above).
-- [~] **Work photos.** Backend sign+record endpoints exist; app needs `expo-image-picker` (native dep
-      → prebuild) for camera → Cloudinary signed upload → record.
-- [~] **UPI QR image.** Currently a deep-link button; a scannable QR needs `react-native-svg` + a QR lib.
-- [ ] **Maps tracking** with the animated rider marker (`react-native-maps` + location endpoint).
-- [ ] **Earnings / cash-held summary** for the technician.
+### Provider app — core done; remaining
+- [~] **Work photos** — built, but the *upload* needs Cloudinary creds (503 until then; UI degrades
+      gracefully).
+- [ ] **Maps tracking** with the animated rider marker (`react-native-maps` + the location endpoint
+      above) — a cross-app realtime feature (technician broadcasts, customer watches).
 
-### Admin app (Next.js) — currently a bare shell (`layout.tsx` + `page.tsx`); entire surface pending
-- [ ] Admin auth.
-- [ ] Assignment queue (`GET /ops/assignment-queue`), candidate ranking
-      (`GET /ops/bookings/{id}/candidates`), assign (`POST /ops/bookings/{id}/assign`).
-- [ ] Cash reconciliation (`GET /ops/cash-reconciliation`).
-- [ ] Payment capture (`POST /payments/{reference}/capture`) — until the real PSP webhook lands.
-- [ ] Catalog management (category/service/variant writes).
-- [ ] Reuse `@sethu/tokens` + a web build of `@sethu/api-client`.
+### Admin console — core done; remaining
+- [ ] **Full service/category creation** (only inline *add-variant* today).
+- [ ] **Employees / Customers** views (in the Stitch design; secondary).
+- [ ] **Production login** — currently dev-code (devEcho). Needs a real admin auth path.
 
 ### Cross-cutting / tooling
 - [ ] **Animated glass tab bar** (Reanimated spring zoom + haptics) — deferred from Phase 1.
 - [ ] **`@sethu/icons` SVGR pipeline** + branded/service icons.
 - [ ] **EAS** build/submit config + OTA update channels.
 - [ ] **i18n drift CI** (`i18next-cli status --ci`) so locales can't fall out of sync.
-- [~] **CI** — workflows moved into `.github/workflows/`; import `ci/ruleset-main.json` in repo Rules;
-      optional shared-Postgres `services:` container to speed the test job.
-- [ ] **Design polish pass** — premium Apple-HIG styling (layout, spacing, glass, motion) across all
-      apps. Current screens are intentionally plain; the token system makes this a style swap, not a rewrite.
+- [x] **CI** — workflows in `.github/workflows/` always run and skip heavy steps when no relevant
+      files changed (so the required `backend`/`mobile` checks never hang as "Expected"); import
+      `ci/ruleset-main.json` in repo Rules. Optional: shared-Postgres `services:` container to speed tests.
+- [ ] **Design polish pass** — premium Apple-HIG styling (layout, spacing, glass, motion). Current
+      screens are intentionally plain; the token system makes this a style swap, not a rewrite.
 
 ---
 
 ## 7. Gotchas (quick reference)
 
-- Backend on **`:8090`**, health at **`/health`**, Postgres on **`127.0.0.1:5434`**.
-- **Demo account** `+919000000000` / `000000` bypasses OTP everywhere.
-- **Dual-OTP codes are in the backend logs** in dev (LogSender) — that's how to test start/completion.
-- `mobile/go.mod` stub and gitignored `ios/` — leave both alone.
-- Only one `expo run:ios` build at a time; kill orphans before retrying.
-- Commit/push only when asked; the branch naming convention is `feat/<kebab-scope>`
-  (e.g. `feat/technician-slice`). The default/integration branch is `developer`.
+- Backend on **`:8090`**, health at **`/health`**, Postgres on **`127.0.0.1:5434`**. Run with the
+  env that enables local testing: `ADDR=:8090 SETHU_DEV_OTP=true SETHU_DEMO_PHONE=<phone>
+  SETHU_DEMO_OTP=000000 go run ./cmd/api`.
+- **Admin console:** `pnpm --filter admin dev` → `localhost:3000` (or 3001 if taken). Admin login is
+  phone+OTP; with `SETHU_DEV_OTP=true` the login screen shows the code (no SMS).
+- **Demo bypass** = the single `SETHU_DEMO_PHONE` number logs in with the fixed `SETHU_DEMO_OTP`, and
+  resolves to whatever role that user has in the DB (customer, or a pre-provisioned technician/admin).
+  With `SETHU_DEV_OTP=true`, **any** account can log in — `/auth/otp` returns `dev_code` in its
+  response, and the code is also logged. That's also how **dual-OTP** (job start/completion) codes are
+  read in dev (LogSender). `/auth/otp` has a **30s per-phone resend guard** (429 if you hammer it).
+- **Contract change checklist:** edit handler/query → `make generate` (sqlc) + `make openapi` →
+  `pnpm --filter @sethu/api-client run generate` (or `pnpm api:generate`) → the client has the new op.
+- `mobile/go.mod` stub, gitignored `ios/`/`android/` (also prettier-ignored) — leave them alone.
+- Only one `expo run:ios` build at a time; kill orphans (`pkill -f "expo run:ios"`) before retrying.
+- **`sqlc` / `golangci-lint`** install to `~/go/bin`; put it on `PATH` for `make generate`/`make lint`.
+- Commit/push only when asked; branch convention `feat/<kebab-scope>`. Integration branch: `developer`.

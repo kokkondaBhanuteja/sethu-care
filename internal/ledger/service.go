@@ -269,6 +269,35 @@ type Collection struct {
 	TechnicianID *uuid.UUID
 }
 
+// PendingPayment is a UPI collection still awaiting capture, for the ops payments queue.
+type PendingPayment struct {
+	Reference   string
+	BookingID   uuid.UUID
+	AmountPaise money.Money
+	Status      PaymentStatus
+	CreatedAt   time.Time
+}
+
+// PendingPayments lists every collection still PENDING, oldest first — what the admin console shows
+// as the payments queue. In production the PSP webhook captures these instead.
+func (service *Service) PendingPayments(ctx context.Context) ([]PendingPayment, error) {
+	rows, err := sqlcgen.New(service.pool).ListPendingPayments(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("listing pending payments: %w", err)
+	}
+	payments := make([]PendingPayment, len(rows))
+	for index, row := range rows {
+		payments[index] = PendingPayment{
+			Reference:   row.Reference,
+			BookingID:   row.BookingID,
+			AmountPaise: row.AmountPaise,
+			Status:      PaymentStatus(row.Status),
+			CreatedAt:   row.CreatedAt.Time,
+		}
+	}
+	return payments, nil
+}
+
 // CollectionForBooking returns the UPI collection opened for a booking, for the customer (or the
 // assigned technician) to render the QR. ErrPaymentNotFound if the booking has no collection —
 // it was cash, a warranty job, or is not yet completed.
