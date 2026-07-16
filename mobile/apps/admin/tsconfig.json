@@ -8,6 +8,12 @@
     "noEmit": true,
     "incremental": true,
     "types": [],
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"] },
+    // The generated @sethu/api-client (vendored hey-api output) does not satisfy
+    // exactOptionalPropertyTypes; the RN apps avoid it via expo's base config, and the client's own
+    // tsconfig disables it. Match that here so importing the client typechecks.
+    "exactOptionalPropertyTypes": false,
     "plugins": [{ "name": "next" }]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

@@ -32,9 +32,18 @@ importers:
 
   apps/admin:
     dependencies:
+      '@sethu/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@sethu/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@sethu/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+      '@tanstack/react-query':
+        specifier: ^5.101.2
+        version: 5.101.2(react@19.2.3)
       next:
         specifier: ^15.5.4
         version: 15.5.20(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
