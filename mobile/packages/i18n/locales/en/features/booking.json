@@ -39,5 +39,9 @@
     "commentPlaceholder": "Add a comment (optional)",
     "submit": "Submit rating",
     "thanks": "Thanks for your feedback!"
+  },
+  "tracking": {
+    "title": "Your technician is on the way",
+    "technician": "Technician"
   }
 }

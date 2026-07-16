@@ -8,6 +8,8 @@ import { useTranslation } from "@sethu/i18n";
 import { useBooking, useTransitionBooking } from "@/features/booking";
 import { useBookingPayment } from "@/features/payment";
 import { useSubmitReview } from "@/features/reviews";
+import { useTechnicianLocation } from "@/features/tracking/api";
+import { TechnicianMap } from "@/features/tracking/technician-map";
 
 // A booking's live status. useBooking polls every 4s, so the pill updates as the backend advances
 // the state machine. Once completed, the customer can pay any pending UPI collection and rate the
@@ -27,6 +29,10 @@ export default function BookingDetail() {
   const submitReview = useSubmitReview(bookingId);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+
+  // Live technician tracking while they travel to / reach the job.
+  const tracking = state === "EN_ROUTE" || state === "ARRIVED";
+  const technicianLocation = useTechnicianLocation(bookingId, tracking);
 
   // Map a backend state to a pill tone + localized label; unknown states show as-is.
   const status: { tone: StatusTone; label: string } = (() => {
@@ -65,6 +71,19 @@ export default function BookingDetail() {
           ) : (
             <>
               <StatusPill label={status.label} tone={status.tone} />
+
+              {/* Live map of the technician approaching (EN_ROUTE / ARRIVED). */}
+              {tracking && technicianLocation.data?.available ? (
+                <View className="gap-sm">
+                  <Text variant="label">{t("booking:tracking.title")}</Text>
+                  <TechnicianMap
+                    lat={technicianLocation.data.lat}
+                    lng={technicianLocation.data.lng}
+                    label={t("booking:tracking.technician")}
+                  />
+                </View>
+              ) : null}
+
               {booking?.quoted_total_paise != null ? (
                 <Text tone="primary">
                   {t("booking:book.total", { amount: formatPaise(booking.quoted_total_paise) })}
