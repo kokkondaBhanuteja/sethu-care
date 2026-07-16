@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
-import { Screen, Text, Button } from "@sethu/ui";
+import { Screen, Text, Button, Card } from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
 import { useService } from "@/features/catalog";
@@ -29,11 +29,13 @@ export default function ServiceDetail() {
           keyExtractor={(variant, index) => variant.id ?? String(index)}
           ItemSeparatorComponent={() => <View className="h-sm" />}
           renderItem={({ item }) => (
-            <View className="flex-row items-center justify-between rounded-card border border-outline-variant bg-surface-container-lowest p-md">
+            <Card className="flex-row items-center justify-between gap-md">
               <View className="flex-1">
                 <Text variant="label">{item.name ?? ""}</Text>
                 {item.price_paise != null ? (
-                  <Text tone="primary">{formatPaise(item.price_paise)}</Text>
+                  <Text variant="label" tone="primary" className="pt-1">
+                    {formatPaise(item.price_paise)}
+                  </Text>
                 ) : null}
               </View>
               <Button
@@ -50,7 +52,7 @@ export default function ServiceDetail() {
                   })
                 }
               />
-            </View>
+            </Card>
           )}
         />
       </View>

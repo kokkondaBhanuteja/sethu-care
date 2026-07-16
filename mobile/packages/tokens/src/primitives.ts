@@ -1,63 +1,63 @@
-// Primitive tokens — the raw "Indigo Velvet" values, lifted verbatim from the design
-// (stitch_swiftfix_premium_services/indigo_velvet/DESIGN.md and the screen Tailwind configs).
-// These carry NO meaning on their own; the semantic layer (semantic.ts) assigns them roles.
-// This file is the single source of truth for both the RN apps (via NativeWind) and the admin web.
+// Primitive tokens — the raw "Teal Harbour" values: a teal primary + blue secondary on white
+// surfaces with near-black text, tuned for WCAG AA contrast at all ages. These carry NO meaning on
+// their own; the semantic layer (semantic.ts) assigns them roles. Keep these in sync with
+// tailwind-preset.js (the same values, as utility classes).
 
-/** Material-3-style colour ramp. Names are the design's own (surface tiers, on-* pairs, fixed). */
+/** Material-3-style colour ramp. Names are the M3 roles (surface tiers, on-* pairs, fixed). */
 export const color = {
-  primary: "#3525cd",
+  primary: "#0f766e",
   onPrimary: "#ffffff",
-  primaryContainer: "#4f46e5",
-  onPrimaryContainer: "#dad7ff",
-  primaryFixed: "#e2dfff",
-  primaryFixedDim: "#c3c0ff",
-  onPrimaryFixed: "#0f0069",
-  onPrimaryFixedVariant: "#3323cc",
-  inversePrimary: "#c3c0ff",
-  surfaceTint: "#4d44e3",
+  primaryContainer: "#ccfbf1",
+  onPrimaryContainer: "#115e59",
+  primaryFixed: "#99f6e4",
+  primaryFixedDim: "#5eead4",
+  onPrimaryFixed: "#042f2e",
+  onPrimaryFixedVariant: "#115e59",
+  inversePrimary: "#5eead4",
+  surfaceTint: "#0f766e",
 
-  secondary: "#712ae2",
+  secondary: "#1d4ed8",
   onSecondary: "#ffffff",
-  secondaryContainer: "#8a4cfc",
-  onSecondaryContainer: "#fffbff",
-  secondaryFixed: "#eaddff",
-  secondaryFixedDim: "#d2bbff",
-  onSecondaryFixed: "#25005a",
-  onSecondaryFixedVariant: "#5a00c6",
+  secondaryContainer: "#dbeafe",
+  onSecondaryContainer: "#1e40af",
+  secondaryFixed: "#bfdbfe",
+  secondaryFixedDim: "#93c5fd",
+  onSecondaryFixed: "#172554",
+  onSecondaryFixedVariant: "#1e40af",
 
-  tertiary: "#684000",
+  tertiary: "#15803d",
   onTertiary: "#ffffff",
-  tertiaryContainer: "#885500",
-  onTertiaryContainer: "#ffd4a4",
-  tertiaryFixed: "#ffddb8",
-  tertiaryFixedDim: "#ffb95f",
-  onTertiaryFixed: "#2a1700",
-  onTertiaryFixedVariant: "#653e00",
+  tertiaryContainer: "#dcfce7",
+  onTertiaryContainer: "#166534",
+  tertiaryFixed: "#bbf7d0",
+  tertiaryFixedDim: "#86efac",
+  onTertiaryFixed: "#052e16",
+  onTertiaryFixedVariant: "#166534",
 
-  error: "#ba1a1a",
+  error: "#dc2626",
   onError: "#ffffff",
-  errorContainer: "#ffdad6",
-  onErrorContainer: "#93000a",
+  errorContainer: "#fee2e2",
+  onErrorContainer: "#991b1b",
 
-  background: "#f9f9ff",
-  onBackground: "#151c27",
+  background: "#ffffff",
+  onBackground: "#0f172a",
 
-  surface: "#f9f9ff",
-  surfaceDim: "#d3daea",
-  surfaceBright: "#f9f9ff",
+  surface: "#ffffff",
+  surfaceDim: "#e2e8f0",
+  surfaceBright: "#ffffff",
   surfaceContainerLowest: "#ffffff",
-  surfaceContainerLow: "#f0f3ff",
-  surfaceContainer: "#e7eefe",
-  surfaceContainerHigh: "#e2e8f8",
-  surfaceContainerHighest: "#dce2f3",
-  onSurface: "#151c27",
-  onSurfaceVariant: "#464555",
-  surfaceVariant: "#dce2f3",
-  inverseSurface: "#2a313d",
-  inverseOnSurface: "#ebf1ff",
+  surfaceContainerLow: "#f8fafc",
+  surfaceContainer: "#f1f5f9",
+  surfaceContainerHigh: "#e2e8f0",
+  surfaceContainerHighest: "#cbd5e1",
+  onSurface: "#0f172a",
+  onSurfaceVariant: "#475569",
+  surfaceVariant: "#e2e8f0",
+  inverseSurface: "#1e293b",
+  inverseOnSurface: "#f1f5f9",
 
-  outline: "#777587",
-  outlineVariant: "#c7c4d8",
+  outline: "#94a3b8",
+  outlineVariant: "#e2e8f0",
 } as const;
 
 /** 8px grid. `base` is the unit; the named steps match the design's spacing scale. */
@@ -85,10 +85,14 @@ export const radius = {
   full: 9999,
 } as const;
 
+// Inter, loaded via @expo-google-fonts/inter. On React Native each WEIGHT is its own family (font
+// weight alone does not render bold), so we name the weighted families and use them per role.
 export const fontFamily = {
-  display: "Plus Jakarta Sans",
-  heading: "Plus Jakarta Sans",
-  body: "Inter",
+  display: "Inter_800ExtraBold",
+  heading: "Inter_700Bold",
+  semibold: "Inter_600SemiBold",
+  medium: "Inter_500Medium",
+  body: "Inter_400Regular",
 } as const;
 
 /** Type scale: [fontSize px, { lineHeight, fontWeight, letterSpacing? }]. */
@@ -140,14 +144,14 @@ export const typography = {
     lineHeight: 1.2,
     fontWeight: "600",
     letterSpacing: 0.05,
-    family: fontFamily.body,
+    family: fontFamily.semibold,
   },
   labelSm: {
     fontSize: 12,
     lineHeight: 1.2,
     fontWeight: "500",
     letterSpacing: 0,
-    family: fontFamily.body,
+    family: fontFamily.medium,
   },
 } as const;
 

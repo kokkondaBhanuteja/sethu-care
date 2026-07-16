@@ -17,10 +17,13 @@
   "peerDependencies": {
     "expo-blur": "*",
     "expo-glass-effect": "*",
+    "expo-haptics": "*",
     "expo-linear-gradient": "*",
+    "lucide-react-native": "*",
     "nativewind": "*",
     "react": "*",
     "react-native": "*",
+    "react-native-reanimated": "*",
     "react-native-safe-area-context": "*"
   }
 }

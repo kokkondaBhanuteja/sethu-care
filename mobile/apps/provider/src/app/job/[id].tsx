@@ -3,7 +3,7 @@ import { Linking, Pressable, ScrollView, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import QRCode from "react-native-qrcode-svg";
-import { Screen, Text, Button, StatusPill, TextField } from "@sethu/ui";
+import { Screen, Text, Button, Card, Icon, StatusPill, TextField } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 import { useMyJobs, useTransitionJob } from "@/features/jobs";
@@ -96,11 +96,18 @@ export default function JobDetail() {
           </View>
 
           {/* Customer + address card */}
-          <View className="gap-1 rounded-card border border-outline-variant bg-surface-container-lowest p-md">
-            <Text variant="caption" tone="muted">
-              {t("jobs:detail.customer")}
-            </Text>
-            <Text variant="label">{info?.customer_name ?? ""}</Text>
+          <Card className="gap-1">
+            <View className="flex-row items-center gap-md pb-sm">
+              <View className="h-11 w-11 items-center justify-center rounded-card bg-primary-container">
+                <Icon name="account" tone="primary" />
+              </View>
+              <View className="flex-1">
+                <Text variant="caption" tone="muted">
+                  {t("jobs:detail.customer")}
+                </Text>
+                <Text variant="label">{info?.customer_name ?? ""}</Text>
+              </View>
+            </View>
             <Text variant="caption" tone="muted" className="pt-sm">
               {t("jobs:detail.address")}
             </Text>
@@ -139,11 +146,11 @@ export default function JobDetail() {
                 />
               ) : null}
             </View>
-          </View>
+          </Card>
 
           {/* Start-job OTP entry */}
           {mode === "start" ? (
-            <View className="gap-sm rounded-card border border-outline-variant p-md">
+            <Card className="gap-sm">
               <Text variant="label">{t("jobs:otp.startTitle")}</Text>
               <Text variant="caption" tone="muted">
                 {t("jobs:otp.startHint")}
@@ -163,12 +170,12 @@ export default function JobDetail() {
                 onPress={() => apply("VERIFY_START", code)}
                 fullWidth
               />
-            </View>
+            </Card>
           ) : null}
 
           {/* Completion: how the customer paid + OTP entry */}
           {mode === "complete" ? (
-            <View className="gap-sm rounded-card border border-outline-variant p-md">
+            <Card className="gap-sm">
               <Text variant="label">{t("jobs:payment.methodTitle")}</Text>
               <View className="flex-row gap-sm">
                 {PAYMENT_METHODS.map((option) => (
@@ -205,12 +212,12 @@ export default function JobDetail() {
                 onPress={() => apply("VERIFY_COMPLETION", code, method)}
                 fullWidth
               />
-            </View>
+            </Card>
           ) : null}
 
           {/* Post-completion collection: UPI link to open, or cash to deposit */}
           {completed && chosenMethod === "CASH" ? (
-            <View className="gap-sm rounded-card border border-outline-variant p-md">
+            <Card className="gap-sm">
               <Text variant="label">{t("jobs:payment.cashHeld")}</Text>
               {deposit.isSuccess ? (
                 <StatusPill label={t("jobs:payment.deposited")} tone="success" />
@@ -222,11 +229,11 @@ export default function JobDetail() {
                   fullWidth
                 />
               )}
-            </View>
+            </Card>
           ) : null}
 
           {completed && upiLike ? (
-            <View className="gap-sm rounded-card border border-outline-variant p-md">
+            <Card className="gap-sm">
               <Text variant="label">{t("jobs:payment.collectTitle")}</Text>
               {payment.data?.status === "CAPTURED" ? (
                 <StatusPill label={t("jobs:payment.paid")} tone="success" />
@@ -260,12 +267,12 @@ export default function JobDetail() {
                   ) : null}
                 </>
               )}
-            </View>
+            </Card>
           ) : null}
 
           {/* Work photos (BEFORE/AFTER evidence, once work has started) */}
           {workStarted ? (
-            <View className="gap-sm rounded-card border border-outline-variant p-md">
+            <Card className="gap-sm">
               <Text variant="label">{t("jobs:photos.title")}</Text>
               <View className="flex-row gap-sm">
                 <Button
@@ -306,7 +313,7 @@ export default function JobDetail() {
                   ))}
                 </View>
               ) : null}
-            </View>
+            </Card>
           ) : null}
 
           {/* Lifecycle actions (only the legal next steps render) */}

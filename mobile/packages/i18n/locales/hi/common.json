@@ -18,6 +18,24 @@
   "empty": {
     "title": "अभी यहाँ कुछ नहीं है"
   },
+  "nav": {
+    "home": "होम",
+    "bookings": "बुकिंग",
+    "account": "खाता",
+    "jobs": "काम",
+    "earnings": "कमाई"
+  },
+  "account": {
+    "title": "खाता",
+    "language": "भाषा",
+    "guest": "अतिथि"
+  },
+  "home": {
+    "eyebrow": "SETHU-CARE",
+    "tagline": "भरोसेमंद मदद, आपके द्वार पर",
+    "search": "सेवाएँ खोजें",
+    "noResults": "आपकी खोज से कोई सेवा मेल नहीं खाती"
+  },
   "address": {
     "add": "पता जोड़ें",
     "line1": "पता पंक्ति 1",

@@ -28,4 +28,34 @@ export type { ScreenProps } from "./components/Screen";
 export { GlassSurface } from "./components/GlassSurface";
 export type { GlassSurfaceProps } from "./components/GlassSurface";
 
+export { Icon } from "./components/Icon";
+export type { IconProps, IconName, IconTone } from "./components/Icon";
+
+export { Card } from "./components/Card";
+export type { CardProps } from "./components/Card";
+
+export { AppHeader } from "./components/AppHeader";
+export type { AppHeaderProps } from "./components/AppHeader";
+
+export { Avatar } from "./components/Avatar";
+export type { AvatarProps } from "./components/Avatar";
+
+export { TabBar, TabBarButton } from "./components/TabBar";
+export type { TabBarProps, TabBarButtonProps } from "./components/TabBar";
+
+export { Hero } from "./components/Hero";
+export type { HeroProps } from "./components/Hero";
+
+export { SearchField } from "./components/SearchField";
+export type { SearchFieldProps } from "./components/SearchField";
+
+export { BrandMark } from "./components/BrandMark";
+export type { BrandMarkProps } from "./components/BrandMark";
+
+export { PressableScale } from "./components/PressableScale";
+export type { PressableScaleProps } from "./components/PressableScale";
+
+export { Illustration } from "./components/Illustration";
+export type { IllustrationProps, IllustrationName } from "./components/Illustration";
+
 export { useTheme } from "./theme/use-theme";

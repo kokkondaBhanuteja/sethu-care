@@ -6,6 +6,15 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
 import { I18nextProvider } from "@sethu/i18n";
 import { configureApiClient } from "@sethu/api-client";
 import { getSessionToken, useSession } from "@sethu/core";
@@ -15,9 +24,10 @@ import { initAppI18n } from "@/lib/i18n";
 import { queryClient } from "@/lib/query-client";
 
 // One-time bootstrap (module scope): i18n in the device language, and the API client attaching the
-// session token to every request.
+// session token to every request. Hold the splash screen until Inter has loaded.
 const i18n = initAppI18n();
 configureApiClient({ baseUrl: API_BASE_URL, getToken: getSessionToken });
+void SplashScreen.preventAutoHideAsync();
 
 // Redirect between the app and the (auth) group based on session status; hydrate the persisted
 // token on start. Signed-out users are pushed to sign-in; signed-in users never sit on auth screens.
@@ -53,6 +63,20 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) void SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

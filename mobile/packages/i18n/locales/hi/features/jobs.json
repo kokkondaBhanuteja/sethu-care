@@ -5,7 +5,12 @@
   },
   "earnings": {
     "title": "जमा करने योग्य नकद",
-    "outstanding": "आपके पास {{amount}} है"
+    "outstanding": "आपके पास {{amount}} है",
+    "screenTitle": "कमाई",
+    "collected": "एकत्रित",
+    "deposited": "जमा किया गया",
+    "held": "बकाया",
+    "allClear": "अभी जमा करने के लिए कोई नकद नहीं"
   },
   "list": {
     "title": "मेरे काम",

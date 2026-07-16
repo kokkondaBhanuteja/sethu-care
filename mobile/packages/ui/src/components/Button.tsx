@@ -1,19 +1,23 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import { Pressable, StyleSheet, View, type PressableProps } from "react-native";
+import Animated from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { tv, type VariantProps } from "tailwind-variants";
 import { color } from "@sethu/tokens";
 
 import { Text } from "./Text";
+import { Icon, type IconName } from "./Icon";
+import { tapFeedback } from "../lib/haptics";
 
-// Pill buttons matching the design. The primary variant is the Indigo→Violet gradient CTA; the
-// others are solid/glass. Variant-driven, ref-forwarded, and accessible by default.
+// Pill buttons. The primary variant is the teal→blue gradient CTA; the others are solid/outline.
+// Variant-driven, ref-forwarded, accessible, with a leading icon and an HIG-style press depress
+// (Reanimated CSS transition on an outer wrapper, per Software Mansion's simple-feedback pattern).
 const container = tv({
-  base: "flex-row items-center justify-center rounded-full overflow-hidden",
+  base: "flex-row items-center justify-center gap-xs rounded-full overflow-hidden",
   variants: {
     variant: {
       primary: "",
-      secondary: "bg-surface-container border border-outline-variant",
+      secondary: "bg-surface-container-lowest border border-outline-variant",
       ghost: "bg-transparent",
       destructive: "bg-error",
     },
@@ -37,8 +41,11 @@ const labelTone: Record<ButtonVariant, "inverse" | "default" | "primary"> = {
   destructive: "inverse",
 };
 
+const iconTone: Record<ButtonVariant, "inverse" | "default" | "primary"> = labelTone;
+
 export type ButtonProps = Omit<VariantProps<typeof container>, "isDisabled"> & {
   label: string;
+  icon?: IconName;
   onPress?: PressableProps["onPress"];
   disabled?: boolean;
   loading?: boolean;
@@ -48,6 +55,7 @@ export type ButtonProps = Omit<VariantProps<typeof container>, "isDisabled"> & {
 export const Button = forwardRef<View, ButtonProps>(function Button(
   {
     label,
+    icon,
     variant = "primary",
     size = "md",
     fullWidth,
@@ -59,28 +67,46 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
   ref,
 ) {
   const isDisabled = Boolean(disabled) || Boolean(loading);
+  const resolvedVariant = variant ?? "primary";
+  const [pressed, setPressed] = useState(false);
 
   return (
-    <Pressable
-      ref={ref}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
-      disabled={isDisabled}
-      onPress={onPress}
-      className={container({ variant, size, fullWidth, isDisabled })}
+    <Animated.View
+      style={{
+        alignSelf: fullWidth ? "stretch" : "flex-start",
+        transform: [{ scale: pressed && !isDisabled ? 0.97 : 1 }],
+        transitionProperty: "transform",
+        transitionDuration: 120,
+        transitionTimingFunction: "ease-out",
+      }}
     >
-      {variant === "primary" ? (
-        <LinearGradient
-          colors={[color.primary, color.secondary] as const}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
-      <Text variant="label" tone={labelTone[variant ?? "primary"]}>
-        {loading ? "…" : label}
-      </Text>
-    </Pressable>
+      <Pressable
+        ref={ref}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
+        disabled={isDisabled}
+        onPress={onPress}
+        onPressIn={() => {
+          setPressed(true);
+          tapFeedback();
+        }}
+        onPressOut={() => setPressed(false)}
+        className={container({ variant, size, fullWidth, isDisabled })}
+      >
+        {resolvedVariant === "primary" ? (
+          <LinearGradient
+            colors={[color.primary, color.secondary] as const}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
+        {icon && !loading ? <Icon name={icon} size={18} tone={iconTone[resolvedVariant]} /> : null}
+        <Text variant="label" tone={labelTone[resolvedVariant]}>
+          {loading ? "…" : label}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 });

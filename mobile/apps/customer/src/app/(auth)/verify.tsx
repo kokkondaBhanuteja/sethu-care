@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { verifyOtpMutation } from "@sethu/api-client";
 import { useSession, type Role } from "@sethu/core";
-import { Screen, Text, Button } from "@sethu/ui";
+import { Screen, Text, Button, BrandMark } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 // Step 2 of login: verify the OTP. On success we persist the JWT in the keychain (via the session
@@ -39,11 +39,16 @@ export default function Verify() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <View className="flex-1 justify-center gap-md px-mobile-margin">
-          <Text variant="headline">{t("otp.title")}</Text>
-          <Text variant="body" tone="muted">
-            {t("otp.subtitle", { phone })}
-          </Text>
+        <View className="flex-1 justify-center gap-lg px-mobile-margin">
+          <View className="items-center gap-md">
+            <BrandMark size={80} icon="phone" />
+            <View className="items-center gap-1">
+              <Text variant="headline">{t("otp.title")}</Text>
+              <Text variant="body" tone="muted" className="text-center">
+                {t("otp.subtitle", { phone })}
+              </Text>
+            </View>
+          </View>
           <TextInput
             value={code}
             onChangeText={setCode}

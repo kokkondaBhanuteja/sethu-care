@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, Text, Button } from "@sethu/ui";
+import { Screen, Text, Button, Card } from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
 import { AddressPicker } from "@/features/address";
@@ -42,10 +42,12 @@ export default function Confirm() {
       <View className="flex-1 gap-md px-mobile-margin pt-md">
         <Text variant="headline">{t("booking:book.cta")}</Text>
 
-        <View className="rounded-card border border-outline-variant bg-surface-container-lowest p-md">
+        <Card className="gap-1">
           <Text variant="label">{variantName}</Text>
-          <Text tone="primary">{t("booking:book.total", { amount: priceLabel })}</Text>
-        </View>
+          <Text variant="label" tone="primary">
+            {t("booking:book.total", { amount: priceLabel })}
+          </Text>
+        </Card>
 
         <AddressPicker selectedId={addressId} onSelect={setAddressId} />
 
