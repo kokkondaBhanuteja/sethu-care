@@ -1,7 +1,7 @@
 import type { IconName } from "@sethu/ui";
 
 // Service/category imagery for the rich, image-forward home. Drop generated files into
-// apps/customer/assets/img/{services,categories}/ (see docs/image-prompts.md), then map them by slug
+// apps/customer/assets/img/services/ (see docs/image-generation-prompts.md), then map them by slug
 // here. Until an image exists, AppImage renders a soft-blue placeholder with the icon from
 // serviceIcon() below — so the layout is complete before the art lands.
 export const SERVICE_IMAGES: Record<string, number> = {

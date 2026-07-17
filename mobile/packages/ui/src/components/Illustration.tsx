@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { Icon, type IconName } from "./Icon";
 
 // The illustration registry for the app's empty/success/onboarding moments. Art direction is the
-// soft-3D "clay" system documented in docs/illustration-system.md — generate a transparent PNG to
+// soft-3D "clay" system documented in docs/image-generation-prompts.md — generate a transparent PNG to
 // that spec, drop it in packages/ui/assets/illustrations/, and uncomment its line in ASSETS below.
 // Until an asset exists, a soft icon stands in, so screens can reference illustrations today and the
 // artwork can arrive incrementally.

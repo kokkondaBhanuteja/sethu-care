@@ -1,6 +1,6 @@
 # Illustration assets
 
-Drop transparent PNGs here (soft-3D clay spec — see docs/illustration-system.md).
+Drop transparent PNGs here (soft-3D clay spec — see docs/image-generation-prompts.md).
 Filenames must match the registry in `packages/ui/src/components/Illustration.tsx`:
 
 - welcome.png
