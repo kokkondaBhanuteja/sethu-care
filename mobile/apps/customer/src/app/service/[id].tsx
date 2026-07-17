@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen, Text, Button, Card, Icon, AppImage, RatingPill, PressableScale } from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
-import { useService, serviceImage, serviceIcon, sampleRating } from "@/features/catalog";
+import { useService, servicePhoto, serviceIcon, sampleRating } from "@/features/catalog";
 
 // Rich service detail: a hero image, name + rating, duration/warranty/visit-fee data points, a
 // "What's included" checklist, selectable variant options, and a sticky "Book now" bar that carries
@@ -47,10 +47,10 @@ export default function ServiceDetail() {
         {/* Hero */}
         <View>
           <AppImage
-            source={serviceImage(service?.slug)}
+            source={servicePhoto(service?.slug)}
             placeholderIcon={serviceIcon(service?.name)}
-            contentFit="contain"
-            style={{ width: "100%", height: 210 }}
+            contentFit="cover"
+            style={{ width: "100%", height: 240 }}
           />
           <View className="absolute left-mobile-margin top-sm">
             <PressableScale

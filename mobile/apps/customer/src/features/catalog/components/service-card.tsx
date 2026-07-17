@@ -4,7 +4,7 @@ import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
 import type { ServiceResponse } from "@sethu/api-client";
 
-import { serviceImage, serviceIcon, sampleRating } from "../images";
+import { servicePhoto, serviceIcon, sampleRating } from "../images";
 
 // A rich, image-forward service card (Swiggy / Urban-Company style): a hero image with an offer
 // badge, then the name + rating pill, duration + verified-pros data points, and the starting price.
@@ -27,10 +27,10 @@ export function ServiceCard({
       <Card padded={false} className="overflow-hidden">
         <View>
           <AppImage
-            source={serviceImage(service.slug)}
+            source={servicePhoto(service.slug)}
             placeholderIcon={serviceIcon(service.name)}
-            contentFit="contain"
-            style={{ width: "100%", height: 150 }}
+            contentFit="cover"
+            style={{ width: "100%", height: 168 }}
           />
           <View className="absolute left-sm top-sm">
             <Badge label={t("common:home.verified")} tone="offer" />

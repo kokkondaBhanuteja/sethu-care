@@ -27,6 +27,33 @@ export function serviceImage(slug?: string | null): number | undefined {
   return SERVICE_IMAGES[slug];
 }
 
+// Real photography (Unsplash) keyed by slug — used cover-filled on the image-forward surfaces (the
+// popular-service cards and the service-detail hero), Urban-Company style. The clay icons above stay
+// on the small category tiles. Any unmapped slug falls back to the clay icon, then the glyph.
+export const SERVICE_PHOTOS: Record<string, number> = {
+  "ac-repair": require("../../../assets/images/services/photos/ac-repair.jpg"),
+  electrical: require("../../../assets/images/services/photos/electrical.jpg"),
+  plumbing: require("../../../assets/images/services/photos/plumbing.jpg"),
+  "air-cooler": require("../../../assets/images/services/photos/air-cooler.jpg"),
+  "ceiling-fan": require("../../../assets/images/services/photos/ceiling-fan.jpg"),
+  chimney: require("../../../assets/images/services/photos/chimney.jpg"),
+  "gas-stove": require("../../../assets/images/services/photos/gas-stove.jpg"),
+  geyser: require("../../../assets/images/services/photos/geyser.jpg"),
+  handyman: require("../../../assets/images/services/photos/handyman.jpg"),
+  inverter: require("../../../assets/images/services/photos/inverter.jpg"),
+  microwave: require("../../../assets/images/services/photos/microwave.jpg"),
+  refrigerator: require("../../../assets/images/services/photos/refrigerator.jpg"),
+  "tv-install": require("../../../assets/images/services/photos/tv-install.jpg"),
+  "washing-machine": require("../../../assets/images/services/photos/washing-machine.jpg"),
+  "water-purifier": require("../../../assets/images/services/photos/water-purifier.jpg"),
+};
+
+/** Resolve a real service photo by slug, falling back to the clay icon (then undefined → glyph). */
+export function servicePhoto(slug?: string | null): number | undefined {
+  if (!slug) return undefined;
+  return SERVICE_PHOTOS[slug] ?? SERVICE_IMAGES[slug];
+}
+
 // Map a service to a representative Phosphor glyph (placeholder tile + category chip). Keyword-based
 // so new services get a sensible icon without a config change.
 const KEYWORD_ICONS: Array<[RegExp, IconName]> = [
