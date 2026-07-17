@@ -67,6 +67,11 @@ service card. Save to **`mobile/apps/customer/assets/img/services/<name>.png`**.
 | `gas-stove.png` | a rounded clay 3-burner stove-top, chunky knobs, soft rounded burners, blue with teal accent |
 | `water-purifier.png` | a rounded clay wall-mounted water purifier with a small clay water glass in front, blue with soft-blue accents |
 | `handyman.png` | a rounded clay toolbox, lid slightly open, a chunky hammer and screwdriver resting beside it, blue with cream accents |
+| `geyser.png` | a wall-mounted clay water geyser / water heater, rounded cylindrical body with a short soft pipe and a small temperature dial, chunky form, blue with soft-blue accents |
+| `microwave.png` | a rounded clay microwave oven, chunky body, soft rounded door with a handle and a couple of knobs, blue |
+| `chimney.png` | a rounded clay kitchen chimney (cooker hood), wide angled soft body tapering upward, chunky, blue with cream accents |
+| `inverter.png` | a rounded clay home inverter box with a small chunky battery beside it, soft forms, blue with teal accent |
+| `air-cooler.png` | a rounded clay air cooler on small wheels, chunky body with a soft grille front and a handle on top, blue with soft-blue accents |
 
 ## Set 2 — Illustrations (empty / success / onboarding)
 Square 1:1, transparent. Save to **`mobile/packages/ui/assets/illustrations/<name>.png`**.
