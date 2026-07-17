@@ -21,9 +21,9 @@ but do not mix the two.
 ## Style lock (paste as the preamble to EVERY generation)
 
 > Soft 3D clay-render illustration, rounded edges, matte surfaces, single soft top-left studio
-> light, gentle contact shadow, isometric 3/4 view, **transparent background**, brand palette teal
-> #0F766E + blue #1D4ED8 with warm neutral accents, friendly and approachable, no text, no hard
-> reflections, consistent 512×512 framing, subject centered with padding.
+> light, gentle contact shadow, isometric 3/4 view, **transparent background**, brand palette blue
+> #1D4ED8 as the dominant color and teal #0D9488 as accent, with warm neutral accents, friendly and
+> approachable, no text, no hard reflections, consistent 512×512 framing, subject centered with padding.
 
 Only the subject line changes per asset. Keep everything else identical so the set stays coherent.
 
