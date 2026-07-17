@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- RN bundles static image assets via require() */
 import type { IconName } from "@sethu/ui";
 
 // Service/category imagery for the rich, image-forward home. Drop generated files into

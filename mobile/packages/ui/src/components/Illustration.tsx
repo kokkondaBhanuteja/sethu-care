@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- RN bundles static image assets via require() */
 import { View } from "react-native";
 import { Image } from "expo-image";
 
