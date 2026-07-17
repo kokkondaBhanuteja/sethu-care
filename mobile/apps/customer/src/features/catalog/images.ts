@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- RN bundles static image assets via require() */
 import type { IconName } from "@sethu/ui";
 
-// Service/category imagery for the rich, image-forward home. Drop generated files into
+// Service/category imagery for the rich, image-forward home. When you add files, uncomment the
+// require()s below and add: eslint-disable @typescript-eslint/no-require-imports at the top.
+// Drop generated files into
 // apps/customer/assets/img/services/ (see docs/image-generation-prompts.md), then map them by slug
 // here. Until an image exists, AppImage renders a soft-blue placeholder with the icon from
 // serviceIcon() below — so the layout is complete before the art lands.
