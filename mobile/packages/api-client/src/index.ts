@@ -20,7 +20,9 @@ export interface ConfigureApiOptions {
 /** Point the generated client at the backend and attach the bearer token to every request.
  *  Called once at app start (and again if the base URL changes between environments). */
 export function configureApiClient({ baseUrl, getToken }: ConfigureApiOptions): void {
-  client.setConfig({ baseUrl });
+  // `ngrok-skip-browser-warning` bypasses ngrok-free's interstitial when tunnelling a local backend
+  // to a device for testing; harmless against a normal HTTP(S) API.
+  client.setConfig({ baseUrl, headers: { "ngrok-skip-browser-warning": "true" } });
 
   if (getToken) {
     client.interceptors.request.use(async (request) => {
