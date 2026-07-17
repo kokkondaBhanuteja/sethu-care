@@ -53,6 +53,12 @@
     "line1": "Address line 1",
     "city": "City",
     "pincode": "PIN code",
-    "select": "Select an address"
+    "select": "Select an address",
+    "saved": "Saved addresses",
+    "addNew": "Add new address",
+    "empty": "No saved addresses yet. Add one to get started.",
+    "line2": "Area / Landmark (optional)",
+    "label": "Label (Home, Work…)",
+    "use": "Use this address"
   }
 }

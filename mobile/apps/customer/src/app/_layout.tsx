@@ -15,9 +15,9 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { I18nextProvider } from "@sethu/i18n";
+import { I18nextProvider, isSupportedLanguage } from "@sethu/i18n";
 import { configureApiClient } from "@sethu/api-client";
-import { getSessionToken, useSession } from "@sethu/core";
+import { getSessionToken, useSession, usePreferences } from "@sethu/core";
 
 import { API_BASE_URL } from "@/lib/config";
 import { initAppI18n } from "@/lib/i18n";
@@ -52,8 +52,26 @@ function useAuthGate() {
   }, [status, segments, router]);
 }
 
+// Read persisted preferences on start and apply the saved UI language (falls back to the device
+// language chosen at bootstrap when none is stored).
+function usePreferencesGate() {
+  const hydrate = usePreferences((state) => state.hydrate);
+  const language = usePreferences((state) => state.language);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (language && isSupportedLanguage(language) && language !== i18n.language) {
+      void i18n.changeLanguage(language);
+    }
+  }, [language]);
+}
+
 function RootNavigator() {
   useAuthGate();
+  usePreferencesGate();
   return (
     <>
       <StatusBar style="auto" />

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Alert, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
@@ -13,7 +14,9 @@ import {
   PressableScale,
   TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
-import { useTranslation, supportedLanguages, type SupportedLanguage } from "@sethu/i18n";
+import { useTranslation, type SupportedLanguage } from "@sethu/i18n";
+
+import { LanguageSheet } from "@/features/settings/language-sheet";
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
@@ -29,6 +32,7 @@ export default function Account() {
   const user = useSession((state) => state.user);
   const signOut = useSession((state) => state.signOut);
   const { mutate, isPending } = useMutation(deleteAccountMutation());
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   const goToSignIn = async () => {
     await signOut();
@@ -44,13 +48,6 @@ export default function Account() {
         onPress: () => mutate({}, { onSuccess: goToSignIn }),
       },
     ]);
-  };
-
-  const cycleLanguage = () => {
-    const current = i18n.language as SupportedLanguage;
-    const index = supportedLanguages.indexOf(current);
-    const next = supportedLanguages[(index + 1) % supportedLanguages.length];
-    void i18n.changeLanguage(next);
   };
 
   const currentLanguage =
@@ -73,9 +70,9 @@ export default function Account() {
           </View>
         </Card>
 
-        <PressableScale onPress={cycleLanguage}>
+        <PressableScale onPress={() => setLanguageOpen(true)}>
           <Card className="flex-row items-center gap-md">
-            <Icon name="settings" tone="primary" />
+            <Icon name="globe" tone="primary" />
             <View className="flex-1">
               <Text variant="label">{t("common:account.language")}</Text>
               <Text variant="caption" tone="muted">
@@ -85,6 +82,8 @@ export default function Account() {
             <Icon name="chevronRight" tone="muted" />
           </Card>
         </PressableScale>
+
+        <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
 
         <View className="flex-1 justify-end gap-md" style={{ paddingBottom: TAB_BAR_CLEARANCE }}>
           <Button

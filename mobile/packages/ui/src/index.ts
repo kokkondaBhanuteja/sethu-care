@@ -49,6 +49,9 @@ export type { HeroProps } from "./components/Hero";
 export { SearchField } from "./components/SearchField";
 export type { SearchFieldProps } from "./components/SearchField";
 
+export { Sheet } from "./components/Sheet";
+export type { SheetProps } from "./components/Sheet";
+
 export { BrandMark } from "./components/BrandMark";
 export type { BrandMarkProps } from "./components/BrandMark";
 

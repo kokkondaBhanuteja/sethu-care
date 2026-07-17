@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import {
@@ -16,9 +16,11 @@ import {
   PressableScale,
   TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
-import { useSession } from "@sethu/core";
+import { color } from "@sethu/tokens";
+import { useSession, usePreferences } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
 import { useServices, ServiceCard, CategoryTile } from "@/features/catalog";
+import { useAddresses, LocationSheet } from "@/features/location";
 
 // Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
 const SEARCH_PROMPTS = [
@@ -38,9 +40,19 @@ export default function Home() {
   const { t } = useTranslation(["common", "booking"]);
   const router = useRouter();
   const user = useSession((state) => state.user);
-  const { data, isLoading, isError, refetch } = useServices();
+  const { data, isLoading, isError, refetch, isRefetching } = useServices();
   const [query, setQuery] = useState("");
+  const [locationOpen, setLocationOpen] = useState(false);
   const services = data?.services ?? [];
+
+  // The label under the location pin: the selected saved address if there is one, else a prompt.
+  const { data: addressData } = useAddresses();
+  const selectedAddressId = usePreferences((state) => state.selectedAddressId);
+  const selectedAddress = addressData?.addresses?.find(
+    (address) => address.id === selectedAddressId,
+  );
+  const locationLabel =
+    selectedAddress?.label || selectedAddress?.line1 || t("common:home.location");
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -59,26 +71,34 @@ export default function Home() {
     <Screen edges={["top"]}>
       {/* Location + membership + avatar */}
       <View className="flex-row items-center justify-between px-mobile-margin pb-sm pt-xs">
-        <View className="flex-1 flex-row items-center gap-xs">
-          <Icon name="location" tone="primary" size={22} />
-          <View className="flex-1">
-            <Text variant="caption" tone="muted">
-              {t("common:home.greeting")}
-              {user?.name ? `, ${user.name}` : ""}
-            </Text>
-            <View className="flex-row items-center gap-1">
-              <Text variant="label" numberOfLines={1}>
-                {t("common:home.location")}
+        <PressableScale
+          onPress={() => setLocationOpen(true)}
+          accessibilityLabel={t("common:address.select")}
+          scaleTo={0.98}
+        >
+          <View className="flex-row items-center gap-xs">
+            <Icon name="location" tone="primary" size={22} />
+            <View>
+              <Text variant="caption" tone="muted">
+                {t("common:home.greeting")}
+                {user?.name ? `, ${user.name}` : ""}
               </Text>
-              <Icon name="chevronRight" size={14} tone="muted" />
+              <View className="flex-row items-center gap-1">
+                <Text variant="label" numberOfLines={1} className="max-w-56">
+                  {locationLabel}
+                </Text>
+                <Icon name="chevronRight" size={14} tone="muted" />
+              </View>
             </View>
           </View>
-        </View>
+        </PressableScale>
         <View className="flex-row items-center gap-sm">
           <Badge label={t("common:home.member")} tone="accent" />
           <Avatar name={user?.name} size={38} />
         </View>
       </View>
+
+      <LocationSheet visible={locationOpen} onClose={() => setLocationOpen(false)} />
 
       {/* Search */}
       <View className="px-mobile-margin pb-sm">
@@ -107,6 +127,14 @@ export default function Home() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => void refetch()}
+              tintColor={color.primary}
+              colors={[color.primary]}
+            />
+          }
         >
           {/* Promo banner */}
           <Animated.View entering={FadeInDown.duration(350)} className="px-mobile-margin pt-xs">

@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   ArrowsClockwise,
   Bell,
+  Briefcase,
   CalendarBlank,
   Camera,
   CaretLeft,
@@ -12,12 +13,14 @@ import {
   CreditCard,
   Drop,
   Gear,
+  Globe,
   House,
   Lightning,
   MagnifyingGlass,
   MapPin,
   NavigationArrow,
   Package,
+  PencilSimple,
   Phone,
   Plus,
   QrCode,
@@ -80,6 +83,9 @@ const ICONS = {
   lightning: Lightning,
   snowflake: Snowflake,
   wind: Wind,
+  globe: Globe,
+  briefcase: Briefcase,
+  pencil: PencilSimple,
 } satisfies Record<string, PhosphorIcon>;
 
 export type IconName = keyof typeof ICONS;

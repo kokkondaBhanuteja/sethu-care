@@ -37,3 +37,20 @@ export async function deleteToken(): Promise<void> {
   }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
+
+// Small, non-secret preference values (chosen language, selected address id). Same web/native split
+// as the token; these aren't sensitive but reusing one storage path keeps persistence in one place.
+export async function savePreference(key: string, value: string): Promise<void> {
+  if (Platform.OS === "web") {
+    webStore?.setItem(key, value);
+    return;
+  }
+  await SecureStore.setItemAsync(key, value);
+}
+
+export async function loadPreference(key: string): Promise<string | null> {
+  if (Platform.OS === "web") {
+    return webStore?.getItem(key) ?? null;
+  }
+  return SecureStore.getItemAsync(key);
+}
