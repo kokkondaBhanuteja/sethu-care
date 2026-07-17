@@ -40,7 +40,7 @@ export type { AppHeaderProps } from "./components/AppHeader";
 export { Avatar } from "./components/Avatar";
 export type { AvatarProps } from "./components/Avatar";
 
-export { TabBar, TabBarButton } from "./components/TabBar";
+export { TabBar, TabBarButton, TAB_BAR_CLEARANCE } from "./components/TabBar";
 export type { TabBarProps, TabBarButtonProps } from "./components/TabBar";
 
 export { Hero } from "./components/Hero";

@@ -4,11 +4,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "./Text";
 import { Icon, type IconName } from "./Icon";
+import { GlassSurface } from "./GlassSurface";
 
-// Presentational bottom navigation. Wired to expo-router's headless <TabList asChild> and
-// <TabTrigger asChild> in each app's (tabs)/_layout — so this package stays framework-agnostic and
-// both apps share one bar. TabList/TabTrigger inject style/press props via asChild slots, hence the
-// forwardRef + prop spread.
+// The floating, Apple-style glass bottom navigation — real Liquid Glass on iOS 26, a frosted
+// expo-blur fallback elsewhere (via GlassSurface). It floats over the page so content scrolls behind
+// the glass. Wired to expo-router's headless <TabList asChild> / <TabTrigger asChild> in each app's
+// (tabs)/_layout, so this package stays framework-agnostic and both apps share one bar.
+//
+// Because it floats, each tab screen must leave bottom clearance (~TAB_BAR_CLEARANCE) so its last
+// content isn't hidden behind the bar.
+export const TAB_BAR_CLEARANCE = 96;
+
 export interface TabBarProps extends ViewProps {
   children: ReactNode;
 }
@@ -18,14 +24,23 @@ export const TabBar = forwardRef<View, TabBarProps>(function TabBar(
   ref,
 ) {
   const insets = useSafeAreaInsets();
+  const injectedStyle = typeof style === "function" ? undefined : style;
   return (
     <View
       ref={ref}
-      style={[{ paddingBottom: Math.max(insets.bottom, 10) }, style]}
-      className="flex-row border-t border-outline-variant bg-surface-container-lowest px-sm pt-xs"
+      pointerEvents="box-none"
+      style={[
+        injectedStyle,
+        { position: "absolute", left: 16, right: 16, bottom: Math.max(insets.bottom, 12) },
+      ]}
       {...rest}
     >
-      {children}
+      <GlassSurface
+        intensity={40}
+        className="flex-row items-center rounded-full border border-outline-variant/50 px-xs py-1 shadow-lg shadow-inverse-surface/20"
+      >
+        {children}
+      </GlassSurface>
     </View>
   );
 });

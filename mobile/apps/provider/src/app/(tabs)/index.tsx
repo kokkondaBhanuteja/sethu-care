@@ -13,6 +13,7 @@ import {
   EmptyState,
   ErrorState,
   PressableScale,
+  TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
@@ -96,6 +97,7 @@ export default function Jobs() {
             data={jobs}
             keyExtractor={(item, index) => item.booking_id ?? String(index)}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
             ItemSeparatorComponent={() => <View className="h-sm" />}
             ListEmptyComponent={<EmptyState icon="package" title={t("jobs:list.empty")} />}
             renderItem={({ item: job }) => (

@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { requestOtpMutation } from "@sethu/api-client";
-import { Screen, Text, Button, BrandMark, TextField } from "@sethu/ui";
+import { Screen, Text, Button, Illustration, TextField } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 // Step 1 of login: the customer enters their phone number and we request an OTP. On success we
@@ -29,7 +29,7 @@ export default function SignIn() {
       >
         <View className="flex-1 justify-center gap-lg px-mobile-margin">
           <View className="items-center gap-md">
-            <BrandMark size={80} icon="home" />
+            <Illustration name="welcome" size={180} />
             <View className="items-center gap-1">
               <Text variant="headline">{t("signIn.title")}</Text>
               <Text variant="body" tone="muted" className="text-center">

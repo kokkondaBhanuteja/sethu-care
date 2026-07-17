@@ -10,6 +10,7 @@ import {
   EmptyState,
   ErrorState,
   PressableScale,
+  TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 import { useMyBookings } from "@/features/booking";
@@ -44,8 +45,11 @@ export default function Bookings() {
           <FlashList
             data={bookings}
             keyExtractor={(item, index) => item.booking_id ?? String(index)}
+            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
             ItemSeparatorComponent={() => <View className="h-sm" />}
-            ListEmptyComponent={<EmptyState icon="bookings" title={t("booking:history.empty")} />}
+            ListEmptyComponent={
+              <EmptyState illustration="emptyBookings" title={t("booking:history.empty")} />
+            }
             renderItem={({ item }) => (
               <PressableScale
                 onPress={() =>

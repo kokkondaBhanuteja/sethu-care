@@ -3,7 +3,16 @@ import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteAccountMutation } from "@sethu/api-client";
 import { useSession } from "@sethu/core";
-import { Screen, Text, Button, Card, Avatar, Icon, PressableScale } from "@sethu/ui";
+import {
+  Screen,
+  Text,
+  Button,
+  Card,
+  Avatar,
+  Icon,
+  PressableScale,
+  TAB_BAR_CLEARANCE,
+} from "@sethu/ui";
 import { useTranslation, supportedLanguages, type SupportedLanguage } from "@sethu/i18n";
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
@@ -77,7 +86,7 @@ export default function Account() {
           </Card>
         </PressableScale>
 
-        <View className="flex-1 justify-end gap-md pb-xl">
+        <View className="flex-1 justify-end gap-md" style={{ paddingBottom: TAB_BAR_CLEARANCE }}>
           <Button
             label={t("common:actions.signOut")}
             variant="secondary"

@@ -14,8 +14,8 @@ export type IllustrationName =
 // Map a name to its bundled asset once the PNG lands. Kept empty on purpose — a require() of a
 // missing file fails the bundle, so entries are added only as art is delivered.
 const ASSETS: Partial<Record<IllustrationName, number>> = {
-  // welcome: require("../../assets/illustrations/welcome.png"),
-  // emptyBookings: require("../../assets/illustrations/empty-bookings.png"),
+  welcome: require("../../assets/illustrations/welcome.png"),
+  emptyBookings: require("../../assets/illustrations/empty-bookings.png"),
   // emptyJobs: require("../../assets/illustrations/empty-jobs.png"),
   // noResults: require("../../assets/illustrations/no-results.png"),
   // paymentSuccess: require("../../assets/illustrations/payment-success.png"),

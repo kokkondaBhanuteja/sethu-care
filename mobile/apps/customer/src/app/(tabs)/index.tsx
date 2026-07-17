@@ -14,6 +14,7 @@ import {
   Icon,
   AppImage,
   PressableScale,
+  TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
 import { useSession } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
@@ -91,7 +92,10 @@ export default function Home() {
           <Skeleton className="h-40 w-full" />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-2xl">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+        >
           {/* Promo banner */}
           <Animated.View entering={FadeInDown.duration(350)} className="px-mobile-margin pt-xs">
             <PressableScale onPress={() => openService(services[0]?.id)}>
