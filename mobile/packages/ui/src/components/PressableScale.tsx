@@ -14,7 +14,15 @@ export interface PressableScaleProps extends PressableProps {
 }
 
 export const PressableScale = forwardRef<View, PressableScaleProps>(function PressableScale(
-  { children, scaleTo = 0.97, accessibilityRole = "button", onPressIn, onPressOut, ...rest },
+  {
+    children,
+    scaleTo = 0.97,
+    accessibilityRole = "button",
+    onPress,
+    onPressIn,
+    onPressOut,
+    ...rest
+  },
   ref,
 ) {
   const [pressed, setPressed] = useState(false);
@@ -22,14 +30,20 @@ export const PressableScale = forwardRef<View, PressableScaleProps>(function Pre
     <Pressable
       ref={ref}
       accessibilityRole={accessibilityRole}
+      // Delay the press-in slightly so a scroll gesture over a card doesn't register as a press.
+      unstable_pressDelay={90}
       onPressIn={(event) => {
         setPressed(true);
-        selectFeedback();
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
         setPressed(false);
         onPressOut?.(event);
+      }}
+      // Haptic fires on the completed tap only — NOT on press-in — so scrolling over cards never buzzes.
+      onPress={(event) => {
+        selectFeedback();
+        onPress?.(event);
       }}
       {...rest}
     >

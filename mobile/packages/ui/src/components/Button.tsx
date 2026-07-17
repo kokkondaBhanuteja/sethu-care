@@ -84,11 +84,11 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
         disabled={isDisabled}
-        onPress={onPress}
-        onPressIn={() => {
-          setPressed(true);
+        onPress={(event) => {
           tapFeedback();
+          onPress?.(event);
         }}
+        onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}
         className={container({ variant, size, fullWidth, isDisabled })}
       >
