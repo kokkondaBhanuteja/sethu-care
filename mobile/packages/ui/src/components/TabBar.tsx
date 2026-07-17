@@ -31,13 +31,22 @@ export const TabBar = forwardRef<View, TabBarProps>(function TabBar(
       pointerEvents="box-none"
       style={[
         injectedStyle,
-        { position: "absolute", left: 16, right: 16, bottom: Math.max(insets.bottom, 12) },
+        {
+          // flexDirection column overrides the row style the TabList slot injects, so the glass bar
+          // stretches to the full width (left:16→right:16) instead of collapsing to content.
+          flexDirection: "column",
+          position: "absolute",
+          left: 16,
+          right: 16,
+          bottom: Math.max(insets.bottom, 12),
+        },
       ]}
       {...rest}
     >
       <GlassSurface
-        intensity={40}
-        className="flex-row items-center rounded-full border border-outline-variant/50 px-xs py-1 shadow-lg shadow-inverse-surface/20"
+        intensity={50}
+        tint="light"
+        className="flex-row items-center rounded-full border border-outline-variant/60 bg-surface-container-lowest/80 px-xs py-1 shadow-lg shadow-inverse-surface/25"
       >
         {children}
       </GlassSurface>

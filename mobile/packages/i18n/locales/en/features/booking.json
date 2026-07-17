@@ -15,6 +15,21 @@
     "confirming": "Confirming…",
     "total": "Total {{amount}}"
   },
+  "detail": {
+    "duration": "Duration",
+    "warranty": "Warranty",
+    "visitFee": "Visit fee",
+    "warrantyValue": "30 days",
+    "minutes": "{{count}} min",
+    "included": "What's included",
+    "inc1": "Full diagnosis & inspection",
+    "inc2": "Genuine spare parts used",
+    "inc3": "30-day service warranty",
+    "inc4": "Background-verified professional",
+    "reviews": "Recent reviews",
+    "selectOption": "Choose an option",
+    "startingAt": "Starting at {{amount}}"
+  },
   "actions": {
     "confirm": "Confirm booking"
   },
