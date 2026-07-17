@@ -58,4 +58,13 @@ export type { PressableScaleProps } from "./components/PressableScale";
 export { Illustration } from "./components/Illustration";
 export type { IllustrationProps, IllustrationName } from "./components/Illustration";
 
+export { AppImage } from "./components/AppImage";
+export type { AppImageProps } from "./components/AppImage";
+
+export { Badge } from "./components/Badge";
+export type { BadgeProps, BadgeTone } from "./components/Badge";
+
+export { RatingPill } from "./components/RatingPill";
+export type { RatingPillProps } from "./components/RatingPill";
+
 export { useTheme } from "./theme/use-theme";

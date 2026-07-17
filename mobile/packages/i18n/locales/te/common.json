@@ -33,8 +33,20 @@
   "home": {
     "eyebrow": "SETHU-CARE",
     "tagline": "నమ్మకమైన సహాయం, మీ ఇంటి వద్దే",
-    "search": "సేవలను వెతకండి",
-    "noResults": "మీ శోధనకు ఏ సేవా సరిపోలడం లేదు"
+    "search": "సేవను వెతకండి",
+    "noResults": "మీ శోధనకు ఏ సేవా సరిపోలడం లేదు",
+    "greeting": "నమస్తే",
+    "location": "మీ స్థానం",
+    "categoriesTitle": "ఏం రిపేర్ కావాలి?",
+    "popularTitle": "ప్రముఖ సేవలు",
+    "verified": "ధృవీకరించిన నిపుణులు",
+    "verifiedPros": "ధృవీకరించిన నిపుణులు",
+    "minutes": "{{count}} నిమి",
+    "startingAt": "{{price}} నుండి",
+    "member": "SETHU+",
+    "promoTitle": "మొదటి బుకింగ్‌పై 30% వరకు తగ్గింపు",
+    "promoSubtitle": "మీ ఇంటి వద్దే ధృవీకరించిన నిపుణులు",
+    "promoCta": "ఇప్పుడే బుక్ చేయండి"
   },
   "address": {
     "add": "చిరునామా జోడించు",

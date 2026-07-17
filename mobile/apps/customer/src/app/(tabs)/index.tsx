@@ -1,17 +1,31 @@
 import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
-import { FlashList } from "@shopify/flash-list";
-import { Screen, Hero, SearchField, Skeleton, EmptyState, ErrorState } from "@sethu/ui";
+import {
+  Screen,
+  Text,
+  SearchField,
+  Skeleton,
+  EmptyState,
+  ErrorState,
+  Badge,
+  Avatar,
+  Icon,
+  AppImage,
+  PressableScale,
+} from "@sethu/ui";
+import { useSession } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
-import { useServices, ServiceCard } from "@/features/catalog";
+import { useServices, ServiceCard, CategoryTile } from "@/features/catalog";
 
-// Authenticated home — a gradient hero with a live search over the service catalog (real read path
-// via the generated query hook, rendered on FlashList). Loading shows skeletons; a failed load
-// offers a retry.
+// Rich, image-forward home (Swiggy / Urban-Company style): a location header, search, a solid-blue
+// promo banner, a "What needs fixing?" category grid, and image-forward popular-service cards. Solid
+// colours only. Sections fade/slide in on mount.
 export default function Home() {
   const { t } = useTranslation(["common", "booking"]);
   const router = useRouter();
+  const user = useSession((state) => state.user);
   const { data, isLoading, isError, refetch } = useServices();
   const [query, setQuery] = useState("");
   const services = data?.services ?? [];
@@ -26,52 +40,129 @@ export default function Home() {
     );
   }, [services, query]);
 
+  const openService = (id?: string) =>
+    id && router.push({ pathname: "/service/[id]", params: { id } });
+
   return (
     <Screen edges={["top"]}>
-      <Hero eyebrow={t("common:home.eyebrow")} title={t("common:home.tagline")}>
+      {/* Location + membership + avatar */}
+      <View className="flex-row items-center justify-between px-mobile-margin pb-sm pt-xs">
+        <View className="flex-1 flex-row items-center gap-xs">
+          <Icon name="location" tone="primary" size={22} />
+          <View className="flex-1">
+            <Text variant="caption" tone="muted">
+              {t("common:home.greeting")}
+              {user?.name ? `, ${user.name}` : ""}
+            </Text>
+            <View className="flex-row items-center gap-1">
+              <Text variant="label" numberOfLines={1}>
+                {t("common:home.location")}
+              </Text>
+              <Icon name="chevronRight" size={14} tone="muted" />
+            </View>
+          </View>
+        </View>
+        <View className="flex-row items-center gap-sm">
+          <Badge label={t("common:home.member")} tone="accent" />
+          <Avatar name={user?.name} size={38} />
+        </View>
+      </View>
+
+      {/* Search */}
+      <View className="px-mobile-margin pb-sm">
         <SearchField
           value={query}
           onChangeText={setQuery}
           placeholder={t("common:home.search")}
           returnKeyType="search"
         />
-      </Hero>
-      <View className="flex-1 px-mobile-margin pt-md">
-        {isError ? (
-          <ErrorState
-            title={t("common:errors.generic")}
-            retryLabel={t("common:actions.retry")}
-            onRetry={() => void refetch()}
-          />
-        ) : isLoading ? (
-          <View className="gap-md pt-sm">
-            {[0, 1, 2, 3].map((row) => (
-              <Skeleton key={row} className="h-20 w-full" />
-            ))}
-          </View>
-        ) : (
-          <FlashList
-            data={filtered}
-            keyExtractor={(item, index) => item.id ?? String(index)}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <ServiceCard
-                service={item}
-                onPress={() =>
-                  item.id && router.push({ pathname: "/service/[id]", params: { id: item.id } })
-                }
-              />
-            )}
-            ItemSeparatorComponent={() => <View className="h-md" />}
-            ListEmptyComponent={
+      </View>
+
+      {isError ? (
+        <ErrorState
+          title={t("common:errors.generic")}
+          retryLabel={t("common:actions.retry")}
+          onRetry={() => void refetch()}
+        />
+      ) : isLoading ? (
+        <View className="gap-md px-mobile-margin pt-sm">
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-2xl">
+          {/* Promo banner */}
+          <Animated.View entering={FadeInDown.duration(350)} className="px-mobile-margin pt-xs">
+            <PressableScale onPress={() => openService(services[0]?.id)}>
+              <View className="flex-row items-center gap-md rounded-card bg-primary p-md">
+                <View className="flex-1 gap-xs">
+                  <Text variant="label" tone="inverse">
+                    {t("common:home.promoTitle")}
+                  </Text>
+                  <Text variant="caption" tone="inverse" className="opacity-90">
+                    {t("common:home.promoSubtitle")}
+                  </Text>
+                  <View className="self-start rounded-full bg-surface-container-lowest px-md py-1">
+                    <Text variant="caption" tone="primary">
+                      {t("common:home.promoCta")}
+                    </Text>
+                  </View>
+                </View>
+                <AppImage
+                  placeholderIcon="tag"
+                  placeholderIconTone="inverse"
+                  placeholderColor="rgba(255,255,255,0.16)"
+                  style={{ width: 88, height: 88, borderRadius: 20 }}
+                />
+              </View>
+            </PressableScale>
+          </Animated.View>
+
+          {/* Category grid */}
+          <Animated.View
+            entering={FadeInDown.duration(350).delay(80)}
+            className="px-mobile-margin pt-lg"
+          >
+            <Text variant="headlineSm" className="pb-md">
+              {t("common:home.categoriesTitle")}
+            </Text>
+            {filtered.length === 0 ? (
               <EmptyState
                 icon="search"
                 title={query ? t("common:home.noResults") : t("common:empty.title")}
               />
-            }
-          />
-        )}
-      </View>
+            ) : (
+              <View className="flex-row flex-wrap justify-between gap-y-md">
+                {filtered.map((service) => (
+                  <CategoryTile
+                    key={service.id}
+                    service={service}
+                    onPress={() => openService(service.id)}
+                  />
+                ))}
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Popular services */}
+          {filtered.length > 0 ? (
+            <Animated.View
+              entering={FadeInDown.duration(350).delay(160)}
+              className="gap-md px-mobile-margin pt-lg"
+            >
+              <Text variant="headlineSm">{t("common:home.popularTitle")}</Text>
+              {filtered.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  onPress={() => openService(service.id)}
+                />
+              ))}
+            </Animated.View>
+          ) : null}
+        </ScrollView>
+      )}
     </Screen>
   );
 }

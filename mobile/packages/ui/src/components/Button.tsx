@@ -1,22 +1,20 @@
 import { forwardRef, useState } from "react";
-import { Pressable, StyleSheet, View, type PressableProps } from "react-native";
+import { Pressable, View, type PressableProps } from "react-native";
 import Animated from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { tv, type VariantProps } from "tailwind-variants";
-import { color } from "@sethu/tokens";
 
 import { Text } from "./Text";
 import { Icon, type IconName } from "./Icon";
 import { tapFeedback } from "../lib/haptics";
 
-// Pill buttons. The primary variant is the teal→blue gradient CTA; the others are solid/outline.
-// Variant-driven, ref-forwarded, accessible, with a leading icon and an HIG-style press depress
-// (Reanimated CSS transition on an outer wrapper, per Software Mansion's simple-feedback pattern).
+// Pill buttons in solid colours (no gradients). Primary is solid blue; the others are outline/ghost/
+// destructive. Variant-driven, ref-forwarded, accessible, with a leading icon and an HIG-style press
+// depress (Reanimated CSS transition on an outer wrapper, per Software Mansion's simple-feedback pattern).
 const container = tv({
   base: "flex-row items-center justify-center gap-xs rounded-full overflow-hidden",
   variants: {
     variant: {
-      primary: "",
+      primary: "bg-primary",
       secondary: "bg-surface-container-lowest border border-outline-variant",
       ghost: "bg-transparent",
       destructive: "bg-error",
@@ -94,14 +92,6 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
         onPressOut={() => setPressed(false)}
         className={container({ variant, size, fullWidth, isDisabled })}
       >
-        {resolvedVariant === "primary" ? (
-          <LinearGradient
-            colors={[color.primary, color.secondary] as const}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-        ) : null}
         {icon && !loading ? <Icon name={icon} size={18} tone={iconTone[resolvedVariant]} /> : null}
         <Text variant="label" tone={labelTone[resolvedVariant]}>
           {loading ? "…" : label}

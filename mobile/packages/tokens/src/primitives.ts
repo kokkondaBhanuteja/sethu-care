@@ -1,29 +1,29 @@
-// Primitive tokens — the raw "Teal Harbour" values: a teal primary + blue secondary on white
-// surfaces with near-black text, tuned for WCAG AA contrast at all ages. These carry NO meaning on
-// their own; the semantic layer (semantic.ts) assigns them roles. Keep these in sync with
-// tailwind-preset.js (the same values, as utility classes).
+// Primitive tokens — the raw "Blue Harbour" values: a solid blue primary + teal accent on white
+// surfaces with near-black text, tuned for WCAG AA contrast at all ages. No gradients. These carry
+// NO meaning on their own; the semantic layer (semantic.ts) assigns them roles. Keep these in sync
+// with tailwind-preset.js (the same values, as utility classes).
 
 /** Material-3-style colour ramp. Names are the M3 roles (surface tiers, on-* pairs, fixed). */
 export const color = {
-  primary: "#0f766e",
+  primary: "#1d4ed8",
   onPrimary: "#ffffff",
-  primaryContainer: "#ccfbf1",
-  onPrimaryContainer: "#115e59",
-  primaryFixed: "#99f6e4",
-  primaryFixedDim: "#5eead4",
-  onPrimaryFixed: "#042f2e",
-  onPrimaryFixedVariant: "#115e59",
-  inversePrimary: "#5eead4",
-  surfaceTint: "#0f766e",
+  primaryContainer: "#dbeafe",
+  onPrimaryContainer: "#1e40af",
+  primaryFixed: "#bfdbfe",
+  primaryFixedDim: "#93c5fd",
+  onPrimaryFixed: "#172554",
+  onPrimaryFixedVariant: "#1e40af",
+  inversePrimary: "#93c5fd",
+  surfaceTint: "#1d4ed8",
 
-  secondary: "#1d4ed8",
+  secondary: "#0d9488",
   onSecondary: "#ffffff",
-  secondaryContainer: "#dbeafe",
-  onSecondaryContainer: "#1e40af",
-  secondaryFixed: "#bfdbfe",
-  secondaryFixedDim: "#93c5fd",
-  onSecondaryFixed: "#172554",
-  onSecondaryFixedVariant: "#1e40af",
+  secondaryContainer: "#ccfbf1",
+  onSecondaryContainer: "#115e59",
+  secondaryFixed: "#99f6e4",
+  secondaryFixedDim: "#5eead4",
+  onSecondaryFixed: "#042f2e",
+  onSecondaryFixedVariant: "#115e59",
 
   tertiary: "#15803d",
   onTertiary: "#ffffff",

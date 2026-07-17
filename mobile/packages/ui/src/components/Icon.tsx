@@ -1,71 +1,86 @@
 import {
-  AlertTriangle,
   ArrowLeft,
+  ArrowsClockwise,
   Bell,
-  Calendar,
+  CalendarBlank,
   Camera,
+  CaretLeft,
+  CaretRight,
   Check,
-  CheckCircle2,
-  ChevronRight,
+  CheckCircle,
   Clock,
   CreditCard,
+  Drop,
+  Gear,
   House,
-  LogOut,
+  Lightning,
+  MagnifyingGlass,
   MapPin,
-  Navigation,
+  NavigationArrow,
   Package,
   Phone,
   Plus,
   QrCode,
-  RotateCw,
-  Search,
-  Settings,
+  ShieldCheck,
+  SignOut,
+  Snowflake,
   Star,
-  Trash2,
+  Tag,
+  Trash,
   User,
   Wallet,
-  Wifi,
-  WifiOff,
+  Warning,
+  WifiHigh,
+  WifiSlash,
+  Wind,
   Wrench,
   X,
-  type LucideIcon,
-} from "lucide-react-native";
+  type Icon as PhosphorIcon,
+  type IconWeight,
+} from "phosphor-react-native";
 import { color } from "@sethu/tokens";
 
-// The design-system icon set: a curated, named map over lucide (which renders via react-native-svg,
+// The design-system icon set: a curated, named map over Phosphor (which renders via react-native-svg,
 // so it works on iOS, Android and web). Screens reference icons by semantic name, not by importing
-// lucide directly — so the set stays consistent and swappable.
+// Phosphor directly — so the set stays consistent and swappable.
 const ICONS = {
   home: House,
-  bookings: Calendar,
+  bookings: CalendarBlank,
   account: User,
   service: Wrench,
   earnings: Wallet,
   location: MapPin,
   phone: Phone,
-  navigate: Navigation,
+  navigate: NavigationArrow,
   camera: Camera,
   star: Star,
   check: Check,
   close: X,
-  chevronRight: ChevronRight,
-  search: Search,
-  settings: Settings,
-  logout: LogOut,
-  delete: Trash2,
+  chevronRight: CaretRight,
+  back: CaretLeft,
+  backArrow: ArrowLeft,
+  search: MagnifyingGlass,
+  settings: Gear,
+  logout: SignOut,
+  delete: Trash,
   bell: Bell,
   plus: Plus,
   payment: CreditCard,
   package: Package,
   clock: Clock,
-  back: ArrowLeft,
-  online: Wifi,
-  offline: WifiOff,
-  alert: AlertTriangle,
-  refresh: RotateCw,
-  checkCircle: CheckCircle2,
+  online: WifiHigh,
+  offline: WifiSlash,
+  alert: Warning,
+  refresh: ArrowsClockwise,
+  checkCircle: CheckCircle,
   qr: QrCode,
-} satisfies Record<string, LucideIcon>;
+  shield: ShieldCheck,
+  tag: Tag,
+  drop: Drop,
+  lightning: Lightning,
+  snowflake: Snowflake,
+  wind: Wind,
+} satisfies Record<string, PhosphorIcon>;
 
 export type IconName = keyof typeof ICONS;
 
@@ -86,6 +101,9 @@ export interface IconProps {
   size?: number;
   tone?: IconTone;
   color?: string;
+  /** Phosphor stroke weight. Defaults to "regular"; pass "bold"/"fill"/"duotone" for emphasis. */
+  weight?: IconWeight;
+  /** Back-compat: a heavier stroke maps to the "bold" weight. */
   strokeWidth?: number;
 }
 
@@ -94,8 +112,11 @@ export function Icon({
   size = 22,
   tone = "default",
   color: colorOverride,
-  strokeWidth = 2,
+  weight,
+  strokeWidth,
 }: IconProps) {
   const Glyph = ICONS[name];
-  return <Glyph size={size} color={colorOverride ?? TONE_COLOR[tone]} strokeWidth={strokeWidth} />;
+  const resolvedWeight: IconWeight =
+    weight ?? (strokeWidth != null && strokeWidth >= 2.3 ? "bold" : "regular");
+  return <Glyph size={size} color={colorOverride ?? TONE_COLOR[tone]} weight={resolvedWeight} />;
 }

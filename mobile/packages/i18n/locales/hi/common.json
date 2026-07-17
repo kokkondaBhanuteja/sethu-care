@@ -33,8 +33,20 @@
   "home": {
     "eyebrow": "SETHU-CARE",
     "tagline": "भरोसेमंद मदद, आपके द्वार पर",
-    "search": "सेवाएँ खोजें",
-    "noResults": "आपकी खोज से कोई सेवा मेल नहीं खाती"
+    "search": "सेवा खोजें",
+    "noResults": "आपकी खोज से कोई सेवा मेल नहीं खाती",
+    "greeting": "नमस्ते",
+    "location": "आपका स्थान",
+    "categoriesTitle": "क्या ठीक करवाना है?",
+    "popularTitle": "लोकप्रिय सेवाएँ",
+    "verified": "सत्यापित पेशेवर",
+    "verifiedPros": "सत्यापित पेशेवर",
+    "minutes": "{{count}} मिनट",
+    "startingAt": "{{price}} से",
+    "member": "SETHU+",
+    "promoTitle": "पहली बुकिंग पर 30% तक छूट",
+    "promoSubtitle": "आपके द्वार पर सत्यापित पेशेवर",
+    "promoCta": "अभी बुक करें"
   },
   "address": {
     "add": "पता जोड़ें",
