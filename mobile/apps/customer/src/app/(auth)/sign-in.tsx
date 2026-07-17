@@ -12,13 +12,28 @@ import { useTranslation } from "@sethu/i18n";
 export default function SignIn() {
   const { t } = useTranslation("auth");
   const router = useRouter();
-  const [phone, setPhone] = useState("");
+  // The user types only the 10 local digits; we prepend the +91 dial code and send E.164 to the API.
+  const [localDigits, setLocalDigits] = useState("");
+  const [error, setError] = useState<string | undefined>(undefined);
   const { mutate, isPending } = useMutation(requestOtpMutation());
 
+  const onChange = (next: string) => {
+    setLocalDigits(next.replace(/\D/g, "").slice(0, 10));
+    if (error) setError(undefined);
+  };
+
   const onSend = () => {
+    if (localDigits.length !== 10) {
+      setError(t("signIn.invalidPhone"));
+      return;
+    }
+    const phone = `+91${localDigits}`;
     mutate(
       { body: { phone } },
-      { onSuccess: () => router.push({ pathname: "/(auth)/verify", params: { phone } }) },
+      {
+        onSuccess: () => router.push({ pathname: "/(auth)/verify", params: { phone } }),
+        onError: () => setError(t("signIn.sendFailed")),
+      },
     );
   };
 
@@ -45,13 +60,22 @@ export default function SignIn() {
             </View>
             <TextField
               label={t("signIn.phoneLabel")}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
+              prefix="+91"
+              value={localDigits}
+              onChangeText={onChange}
+              error={error}
+              keyboardType="number-pad"
               autoComplete="tel"
-              placeholder="+919000000001"
+              maxLength={10}
+              placeholder="90000 00001"
             />
-            <Button label={t("signIn.sendOtp")} loading={isPending} onPress={onSend} fullWidth />
+            <Button
+              label={t("signIn.sendOtp")}
+              loading={isPending}
+              disabled={localDigits.length !== 10}
+              onPress={onSend}
+              fullWidth
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
