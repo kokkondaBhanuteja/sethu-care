@@ -1,22 +1,27 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- RN bundles static image assets via require() */
 import type { IconName } from "@sethu/ui";
 
-// Service/category imagery for the rich, image-forward home. When you add files, uncomment the
-// require()s below and add: eslint-disable @typescript-eslint/no-require-imports at the top.
-// Drop generated files into
-// apps/customer/assets/img/services/ (see docs/image-generation-prompts.md), then map them by slug
-// here. Until an image exists, AppImage renders a soft-blue placeholder with the icon from
-// serviceIcon() below — so the layout is complete before the art lands.
+// The finalized clay service icons (assets/images/services/), keyed by the backend service slug.
+// Any service whose slug isn't here falls back to a soft-blue tile with the serviceIcon() glyph.
 export const SERVICE_IMAGES: Record<string, number> = {
-  // "ac-repair-service": require("../../../assets/img/services/ac-service.png"),
-  // electrical: require("../../../assets/img/services/electrical.png"),
-  // plumbing: require("../../../assets/img/services/plumbing.png"),
+  "ac-repair": require("../../../assets/images/services/ac-repair.png"),
+  electrical: require("../../../assets/images/services/electrical.png"),
+  plumbing: require("../../../assets/images/services/plumbing.png"),
+  "air-cooler": require("../../../assets/images/services/air-cooler.png"),
+  "ceiling-fan": require("../../../assets/images/services/ceiling-fan.png"),
+  chimney: require("../../../assets/images/services/chimney.png"),
+  "gas-stove": require("../../../assets/images/services/gas-stove.png"),
+  geyser: require("../../../assets/images/services/geyser.png"),
+  handyman: require("../../../assets/images/services/handyman.png"),
+  inverter: require("../../../assets/images/services/inverter.png"),
+  microwave: require("../../../assets/images/services/microwave.png"),
+  refrigerator: require("../../../assets/images/services/refrigerator.png"),
+  "tv-install": require("../../../assets/images/services/tv-install.png"),
+  "washing-machine": require("../../../assets/images/services/washing-machine.png"),
+  "water-purifier": require("../../../assets/images/services/water-purifier.png"),
 };
 
-export const CATEGORY_IMAGES: Record<string, number> = {
-  // "ac-repair": require("../../../assets/img/categories/ac-repair.png"),
-};
-
-/** Resolve a bundled image for a service by slug (undefined → AppImage shows the placeholder). */
+/** Resolve a bundled clay icon for a service by slug (undefined → AppImage shows the glyph fallback). */
 export function serviceImage(slug?: string | null): number | undefined {
   if (!slug) return undefined;
   return SERVICE_IMAGES[slug];

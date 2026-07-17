@@ -20,6 +20,17 @@ import { useSession } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
 import { useServices, ServiceCard, CategoryTile } from "@/features/catalog";
 
+// Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
+const SEARCH_PROMPTS = [
+  "Need an electrician today?",
+  "Looking for a plumber nearby?",
+  "Book an AC service in minutes.",
+  "Cleaning services near you.",
+  "Need help fixing something?",
+  "Find trusted home services.",
+  "Search services near you.",
+];
+
 // Rich, image-forward home (Swiggy / Urban-Company style): a location header, search, a solid-blue
 // promo banner, a "What needs fixing?" category grid, and image-forward popular-service cards. Solid
 // colours only. Sections fade/slide in on mount.
@@ -75,6 +86,7 @@ export default function Home() {
           value={query}
           onChangeText={setQuery}
           placeholder={t("common:home.search")}
+          placeholders={SEARCH_PROMPTS}
           returnKeyType="search"
         />
       </View>

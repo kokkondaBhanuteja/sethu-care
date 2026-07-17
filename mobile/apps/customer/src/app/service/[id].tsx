@@ -49,6 +49,7 @@ export default function ServiceDetail() {
           <AppImage
             source={serviceImage(service?.slug)}
             placeholderIcon={serviceIcon(service?.name)}
+            contentFit="contain"
             style={{ width: "100%", height: 210 }}
           />
           <View className="absolute left-mobile-margin top-sm">

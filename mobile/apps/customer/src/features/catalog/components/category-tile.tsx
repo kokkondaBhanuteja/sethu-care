@@ -19,6 +19,7 @@ export function CategoryTile({
         <AppImage
           source={serviceImage(service.slug)}
           placeholderIcon={serviceIcon(service.name)}
+          contentFit="contain"
           style={{ width: 68, height: 68, borderRadius: 22 }}
         />
         <Text variant="caption" tone="default" numberOfLines={2} className="text-center">

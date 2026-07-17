@@ -29,6 +29,7 @@ export function ServiceCard({
           <AppImage
             source={serviceImage(service.slug)}
             placeholderIcon={serviceIcon(service.name)}
+            contentFit="contain"
             style={{ width: "100%", height: 150 }}
           />
           <View className="absolute left-sm top-sm">
