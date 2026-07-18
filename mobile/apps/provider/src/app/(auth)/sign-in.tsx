@@ -1,23 +1,37 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { requestOtpMutation } from "@sethu/api-client";
-import { Screen, Text, Button } from "@sethu/ui";
+import { Screen, Text, Button, TextField } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
-// Step 1 of login: the customer enters their phone number and we request an OTP. On success we
-// move to the verify screen, passing the phone along.
+// Step 1 of login: the technician enters their phone number and we request an OTP. The field shows a
+// fixed +91 prefix and takes only the 10 local digits; we build the E.164 number the backend expects.
 export default function SignIn() {
   const { t } = useTranslation("auth");
   const router = useRouter();
-  const [phone, setPhone] = useState("");
+  const [localDigits, setLocalDigits] = useState("");
+  const [error, setError] = useState<string | undefined>(undefined);
   const { mutate, isPending } = useMutation(requestOtpMutation());
 
+  const onChange = (next: string) => {
+    setLocalDigits(next.replace(/\D/g, "").slice(0, 10));
+    if (error) setError(undefined);
+  };
+
   const onSend = () => {
+    if (localDigits.length !== 10) {
+      setError(t("signIn.invalidPhone"));
+      return;
+    }
+    const phone = `+91${localDigits}`;
     mutate(
       { body: { phone } },
-      { onSuccess: () => router.push({ pathname: "/(auth)/verify", params: { phone } }) },
+      {
+        onSuccess: () => router.push({ pathname: "/(auth)/verify", params: { phone } }),
+        onError: () => setError(t("signIn.sendFailed")),
+      },
     );
   };
 
@@ -32,16 +46,24 @@ export default function SignIn() {
           <Text variant="body" tone="muted">
             {t("signIn.subtitle")}
           </Text>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
+          <TextField
+            label={t("signIn.phoneLabel")}
+            prefix="+91"
+            value={localDigits}
+            onChangeText={onChange}
+            error={error}
+            keyboardType="number-pad"
             autoComplete="tel"
-            placeholder="+919000000001"
-            accessibilityLabel={t("signIn.phoneLabel")}
-            className="rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-sm font-body text-body-md text-on-surface"
+            maxLength={10}
+            placeholder="90000 00001"
           />
-          <Button label={t("signIn.sendOtp")} loading={isPending} onPress={onSend} fullWidth />
+          <Button
+            label={t("signIn.sendOtp")}
+            loading={isPending}
+            disabled={localDigits.length !== 10}
+            onPress={onSend}
+            fullWidth
+          />
         </View>
       </KeyboardAvoidingView>
     </Screen>
