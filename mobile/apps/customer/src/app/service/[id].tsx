@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Screen,
@@ -35,6 +36,7 @@ const SAMPLE_REVIEWS = [
 export default function ServiceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation(["booking", "common"]);
   const { data: service } = useService(id ?? "");
   const variants = service?.variants ?? [];
@@ -186,6 +188,18 @@ export default function ServiceDetail() {
           ) : null}
         </View>
       </ScrollView>
+
+      {/* Floating back button — sits over the hero; a white pill keeps it readable on any image. */}
+      <PressableScale
+        onPress={() => router.back()}
+        accessibilityLabel={t("common:actions.back")}
+        scaleTo={0.9}
+        style={{ position: "absolute", top: insets.top + 8, left: 16 }}
+      >
+        <View className="h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest shadow-md shadow-inverse-surface/20">
+          <Icon name="back" size={22} tone="primary" />
+        </View>
+      </PressableScale>
 
       {/* Sticky book bar */}
       {selected ? (

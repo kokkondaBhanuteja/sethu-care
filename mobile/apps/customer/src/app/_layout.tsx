@@ -86,10 +86,9 @@ function RootNavigator() {
         }}
       >
         {/* Detail routes stack over the native tab bar with native headers (glass on iOS 26). */}
-        <Stack.Screen
-          name="service/[id]"
-          options={{ headerShown: true, headerTransparent: true, title: "" }}
-        />
+        {/* Full-bleed hero → no native header; the screen draws its own floating back button so the
+            control stays visible over both photos and light placeholder art. */}
+        <Stack.Screen name="service/[id]" options={{ headerShown: false }} />
         <Stack.Screen
           name="booking/[id]"
           options={{ headerShown: true, title: t("booking:headers.booking") }}
@@ -106,6 +105,7 @@ function RootNavigator() {
             title: t("common:allServices.title"),
           }}
         />
+        <Stack.Screen name="search" options={{ headerShown: false }} />
       </Stack>
     </>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
@@ -40,7 +40,6 @@ export default function Home() {
   const router = useRouter();
   const user = useSession((state) => state.user);
   const { data, isLoading, isError, refetch, isRefetching } = useServices();
-  const [query, setQuery] = useState("");
   const [locationOpen, setLocationOpen] = useState(false);
   const services = data?.services ?? [];
 
@@ -53,21 +52,10 @@ export default function Home() {
   const locationLabel =
     selectedAddress?.label || selectedAddress?.line1 || t("common:home.location");
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return services;
-    return services.filter(
-      (service) =>
-        (service.name ?? "").toLowerCase().includes(needle) ||
-        (service.description ?? "").toLowerCase().includes(needle),
-    );
-  }, [services, query]);
-
-  // The home shows a curated subset; the full catalogue lives behind "See all" (/categories). While
-  // searching, show every match instead of a slice.
-  const isSearching = query.trim().length > 0;
-  const gridServices = isSearching ? filtered : filtered.slice(0, 8);
-  const popularServices = isSearching ? filtered : filtered.slice(0, 4);
+  // The home shows a curated subset; the full catalogue lives behind "See all" (/categories) and the
+  // search bar opens the dedicated /search screen.
+  const gridServices = services.slice(0, 8);
+  const popularServices = services.slice(0, 4);
 
   const openService = (id?: string) =>
     id && router.push({ pathname: "/service/[id]", params: { id } });
@@ -105,15 +93,21 @@ export default function Home() {
 
       <LocationSheet visible={locationOpen} onClose={() => setLocationOpen(false)} />
 
-      {/* Search */}
+      {/* Search — a button that opens the dedicated search screen (keeps the rotating placeholder). */}
       <View className="px-mobile-margin pb-sm">
-        <SearchField
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t("common:home.search")}
-          placeholders={SEARCH_PROMPTS}
-          returnKeyType="search"
-        />
+        <PressableScale
+          onPress={() => router.push("/search")}
+          accessibilityLabel={t("common:search.placeholder")}
+          scaleTo={0.99}
+        >
+          <View pointerEvents="none">
+            <SearchField
+              editable={false}
+              placeholder={t("common:home.search")}
+              placeholders={SEARCH_PROMPTS}
+            />
+          </View>
+        </PressableScale>
       </View>
 
       {isError ? (
@@ -185,11 +179,8 @@ export default function Home() {
                 </View>
               </PressableScale>
             </View>
-            {filtered.length === 0 ? (
-              <EmptyState
-                icon="search"
-                title={query ? t("common:home.noResults") : t("common:empty.title")}
-              />
+            {services.length === 0 ? (
+              <EmptyState icon="search" title={t("common:empty.title")} />
             ) : (
               <View className="flex-row flex-wrap justify-between gap-y-md">
                 {gridServices.map((service) => (
@@ -204,7 +195,7 @@ export default function Home() {
           </Animated.View>
 
           {/* Popular services */}
-          {filtered.length > 0 ? (
+          {popularServices.length > 0 ? (
             <Animated.View
               entering={FadeInDown.duration(350).delay(160)}
               className="gap-md px-mobile-margin pt-lg"

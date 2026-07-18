@@ -6,6 +6,7 @@
     "retry": "Retry",
     "continue": "Continue",
     "done": "Done",
+    "back": "Back",
     "delete": "Delete",
     "settings": "Settings",
     "signOut": "Sign out"
@@ -83,5 +84,12 @@
     "statBookings": "Bookings",
     "statRating": "Rating",
     "statReviews": "Reviews"
+  },
+  "search": {
+    "placeholder": "Search services",
+    "recent": "Recent",
+    "trending": "Trending",
+    "clear": "Clear",
+    "noResults": "No services match “{{query}}”"
   }
 }
