@@ -1,1 +1,7 @@
-export { useCreateBooking, useMyBookings, useBooking, useTransitionBooking } from "./api";
+export {
+  useCreateBooking,
+  useMyBookings,
+  useBooking,
+  useTransitionBooking,
+  TERMINAL_STATES,
+} from "./api";

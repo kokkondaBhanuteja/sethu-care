@@ -40,14 +40,14 @@ export type { AppHeaderProps } from "./components/AppHeader";
 export { Avatar } from "./components/Avatar";
 export type { AvatarProps } from "./components/Avatar";
 
-export { TabBar, TabBarButton } from "./components/TabBar";
-export type { TabBarProps, TabBarButtonProps } from "./components/TabBar";
-
 export { Hero } from "./components/Hero";
 export type { HeroProps } from "./components/Hero";
 
 export { SearchField } from "./components/SearchField";
 export type { SearchFieldProps } from "./components/SearchField";
+
+export { Sheet } from "./components/Sheet";
+export type { SheetProps } from "./components/Sheet";
 
 export { BrandMark } from "./components/BrandMark";
 export type { BrandMarkProps } from "./components/BrandMark";
@@ -57,5 +57,14 @@ export type { PressableScaleProps } from "./components/PressableScale";
 
 export { Illustration } from "./components/Illustration";
 export type { IllustrationProps, IllustrationName } from "./components/Illustration";
+
+export { AppImage } from "./components/AppImage";
+export type { AppImageProps } from "./components/AppImage";
+
+export { Badge } from "./components/Badge";
+export type { BadgeProps, BadgeTone } from "./components/Badge";
+
+export { RatingPill } from "./components/RatingPill";
+export type { RatingPillProps } from "./components/RatingPill";
 
 export { useTheme } from "./theme/use-theme";

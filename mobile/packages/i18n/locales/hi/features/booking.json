@@ -15,6 +15,21 @@
     "confirming": "पुष्टि हो रही है…",
     "total": "कुल {{amount}}"
   },
+  "detail": {
+    "duration": "अवधि",
+    "warranty": "वारंटी",
+    "visitFee": "विज़िट शुल्क",
+    "warrantyValue": "30 दिन",
+    "minutes": "{{count}} मिनट",
+    "included": "इसमें शामिल है",
+    "inc1": "पूर्ण जाँच और निरीक्षण",
+    "inc2": "असली स्पेयर पार्ट्स",
+    "inc3": "30-दिन सर्विस वारंटी",
+    "inc4": "सत्यापित पेशेवर",
+    "reviews": "हाल की समीक्षाएँ",
+    "selectOption": "एक विकल्प चुनें",
+    "startingAt": "{{amount}} से शुरू"
+  },
   "actions": {
     "confirm": "बुकिंग की पुष्टि करें"
   },
@@ -43,5 +58,27 @@
   "tracking": {
     "title": "आपका तकनीशियन रास्ते में है",
     "technician": "तकनीशियन"
+  },
+  "headers": {
+    "booking": "बुकिंग",
+    "confirm": "बुकिंग पुष्टि करें"
+  },
+  "filters": {
+    "all": "सभी",
+    "active": "सक्रिय",
+    "completed": "पूर्ण"
+  },
+  "pay": {
+    "promoLabel": "प्रोमो कोड",
+    "apply": "लागू करें",
+    "subtotal": "उप-योग",
+    "discount": "छूट",
+    "total": "कुल",
+    "payNow": "{{amount}} भुगतान करें",
+    "notConfigured": "भुगतान अभी सेट नहीं है (Razorpay कुंजी नहीं मिली)।",
+    "failed": "भुगतान रद्द या विफल। कृपया पुनः प्रयास करें।",
+    "invalidPromo": "यह कोड मान्य नहीं है।",
+    "memberApplied": "चेकआउट पर SETHU+ सदस्य छूट लागू।",
+    "title": "भुगतान"
   }
 }

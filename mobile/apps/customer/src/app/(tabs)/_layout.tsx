@@ -1,28 +1,37 @@
-import { Tabs, TabList, TabSlot, TabTrigger } from "expo-router/ui";
-import { TabBar, TabBarButton } from "@sethu/ui";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
 
-// Bottom tab navigation for the customer app. Uses expo-router's headless UI tabs so the bar is our
-// own token-styled TabBar (teal active). Detail routes (service/[id], booking/[id], book/confirm)
-// live outside this group and stack over the tabs via the root Stack.
+// Native bottom tabs — the platform tab bar (iOS 26 Liquid Glass pill on iOS, Material bar on Android)
+// via expo-router's NativeTabs, tinted with the brand blue. Icons are SF Symbols on iOS (`sf`) and
+// Material glyphs on Android (`md`). Detail routes (service/[id], booking/[id], book/confirm,
+// categories) stack over the tabs via the root Stack.
 export default function TabsLayout() {
   const { t } = useTranslation("common");
   return (
-    <Tabs>
-      <TabSlot />
-      <TabList asChild>
-        <TabBar>
-          <TabTrigger name="index" href="/" asChild>
-            <TabBarButton icon="home" label={t("nav.home")} />
-          </TabTrigger>
-          <TabTrigger name="bookings" href="/bookings" asChild>
-            <TabBarButton icon="bookings" label={t("nav.bookings")} />
-          </TabTrigger>
-          <TabTrigger name="account" href="/account" asChild>
-            <TabBarButton icon="account" label={t("nav.account")} />
-          </TabTrigger>
-        </TabBar>
-      </TabList>
-    </Tabs>
+    <NativeTabs tintColor={color.primary}>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} md="home" />
+        <NativeTabs.Trigger.Label>{t("nav.home")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="bookings">
+        <NativeTabs.Trigger.Icon sf="calendar" md="event" />
+        <NativeTabs.Trigger.Label>{t("nav.bookings")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="offers">
+        <NativeTabs.Trigger.Icon sf={{ default: "tag", selected: "tag.fill" }} md="local_offer" />
+        <NativeTabs.Trigger.Label>{t("nav.offers")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="account">
+        <NativeTabs.Trigger.Icon
+          sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }}
+          md="person"
+        />
+        <NativeTabs.Trigger.Label>{t("nav.profile")}</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

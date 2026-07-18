@@ -1,4 +1,4 @@
-import { Alert, View } from "react-native";
+import { Alert, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteAccountMutation } from "@sethu/api-client";
@@ -12,8 +12,8 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   te: "తెలుగు",
 };
 
-// Account tab — profile header, language switcher, and the Sign out / Delete Account actions
-// (Delete is required by App Store Guideline 5.1.1(v): confirm, anonymise server-side, sign out).
+// Account tab under a native large-title header — profile header, language switcher, and the Sign
+// out / Delete Account actions (Delete required by App Store Guideline 5.1.1(v)).
 export default function Account() {
   const { t, i18n } = useTranslation(["common", "auth"]);
   const router = useRouter();
@@ -50,51 +50,54 @@ export default function Account() {
       : "en";
 
   return (
-    <Screen>
-      <View className="flex-1 gap-lg px-mobile-margin pt-lg">
-        <Text variant="headline">{t("common:account.title")}</Text>
-
-        <Card className="flex-row items-center gap-md">
-          <Avatar name={user?.name} size={52} />
-          <View className="flex-1">
-            <Text variant="label">{user?.name || t("common:account.guest")}</Text>
-            <Text variant="caption" tone="muted">
-              {t("common:appName")}
-            </Text>
-          </View>
-        </Card>
-
-        <PressableScale onPress={cycleLanguage}>
+    <Screen edges={["bottom"]}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      >
+        <View className="gap-lg">
           <Card className="flex-row items-center gap-md">
-            <Icon name="settings" tone="primary" />
+            <Avatar name={user?.name} size={56} />
             <View className="flex-1">
-              <Text variant="label">{t("common:account.language")}</Text>
+              <Text variant="label">{user?.name || t("common:account.guest")}</Text>
               <Text variant="caption" tone="muted">
-                {LANGUAGE_LABELS[currentLanguage]}
+                {t("common:appName")}
               </Text>
             </View>
-            <Icon name="chevronRight" tone="muted" />
           </Card>
-        </PressableScale>
 
-        <View className="flex-1 justify-end gap-md pb-xl">
-          <Button
-            label={t("common:actions.signOut")}
-            variant="secondary"
-            icon="logout"
-            onPress={goToSignIn}
-            fullWidth
-          />
-          <Button
-            label={t("auth:account.delete")}
-            variant="destructive"
-            icon="delete"
-            loading={isPending}
-            onPress={confirmDelete}
-            fullWidth
-          />
+          <PressableScale onPress={cycleLanguage}>
+            <Card className="flex-row items-center gap-md">
+              <Icon name="globe" tone="primary" />
+              <View className="flex-1">
+                <Text variant="label">{t("common:account.language")}</Text>
+                <Text variant="caption" tone="muted">
+                  {LANGUAGE_LABELS[currentLanguage]}
+                </Text>
+              </View>
+              <Icon name="chevronRight" tone="muted" />
+            </Card>
+          </PressableScale>
+
+          <View className="gap-md pt-lg">
+            <Button
+              label={t("common:actions.signOut")}
+              variant="secondary"
+              icon="logout"
+              onPress={goToSignIn}
+              fullWidth
+            />
+            <Button
+              label={t("auth:account.delete")}
+              variant="destructive"
+              icon="delete"
+              loading={isPending}
+              onPress={confirmDelete}
+              fullWidth
+            />
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }

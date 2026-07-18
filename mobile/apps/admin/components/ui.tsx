@@ -1,6 +1,5 @@
-// The admin console's web design system — a small set of primitives on the shared Indigo Velvet
-// tokens (the same tokens the RN apps use), styled to match the Stitch dashboard reference. Plain
-// Tailwind + tokens; no component library needed.
+// The admin console's web design system — a small set of primitives on the shared Blue Harbour
+// tokens (the same tokens the RN apps use). Plain Tailwind + tokens; no component library needed.
 import type { ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {

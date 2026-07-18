@@ -109,11 +109,9 @@ export default function BookingDetail() {
   const act = (action: string) => transition.mutate({ path: { id: bookingId }, body: { action } });
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <Screen edges={["bottom"]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
         <View className="flex-1 gap-md px-mobile-margin pt-md pb-2xl">
-          <Text variant="headline">{t("booking:history.title")}</Text>
-
           {isLoading && !booking ? (
             <Text tone="muted">{t("common:empty.title")}</Text>
           ) : (

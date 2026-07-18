@@ -15,6 +15,21 @@
     "confirming": "Confirming…",
     "total": "Total {{amount}}"
   },
+  "detail": {
+    "duration": "Duration",
+    "warranty": "Warranty",
+    "visitFee": "Visit fee",
+    "warrantyValue": "30 days",
+    "minutes": "{{count}} min",
+    "included": "What's included",
+    "inc1": "Full diagnosis & inspection",
+    "inc2": "Genuine spare parts used",
+    "inc3": "30-day service warranty",
+    "inc4": "Background-verified professional",
+    "reviews": "Recent reviews",
+    "selectOption": "Choose an option",
+    "startingAt": "Starting at {{amount}}"
+  },
   "actions": {
     "confirm": "Confirm booking"
   },
@@ -43,5 +58,27 @@
   "tracking": {
     "title": "Your technician is on the way",
     "technician": "Technician"
+  },
+  "headers": {
+    "booking": "Booking",
+    "confirm": "Confirm booking"
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "completed": "Completed"
+  },
+  "pay": {
+    "promoLabel": "Promo code",
+    "apply": "Apply",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "payNow": "Pay {{amount}}",
+    "notConfigured": "Payment isn't set up yet (missing Razorpay key).",
+    "failed": "Payment cancelled or failed. Please try again.",
+    "invalidPromo": "That code isn't valid.",
+    "memberApplied": "SETHU+ member discount applied at checkout.",
+    "title": "Payment"
   }
 }

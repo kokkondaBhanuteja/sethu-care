@@ -8,7 +8,7 @@ import {
   transitionBookingMutation,
 } from "@sethu/api-client";
 
-const TERMINAL_STATES = new Set(["COMPLETED", "CANCELLED", "FAILED"]);
+export const TERMINAL_STATES = new Set(["COMPLETED", "CANCELLED", "FAILED"]);
 
 // The booking action, made to feel instant. The classic TanStack optimistic lifecycle: cancel any
 // in-flight my-bookings refetch, snapshot the cache, and reconcile on settle — so the UI can react

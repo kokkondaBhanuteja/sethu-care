@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // The shared token package ships TypeScript source; Next transpiles it.
-  transpilePackages: ["@sethu/tokens"],
+  // The shared packages ship TypeScript source; Next transpiles them.
+  transpilePackages: ["@sethu/tokens", "@sethu/api-client"],
 };
 
 export default nextConfig;

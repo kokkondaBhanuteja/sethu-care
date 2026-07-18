@@ -6,6 +6,7 @@
     "retry": "पुनः प्रयास करें",
     "continue": "जारी रखें",
     "done": "पूर्ण",
+    "back": "वापस",
     "delete": "हटाएँ",
     "settings": "सेटिंग्स",
     "signOut": "साइन आउट"
@@ -23,7 +24,9 @@
     "bookings": "बुकिंग",
     "account": "खाता",
     "jobs": "काम",
-    "earnings": "कमाई"
+    "earnings": "कमाई",
+    "offers": "ऑफ़र",
+    "profile": "प्रोफ़ाइल"
   },
   "account": {
     "title": "खाता",
@@ -33,14 +36,60 @@
   "home": {
     "eyebrow": "SETHU-CARE",
     "tagline": "भरोसेमंद मदद, आपके द्वार पर",
-    "search": "सेवाएँ खोजें",
-    "noResults": "आपकी खोज से कोई सेवा मेल नहीं खाती"
+    "search": "सेवा खोजें",
+    "noResults": "आपकी खोज से कोई सेवा मेल नहीं खाती",
+    "greeting": "नमस्ते",
+    "location": "आपका स्थान",
+    "categoriesTitle": "क्या ठीक करवाना है?",
+    "popularTitle": "लोकप्रिय सेवाएँ",
+    "verified": "सत्यापित पेशेवर",
+    "verifiedPros": "सत्यापित पेशेवर",
+    "minutes": "{{count}} मिनट",
+    "startingAt": "{{price}} से",
+    "member": "SETHU+",
+    "promoTitle": "पहली बुकिंग पर 30% तक छूट",
+    "promoSubtitle": "आपके द्वार पर सत्यापित पेशेवर",
+    "promoCta": "अभी बुक करें"
   },
   "address": {
     "add": "पता जोड़ें",
     "line1": "पता पंक्ति 1",
     "city": "शहर",
     "pincode": "पिन कोड",
-    "select": "एक पता चुनें"
+    "select": "एक पता चुनें",
+    "saved": "सहेजे गए पते",
+    "addNew": "नया पता जोड़ें",
+    "empty": "अभी तक कोई पता सहेजा नहीं गया। शुरू करने के लिए एक जोड़ें।",
+    "line2": "क्षेत्र / लैंडमार्क (वैकल्पिक)",
+    "label": "लेबल (घर, कार्यालय…)",
+    "use": "इस पते का उपयोग करें"
+  },
+  "offers": {
+    "title": "ऑफ़र और रिवॉर्ड",
+    "subtitle": "डील, कूपन और आपके SETHU+ लाभ।",
+    "apply": "लागू करें",
+    "code": "कोड",
+    "member": "SETHU+ जॉइन करें",
+    "memberJoined": "SETHU+ सक्रिय"
+  },
+  "allServices": {
+    "title": "सभी सेवाएँ",
+    "seeAll": "सभी देखें"
+  },
+  "profile": {
+    "savedAddresses": "सहेजे गए पते",
+    "payments": "भुगतान",
+    "notifications": "सूचनाएँ",
+    "help": "सहायता",
+    "statBookings": "बुकिंग",
+    "statRating": "रेटिंग",
+    "statReviews": "समीक्षाएँ"
+  },
+  "search": {
+    "placeholder": "सेवाएँ खोजें",
+    "recent": "हाल का",
+    "trending": "ट्रेंडिंग",
+    "clear": "साफ़ करें",
+    "noResults": "“{{query}}” से मेल खाती कोई सेवा नहीं"
   }
 }

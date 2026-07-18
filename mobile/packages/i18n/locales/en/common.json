@@ -6,6 +6,7 @@
     "retry": "Retry",
     "continue": "Continue",
     "done": "Done",
+    "back": "Back",
     "delete": "Delete",
     "settings": "Settings",
     "signOut": "Sign out"
@@ -23,7 +24,9 @@
     "bookings": "Bookings",
     "account": "Account",
     "jobs": "Jobs",
-    "earnings": "Earnings"
+    "earnings": "Earnings",
+    "offers": "Offers",
+    "profile": "Profile"
   },
   "account": {
     "title": "Account",
@@ -33,14 +36,60 @@
   "home": {
     "eyebrow": "SETHU-CARE",
     "tagline": "Trusted help, at your doorstep",
-    "search": "Search services",
-    "noResults": "No services match your search"
+    "search": "Search for a service",
+    "noResults": "No services match your search",
+    "greeting": "Hello",
+    "location": "Your location",
+    "categoriesTitle": "What needs fixing?",
+    "popularTitle": "Popular services",
+    "verified": "VERIFIED PROS",
+    "verifiedPros": "Verified pros",
+    "minutes": "{{count}} min",
+    "startingAt": "From {{price}}",
+    "member": "SETHU+",
+    "promoTitle": "Up to 30% off your first booking",
+    "promoSubtitle": "Background-verified pros at your doorstep",
+    "promoCta": "Book now"
   },
   "address": {
     "add": "Add address",
     "line1": "Address line 1",
     "city": "City",
     "pincode": "PIN code",
-    "select": "Select an address"
+    "select": "Select an address",
+    "saved": "Saved addresses",
+    "addNew": "Add new address",
+    "empty": "No saved addresses yet. Add one to get started.",
+    "line2": "Area / Landmark (optional)",
+    "label": "Label (Home, Work…)",
+    "use": "Use this address"
+  },
+  "offers": {
+    "title": "Offers & rewards",
+    "subtitle": "Deals, coupons and your SETHU+ perks.",
+    "apply": "Apply",
+    "code": "Code",
+    "member": "Join SETHU+",
+    "memberJoined": "SETHU+ active"
+  },
+  "allServices": {
+    "title": "All services",
+    "seeAll": "See all"
+  },
+  "profile": {
+    "savedAddresses": "Saved addresses",
+    "payments": "Payments",
+    "notifications": "Notifications",
+    "help": "Help & support",
+    "statBookings": "Bookings",
+    "statRating": "Rating",
+    "statReviews": "Reviews"
+  },
+  "search": {
+    "placeholder": "Search services",
+    "recent": "Recent",
+    "trending": "Trending",
+    "clear": "Clear",
+    "noResults": "No services match “{{query}}”"
   }
 }
