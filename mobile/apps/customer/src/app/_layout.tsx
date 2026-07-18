@@ -98,6 +98,14 @@ function RootNavigator() {
           name="book/confirm"
           options={{ headerShown: true, title: t("booking:headers.confirm") }}
         />
+        <Stack.Screen
+          name="categories"
+          options={{
+            headerShown: true,
+            headerLargeTitle: true,
+            title: t("common:allServices.title"),
+          }}
+        />
       </Stack>
     </>
   );

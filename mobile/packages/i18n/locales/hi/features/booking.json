@@ -62,5 +62,10 @@
   "headers": {
     "booking": "बुकिंग",
     "confirm": "बुकिंग पुष्टि करें"
+  },
+  "filters": {
+    "all": "सभी",
+    "active": "सक्रिय",
+    "completed": "पूर्ण"
   }
 }

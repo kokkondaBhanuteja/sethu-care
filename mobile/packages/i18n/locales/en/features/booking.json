@@ -62,5 +62,10 @@
   "headers": {
     "booking": "Booking",
     "confirm": "Confirm booking"
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "completed": "Completed"
   }
 }

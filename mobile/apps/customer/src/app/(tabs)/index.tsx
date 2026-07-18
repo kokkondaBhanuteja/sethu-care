@@ -168,9 +168,17 @@ export default function Home() {
             entering={FadeInDown.duration(350).delay(80)}
             className="px-mobile-margin pt-lg"
           >
-            <Text variant="headlineSm" className="pb-md">
-              {t("common:home.categoriesTitle")}
-            </Text>
+            <View className="flex-row items-center justify-between pb-md">
+              <Text variant="headlineSm">{t("common:home.categoriesTitle")}</Text>
+              <PressableScale onPress={() => router.push("/categories")} scaleTo={0.96}>
+                <View className="flex-row items-center gap-1">
+                  <Text variant="caption" tone="primary">
+                    {t("common:allServices.seeAll")}
+                  </Text>
+                  <Icon name="chevronRight" size={14} tone="primary" />
+                </View>
+              </PressableScale>
+            </View>
             {filtered.length === 0 ? (
               <EmptyState
                 icon="search"

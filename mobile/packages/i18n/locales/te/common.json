@@ -65,10 +65,22 @@
   },
   "offers": {
     "title": "ఆఫర్లు & రివార్డ్‌లు",
-    "subtitle": "డీల్‌లు, కూపన్‌లు మరియు మీ SETHU+ ప్రయోజనాలు."
+    "subtitle": "డీల్‌లు, కూపన్‌లు మరియు మీ SETHU+ ప్రయోజనాలు.",
+    "apply": "వర్తింపజేయి",
+    "code": "కోడ్",
+    "member": "SETHU+ చేరండి"
   },
   "allServices": {
     "title": "అన్ని సేవలు",
     "seeAll": "అన్నీ చూడండి"
+  },
+  "profile": {
+    "savedAddresses": "సేవ్ చేసిన చిరునామాలు",
+    "payments": "చెల్లింపులు",
+    "notifications": "నోటిఫికేషన్‌లు",
+    "help": "సహాయం",
+    "statBookings": "బుకింగ్‌లు",
+    "statRating": "రేటింగ్",
+    "statReviews": "సమీక్షలు"
   }
 }

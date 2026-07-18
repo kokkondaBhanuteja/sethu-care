@@ -65,10 +65,22 @@
   },
   "offers": {
     "title": "ऑफ़र और रिवॉर्ड",
-    "subtitle": "डील, कूपन और आपके SETHU+ लाभ।"
+    "subtitle": "डील, कूपन और आपके SETHU+ लाभ।",
+    "apply": "लागू करें",
+    "code": "कोड",
+    "member": "SETHU+ जॉइन करें"
   },
   "allServices": {
     "title": "सभी सेवाएँ",
     "seeAll": "सभी देखें"
+  },
+  "profile": {
+    "savedAddresses": "सहेजे गए पते",
+    "payments": "भुगतान",
+    "notifications": "सूचनाएँ",
+    "help": "सहायता",
+    "statBookings": "बुकिंग",
+    "statRating": "रेटिंग",
+    "statReviews": "समीक्षाएँ"
   }
 }

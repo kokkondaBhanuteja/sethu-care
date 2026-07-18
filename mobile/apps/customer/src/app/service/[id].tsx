@@ -1,14 +1,37 @@
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, Text, Button, Card, Icon, AppImage, RatingPill, PressableScale } from "@sethu/ui";
+import {
+  Screen,
+  Text,
+  Button,
+  Card,
+  Icon,
+  AppImage,
+  RatingPill,
+  Rating,
+  Avatar,
+  PressableScale,
+} from "@sethu/ui";
 import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
 import { useService, servicePhoto, serviceIcon, sampleRating } from "@/features/catalog";
 
+// Sample reviews — placeholder until a reviews-list endpoint exists (only POST /bookings/{id}/review
+// is available today). Names/text are illustrative.
+const SAMPLE_REVIEWS = [
+  { name: "Aarti S.", rating: 5, text: "On time and very professional. My AC works like new." },
+  { name: "Rahul M.", rating: 5, text: "Transparent pricing and genuine parts. Highly recommend." },
+  {
+    name: "Priya K.",
+    rating: 4,
+    text: "Good service — the technician explained everything clearly.",
+  },
+];
+
 // Rich service detail: a hero image, name + rating, duration/warranty/visit-fee data points, a
-// "What's included" checklist, selectable variant options, and a sticky "Book now" bar that carries
-// the chosen variant to the confirm screen.
+// "What's included" checklist, reviews, selectable variant options, and a sticky "Book now" bar that
+// carries the chosen variant to the confirm screen.
 export default function ServiceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -100,6 +123,28 @@ export default function ServiceDetail() {
                 <Icon name="checkCircle" tone="secondary" size={20} weight="fill" />
                 <Text variant="body">{line}</Text>
               </View>
+            ))}
+          </View>
+
+          {/* Reviews */}
+          <View className="gap-sm">
+            <View className="flex-row items-center justify-between">
+              <Text variant="headlineSm">{t("booking:detail.reviews")}</Text>
+              <RatingPill rating={sampleRating(service?.id)} count="2.1k" size="md" />
+            </View>
+            {SAMPLE_REVIEWS.map((review) => (
+              <Card key={review.name} className="gap-sm">
+                <View className="flex-row items-center gap-sm">
+                  <Avatar name={review.name} size={36} />
+                  <View className="flex-1">
+                    <Text variant="label">{review.name}</Text>
+                    <Rating value={review.rating} readOnly />
+                  </View>
+                </View>
+                <Text variant="body" tone="muted">
+                  {review.text}
+                </Text>
+              </Card>
             ))}
           </View>
 

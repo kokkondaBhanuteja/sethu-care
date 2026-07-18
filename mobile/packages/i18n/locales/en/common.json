@@ -65,10 +65,22 @@
   },
   "offers": {
     "title": "Offers & rewards",
-    "subtitle": "Deals, coupons and your SETHU+ perks."
+    "subtitle": "Deals, coupons and your SETHU+ perks.",
+    "apply": "Apply",
+    "code": "Code",
+    "member": "Join SETHU+"
   },
   "allServices": {
     "title": "All services",
     "seeAll": "See all"
+  },
+  "profile": {
+    "savedAddresses": "Saved addresses",
+    "payments": "Payments",
+    "notifications": "Notifications",
+    "help": "Help & support",
+    "statBookings": "Bookings",
+    "statRating": "Rating",
+    "statReviews": "Reviews"
   }
 }
