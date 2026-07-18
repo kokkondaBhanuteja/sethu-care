@@ -48,7 +48,10 @@ export default function Search() {
     <Screen edges={["top", "bottom"]}>
       {/* Search bar with back */}
       <View className="flex-row items-center gap-sm px-mobile-margin pb-sm pt-sm">
-        <PressableScale onPress={() => router.back()} accessibilityLabel={t("actions.done")}>
+        <PressableScale
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
+          accessibilityLabel={t("actions.done")}
+        >
           <Icon name="back" />
         </PressableScale>
         <View className="flex-1 flex-row items-center gap-sm rounded-full border border-outline-variant bg-surface-container-lowest px-md">

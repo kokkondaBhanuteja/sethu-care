@@ -51,6 +51,14 @@ export default function ServiceDetail() {
     t("booking:detail.inc4"),
   ];
 
+  // Go back when there's history, otherwise fall back to Home — the detail screen can be the stack
+  // root (deep link, or a dev fast-refresh that reset navigation), where router.back() has nothing to
+  // pop and Expo Router raises a "GO_BACK was not handled" error toast.
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+  };
+
   const book = () => {
     if (!selected) return;
     router.push({
@@ -191,7 +199,7 @@ export default function ServiceDetail() {
 
       {/* Floating back button — sits over the hero; a white pill keeps it readable on any image. */}
       <PressableScale
-        onPress={() => router.back()}
+        onPress={goBack}
         accessibilityLabel={t("common:actions.back")}
         scaleTo={0.9}
         style={{ position: "absolute", top: insets.top + 8, left: 16 }}
