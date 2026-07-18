@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
 import QRCode from "react-native-qrcode-svg";
 import { Screen, Text, Button, Card, Icon, StatusPill, TextField } from "@sethu/ui";
@@ -87,13 +87,15 @@ export default function JobDetail() {
   const codeValid = /^\d{6}$/.test(code);
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <Screen edges={["bottom"]}>
+      <Stack.Screen options={{ title: info?.service_name ?? t("jobs:detail.service") }} />
+      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
         <View className="gap-md px-mobile-margin pt-md pb-2xl">
-          <View className="flex-row items-center justify-between">
-            <Text variant="headline">{info?.service_name ?? t("jobs:detail.service")}</Text>
-            {state ? <StatusPill label={state} tone={completed ? "success" : "active"} /> : null}
-          </View>
+          {state ? (
+            <View className="flex-row">
+              <StatusPill label={state} tone={completed ? "success" : "active"} />
+            </View>
+          ) : null}
 
           {/* Customer + address card */}
           <Card className="gap-1">

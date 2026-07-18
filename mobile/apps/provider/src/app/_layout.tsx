@@ -15,9 +15,10 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { I18nextProvider } from "@sethu/i18n";
+import { I18nextProvider, useTranslation } from "@sethu/i18n";
 import { configureApiClient } from "@sethu/api-client";
 import { getSessionToken, useSession } from "@sethu/core";
+import { color } from "@sethu/tokens";
 
 import { API_BASE_URL } from "@/lib/config";
 import { initAppI18n } from "@/lib/i18n";
@@ -53,11 +54,25 @@ function useAuthGate() {
 }
 
 function RootNavigator() {
+  const { t } = useTranslation(["jobs", "common"]);
   useAuthGate();
   return (
     <>
       <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerBackButtonDisplayMode: "minimal",
+          headerTintColor: color.primary,
+          headerTitleStyle: { color: color.onSurface },
+        }}
+      >
+        {/* Job detail stacks over the native tab bar with a native header. */}
+        <Stack.Screen
+          name="job/[id]"
+          options={{ headerShown: true, title: t("jobs:detail.service") }}
+        />
+      </Stack>
     </>
   );
 }

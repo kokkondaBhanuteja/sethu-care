@@ -1,11 +1,11 @@
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Screen, Text, Card, Icon, Skeleton, ErrorState, EmptyState } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 
 import { useMyCash } from "@/features/earnings";
 
-// Earnings tab — the technician's cash standing: total collected, deposited, and what's still
-// outstanding (owed to the company). The outstanding figure is what a supervisor reconciles against.
+// Earnings tab (native large-title header) — the technician's cash standing: total collected,
+// deposited, and what's still outstanding (owed to the company).
 export default function Earnings() {
   const { t } = useTranslation(["jobs", "common"]);
   const { data, isLoading, isError, refetch } = useMyCash();
@@ -14,10 +14,11 @@ export default function Earnings() {
   const holdingCash = Number(outstanding) > 0;
 
   return (
-    <Screen>
-      <View className="flex-1 gap-lg px-mobile-margin pt-lg">
-        <Text variant="headline">{t("jobs:earnings.screenTitle")}</Text>
-
+    <Screen edges={["bottom"]}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+      >
         {isError ? (
           <ErrorState
             title={t("common:errors.generic")}
@@ -59,7 +60,7 @@ export default function Earnings() {
             </View>
           </View>
         )}
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
