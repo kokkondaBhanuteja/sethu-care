@@ -67,5 +67,18 @@
     "all": "सभी",
     "active": "सक्रिय",
     "completed": "पूर्ण"
+  },
+  "pay": {
+    "promoLabel": "प्रोमो कोड",
+    "apply": "लागू करें",
+    "subtotal": "उप-योग",
+    "discount": "छूट",
+    "total": "कुल",
+    "payNow": "{{amount}} भुगतान करें",
+    "notConfigured": "भुगतान अभी सेट नहीं है (Razorpay कुंजी नहीं मिली)।",
+    "failed": "भुगतान रद्द या विफल। कृपया पुनः प्रयास करें।",
+    "invalidPromo": "यह कोड मान्य नहीं है।",
+    "memberApplied": "चेकआउट पर SETHU+ सदस्य छूट लागू।",
+    "title": "भुगतान"
   }
 }

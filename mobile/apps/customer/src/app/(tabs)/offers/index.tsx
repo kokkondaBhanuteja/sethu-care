@@ -1,5 +1,6 @@
 import { ScrollView, View } from "react-native";
 import { Screen, Text, Card, Badge, Button, Icon, type BadgeTone } from "@sethu/ui";
+import { usePreferences } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
 
 // Static promotional offers (no backend yet) — headline, blurb and a copyable-looking promo code.
@@ -37,6 +38,8 @@ const MEMBERSHIP_PERKS = [
 
 export default function Offers() {
   const { t } = useTranslation("common");
+  const sethuPlus = usePreferences((state) => state.sethuPlus);
+  const setSethuPlus = usePreferences((state) => state.setSethuPlus);
   return (
     <Screen edges={["bottom"]}>
       <ScrollView
@@ -91,8 +94,14 @@ export default function Offers() {
                 </Text>
               </View>
             ))}
-            <View className="self-start pt-1">
-              <Button label={t("offers.member")} variant="secondary" size="sm" onPress={() => {}} />
+            <View className="flex-row items-center gap-sm pt-1">
+              <Button
+                label={sethuPlus ? t("offers.memberJoined") : t("offers.member")}
+                variant="secondary"
+                size="sm"
+                icon={sethuPlus ? "checkCircle" : undefined}
+                onPress={() => setSethuPlus(!sethuPlus)}
+              />
             </View>
           </Card>
         </View>

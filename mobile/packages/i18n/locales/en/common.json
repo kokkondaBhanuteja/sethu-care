@@ -68,7 +68,8 @@
     "subtitle": "Deals, coupons and your SETHU+ perks.",
     "apply": "Apply",
     "code": "Code",
-    "member": "Join SETHU+"
+    "member": "Join SETHU+",
+    "memberJoined": "SETHU+ active"
   },
   "allServices": {
     "title": "All services",

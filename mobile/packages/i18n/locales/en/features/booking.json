@@ -67,5 +67,18 @@
     "all": "All",
     "active": "Active",
     "completed": "Completed"
+  },
+  "pay": {
+    "promoLabel": "Promo code",
+    "apply": "Apply",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "payNow": "Pay {{amount}}",
+    "notConfigured": "Payment isn't set up yet (missing Razorpay key).",
+    "failed": "Payment cancelled or failed. Please try again.",
+    "invalidPromo": "That code isn't valid.",
+    "memberApplied": "SETHU+ member discount applied at checkout.",
+    "title": "Payment"
   }
 }
