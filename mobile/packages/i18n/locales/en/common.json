@@ -23,7 +23,9 @@
     "bookings": "Bookings",
     "account": "Account",
     "jobs": "Jobs",
-    "earnings": "Earnings"
+    "earnings": "Earnings",
+    "offers": "Offers",
+    "profile": "Profile"
   },
   "account": {
     "title": "Account",
@@ -60,5 +62,9 @@
     "line2": "Area / Landmark (optional)",
     "label": "Label (Home, Work…)",
     "use": "Use this address"
+  },
+  "offers": {
+    "title": "Offers & rewards",
+    "subtitle": "Deals, coupons and your SETHU+ perks."
   }
 }
