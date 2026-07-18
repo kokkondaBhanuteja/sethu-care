@@ -21,8 +21,11 @@ export interface ConfigureApiOptions {
  *  Called once at app start (and again if the base URL changes between environments). */
 export function configureApiClient({ baseUrl, getToken }: ConfigureApiOptions): void {
   // `ngrok-skip-browser-warning` bypasses ngrok-free's interstitial when tunnelling a local backend
-  // to a device for testing; harmless against a normal HTTP(S) API.
-  client.setConfig({ baseUrl, headers: { "ngrok-skip-browser-warning": "true" } });
+  // to a device for testing. Only send it when the base URL is actually an ngrok tunnel — in a
+  // browser (the admin console) this custom header would otherwise force a CORS preflight the backend
+  // doesn't allow, blocking every request.
+  const headers = baseUrl.includes("ngrok") ? { "ngrok-skip-browser-warning": "true" } : {};
+  client.setConfig({ baseUrl, headers });
 
   if (getToken) {
     client.interceptors.request.use(async (request) => {
