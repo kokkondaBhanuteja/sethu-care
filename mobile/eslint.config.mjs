@@ -14,6 +14,8 @@ export default tseslint.config(
       "**/.turbo/**",
       "**/dist/**",
       "**/web-build/**",
+      "**/ios/**",
+      "**/android/**",
       "**/src/generated/**",
       "**/*.gen.ts",
       "**/expo-env.d.ts",
