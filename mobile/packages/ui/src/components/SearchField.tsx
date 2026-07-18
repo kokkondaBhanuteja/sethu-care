@@ -1,13 +1,13 @@
 import { forwardRef, useEffect, useState } from "react";
 import { TextInput, View, type TextInputProps } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import Animated, { Easing, FadeInUp, FadeOutUp } from "react-native-reanimated";
 import { color } from "@sethu/tokens";
 
 import { Icon } from "./Icon";
 
 // A rounded search input with a leading magnifier, a clear border + soft elevation, and an optional
-// Google-Maps-style rotating placeholder that cross-fades through prompts while the field is empty
-// and unfocused. Controlled like any TextInput.
+// Google/Swiggy-style rotating placeholder. Each prompt rolls up: the current one slides up + fades
+// out while the next rises in from below. Controlled like any TextInput.
 export interface SearchFieldProps extends Omit<TextInputProps, "className"> {
   accessibilityLabel?: string;
   /** Rotating placeholder prompts, cross-faded every few seconds while empty + unfocused. */
@@ -56,11 +56,11 @@ export const SearchField = forwardRef<TextInput, SearchFieldProps>(function Sear
           {...rest}
         />
         {rotating && placeholders ? (
-          <View pointerEvents="none" className="absolute inset-x-0 justify-center">
+          <View pointerEvents="none" className="absolute inset-x-0 justify-center overflow-hidden">
             <Animated.Text
               key={index}
-              entering={FadeIn.duration(450)}
-              exiting={FadeOut.duration(450)}
+              entering={FadeInUp.duration(420).easing(Easing.out(Easing.cubic))}
+              exiting={FadeOutUp.duration(360).easing(Easing.in(Easing.cubic))}
               numberOfLines={1}
               style={{
                 position: "absolute",
