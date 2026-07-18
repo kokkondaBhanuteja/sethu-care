@@ -63,6 +63,12 @@ export default function Home() {
     );
   }, [services, query]);
 
+  // The home shows a curated subset; the full catalogue lives behind "See all" (/categories). While
+  // searching, show every match instead of a slice.
+  const isSearching = query.trim().length > 0;
+  const gridServices = isSearching ? filtered : filtered.slice(0, 8);
+  const popularServices = isSearching ? filtered : filtered.slice(0, 4);
+
   const openService = (id?: string) =>
     id && router.push({ pathname: "/service/[id]", params: { id } });
 
@@ -186,7 +192,7 @@ export default function Home() {
               />
             ) : (
               <View className="flex-row flex-wrap justify-between gap-y-md">
-                {filtered.map((service) => (
+                {gridServices.map((service) => (
                   <CategoryTile
                     key={service.id}
                     service={service}
@@ -204,7 +210,7 @@ export default function Home() {
               className="gap-md px-mobile-margin pt-lg"
             >
               <Text variant="headlineSm">{t("common:home.popularTitle")}</Text>
-              {filtered.map((service) => (
+              {popularServices.map((service) => (
                 <ServiceCard
                   key={service.id}
                   service={service}
