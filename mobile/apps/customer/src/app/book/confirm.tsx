@@ -38,10 +38,8 @@ export default function Confirm() {
   };
 
   return (
-    <Screen>
+    <Screen edges={["bottom"]}>
       <View className="flex-1 gap-md px-mobile-margin pt-md">
-        <Text variant="headline">{t("booking:book.cta")}</Text>
-
         <Card className="gap-1">
           <Text variant="label">{variantName}</Text>
           <Text variant="label" tone="primary">

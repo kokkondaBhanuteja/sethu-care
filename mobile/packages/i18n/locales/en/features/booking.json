@@ -58,5 +58,9 @@
   "tracking": {
     "title": "Your technician is on the way",
     "technician": "Technician"
+  },
+  "headers": {
+    "booking": "Booking",
+    "confirm": "Confirm booking"
   }
 }

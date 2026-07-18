@@ -39,30 +39,19 @@ export default function ServiceDetail() {
   };
 
   return (
-    <Screen edges={["top"]}>
+    <Screen edges={["bottom"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
+        contentInsetAdjustmentBehavior="never"
       >
-        {/* Hero */}
-        <View>
-          <AppImage
-            source={servicePhoto(service?.slug)}
-            placeholderIcon={serviceIcon(service?.name)}
-            contentFit="cover"
-            style={{ width: "100%", height: 240 }}
-          />
-          <View className="absolute left-mobile-margin top-sm">
-            <PressableScale
-              onPress={() => router.back()}
-              accessibilityLabel={t("common:actions.done")}
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-container-lowest shadow-md shadow-inverse-surface/20">
-                <Icon name="back" tone="default" />
-              </View>
-            </PressableScale>
-          </View>
-        </View>
+        {/* Hero — full-bleed under the transparent native header (back button floats over it). */}
+        <AppImage
+          source={servicePhoto(service?.slug)}
+          placeholderIcon={serviceIcon(service?.name)}
+          contentFit="cover"
+          style={{ width: "100%", height: 260 }}
+        />
 
         <View className="gap-md px-mobile-margin pt-md">
           <View className="gap-1">

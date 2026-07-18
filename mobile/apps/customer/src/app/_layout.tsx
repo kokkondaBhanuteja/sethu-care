@@ -15,9 +15,10 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { I18nextProvider, isSupportedLanguage } from "@sethu/i18n";
+import { I18nextProvider, isSupportedLanguage, useTranslation } from "@sethu/i18n";
 import { configureApiClient } from "@sethu/api-client";
 import { getSessionToken, useSession, usePreferences } from "@sethu/core";
+import { color } from "@sethu/tokens";
 
 import { API_BASE_URL } from "@/lib/config";
 import { initAppI18n } from "@/lib/i18n";
@@ -70,12 +71,34 @@ function usePreferencesGate() {
 }
 
 function RootNavigator() {
+  const { t } = useTranslation(["booking", "common"]);
   useAuthGate();
   usePreferencesGate();
   return (
     <>
       <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerBackButtonDisplayMode: "minimal",
+          headerTintColor: color.primary,
+          headerTitleStyle: { color: color.onSurface },
+        }}
+      >
+        {/* Detail routes stack over the native tab bar with native headers (glass on iOS 26). */}
+        <Stack.Screen
+          name="service/[id]"
+          options={{ headerShown: true, headerTransparent: true, title: "" }}
+        />
+        <Stack.Screen
+          name="booking/[id]"
+          options={{ headerShown: true, title: t("booking:headers.booking") }}
+        />
+        <Stack.Screen
+          name="book/confirm"
+          options={{ headerShown: true, title: t("booking:headers.confirm") }}
+        />
+      </Stack>
     </>
   );
 }

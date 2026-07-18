@@ -10,13 +10,11 @@ import {
   EmptyState,
   ErrorState,
   PressableScale,
-  TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 import { useMyBookings } from "@/features/booking";
 
-// The customer's booking history. Tap a row to open its live status. Loading shows skeletons; a
-// failed load offers a retry.
+// The customer's booking history under a native large-title header. Tap a row to open its live status.
 export default function Bookings() {
   const { t } = useTranslation(["booking", "common"]);
   const router = useRouter();
@@ -24,19 +22,18 @@ export default function Bookings() {
   const bookings = data?.bookings ?? [];
 
   return (
-    <Screen>
-      <View className="flex-1 px-mobile-margin pt-md">
-        <Text variant="headline" className="pb-md">
-          {t("booking:history.title")}
-        </Text>
+    <Screen edges={["bottom"]}>
+      <View className="flex-1">
         {isError ? (
-          <ErrorState
-            title={t("common:errors.generic")}
-            retryLabel={t("common:actions.retry")}
-            onRetry={() => void refetch()}
-          />
+          <View className="px-mobile-margin pt-md">
+            <ErrorState
+              title={t("common:errors.generic")}
+              retryLabel={t("common:actions.retry")}
+              onRetry={() => void refetch()}
+            />
+          </View>
         ) : isLoading ? (
-          <View className="gap-sm">
+          <View className="gap-sm px-mobile-margin pt-md">
             {[0, 1, 2, 3].map((row) => (
               <Skeleton key={row} className="h-20 w-full" />
             ))}
@@ -45,7 +42,8 @@ export default function Bookings() {
           <FlashList
             data={bookings}
             keyExtractor={(item, index) => item.booking_id ?? String(index)}
-            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
             ItemSeparatorComponent={() => <View className="h-sm" />}
             ListEmptyComponent={
               <EmptyState illustration="emptyBookings" title={t("booking:history.empty")} />

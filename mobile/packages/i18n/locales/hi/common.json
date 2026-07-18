@@ -66,5 +66,9 @@
   "offers": {
     "title": "ऑफ़र और रिवॉर्ड",
     "subtitle": "डील, कूपन और आपके SETHU+ लाभ।"
+  },
+  "allServices": {
+    "title": "सभी सेवाएँ",
+    "seeAll": "सभी देखें"
   }
 }

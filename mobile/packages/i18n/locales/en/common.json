@@ -66,5 +66,9 @@
   "offers": {
     "title": "Offers & rewards",
     "subtitle": "Deals, coupons and your SETHU+ perks."
+  },
+  "allServices": {
+    "title": "All services",
+    "seeAll": "See all"
   }
 }

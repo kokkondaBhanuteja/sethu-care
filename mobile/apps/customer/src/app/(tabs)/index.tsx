@@ -14,7 +14,6 @@ import {
   Icon,
   AppImage,
   PressableScale,
-  TAB_BAR_CLEARANCE,
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
 import { useSession, usePreferences } from "@sethu/core";
@@ -126,7 +125,8 @@ export default function Home() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: 32 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

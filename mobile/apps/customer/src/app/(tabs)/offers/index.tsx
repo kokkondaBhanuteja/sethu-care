@@ -6,10 +6,12 @@ import { useTranslation } from "@sethu/i18n";
 export default function Offers() {
   const { t } = useTranslation("common");
   return (
-    <Screen edges={["top"]}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <Screen edges={["bottom"]}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
         <View className="gap-md px-mobile-margin pt-md">
-          <Text variant="headline">{t("nav.offers")}</Text>
           <Text variant="body" tone="muted">
             {t("offers.subtitle")}
           </Text>
