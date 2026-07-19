@@ -100,9 +100,13 @@ func run() error {
 	flowControl, err := flow.New(rootContext, settings.RedisURL)
 	if err != nil {
 		logger.Warn("Redis unavailable — running without the flow layer (DB remains the guard)", "err", err)
-		flowControl, _ = flow.New(rootContext, "")
+		flowControl = flow.Disabled()
 	}
-	defer func() { _ = flowControl.Close() }()
+	defer func() {
+		if err := flowControl.Close(); err != nil {
+			logger.Error("closing flow controller", "err", err)
+		}
+	}()
 	logger.Info("flow layer", "redis", flowControl.Enabled())
 
 	bookingService := booking.NewService(pool, booking.WithFlow(flowControl))
@@ -187,7 +191,7 @@ func run() error {
 		logger.Info("Razorpay enabled for payment collection")
 	}
 
-	var router http.Handler = buildRouter(routerDependencies{
+	router := buildRouter(routerDependencies{
 		pool:                pool,
 		bookingService:      bookingService,
 		verificationService: verificationService,

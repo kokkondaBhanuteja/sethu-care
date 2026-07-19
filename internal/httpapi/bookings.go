@@ -115,11 +115,15 @@ func (handler *Handler) create(ctx context.Context, input *createBookingInput) (
 	idemKey := ""
 	if input.IdempotencyKey != "" && handler.flow != nil {
 		idemKey = "booking:" + caller.ID.String() + ":" + input.IdempotencyKey
-		release, _, _ := handler.flow.LockWait(ctx, idemKey, 10*time.Second, 3*time.Second)
+		release, _, lockErr := handler.flow.LockWait(ctx, idemKey, 10*time.Second, 3*time.Second)
+		if lockErr != nil {
+			return nil, toHumaError(handler.log, lockErr)
+		}
 		defer release()
-		if cached, found, _ := handler.flow.Recall(ctx, idemKey); found {
+		cached, found, recallErr := handler.flow.Recall(ctx, idemKey)
+		if recallErr == nil && found {
 			var resp bookingResponse
-			if json.Unmarshal([]byte(cached), &resp) == nil {
+			if err := json.Unmarshal([]byte(cached), &resp); err == nil {
 				return &bookingOutput{Body: resp}, nil
 			}
 		}
@@ -142,8 +146,10 @@ func (handler *Handler) create(ctx context.Context, input *createBookingInput) (
 		AllowedActions:   actionStrings(booking.AllowedActions(created.State)),
 	}
 	if idemKey != "" {
-		if encoded, err := json.Marshal(resp); err == nil {
-			_ = handler.flow.Remember(ctx, idemKey, string(encoded), 10*time.Minute)
+		if encoded, marshalErr := json.Marshal(resp); marshalErr == nil {
+			if err := handler.flow.Remember(ctx, idemKey, string(encoded), 10*time.Minute); err != nil {
+				handler.log.Error("caching idempotency result", "err", err)
+			}
 		}
 	}
 	return &bookingOutput{Body: resp}, nil

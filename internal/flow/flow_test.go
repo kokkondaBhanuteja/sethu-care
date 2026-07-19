@@ -14,7 +14,11 @@ func newTestController(t *testing.T) *Controller {
 	if err != nil {
 		t.Skipf("redis not available: %v", err)
 	}
-	t.Cleanup(func() { _ = control.Close() })
+	t.Cleanup(func() {
+		if err := control.Close(); err != nil {
+			t.Errorf("closing controller: %v", err)
+		}
+	})
 	return control
 }
 
@@ -44,11 +48,19 @@ func TestAllowEnforcesLimit(t *testing.T) {
 	key := "test:rl:" + randomToken()
 
 	for hit := 1; hit <= 3; hit++ {
-		if ok, _ := control.Allow(ctx, key, 3, time.Minute); !ok {
+		ok, err := control.Allow(ctx, key, 3, time.Minute)
+		if err != nil {
+			t.Fatalf("hit %d: %v", hit, err)
+		}
+		if !ok {
 			t.Fatalf("hit %d should be allowed", hit)
 		}
 	}
-	if ok, _ := control.Allow(ctx, key, 3, time.Minute); ok {
+	over, err := control.Allow(ctx, key, 3, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if over {
 		t.Fatal("4th hit over the limit should be denied")
 	}
 }
@@ -61,29 +73,36 @@ func TestReserveHoldsSlot(t *testing.T) {
 	if ok, err := control.Reserve(ctx, key, "b1", 5*time.Second); err != nil || !ok {
 		t.Fatalf("first reserve: ok=%v err=%v", ok, err)
 	}
-	if ok, _ := control.Reserve(ctx, key, "b2", 5*time.Second); ok {
-		t.Fatal("second reserve while held should fail")
+	if ok, err := control.Reserve(ctx, key, "b2", 5*time.Second); err != nil || ok {
+		t.Fatalf("second reserve while held: ok=%v err=%v (want ok=false)", ok, err)
 	}
-	_ = control.Release(ctx, key)
-	if ok, _ := control.Reserve(ctx, key, "b3", 5*time.Second); !ok {
-		t.Fatal("reserve after release should succeed")
+	if err := control.Release(ctx, key); err != nil {
+		t.Fatalf("release: %v", err)
 	}
-	_ = control.Release(ctx, key)
+	if ok, err := control.Reserve(ctx, key, "b3", 5*time.Second); err != nil || !ok {
+		t.Fatalf("reserve after release: ok=%v err=%v", ok, err)
+	}
+	if err := control.Release(ctx, key); err != nil {
+		t.Fatalf("final release: %v", err)
+	}
 }
 
 func TestDisabledControllerIsPermissive(t *testing.T) {
-	control, _ := New(context.Background(), "")
+	control, err := New(context.Background(), "")
+	if err != nil {
+		t.Fatalf("New(\"\"): %v", err)
+	}
 	ctx := context.Background()
 	if control.Enabled() {
 		t.Fatal("empty url should yield a disabled controller")
 	}
-	if _, ok, _ := control.Lock(ctx, "k", time.Second); !ok {
-		t.Fatal("disabled lock should always acquire")
+	if _, ok, err := control.Lock(ctx, "k", time.Second); err != nil || !ok {
+		t.Fatalf("disabled lock should always acquire: ok=%v err=%v", ok, err)
 	}
-	if ok, _ := control.Allow(ctx, "k", 0, time.Second); !ok {
-		t.Fatal("disabled rate limit should always allow")
+	if ok, err := control.Allow(ctx, "k", 0, time.Second); err != nil || !ok {
+		t.Fatalf("disabled rate limit should always allow: ok=%v err=%v", ok, err)
 	}
-	if ok, _ := control.Reserve(ctx, "k", "v", time.Second); !ok {
-		t.Fatal("disabled reserve should always reserve")
+	if ok, err := control.Reserve(ctx, "k", "v", time.Second); err != nil || !ok {
+		t.Fatalf("disabled reserve should always reserve: ok=%v err=%v", ok, err)
 	}
 }

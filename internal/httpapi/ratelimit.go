@@ -19,7 +19,11 @@ func RateLimit(control *flow.Controller, limit int, window time.Duration, next h
 			next.ServeHTTP(writer, request)
 			return
 		}
-		allowed, _ := control.Allow(request.Context(), "ip:"+clientIP(request), limit, window)
+		allowed, err := control.Allow(request.Context(), "ip:"+clientIP(request), limit, window)
+		if err != nil {
+			next.ServeHTTP(writer, request) // fail open — a Redis blip must not block requests
+			return
+		}
 		if !allowed {
 			writer.Header().Set("Retry-After", "1")
 			writer.WriteHeader(http.StatusTooManyRequests)

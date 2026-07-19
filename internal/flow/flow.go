@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -33,11 +34,14 @@ func New(ctx context.Context, url string) (*Controller, error) {
 	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	if err := rdb.Ping(pingCtx).Err(); err != nil {
-		_ = rdb.Close()
-		return nil, err
+		return nil, errors.Join(err, rdb.Close())
 	}
 	return &Controller{rdb: rdb}, nil
 }
+
+// Disabled returns a controller with no Redis backing — every primitive answers permissively. Used
+// as the fallback when a connect attempt fails but the caller wants to run degraded rather than crash.
+func Disabled() *Controller { return &Controller{} }
 
 // Enabled reports whether a live Redis backs this controller.
 func (controller *Controller) Enabled() bool { return controller != nil && controller.rdb != nil }
@@ -70,7 +74,9 @@ func (controller *Controller) Lock(ctx context.Context, key string, ttl time.Dur
 	return func() {
 		relCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		_ = releaseScript.Run(relCtx, controller.rdb, []string{"lock:" + key}, token).Err()
+		if err := releaseScript.Run(relCtx, controller.rdb, []string{"lock:" + key}, token).Err(); err != nil {
+			return // best effort — the lock expires on its own TTL regardless
+		}
 	}, true, nil
 }
 
@@ -111,7 +117,10 @@ func (controller *Controller) Allow(ctx context.Context, key string, limit int, 
 		return true, err
 	}
 	if count == 1 {
-		_ = controller.rdb.Expire(ctx, rkey, window).Err()
+		// Surface a failed TTL set as an error; the caller fails open on it (never blocks a request).
+		if err := controller.rdb.Expire(ctx, rkey, window).Err(); err != nil {
+			return count <= int64(limit), err
+		}
 	}
 	return count <= int64(limit), nil
 }
@@ -130,7 +139,7 @@ func (controller *Controller) Recall(ctx context.Context, key string) (value str
 		return "", false, nil
 	}
 	value, err = controller.rdb.Get(ctx, "idem:"+key).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return "", false, nil
 	}
 	if err != nil {
