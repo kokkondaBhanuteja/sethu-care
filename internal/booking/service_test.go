@@ -177,6 +177,69 @@ func TestConcurrentTransitionsExactlyOneWins(t *testing.T) {
 	}
 }
 
+// The CROSS-booking guard under contention: two DIFFERENT bookings both want the SAME technician at
+// the SAME time. version cannot see this (two rows, two versions — both CAS succeed); the database's
+// bookings_no_double_book EXCLUDE constraint is what makes it impossible. The invariant: exactly one
+// assignment sticks, the other gets a ScheduleConflictError (a 409), and the technician is never
+// double-booked — even with both requests released at the same instant.
+func TestConcurrentAssignSameTechnicianOverlappingSlots(t *testing.T) {
+	pool := storagetest.NewPool(t, migrationsDir)
+	svc := booking.NewService(pool)
+	ctx := context.Background()
+
+	// Two independent bookings, each advanced to SEARCHING and pinned to the same overlapping window.
+	ids := []uuid.UUID{seedBooking(t, pool), seedBooking(t, pool)}
+	for _, id := range ids {
+		mustApply(t, svc, id, booking.ActionConfirm)
+		mustApply(t, svc, id, booking.ActionSearch)
+		exec(t, pool,
+			"UPDATE bookings SET scheduled_for = TIMESTAMPTZ '2026-09-01 10:00+05:30', duration_minutes = 60 WHERE id=$1", id)
+	}
+
+	tech := seedTechnician(t, pool)
+
+	// Race: assign the one technician to BOTH overlapping bookings at once.
+	var wg sync.WaitGroup
+	results := make([]error, 2)
+	start := make(chan struct{})
+	for index := range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, results[index] = svc.Apply(ctx, ids[index], booking.ActionAssign,
+				booking.TransitionInput{ActorRole: identity.RoleAdmin, AssignTechnician: &tech})
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	winners, conflicts := 0, 0
+	for _, err := range results {
+		switch {
+		case err == nil:
+			winners++
+		case isScheduleConflict(err):
+			conflicts++
+		default:
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if winners != 1 || conflicts != 1 {
+		t.Fatalf("got %d winners and %d schedule-conflicts, want exactly 1 and 1", winners, conflicts)
+	}
+
+	// The durable proof: the technician holds exactly one of the two overlapping jobs.
+	var assigned int64
+	if err := pool.QueryRow(ctx,
+		"SELECT count(*) FROM bookings WHERE technician_id=$1 AND state='ASSIGNED'", tech).Scan(&assigned); err != nil {
+		t.Fatal(err)
+	}
+	if assigned != 1 {
+		t.Fatalf("technician assigned to %d overlapping bookings, want exactly 1", assigned)
+	}
+}
+
 func TestApplyOnMissingBookingReturnsNotFound(t *testing.T) {
 	pool := storagetest.NewPool(t, migrationsDir)
 	svc := booking.NewService(pool)
@@ -200,6 +263,11 @@ func mustApply(t *testing.T, svc *booking.Service, id uuid.UUID, action booking.
 
 func isConflict(err error) bool {
 	var c *booking.ConflictError
+	return errors.As(err, &c)
+}
+
+func isScheduleConflict(err error) bool {
+	var c *booking.ScheduleConflictError
 	return errors.As(err, &c)
 }
 
