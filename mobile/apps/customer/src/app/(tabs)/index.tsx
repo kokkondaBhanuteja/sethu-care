@@ -30,6 +30,7 @@ import {
   serviceIcon,
   heroMascot,
 } from "@/features/catalog";
+import { errorIllustration } from "@/lib/error-illustration";
 
 // Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
 const SEARCH_PROMPTS = [
@@ -51,7 +52,7 @@ export default function Home() {
   const { t } = useTranslation(["common", "booking"]);
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { data, isLoading, isError, refetch, isRefetching } = useServices();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useServices();
   const services = data?.services ?? [];
   const gridServices = services.slice(0, 8);
   const [heroIndex, setHeroIndex] = useState(0);
@@ -117,7 +118,7 @@ export default function Home() {
 
       {isError ? (
         <ErrorState
-          illustration="serverError"
+          illustration={errorIllustration(error)}
           title={t("common:errors.generic")}
           retryLabel={t("common:actions.retry")}
           onRetry={() => void refetch()}

@@ -16,6 +16,14 @@
     "network": "No internet connection.",
     "notFound": "Not found."
   },
+  "offline": {
+    "banner": "You're offline. Check your connection."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist or has moved.",
+    "home": "Go home"
+  },
   "empty": {
     "title": "Nothing here yet"
   },
