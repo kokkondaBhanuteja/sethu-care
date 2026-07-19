@@ -38,6 +38,7 @@ func classify(err error) (int, string) {
 	}
 
 	var conflict *booking.ConflictError
+	var scheduleConflict *booking.ScheduleConflictError
 	var illegal *booking.IllegalTransitionError
 	var forbidden *booking.ForbiddenError
 	var transportForbidden *forbiddenError
@@ -85,6 +86,10 @@ func classify(err error) (int, string) {
 
 	case errors.As(err, &conflict):
 		// Someone moved the booking between the read and the write. Retriable.
+		return http.StatusConflict, err.Error()
+
+	case errors.As(err, &scheduleConflict):
+		// Assigning would double-book the technician's time window. Pick another tech/slot.
 		return http.StatusConflict, err.Error()
 
 	case errors.As(err, &illegal):

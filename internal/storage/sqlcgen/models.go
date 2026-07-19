@@ -38,6 +38,8 @@ type Booking struct {
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Version          int64
+	DurationMinutes  int32
+	ScheduledEnd     pgtype.Timestamptz
 }
 
 type BookingEvent struct {

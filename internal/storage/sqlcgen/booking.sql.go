@@ -47,8 +47,8 @@ func (q *Queries) ApplyBookingTransition(ctx context.Context, arg ApplyBookingTr
 }
 
 const createBooking = `-- name: CreateBooking :one
-INSERT INTO bookings (order_id, customer_id, address_id, quoted_total_paise)
-VALUES ($1, $2, $3, $4)
+INSERT INTO bookings (order_id, customer_id, address_id, quoted_total_paise, duration_minutes)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, state, version
 `
 
@@ -57,6 +57,7 @@ type CreateBookingParams struct {
 	CustomerID       uuid.UUID
 	AddressID        uuid.UUID
 	QuotedTotalPaise money.Money
+	DurationMinutes  int32
 }
 
 type CreateBookingRow struct {
@@ -65,12 +66,15 @@ type CreateBookingRow struct {
 	Version int64
 }
 
+// duration_minutes seeds the technician's assigned window for the no-double-book EXCLUDE
+// constraint; it is copied from the service's estimated_minutes at creation.
 func (q *Queries) CreateBooking(ctx context.Context, arg CreateBookingParams) (CreateBookingRow, error) {
 	row := q.db.QueryRow(ctx, createBooking,
 		arg.OrderID,
 		arg.CustomerID,
 		arg.AddressID,
 		arg.QuotedTotalPaise,
+		arg.DurationMinutes,
 	)
 	var i CreateBookingRow
 	err := row.Scan(&i.ID, &i.State, &i.Version)
@@ -173,21 +177,24 @@ func (q *Queries) GetBookingState(ctx context.Context, id uuid.UUID) (GetBooking
 }
 
 const getServiceVariant = `-- name: GetServiceVariant :one
-SELECT id, service_id, base_price_paise, is_active
-  FROM service_variants
- WHERE id = $1
+SELECT v.id, v.service_id, v.base_price_paise, v.is_active, s.estimated_minutes
+  FROM service_variants v
+  JOIN services s ON s.id = v.service_id
+ WHERE v.id = $1
 `
 
 type GetServiceVariantRow struct {
-	ID             uuid.UUID
-	ServiceID      uuid.UUID
-	BasePricePaise money.Money
-	IsActive       bool
+	ID               uuid.UUID
+	ServiceID        uuid.UUID
+	BasePricePaise   money.Money
+	IsActive         bool
+	EstimatedMinutes int32
 }
 
 // Used at creation time: the price comes from the variant (never from the client), and
 // service_id is derived from it so the booking_item can never reference a variant that
-// belongs to a different service.
+// belongs to a different service. estimated_minutes (from the parent service) seeds the
+// booking's duration for the schedule guard.
 func (q *Queries) GetServiceVariant(ctx context.Context, id uuid.UUID) (GetServiceVariantRow, error) {
 	row := q.db.QueryRow(ctx, getServiceVariant, id)
 	var i GetServiceVariantRow
@@ -196,6 +203,7 @@ func (q *Queries) GetServiceVariant(ctx context.Context, id uuid.UUID) (GetServi
 		&i.ServiceID,
 		&i.BasePricePaise,
 		&i.IsActive,
+		&i.EstimatedMinutes,
 	)
 	return i, err
 }

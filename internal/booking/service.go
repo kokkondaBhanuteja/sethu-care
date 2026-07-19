@@ -48,6 +48,21 @@ func (conflict *ConflictError) Error() string {
 	return fmt.Sprintf("booking %s was modified concurrently; %s did not apply", conflict.BookingID, conflict.Action)
 }
 
+// ScheduleConflictError means the assignment would double-book the technician — their
+// [scheduled_for, scheduled_end) window overlaps another live job. This is the cross-row
+// invariant that `version` cannot see (two different bookings, two different versions); the
+// database's bookings_no_double_book EXCLUDE constraint (SQLSTATE 23P01) is the one that
+// catches it. The HTTP layer turns this into a 409 — dispatch should pick a different
+// technician or slot.
+type ScheduleConflictError struct {
+	BookingID    uuid.UUID
+	TechnicianID *uuid.UUID
+}
+
+func (conflict *ScheduleConflictError) Error() string {
+	return fmt.Sprintf("technician is already booked for that time window; booking %s not assigned", conflict.BookingID)
+}
+
 // ForbiddenError means the actor is not allowed to perform this action — either their role
 // cannot do it at all, or it is not their booking to act on. The HTTP layer turns this into
 // a 403.
@@ -135,6 +150,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 			CustomerID:       in.CustomerID,
 			AddressID:        in.AddressID,
 			QuotedTotalPaise: lineTotal,
+			DurationMinutes:  variant.EstimatedMinutes,
 		})
 		if err != nil {
 			return fmt.Errorf("creating booking: %w", err)
@@ -436,6 +452,11 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			ExpectedVersion: bookingRow.Version,
 		})
 		if err != nil {
+			// The cross-row schedule guard: assigning this technician would overlap another live
+			// job (bookings_no_double_book). Surface it as a clean 409, not a 500.
+			if storage.IsSQLState(err, storage.SQLStateExclusionViolation) {
+				return &ScheduleConflictError{BookingID: bookingID, TechnicianID: in.AssignTechnician}
+			}
 			return fmt.Errorf("applying transition: %w", err)
 		}
 		if rows == 0 {

@@ -29,8 +29,10 @@ VALUES (@customer_id, @total_paise)
 RETURNING id;
 
 -- name: CreateBooking :one
-INSERT INTO bookings (order_id, customer_id, address_id, quoted_total_paise)
-VALUES (@order_id, @customer_id, @address_id, @quoted_total_paise)
+-- duration_minutes seeds the technician's assigned window for the no-double-book EXCLUDE
+-- constraint; it is copied from the service's estimated_minutes at creation.
+INSERT INTO bookings (order_id, customer_id, address_id, quoted_total_paise, duration_minutes)
+VALUES (@order_id, @customer_id, @address_id, @quoted_total_paise, @duration_minutes)
 RETURNING id, state, version;
 
 -- name: CreateBookingItem :exec
@@ -40,10 +42,12 @@ VALUES (@booking_id, @service_id, @variant_id, @quantity, @line_total_paise);
 -- name: GetServiceVariant :one
 -- Used at creation time: the price comes from the variant (never from the client), and
 -- service_id is derived from it so the booking_item can never reference a variant that
--- belongs to a different service.
-SELECT id, service_id, base_price_paise, is_active
-  FROM service_variants
- WHERE id = $1;
+-- belongs to a different service. estimated_minutes (from the parent service) seeds the
+-- booking's duration for the schedule guard.
+SELECT v.id, v.service_id, v.base_price_paise, v.is_active, s.estimated_minutes
+  FROM service_variants v
+  JOIN services s ON s.id = v.service_id
+ WHERE v.id = $1;
 
 -- name: GetBooking :one
 SELECT id, order_id, customer_id, address_id, technician_id, state, quoted_total_paise, version
