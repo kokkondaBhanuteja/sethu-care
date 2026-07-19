@@ -8,7 +8,7 @@
     "scheme": "sethucarepartner",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon-ios.png",
       "bundleIdentifier": "in.sethucare.provider",
       "supportsTablet": true
     },

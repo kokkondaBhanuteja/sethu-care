@@ -1,10 +1,12 @@
-import { View, useWindowDimensions } from "react-native";
+import { Platform, StyleSheet, View, useWindowDimensions } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Text, Icon, PressableScale, type IconName } from "@sethu/ui";
-import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
 
 // Minimal shape of the props expo-router's <Tabs tabBar={...}> passes (a react-navigation
@@ -48,6 +50,53 @@ function barPath(width: number): string {
     `H0`,
     `Z`,
   ].join(" ");
+}
+
+// The frosted-glass surface for the bar, with the top-centre notch cut into it, so the glass itself
+// bends around the FAB. Common structure on both platforms — a MaskedView clips the glass fill to the
+// notch path — differing only in the fill: REAL iOS 26 Liquid Glass (expo-glass-effect GlassView) on
+// iOS, an expo-blur frosted BlurView (over a translucent white for legibility) on Android and older
+// iOS. rdev/liquid-glass-react can't be used here — it's a DOM/CSS library with no React Native port.
+function BarGlassFill({ barWidth }: { barWidth: number }) {
+  if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
+    return (
+      <GlassView
+        glassEffectStyle="regular"
+        style={{ width: barWidth, height: BAR_HEIGHT, borderRadius: CORNER }}
+      />
+    );
+  }
+  return (
+    <View style={{ width: barWidth, height: BAR_HEIGHT }}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.72)" }]} />
+      <BlurView
+        intensity={24}
+        tint="light"
+        experimentalBlurMethod="dimezisBlurView"
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
+  );
+}
+
+function BarBackground({ barWidth }: { barWidth: number }) {
+  return (
+    <View
+      className="shadow-md shadow-inverse-surface/20"
+      style={{ position: "absolute", bottom: 0, width: barWidth, height: BAR_HEIGHT }}
+    >
+      <MaskedView
+        style={{ width: barWidth, height: BAR_HEIGHT }}
+        maskElement={
+          <Svg width={barWidth} height={BAR_HEIGHT}>
+            <Path d={barPath(barWidth)} fill="#000000" />
+          </Svg>
+        }
+      >
+        <BarGlassFill barWidth={barWidth} />
+      </MaskedView>
+    </View>
+  );
 }
 
 // Floating tab bar with a notched cradle + raised squircle "Book Now" FAB (matches the reference
@@ -117,27 +166,7 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
   return (
     <View style={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 6, paddingTop: 30 }}>
       <View style={{ height: BAR_HEIGHT, width: barWidth }}>
-        {/* Bar background: rounded rect with a top-centre notch. Clipped so corners round cleanly. */}
-        <View
-          className="shadow-md shadow-inverse-surface/20"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            width: barWidth,
-            height: BAR_HEIGHT,
-            borderRadius: CORNER,
-            overflow: "hidden",
-          }}
-        >
-          <Svg width={barWidth} height={BAR_HEIGHT}>
-            <Path
-              d={barPath(barWidth)}
-              fill={color.surface}
-              stroke={color.outlineVariant}
-              strokeWidth={1}
-            />
-          </Svg>
-        </View>
+        <BarBackground barWidth={barWidth} />
 
         {/* Foreground: tabs + centre FAB, not clipped so the FAB can poke above the notch. */}
         <View

@@ -4,11 +4,11 @@
     "slug": "sethu-care-customer",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon-sethu-clean.png",
+    "icon": "./assets/images/icon-ios.png",
     "scheme": "sethucare",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon-ios.png",
       "bundleIdentifier": "in.sethucare.customer",
       "supportsTablet": true,
       "infoPlist": {
