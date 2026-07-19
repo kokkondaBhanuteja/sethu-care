@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
@@ -196,6 +197,12 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 		return Created{}, err
 	}
 	return out, nil
+}
+
+// auditBookingState is the before/after snapshot recorded in audit_logs for a booking transition.
+type auditBookingState struct {
+	State        string     `json:"state"`
+	TechnicianID *uuid.UUID `json:"technician_id,omitempty"`
 }
 
 type createdEvent struct {
@@ -473,6 +480,20 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			Meta:        []byte("{}"),
 		}); err != nil {
 			return fmt.Errorf("writing booking event: %w", err)
+		}
+
+		// AUDIT, same transaction: who moved this booking, from where to where. booking_events is
+		// the state ledger; this adds the actor + before/after in the one place every business
+		// mutation is audited. Actor nil (an outbox-driven transition) is recorded as a system actor.
+		if err := audit.Record(ctx, tx, audit.Entry{
+			ActorUserID: in.Actor,
+			Action:      string(action),
+			EntityType:  "booking",
+			EntityID:    bookingID,
+			Before:      auditBookingState{State: string(from)},
+			After:       auditBookingState{State: string(to), TechnicianID: in.AssignTechnician},
+		}); err != nil {
+			return fmt.Errorf("writing audit log: %w", err)
 		}
 
 		// THE OUTBOX. Only transitions with a published event (§8) get a row. The event

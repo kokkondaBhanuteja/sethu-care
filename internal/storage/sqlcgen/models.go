@@ -25,6 +25,22 @@ type Address struct {
 	Version   int64
 }
 
+type AuditLog struct {
+	ID            uuid.UUID
+	ActorUserID   *uuid.UUID
+	ActorKind     string
+	Action        string
+	EntityType    string
+	EntityID      uuid.UUID
+	Before        []byte
+	After         []byte
+	CorrelationID *uuid.UUID
+	IpAddress     *string
+	UserAgent     *string
+	Metadata      []byte
+	CreatedAt     pgtype.Timestamptz
+}
+
 type Booking struct {
 	ID               uuid.UUID
 	OrderID          uuid.UUID
