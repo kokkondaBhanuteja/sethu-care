@@ -151,6 +151,19 @@ type Payment struct {
 	PaymentLinkUrl string
 }
 
+type PaymentGatewayEvent struct {
+	ID             uuid.UUID
+	Provider       string
+	EventType      string
+	GatewayEventID string
+	Reference      string
+	ProviderRef    string
+	Payload        []byte
+	Status         string
+	ProcessedAt    pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+}
+
 type ProductModel struct {
 	ID             uuid.UUID
 	CategoryID     uuid.UUID

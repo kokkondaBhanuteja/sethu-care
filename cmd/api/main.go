@@ -27,6 +27,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/config"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/gateway"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
@@ -271,7 +272,8 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	// Razorpay's payment webhook — a RAW route (not huma): it needs the exact bytes for its HMAC
 	// signature and carries no bearer token. Kept out of the OpenAPI contract on purpose.
 	mux.Handle("POST /webhooks/razorpay", httpapi.NewRazorpayWebhookHandler(
-		dependencies.razorpay, dependencies.ledgerService, dependencies.logger))
+		dependencies.razorpay, dependencies.ledgerService,
+		gateway.NewStore(dependencies.pool), dependencies.logger))
 
 	mux.HandleFunc("GET /health", func(writer http.ResponseWriter, request *http.Request) {
 		pingContext, cancelPing := context.WithTimeout(request.Context(), 2*time.Second)
