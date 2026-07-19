@@ -142,6 +142,28 @@ func run() error {
 		}
 	}()
 
+	// The parked-event reconciler: a gateway webhook that beat its payment row is left RECEIVED;
+	// this sweep retries it every couple of minutes so a lost race self-heals with no operator action.
+	gatewayStore := gateway.NewStore(pool)
+	workerDone.Add(1)
+	go func() {
+		defer workerDone.Done()
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-rootContext.Done():
+				return
+			case <-ticker.C:
+				if applied, err := gatewayStore.ReplayParked(rootContext, 5, 100, ledgerService.CaptureUPIPayment, logger); err != nil {
+					logger.Error("parked-event replay failed", "err", err)
+				} else if applied > 0 {
+					logger.Info("replayed parked gateway events", "count", applied)
+				}
+			}
+		}
+	}()
+
 	signer, err := auth.NewSigner(settings.JWTSecret, settings.JWTTTL)
 	if err != nil {
 		return fmt.Errorf("configuring jwt: %w", err)

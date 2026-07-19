@@ -6,6 +6,7 @@ package gateway
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -67,4 +68,39 @@ func (store *Store) Record(ctx context.Context, event Event) error {
 // applied (the payment row wasn't visible) — and the replay sweep will retry it.
 func (store *Store) MarkProcessed(ctx context.Context, gatewayEventID string) error {
 	return sqlcgen.New(store.pool).MarkGatewayEventProcessed(ctx, gatewayEventID)
+}
+
+// CaptureFunc applies a paid payment link to its collection. It matches ledger.CaptureUPIPayment;
+// passed as a func so this package stays free of a ledger import.
+type CaptureFunc func(ctx context.Context, reference string, providerRef *string) error
+
+// ReplayParked retries events that were accepted but never applied — the webhook that beat its
+// payment row. Signatures were verified at ingest, so there is no re-verify: it just re-drives
+// capture (idempotent) and marks the event PROCESSED on success. An event that still fails is left
+// parked for the next sweep. Returns the number applied this pass.
+func (store *Store) ReplayParked(ctx context.Context, olderThanMinutes, max int, capture CaptureFunc, log *slog.Logger) (int, error) {
+	rows, err := sqlcgen.New(store.pool).ListParkedGatewayEvents(ctx, sqlcgen.ListParkedGatewayEventsParams{
+		OlderThanMinutes: int32(olderThanMinutes),
+		MaxRows:          int32(max),
+	})
+	if err != nil {
+		return 0, err
+	}
+	applied := 0
+	for _, row := range rows {
+		if row.EventType == "payment_link.paid" && row.Reference != "" {
+			providerRef := row.ProviderRef
+			if err := capture(ctx, row.Reference, &providerRef); err != nil {
+				// Still unresolved (payment row absent, or a transient error). Leave it parked.
+				log.Warn("parked gateway event still failing", "id", row.GatewayEventID, "reference", row.Reference, "err", err)
+				continue
+			}
+		}
+		if err := store.MarkProcessed(ctx, row.GatewayEventID); err != nil {
+			log.Error("marking replayed event processed", "id", row.GatewayEventID, "err", err)
+			continue
+		}
+		applied++
+	}
+	return applied, nil
 }
