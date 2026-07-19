@@ -29,7 +29,15 @@ export function ErrorState({ title, retryLabel, onRetry, illustration }: ErrorSt
         {title}
       </Text>
       {onRetry && retryLabel ? (
-        <Button label={retryLabel} variant="secondary" size="sm" icon="refresh" onPress={onRetry} />
+        <View className="flex-row justify-center">
+          <Button
+            label={retryLabel}
+            variant="secondary"
+            size="sm"
+            icon="refresh"
+            onPress={onRetry}
+          />
+        </View>
       ) : null}
     </View>
   );
