@@ -491,6 +491,9 @@ export type VerifyOtpResponse = VerifyOtpResponses[keyof VerifyOtpResponses];
 
 export type CreateBookingData = {
     body: CreateRequest;
+    headers?: {
+        'Idempotency-Key'?: string;
+    };
     path?: never;
     query?: never;
     url: '/bookings';

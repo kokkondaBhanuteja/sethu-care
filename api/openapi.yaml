@@ -834,6 +834,11 @@ paths:
   /bookings:
     post:
       operationId: createBooking
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
