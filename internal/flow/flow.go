@@ -116,6 +116,29 @@ func (controller *Controller) Allow(ctx context.Context, key string, limit int, 
 	return count <= int64(limit), nil
 }
 
+// Remember stores an idempotency result (e.g. a created booking's JSON) under key for ttl.
+func (controller *Controller) Remember(ctx context.Context, key, value string, ttl time.Duration) error {
+	if !controller.Enabled() {
+		return nil
+	}
+	return controller.rdb.Set(ctx, "idem:"+key, value, ttl).Err()
+}
+
+// Recall returns a previously Remembered result. ok=false means nothing was stored (or Redis is off).
+func (controller *Controller) Recall(ctx context.Context, key string) (value string, ok bool, err error) {
+	if !controller.Enabled() {
+		return "", false, nil
+	}
+	value, err = controller.rdb.Get(ctx, "idem:"+key).Result()
+	if err == redis.Nil {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	return value, true, nil
+}
+
 // Reserve holds key for ttl if it is free (SET NX). false means it is already held. Disabled Redis
 // always reserves. Use for the slot-hold during checkout.
 func (controller *Controller) Reserve(ctx context.Context, key, value string, ttl time.Duration) (bool, error) {

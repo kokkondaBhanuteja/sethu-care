@@ -204,6 +204,7 @@ func run() error {
 		upiPayee:            settings.UPIPayeeName,
 		cloudinary:          media.NewCloudinary(settings.CloudinaryCloudName, settings.CloudinaryAPIKey, settings.CloudinaryAPISecret),
 		razorpay:            razorpayClient,
+		flow:                flowControl,
 		logger:              logger,
 	})
 	// Per-IP burst protection. A generous ceiling that only sheds true floods; fails open on a
@@ -276,6 +277,7 @@ type routerDependencies struct {
 	upiPayee            string
 	cloudinary          *media.Cloudinary
 	razorpay            *razorpay.Client
+	flow                *flow.Controller
 	logger              *slog.Logger
 }
 
@@ -304,6 +306,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		UPIVPA:       dependencies.upiVPA,
 		UPIPayee:     dependencies.upiPayee,
 		DevEchoOTP:   dependencies.devEchoOTP,
+		Flow:         dependencies.flow,
 		Logger:       dependencies.logger,
 	})
 
