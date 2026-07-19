@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import {
@@ -7,19 +14,16 @@ import {
   Text,
   SearchField,
   Skeleton,
-  EmptyState,
   ErrorState,
-  Badge,
-  Avatar,
   Icon,
   AppImage,
+  OfferBadge,
   PressableScale,
+  type IconName,
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
-import { useSession, usePreferences } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
-import { useServices, ServiceCard, CategoryTile } from "@/features/catalog";
-import { useAddresses, LocationSheet } from "@/features/location";
+import { useServices, serviceImage, servicePhoto, serviceIcon } from "@/features/catalog";
 
 // Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
 const SEARCH_PROMPTS = [
@@ -32,68 +36,63 @@ const SEARCH_PROMPTS = [
   "Search services near you.",
 ];
 
-// Rich, image-forward home (Swiggy / Urban-Company style): a location header, search, a solid-blue
-// promo banner, a "What needs fixing?" category grid, and image-forward popular-service cards. Solid
-// colours only. Sections fade/slide in on mount.
+// Warm neutral card behind the clay service icons and the trust row (matches the "Casa" reference).
+const CREAM = "#F3EEE5";
+
+// Home (Casa-style): SETHU+ wordmark + notification bell, a swipeable photo hero, a cream-card service
+// grid, a limited-time offer, and a trust row. The bottom bar is the custom pill with a centre FAB.
 export default function Home() {
   const { t } = useTranslation(["common", "booking"]);
   const router = useRouter();
-  const user = useSession((state) => state.user);
+  const { width } = useWindowDimensions();
   const { data, isLoading, isError, refetch, isRefetching } = useServices();
-  const [locationOpen, setLocationOpen] = useState(false);
   const services = data?.services ?? [];
-
-  // The label under the location pin: the selected saved address if there is one, else a prompt.
-  const { data: addressData } = useAddresses();
-  const selectedAddressId = usePreferences((state) => state.selectedAddressId);
-  const selectedAddress = addressData?.addresses?.find(
-    (address) => address.id === selectedAddressId,
-  );
-  const locationLabel =
-    selectedAddress?.label || selectedAddress?.line1 || t("common:home.location");
-
-  // The home shows a curated subset; the full catalogue lives behind "See all" (/categories) and the
-  // search bar opens the dedicated /search screen.
   const gridServices = services.slice(0, 8);
-  const popularServices = services.slice(0, 4);
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  // Hero carousel slides — reuse the bundled Unsplash service photos as the imagery.
+  const heroSlides = [
+    { key: "hero1", tagline: t("common:home.hero1"), slug: "handyman" },
+    { key: "hero2", tagline: t("common:home.hero2"), slug: "ac-repair" },
+    { key: "hero3", tagline: t("common:home.hero3"), slug: "electrical" },
+  ];
+
+  const trust: Array<{ icon: IconName; label: string }> = [
+    { icon: "shield", label: t("common:home.trustVerified") },
+    { icon: "checkCircle", label: t("common:home.trustWarranty") },
+    { icon: "phone", label: t("common:home.trustSupport") },
+  ];
 
   const openService = (id?: string) =>
     id && router.push({ pathname: "/service/[id]", params: { id } });
 
+  const onHeroScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) =>
+    setHeroIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+
   return (
     <Screen edges={["top"]}>
-      {/* Location + membership + avatar */}
+      {/* Header — brand wordmark + notification bell */}
       <View className="flex-row items-center justify-between px-mobile-margin pb-sm pt-xs">
+        <Text variant="headline" tone="primary" className="font-heading">
+          SETHU+
+        </Text>
         <PressableScale
-          onPress={() => setLocationOpen(true)}
-          accessibilityLabel={t("common:address.select")}
-          scaleTo={0.98}
+          onPress={() => router.push("/offers")}
+          accessibilityLabel={t("common:nav.offers")}
+          scaleTo={0.9}
         >
-          <View className="flex-row items-center gap-xs">
-            <Icon name="location" tone="primary" size={22} />
-            <View>
-              <Text variant="caption" tone="muted">
-                {t("common:home.greeting")}
-                {user?.name ? `, ${user.name}` : ""}
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary">
+            <Icon name="bell" tone="inverse" size={20} />
+            <View className="absolute -right-1 -top-1 h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-error px-1">
+              <Text variant="caption" tone="inverse" className="text-[10px]">
+                2
               </Text>
-              <View className="flex-row items-center gap-1">
-                <Text variant="label" numberOfLines={1} className="max-w-56">
-                  {locationLabel}
-                </Text>
-                <Icon name="chevronRight" size={14} tone="muted" />
-              </View>
             </View>
           </View>
         </PressableScale>
-        <View className="flex-row items-center gap-sm">
-          <Badge label={t("common:home.member")} tone="accent" />
-          <Avatar name={user?.name} size={38} />
-        </View>
       </View>
 
-      <LocationSheet visible={locationOpen} onClose={() => setLocationOpen(false)} />
-
-      {/* Search — a button that opens the dedicated search screen (keeps the rotating placeholder). */}
+      {/* Search — opens the dedicated search screen (keeps the rotating placeholder). */}
       <View className="px-mobile-margin pb-sm">
         <PressableScale
           onPress={() => router.push("/search")}
@@ -118,15 +117,13 @@ export default function Home() {
         />
       ) : isLoading ? (
         <View className="gap-md px-mobile-margin pt-sm">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-44 w-full" />
           <Skeleton className="h-40 w-full" />
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 4 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -136,80 +133,153 @@ export default function Home() {
             />
           }
         >
-          {/* Promo banner */}
-          <Animated.View entering={FadeInDown.duration(350)} className="px-mobile-margin pt-xs">
-            <PressableScale onPress={() => openService(services[0]?.id)}>
-              <View className="flex-row items-center gap-md rounded-card bg-primary p-md">
-                <View className="flex-1 gap-xs">
-                  <Text variant="label" tone="inverse">
-                    {t("common:home.promoTitle")}
-                  </Text>
-                  <Text variant="caption" tone="inverse" className="opacity-90">
-                    {t("common:home.promoSubtitle")}
-                  </Text>
-                  <View className="self-start rounded-full bg-surface-container-lowest px-md py-1">
-                    <Text variant="caption" tone="primary">
-                      {t("common:home.promoCta")}
-                    </Text>
+          {/* Hero carousel */}
+          <Animated.View entering={FadeInDown.duration(350)}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={onHeroScroll}
+            >
+              {heroSlides.map((slide) => (
+                <View key={slide.key} style={{ width }} className="px-mobile-margin">
+                  <View
+                    className="flex-row overflow-hidden rounded-card bg-primary"
+                    style={{ height: 172 }}
+                  >
+                    <View className="flex-1 justify-center gap-md p-md">
+                      <Text variant="headlineSm" tone="inverse">
+                        {slide.tagline}
+                      </Text>
+                      <View className="self-start rounded-full bg-surface-container-lowest px-md py-1">
+                        <Text variant="caption" tone="primary">
+                          {t("common:nav.bookNow")}
+                        </Text>
+                      </View>
+                    </View>
+                    <AppImage
+                      source={servicePhoto(slide.slug)}
+                      placeholderIcon="briefcase"
+                      placeholderIconTone="inverse"
+                      placeholderColor="rgba(255,255,255,0.16)"
+                      contentFit="cover"
+                      style={{ width: 148, height: 172 }}
+                    />
                   </View>
                 </View>
-                <AppImage
-                  placeholderIcon="tag"
-                  placeholderIconTone="inverse"
-                  placeholderColor="rgba(255,255,255,0.16)"
-                  style={{ width: 88, height: 88, borderRadius: 20 }}
+              ))}
+            </ScrollView>
+            {/* Dots */}
+            <View className="flex-row justify-center gap-1 pt-sm">
+              {heroSlides.map((slide, index) => (
+                <View
+                  key={slide.key}
+                  className={`h-2 rounded-full ${
+                    index === heroIndex ? "w-5 bg-primary" : "w-2 bg-outline-variant"
+                  }`}
                 />
-              </View>
-            </PressableScale>
+              ))}
+            </View>
           </Animated.View>
 
-          {/* Category grid */}
+          {/* Our Services */}
           <Animated.View
             entering={FadeInDown.duration(350).delay(80)}
             className="px-mobile-margin pt-lg"
           >
             <View className="flex-row items-center justify-between pb-md">
-              <Text variant="headlineSm">{t("common:home.categoriesTitle")}</Text>
+              <Text variant="headlineSm">{t("common:home.ourServices")}</Text>
               <PressableScale onPress={() => router.push("/categories")} scaleTo={0.96}>
-                <View className="flex-row items-center gap-1">
-                  <Text variant="caption" tone="primary">
-                    {t("common:allServices.seeAll")}
-                  </Text>
-                  <Icon name="chevronRight" size={14} tone="primary" />
-                </View>
+                <Text variant="caption" tone="primary">
+                  {t("common:home.viewAll")}
+                </Text>
               </PressableScale>
             </View>
-            {services.length === 0 ? (
-              <EmptyState icon="search" title={t("common:empty.title")} />
-            ) : (
-              <View className="flex-row flex-wrap justify-between gap-y-md">
-                {gridServices.map((service) => (
-                  <CategoryTile
-                    key={service.id}
-                    service={service}
-                    onPress={() => openService(service.id)}
-                  />
-                ))}
-              </View>
-            )}
+            <View className="flex-row flex-wrap justify-between gap-y-md">
+              {gridServices.map((service) => (
+                <PressableScale
+                  key={service.id}
+                  onPress={() => openService(service.id)}
+                  accessibilityLabel={service.name}
+                  scaleTo={0.95}
+                  style={{ width: "23%" }}
+                >
+                  <View className="items-center gap-1">
+                    <View
+                      className="w-full items-center justify-center rounded-2xl p-2"
+                      style={{ aspectRatio: 1, backgroundColor: CREAM }}
+                    >
+                      <AppImage
+                        source={serviceImage(service.slug)}
+                        placeholderIcon={serviceIcon(service.name)}
+                        placeholderColor="transparent"
+                        contentFit="contain"
+                        style={{ width: "88%", height: "88%" }}
+                      />
+                    </View>
+                    <Text
+                      variant="caption"
+                      numberOfLines={2}
+                      className="text-center"
+                      style={{ minHeight: 32 }}
+                    >
+                      {service.name ?? ""}
+                    </Text>
+                  </View>
+                </PressableScale>
+              ))}
+            </View>
           </Animated.View>
 
-          {/* Popular services */}
-          {popularServices.length > 0 ? (
-            <Animated.View
-              entering={FadeInDown.duration(350).delay(160)}
-              className="gap-md px-mobile-margin pt-lg"
+          {/* Limited-time offer */}
+          <Animated.View
+            entering={FadeInDown.duration(350).delay(160)}
+            className="px-mobile-margin pt-lg"
+          >
+            <View className="flex-row items-center gap-md rounded-card bg-primary-container p-md">
+              <OfferBadge percent="20%" label="OFF" size={84} />
+              <View className="flex-1 gap-1">
+                <Text variant="label">{t("common:home.offerTitle")}</Text>
+                <Text variant="caption" tone="muted">
+                  {t("common:home.offerSubtitle")}
+                </Text>
+                <PressableScale
+                  onPress={() => router.push("/categories")}
+                  accessibilityLabel={t("common:nav.bookNow")}
+                  scaleTo={0.96}
+                >
+                  <View className="mt-1 self-start rounded-full bg-primary px-lg py-2">
+                    <Text variant="caption" tone="inverse">
+                      {t("common:nav.bookNow")}
+                    </Text>
+                  </View>
+                </PressableScale>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Trust row */}
+          <Animated.View
+            entering={FadeInDown.duration(350).delay(220)}
+            className="px-mobile-margin pt-md"
+          >
+            <View
+              className="flex-row items-center rounded-card p-md"
+              style={{ backgroundColor: CREAM }}
             >
-              <Text variant="headlineSm">{t("common:home.popularTitle")}</Text>
-              {popularServices.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  onPress={() => openService(service.id)}
-                />
+              {trust.map((item, index) => (
+                <View key={item.label} className="flex-1 flex-row items-center">
+                  {index > 0 ? <View className="h-8 w-px bg-outline-variant" /> : null}
+                  <View className="flex-1 flex-row items-center justify-center gap-1">
+                    <Icon name={item.icon} tone="primary" size={17} />
+                    <Text variant="caption" numberOfLines={2} className="flex-shrink text-[11px]">
+                      {item.label}
+                    </Text>
+                  </View>
+                </View>
               ))}
-            </Animated.View>
-          ) : null}
+            </View>
+          </Animated.View>
         </ScrollView>
       )}
     </Screen>

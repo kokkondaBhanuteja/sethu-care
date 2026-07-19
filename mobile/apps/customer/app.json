@@ -4,7 +4,7 @@
     "slug": "sethu-care-customer",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon-sethu-clean.png",
     "scheme": "sethucare",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -21,10 +21,8 @@
     "android": {
       "package": "in.sethucare.customer",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#1d55e0",
+        "foregroundImage": "./assets/images/icon-sethu-fg.png"
       },
       "predictiveBackGestureEnabled": false
     },

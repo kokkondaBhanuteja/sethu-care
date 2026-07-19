@@ -61,6 +61,9 @@ export type { IllustrationProps, IllustrationName } from "./components/Illustrat
 export { AppImage } from "./components/AppImage";
 export type { AppImageProps } from "./components/AppImage";
 
+export { OfferBadge } from "./components/OfferBadge";
+export type { OfferBadgeProps } from "./components/OfferBadge";
+
 export { Badge } from "./components/Badge";
 export type { BadgeProps, BadgeTone } from "./components/Badge";
 

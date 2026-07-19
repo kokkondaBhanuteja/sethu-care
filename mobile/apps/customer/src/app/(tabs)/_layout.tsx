@@ -1,37 +1,17 @@
-import { NativeTabs } from "expo-router/unstable-native-tabs";
-import { color } from "@sethu/tokens";
-import { useTranslation } from "@sethu/i18n";
+import { Tabs } from "expo-router/js-tabs";
 
-// Native bottom tabs — the platform tab bar (iOS 26 Liquid Glass pill on iOS, Material bar on Android)
-// via expo-router's NativeTabs, tinted with the brand blue. Icons are SF Symbols on iOS (`sf`) and
-// Material glyphs on Android (`md`). Detail routes (service/[id], booking/[id], book/confirm,
-// categories) stack over the tabs via the root Stack.
+import { CustomTabBar } from "@/components/custom-tab-bar";
+
+// Bottom tabs with a custom floating pill bar + centre "Book Now" FAB (see CustomTabBar). We render
+// our own bar instead of the native one so a primary action can sit in the middle. Each tab's screen
+// keeps its own native Stack (large titles / glass headers) via its folder _layout.
 export default function TabsLayout() {
-  const { t } = useTranslation("common");
   return (
-    <NativeTabs tintColor={color.primary}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Icon sf={{ default: "house", selected: "house.fill" }} md="home" />
-        <NativeTabs.Trigger.Label>{t("nav.home")}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="bookings">
-        <NativeTabs.Trigger.Icon sf="calendar" md="event" />
-        <NativeTabs.Trigger.Label>{t("nav.bookings")}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="offers">
-        <NativeTabs.Trigger.Icon sf={{ default: "tag", selected: "tag.fill" }} md="local_offer" />
-        <NativeTabs.Trigger.Label>{t("nav.offers")}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="account">
-        <NativeTabs.Trigger.Icon
-          sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }}
-          md="person"
-        />
-        <NativeTabs.Trigger.Label>{t("nav.profile")}</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="bookings" />
+      <Tabs.Screen name="offers" />
+      <Tabs.Screen name="account" />
+    </Tabs>
   );
 }
