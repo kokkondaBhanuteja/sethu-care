@@ -12,6 +12,7 @@ const (
 	SQLStateForeignKeyViolation = "23503"
 	SQLStateUniqueViolation     = "23505"
 	SQLStateCheckViolation      = "23514"
+	SQLStateExclusionViolation  = "23P01"
 )
 
 // IsSQLState reports whether err is (or wraps) a Postgres error with the given SQLSTATE code.

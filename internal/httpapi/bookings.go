@@ -6,6 +6,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
@@ -25,11 +27,12 @@ type Handler struct {
 	bookings     *booking.Service
 	verification *verification.Service
 	reviews      *reviews.Service
+	flow         *flow.Controller // optional; backs Idempotency-Key dedupe on create
 	log          *slog.Logger
 }
 
-func New(bookings *booking.Service, verifier *verification.Service, reviewer *reviews.Service, log *slog.Logger) *Handler {
-	return &Handler{bookings: bookings, verification: verifier, reviews: reviewer, log: log}
+func New(bookings *booking.Service, verifier *verification.Service, reviewer *reviews.Service, control *flow.Controller, log *slog.Logger) *Handler {
+	return &Handler{bookings: bookings, verification: verifier, reviews: reviewer, flow: control, log: log}
 }
 
 // RegisterHuma mounts the booking operations. The authorization rule for each is declared right
@@ -94,7 +97,10 @@ type createRequest struct {
 }
 
 type createBookingInput struct {
-	Body createRequest
+	// IdempotencyKey lets a client safely retry (or double-tap) create without making two bookings:
+	// the same key returns the first result. Optional.
+	IdempotencyKey string `header:"Idempotency-Key"`
+	Body           createRequest
 }
 
 func (handler *Handler) create(ctx context.Context, input *createBookingInput) (*bookingOutput, error) {
@@ -102,6 +108,27 @@ func (handler *Handler) create(ctx context.Context, input *createBookingInput) (
 	if !ok {
 		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
 	}
+
+	// Idempotency: dedupe retries/double-taps. The key is scoped to the caller so one user's key can
+	// never return another's booking. A lock serialises simultaneous requests with the same key; the
+	// cache short-circuits sequential ones. Degrades cleanly when Redis is absent (no dedupe).
+	idemKey := ""
+	if input.IdempotencyKey != "" && handler.flow != nil {
+		idemKey = "booking:" + caller.ID.String() + ":" + input.IdempotencyKey
+		release, _, lockErr := handler.flow.LockWait(ctx, idemKey, 10*time.Second, 3*time.Second)
+		if lockErr != nil {
+			return nil, toHumaError(handler.log, lockErr)
+		}
+		defer release()
+		cached, found, recallErr := handler.flow.Recall(ctx, idemKey)
+		if recallErr == nil && found {
+			var resp bookingResponse
+			if err := json.Unmarshal([]byte(cached), &resp); err == nil {
+				return &bookingOutput{Body: resp}, nil
+			}
+		}
+	}
+
 	created, err := handler.bookings.Create(ctx, booking.CreateInput{
 		CustomerID: caller.ID, // the booker is the authenticated caller, never a body field
 		AddressID:  input.Body.AddressID,
@@ -111,13 +138,21 @@ func (handler *Handler) create(ctx context.Context, input *createBookingInput) (
 	if err != nil {
 		return nil, toHumaError(handler.log, err)
 	}
-	return &bookingOutput{Body: bookingResponse{
+	resp := bookingResponse{
 		BookingID:        created.BookingID,
 		OrderID:          created.OrderID,
 		State:            created.State.String(),
 		QuotedTotalPaise: created.QuotedTotal.Paise(),
 		AllowedActions:   actionStrings(booking.AllowedActions(created.State)),
-	}}, nil
+	}
+	if idemKey != "" {
+		if encoded, marshalErr := json.Marshal(resp); marshalErr == nil {
+			if err := handler.flow.Remember(ctx, idemKey, string(encoded), 10*time.Minute); err != nil {
+				handler.log.Error("caching idempotency result", "err", err)
+			}
+		}
+	}
+	return &bookingOutput{Body: resp}, nil
 }
 
 // --- GET /bookings/{id} -----------------------------------------------------

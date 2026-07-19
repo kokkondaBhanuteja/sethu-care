@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
@@ -48,6 +50,21 @@ func (conflict *ConflictError) Error() string {
 	return fmt.Sprintf("booking %s was modified concurrently; %s did not apply", conflict.BookingID, conflict.Action)
 }
 
+// ScheduleConflictError means the assignment would double-book the technician — their
+// [scheduled_for, scheduled_end) window overlaps another live job. This is the cross-row
+// invariant that `version` cannot see (two different bookings, two different versions); the
+// database's bookings_no_double_book EXCLUDE constraint (SQLSTATE 23P01) is the one that
+// catches it. The HTTP layer turns this into a 409 — dispatch should pick a different
+// technician or slot.
+type ScheduleConflictError struct {
+	BookingID    uuid.UUID
+	TechnicianID *uuid.UUID
+}
+
+func (conflict *ScheduleConflictError) Error() string {
+	return fmt.Sprintf("technician is already booked for that time window; booking %s not assigned", conflict.BookingID)
+}
+
 // ForbiddenError means the actor is not allowed to perform this action — either their role
 // cannot do it at all, or it is not their booking to act on. The HTTP layer turns this into
 // a 403.
@@ -65,10 +82,24 @@ func (forbidden *ForbiddenError) Error() string {
 // §4.2): no other module writes these rows.
 type Service struct {
 	pool *pgxpool.Pool
+	flow *flow.Controller // optional; serialises ASSIGN per technician. nil = no locking.
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool}
+// Option configures a Service.
+type Option func(*Service)
+
+// WithFlow gives the service a Redis flow controller so ASSIGN serialises per technician (cutting
+// contention on the no-double-book constraint). Optional — without it, the constraint alone guards.
+func WithFlow(controller *flow.Controller) Option {
+	return func(service *Service) { service.flow = controller }
+}
+
+func NewService(pool *pgxpool.Pool, opts ...Option) *Service {
+	service := &Service{pool: pool}
+	for _, opt := range opts {
+		opt(service)
+	}
+	return service
 }
 
 // CreateInput is a request to place a booking.
@@ -135,6 +166,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 			CustomerID:       in.CustomerID,
 			AddressID:        in.AddressID,
 			QuotedTotalPaise: lineTotal,
+			DurationMinutes:  variant.EstimatedMinutes,
 		})
 		if err != nil {
 			return fmt.Errorf("creating booking: %w", err)
@@ -180,6 +212,12 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 		return Created{}, err
 	}
 	return out, nil
+}
+
+// auditBookingState is the before/after snapshot recorded in audit_logs for a booking transition.
+type auditBookingState struct {
+	State        string     `json:"state"`
+	TechnicianID *uuid.UUID `json:"technician_id,omitempty"`
 }
 
 type createdEvent struct {
@@ -390,6 +428,18 @@ func authorize(in TransitionInput, bookingRow sqlcgen.GetBookingRow, action Acti
 func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action Action, in TransitionInput) (State, error) {
 	var newState State
 
+	// Serialise ASSIGN per technician so two dispatches for the same tech don't both do the work
+	// and race to the no-double-book constraint. Best-effort: a lock timeout or Redis being absent
+	// just means we proceed — the EXCLUDE constraint is the actual guarantee, so the loser still
+	// gets a clean ScheduleConflictError. Held only across this one transition.
+	if action == ActionAssign && in.AssignTechnician != nil && service.flow != nil {
+		release, _, err := service.flow.LockWait(ctx, "assign:tech:"+in.AssignTechnician.String(), 5*time.Second, 2*time.Second)
+		if err != nil {
+			return "", err
+		}
+		defer release()
+	}
+
 	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
 		queries := sqlcgen.New(tx)
 
@@ -436,6 +486,11 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			ExpectedVersion: bookingRow.Version,
 		})
 		if err != nil {
+			// The cross-row schedule guard: assigning this technician would overlap another live
+			// job (bookings_no_double_book). Surface it as a clean 409, not a 500.
+			if storage.IsSQLState(err, storage.SQLStateExclusionViolation) {
+				return &ScheduleConflictError{BookingID: bookingID, TechnicianID: in.AssignTechnician}
+			}
 			return fmt.Errorf("applying transition: %w", err)
 		}
 		if rows == 0 {
@@ -452,6 +507,20 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			Meta:        []byte("{}"),
 		}); err != nil {
 			return fmt.Errorf("writing booking event: %w", err)
+		}
+
+		// AUDIT, same transaction: who moved this booking, from where to where. booking_events is
+		// the state ledger; this adds the actor + before/after in the one place every business
+		// mutation is audited. Actor nil (an outbox-driven transition) is recorded as a system actor.
+		if err := audit.Record(ctx, tx, audit.Entry{
+			ActorUserID: in.Actor,
+			Action:      string(action),
+			EntityType:  "booking",
+			EntityID:    bookingID,
+			Before:      auditBookingState{State: string(from)},
+			After:       auditBookingState{State: string(to), TechnicianID: in.AssignTechnician},
+		}); err != nil {
+			return fmt.Errorf("writing audit log: %w", err)
 		}
 
 		// THE OUTBOX. Only transitions with a published event (§8) get a row. The event

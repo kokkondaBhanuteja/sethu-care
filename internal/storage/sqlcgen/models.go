@@ -25,6 +25,22 @@ type Address struct {
 	Version   int64
 }
 
+type AuditLog struct {
+	ID            uuid.UUID
+	ActorUserID   *uuid.UUID
+	ActorKind     string
+	Action        string
+	EntityType    string
+	EntityID      uuid.UUID
+	Before        []byte
+	After         []byte
+	CorrelationID *uuid.UUID
+	IpAddress     *string
+	UserAgent     *string
+	Metadata      []byte
+	CreatedAt     pgtype.Timestamptz
+}
+
 type Booking struct {
 	ID               uuid.UUID
 	OrderID          uuid.UUID
@@ -38,6 +54,8 @@ type Booking struct {
 	CreatedAt        pgtype.Timestamptz
 	UpdatedAt        pgtype.Timestamptz
 	Version          int64
+	DurationMinutes  int32
+	ScheduledEnd     pgtype.Timestamptz
 }
 
 type BookingEvent struct {
@@ -147,6 +165,19 @@ type Payment struct {
 	CreatedAt      pgtype.Timestamptz
 	CapturedAt     pgtype.Timestamptz
 	PaymentLinkUrl string
+}
+
+type PaymentGatewayEvent struct {
+	ID             uuid.UUID
+	Provider       string
+	EventType      string
+	GatewayEventID string
+	Reference      string
+	ProviderRef    string
+	Payload        []byte
+	Status         string
+	ProcessedAt    pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
 }
 
 type ProductModel struct {

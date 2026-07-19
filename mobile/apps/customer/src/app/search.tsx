@@ -81,7 +81,9 @@ export default function Search() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           ItemSeparatorComponent={() => <View className="h-sm" />}
-          ListEmptyComponent={<EmptyState icon="search" title={t("search.noResults", { query })} />}
+          ListEmptyComponent={
+            <EmptyState illustration="noResults" title={t("search.noResults", { query })} />
+          }
           renderItem={({ item }) => (
             <PressableScale onPress={() => open(item)} accessibilityLabel={item.name}>
               <Card padded={false} className="flex-row items-center gap-md p-sm">

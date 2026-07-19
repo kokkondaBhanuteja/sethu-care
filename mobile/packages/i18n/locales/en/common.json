@@ -16,6 +16,14 @@
     "network": "No internet connection.",
     "notFound": "Not found."
   },
+  "offline": {
+    "banner": "You're offline. Check your connection."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The page you're looking for doesn't exist or has moved.",
+    "home": "Go home"
+  },
   "empty": {
     "title": "Nothing here yet"
   },
@@ -26,7 +34,8 @@
     "jobs": "Jobs",
     "earnings": "Earnings",
     "offers": "Offers",
-    "profile": "Profile"
+    "profile": "Profile",
+    "bookNow": "Book Now"
   },
   "account": {
     "title": "Account",
@@ -49,7 +58,18 @@
     "member": "SETHU+",
     "promoTitle": "Up to 30% off your first booking",
     "promoSubtitle": "Background-verified pros at your doorstep",
-    "promoCta": "Book now"
+    "promoCta": "Book now",
+    "ourServices": "Our Services",
+    "viewAll": "View all",
+    "hero1": "Reliable home services, just a tap away",
+    "hero2": "Background-verified pros at your doorstep",
+    "hero3": "Book in minutes, relax at home",
+    "offerBadge": "20% OFF",
+    "offerTitle": "Limited Time Offer!",
+    "offerSubtitle": "Get 20% off on your first service.",
+    "trustVerified": "Trusted Technicians",
+    "trustWarranty": "1 Month Warranty",
+    "trustSupport": "24/7 Support"
   },
   "address": {
     "add": "Add address",
@@ -83,7 +103,12 @@
     "help": "Help & support",
     "statBookings": "Bookings",
     "statRating": "Rating",
-    "statReviews": "Reviews"
+    "statReviews": "Reviews",
+    "plusActive": "SETHU+ Member",
+    "plusPerks": "Member discounts & priority support",
+    "manage": "Manage",
+    "joinPlus": "Join SETHU+",
+    "joinPlusHint": "Unlock discounts & priority support"
   },
   "search": {
     "placeholder": "Search services",

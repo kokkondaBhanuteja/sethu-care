@@ -9,6 +9,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
@@ -38,6 +39,7 @@ type Dependencies struct {
 	UPIVPA       string
 	UPIPayee     string
 	DevEchoOTP   bool
+	Flow         *flow.Controller
 	Logger       *slog.Logger
 }
 
@@ -57,5 +59,5 @@ func RegisterAll(api huma.API, deps Dependencies) {
 	NewPaymentHandler(deps.Ledger, deps.Razorpay, deps.UPIVPA, deps.UPIPayee, deps.Logger).RegisterHuma(api)
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	NewLocationHandler(deps.Identity, deps.Verification, deps.Logger).RegisterHuma(api)
-	New(deps.Booking, deps.Verification, deps.Reviews, deps.Logger).RegisterHuma(api)
+	New(deps.Booking, deps.Verification, deps.Reviews, deps.Flow, deps.Logger).RegisterHuma(api)
 }

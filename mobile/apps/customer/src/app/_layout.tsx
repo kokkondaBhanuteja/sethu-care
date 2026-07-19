@@ -1,6 +1,6 @@
 import "../global.css";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,7 +20,7 @@ import { configureApiClient } from "@sethu/api-client";
 import { getSessionToken, useSession, usePreferences } from "@sethu/core";
 import { color } from "@sethu/tokens";
 
-import { API_BASE_URL } from "@/lib/config";
+import { API_BASE_URL, resolveApiBaseUrl } from "@/lib/config";
 import { initAppI18n } from "@/lib/i18n";
 import { queryClient } from "@/lib/query-client";
 
@@ -120,11 +120,27 @@ export default function RootLayout() {
     Inter_800ExtraBold,
   });
 
+  // Pick the backend before rendering: prefer the local server, fall back to ngrok. Gating the app
+  // on this means the first API call already uses the right base URL (no mid-flight switch/race).
+  const [apiReady, setApiReady] = useState(false);
   useEffect(() => {
-    if (fontsLoaded) void SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    let active = true;
+    void resolveApiBaseUrl().then((baseUrl) => {
+      if (!active) return;
+      configureApiClient({ baseUrl, getToken: getSessionToken });
+      setApiReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  if (!fontsLoaded) return null;
+  const ready = fontsLoaded && apiReady;
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

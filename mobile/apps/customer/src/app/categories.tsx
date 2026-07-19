@@ -14,17 +14,19 @@ import {
 import { formatPaise } from "@sethu/domain";
 import { useTranslation } from "@sethu/i18n";
 import { useServices, serviceImage, serviceIcon, sampleRating } from "@/features/catalog";
+import { errorIllustration } from "@/lib/error-illustration";
 
 // The full service catalogue as a vertical list (reached from the home "See all"). Each row: a clay
 // service icon on a soft-blue tile, name, tagline, starting price and rating → the service detail.
 export default function Categories() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useServices();
+  const { data, isLoading, isError, error, refetch } = useServices();
   const services = data?.services ?? [];
 
   const listEmpty = isError ? (
     <ErrorState
+      illustration={errorIllustration(error)}
       title={t("common:errors.generic")}
       retryLabel={t("common:actions.retry")}
       onRetry={() => void refetch()}

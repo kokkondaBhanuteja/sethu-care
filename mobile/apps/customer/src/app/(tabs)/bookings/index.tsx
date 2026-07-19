@@ -15,6 +15,7 @@ import {
 } from "@sethu/ui";
 import { useTranslation } from "@sethu/i18n";
 import { useMyBookings, TERMINAL_STATES } from "@/features/booking";
+import { errorIllustration } from "@/lib/error-illustration";
 
 type Filter = "all" | "active" | "completed";
 const FILTERS: Filter[] = ["all", "active", "completed"];
@@ -45,7 +46,7 @@ function formatSchedule(iso?: string): string {
 export default function Bookings() {
   const { t } = useTranslation(["booking", "common"]);
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useMyBookings();
+  const { data, isLoading, isError, error, refetch } = useMyBookings();
   const [filter, setFilter] = useState<Filter>("all");
   const bookings = data?.bookings ?? [];
 
@@ -81,6 +82,7 @@ export default function Bookings() {
 
   const listEmpty = isError ? (
     <ErrorState
+      illustration={errorIllustration(error)}
       title={t("common:errors.generic")}
       retryLabel={t("common:actions.retry")}
       onRetry={() => void refetch()}
