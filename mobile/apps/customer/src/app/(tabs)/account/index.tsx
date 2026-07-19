@@ -3,8 +3,18 @@ import { Alert, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteAccountMutation } from "@sethu/api-client";
-import { useSession } from "@sethu/core";
-import { Screen, Text, Button, Card, Avatar, Icon, PressableScale, type IconName } from "@sethu/ui";
+import { useSession, usePreferences } from "@sethu/core";
+import {
+  Screen,
+  Text,
+  Button,
+  Card,
+  Avatar,
+  Icon,
+  Badge,
+  PressableScale,
+  type IconName,
+} from "@sethu/ui";
 import { useTranslation, type SupportedLanguage } from "@sethu/i18n";
 
 import { LanguageSheet } from "@/features/settings/language-sheet";
@@ -69,6 +79,7 @@ export default function Account() {
   const signOut = useSession((state) => state.signOut);
   const { mutate, isPending } = useMutation(deleteAccountMutation());
   const { data: bookingsData } = useMyBookings();
+  const sethuPlus = usePreferences((state) => state.sethuPlus);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
 
@@ -106,13 +117,43 @@ export default function Account() {
         <View className="gap-lg">
           <Card className="flex-row items-center gap-md">
             <Avatar name={user?.name} size={56} />
-            <View className="flex-1">
+            <View className="flex-1 gap-1">
               <Text variant="label">{user?.name || t("common:account.guest")}</Text>
-              <Text variant="caption" tone="muted">
-                {t("common:appName")}
-              </Text>
+              {sethuPlus ? (
+                <Badge label={t("common:profile.plusActive")} tone="accent" />
+              ) : (
+                <Text variant="caption" tone="muted">
+                  {t("common:appName")}
+                </Text>
+              )}
             </View>
           </Card>
+
+          {/* SETHU+ membership — reflects the plan chosen on the Offers tab. */}
+          <PressableScale onPress={() => router.push("/offers")} scaleTo={0.98}>
+            <View
+              className={`flex-row items-center gap-md rounded-card p-md ${
+                sethuPlus
+                  ? "bg-primary"
+                  : "border border-outline-variant bg-surface-container-lowest"
+              }`}
+            >
+              <Icon name="star" tone={sethuPlus ? "inverse" : "primary"} weight="fill" size={24} />
+              <View className="flex-1">
+                <Text variant="label" tone={sethuPlus ? "inverse" : "primary"}>
+                  {sethuPlus ? t("common:profile.plusActive") : t("common:profile.joinPlus")}
+                </Text>
+                <Text
+                  variant="caption"
+                  tone={sethuPlus ? "inverse" : "muted"}
+                  className={sethuPlus ? "opacity-90" : ""}
+                >
+                  {sethuPlus ? t("common:profile.plusPerks") : t("common:profile.joinPlusHint")}
+                </Text>
+              </View>
+              <Icon name="chevronRight" size={16} tone={sethuPlus ? "inverse" : "muted"} />
+            </View>
+          </PressableScale>
 
           {/* Stats */}
           <View className="flex-row gap-sm">
@@ -151,14 +192,18 @@ export default function Account() {
               onPress={goToSignIn}
               fullWidth
             />
-            <Button
-              label={t("auth:account.delete")}
-              variant="destructive"
-              icon="delete"
-              loading={isPending}
-              onPress={confirmDelete}
-              fullWidth
-            />
+            {/* Active SETHU+ members can't delete while subscribed — cancel membership first (real
+                product behaviour). Shown only to non-members. */}
+            {!sethuPlus ? (
+              <Button
+                label={t("auth:account.delete")}
+                variant="destructive"
+                icon="delete"
+                loading={isPending}
+                onPress={confirmDelete}
+                fullWidth
+              />
+            ) : null}
           </View>
         </View>
       </ScrollView>

@@ -103,7 +103,12 @@
     "help": "सहायता",
     "statBookings": "बुकिंग",
     "statRating": "रेटिंग",
-    "statReviews": "समीक्षाएँ"
+    "statReviews": "समीक्षाएँ",
+    "plusActive": "SETHU+ सदस्य",
+    "plusPerks": "सदस्य छूट और प्राथमिकता सहायता",
+    "manage": "प्रबंधित करें",
+    "joinPlus": "SETHU+ जॉइन करें",
+    "joinPlusHint": "छूट और प्राथमिकता सहायता अनलॉक करें"
   },
   "search": {
     "placeholder": "सेवाएँ खोजें",

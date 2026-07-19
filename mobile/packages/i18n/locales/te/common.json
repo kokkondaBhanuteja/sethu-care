@@ -103,7 +103,12 @@
     "help": "సహాయం",
     "statBookings": "బుకింగ్‌లు",
     "statRating": "రేటింగ్",
-    "statReviews": "సమీక్షలు"
+    "statReviews": "సమీక్షలు",
+    "plusActive": "SETHU+ సభ్యుడు",
+    "plusPerks": "సభ్య తగ్గింపులు & ప్రాధాన్య మద్దతు",
+    "manage": "నిర్వహించు",
+    "joinPlus": "SETHU+ చేరండి",
+    "joinPlusHint": "తగ్గింపులు & ప్రాధాన్య మద్దతును అన్‌లాక్ చేయండి"
   },
   "search": {
     "placeholder": "సేవలను వెతకండి",

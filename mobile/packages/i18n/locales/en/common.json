@@ -103,7 +103,12 @@
     "help": "Help & support",
     "statBookings": "Bookings",
     "statRating": "Rating",
-    "statReviews": "Reviews"
+    "statReviews": "Reviews",
+    "plusActive": "SETHU+ Member",
+    "plusPerks": "Member discounts & priority support",
+    "manage": "Manage",
+    "joinPlus": "Join SETHU+",
+    "joinPlusHint": "Unlock discounts & priority support"
   },
   "search": {
     "placeholder": "Search services",
