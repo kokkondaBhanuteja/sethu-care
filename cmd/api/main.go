@@ -27,6 +27,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/config"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/gateway"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/httpapi"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
@@ -176,27 +177,42 @@ func run() error {
 		logger.Info("Razorpay enabled for payment collection")
 	}
 
+	// The Redis flow layer (locks, slot holds, rate limiting). A connect failure is NOT fatal — the
+	// database is the real guard, so we log and run degraded (every primitive answers permissively).
+	flowControl, err := flow.New(rootContext, settings.RedisURL)
+	if err != nil {
+		logger.Warn("Redis unavailable — running without the flow layer (DB remains the guard)", "err", err)
+		flowControl, _ = flow.New(rootContext, "")
+	}
+	defer func() { _ = flowControl.Close() }()
+	logger.Info("flow layer", "redis", flowControl.Enabled())
+
+	var router http.Handler = buildRouter(routerDependencies{
+		pool:                pool,
+		bookingService:      bookingService,
+		verificationService: verificationService,
+		reviewService:       reviewService,
+		ledgerService:       ledgerService,
+		identityService:     identityService,
+		catalogService:      catalogService,
+		addressService:      addressService,
+		opsService:          opsService,
+		signer:              signer,
+		otpSender:           otpSender,
+		devEchoOTP:          settings.DevEchoOTP,
+		upiVPA:              settings.UPIVirtualAddress,
+		upiPayee:            settings.UPIPayeeName,
+		cloudinary:          media.NewCloudinary(settings.CloudinaryCloudName, settings.CloudinaryAPIKey, settings.CloudinaryAPISecret),
+		razorpay:            razorpayClient,
+		logger:              logger,
+	})
+	// Per-IP burst protection. A generous ceiling that only sheds true floods; fails open on a
+	// Redis blip. Health and the signature-authenticated webhook are exempt (never throttle those).
+	router = httpapi.RateLimit(flowControl, 240, time.Minute, router)
+
 	server := &http.Server{
-		Addr: settings.ListenAddr,
-		Handler: buildRouter(routerDependencies{
-			pool:                pool,
-			bookingService:      bookingService,
-			verificationService: verificationService,
-			reviewService:       reviewService,
-			ledgerService:       ledgerService,
-			identityService:     identityService,
-			catalogService:      catalogService,
-			addressService:      addressService,
-			opsService:          opsService,
-			signer:              signer,
-			otpSender:           otpSender,
-			devEchoOTP:          settings.DevEchoOTP,
-			upiVPA:              settings.UPIVirtualAddress,
-			upiPayee:            settings.UPIPayeeName,
-			cloudinary:          media.NewCloudinary(settings.CloudinaryCloudName, settings.CloudinaryAPIKey, settings.CloudinaryAPISecret),
-			razorpay:            razorpayClient,
-			logger:              logger,
-		}),
+		Addr:              settings.ListenAddr,
+		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

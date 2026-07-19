@@ -1,0 +1,115 @@
+// Package flow is the Redis-backed request-flow layer: distributed locks, slot holds, and rate
+// limiting. It is deliberately a FLOW layer, not a correctness layer — the database (the EXCLUDE
+// constraint, the version compare-and-swap, the idempotent capture) is what actually guarantees no
+// double-booking and no double-charge. So every primitive here DEGRADES PERMISSIVELY when Redis is
+// absent or blips: a lock is "acquired", a request is "allowed", a slot is "reserved". The service
+// runs, correctly, with Redis down — just with less smoothing under contention.
+package flow
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
+
+// Controller wraps a Redis client. A nil client (New called with an empty URL, or a connect failure
+// the caller chose to tolerate) means "disabled" — every method returns the permissive answer.
+type Controller struct{ rdb *redis.Client }
+
+// New connects and pings Redis. An empty url returns a disabled controller (no error). A connect
+// error is returned so the caller can decide whether to fail boot or run degraded.
+func New(ctx context.Context, url string) (*Controller, error) {
+	if url == "" {
+		return &Controller{}, nil
+	}
+	opt, err := redis.ParseURL(url)
+	if err != nil {
+		return nil, err
+	}
+	rdb := redis.NewClient(opt)
+	pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		_ = rdb.Close()
+		return nil, err
+	}
+	return &Controller{rdb: rdb}, nil
+}
+
+// Enabled reports whether a live Redis backs this controller.
+func (controller *Controller) Enabled() bool { return controller != nil && controller.rdb != nil }
+
+// Close releases the Redis connection pool.
+func (controller *Controller) Close() error {
+	if controller.Enabled() {
+		return controller.rdb.Close()
+	}
+	return nil
+}
+
+// releaseScript frees a lock only if we still own it (compare-and-delete), so a lock that already
+// expired and was re-taken by someone else is never stolen back.
+var releaseScript = redis.NewScript(
+	`if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`)
+
+// Lock takes a short-lived distributed lock. release() frees it (a no-op if we already lost it);
+// acquired=false means someone else holds it. Disabled Redis always acquires — the DB constraint is
+// the real guard, so this only cuts contention on the hot path.
+func (controller *Controller) Lock(ctx context.Context, key string, ttl time.Duration) (release func(), acquired bool, err error) {
+	if !controller.Enabled() {
+		return func() {}, true, nil
+	}
+	token := randomToken()
+	ok, err := controller.rdb.SetNX(ctx, "lock:"+key, token, ttl).Result()
+	if err != nil || !ok {
+		return func() {}, ok, err
+	}
+	return func() {
+		relCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_ = releaseScript.Run(relCtx, controller.rdb, []string{"lock:" + key}, token).Err()
+	}, true, nil
+}
+
+// Allow reports whether key is within limit hits per window (fixed-window counter via INCR+EXPIRE).
+// It FAILS OPEN: a Redis error allows the request, so a Redis blip never takes the API down.
+func (controller *Controller) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, error) {
+	if !controller.Enabled() {
+		return true, nil
+	}
+	rkey := "rl:" + key
+	count, err := controller.rdb.Incr(ctx, rkey).Result()
+	if err != nil {
+		return true, err
+	}
+	if count == 1 {
+		_ = controller.rdb.Expire(ctx, rkey, window).Err()
+	}
+	return count <= int64(limit), nil
+}
+
+// Reserve holds key for ttl if it is free (SET NX). false means it is already held. Disabled Redis
+// always reserves. Use for the slot-hold during checkout.
+func (controller *Controller) Reserve(ctx context.Context, key, value string, ttl time.Duration) (bool, error) {
+	if !controller.Enabled() {
+		return true, nil
+	}
+	return controller.rdb.SetNX(ctx, "hold:"+key, value, ttl).Result()
+}
+
+// Release frees a hold early (otherwise it expires on its TTL).
+func (controller *Controller) Release(ctx context.Context, key string) error {
+	if !controller.Enabled() {
+		return nil
+	}
+	return controller.rdb.Del(ctx, "hold:"+key).Err()
+}
+
+func randomToken() string {
+	buffer := make([]byte, 16)
+	_, _ = rand.Read(buffer)
+	return hex.EncodeToString(buffer)
+}

@@ -19,7 +19,10 @@ const defaultDevJWTSecret = "sethu-care-insecure-dev-secret-change-me"
 // Config is the fully resolved configuration for one run of the API.
 type Config struct {
 	DatabaseURL string
-	ListenAddr  string
+	// RedisURL backs the flow layer (locks, slot holds, rate limiting). Empty disables it — the
+	// service still runs correctly (the database is the real guard), just without smoothing.
+	RedisURL   string
+	ListenAddr string
 
 	JWTSecret         string
 	JWTTTL            time.Duration
@@ -81,6 +84,7 @@ func Load() (Config, error) {
 
 	configuration := Config{
 		DatabaseURL:              stringEnv("DATABASE_URL", "postgres://sethu:sethu@127.0.0.1:5434/sethu?sslmode=disable"),
+		RedisURL:                 os.Getenv("REDIS_URL"),
 		ListenAddr:               stringEnv("ADDR", ":8080"),
 		JWTSecret:                jwtSecret,
 		JWTTTL:                   jwtTTL,
