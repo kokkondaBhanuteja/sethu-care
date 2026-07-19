@@ -117,6 +117,7 @@ export default function Home() {
 
       {isError ? (
         <ErrorState
+          illustration="serverError"
           title={t("common:errors.generic")}
           retryLabel={t("common:actions.retry")}
           onRetry={() => void refetch()}

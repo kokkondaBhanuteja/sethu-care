@@ -27,12 +27,12 @@ const ASSETS: Partial<Record<IllustrationName, number>> = {
   welcome: require("../../assets/illustrations/welcome.png"),
   emptyBookings: require("../../assets/illustrations/empty-bookings.png"),
   noResults: require("../../assets/illustrations/no-results.png"),
+  serverError: require("../../assets/illustrations/server-error.png"),
+  notFound: require("../../assets/illustrations/not-found.png"),
+  noConnection: require("../../assets/illustrations/no-connection.png"),
   // emptyJobs: require("../../assets/illustrations/empty-jobs.png"),
   // paymentSuccess: require("../../assets/illustrations/payment-success.png"),
   // jobComplete: require("../../assets/illustrations/job-complete.png"),
-  // serverError: require("../../assets/illustrations/server-error.png"),
-  // notFound: require("../../assets/illustrations/not-found.png"),
-  // noConnection: require("../../assets/illustrations/no-connection.png"),
 };
 
 // The stand-in glyph per slot until the real art is registered.
