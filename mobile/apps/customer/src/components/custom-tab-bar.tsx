@@ -1,4 +1,5 @@
 import { View, useWindowDimensions } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -90,13 +91,21 @@ export function CustomTabBar({ state, navigation }: TabBarProps) {
         scaleTo={0.9}
         style={{ flex: 1 }}
       >
-        <View className="items-center gap-1">
-          <Icon
-            name={TAB_ICON[name] ?? "home"}
-            size={22}
-            tone={focused ? "primary" : "muted"}
-            weight={focused ? "fill" : "regular"}
-          />
+        <View className="items-center gap-0.5">
+          <View className="h-8 w-14 items-center justify-center rounded-full">
+            {focused ? (
+              <Animated.View
+                entering={FadeIn.duration(180)}
+                className="absolute inset-0 rounded-full bg-primary-container"
+              />
+            ) : null}
+            <Icon
+              name={TAB_ICON[name] ?? "home"}
+              size={22}
+              tone={focused ? "primary" : "muted"}
+              weight={focused ? "fill" : "regular"}
+            />
+          </View>
           <Text variant="caption" tone={focused ? "primary" : "muted"}>
             {labelFor(name)}
           </Text>

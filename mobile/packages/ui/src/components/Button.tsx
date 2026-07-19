@@ -7,11 +7,11 @@ import { Text } from "./Text";
 import { Icon, type IconName } from "./Icon";
 import { tapFeedback } from "../lib/haptics";
 
-// Pill buttons in solid colours (no gradients). Primary is solid blue; the others are outline/ghost/
-// destructive. Variant-driven, ref-forwarded, accessible, with a leading icon and an HIG-style press
-// depress (Reanimated CSS transition on an outer wrapper, per Software Mansion's simple-feedback pattern).
+// Chunky, fully-rounded pill buttons in solid colours (no gradients). Filled variants float on a soft
+// coloured shadow; a snappy scale-down on press. Variant-driven, ref-forwarded, accessible, with a
+// leading icon (Reanimated CSS transition on an outer wrapper, per Software Mansion's simple-feedback).
 const container = tv({
-  base: "flex-row items-center justify-center gap-xs rounded-full overflow-hidden",
+  base: "flex-row items-center justify-center gap-xs rounded-full",
   variants: {
     variant: {
       primary: "bg-primary",
@@ -20,8 +20,8 @@ const container = tv({
       destructive: "bg-error",
     },
     size: {
-      sm: "h-10 px-md",
-      md: "h-12 px-lg",
+      sm: "h-11 px-lg",
+      md: "h-12 px-xl",
       lg: "h-14 px-xl",
     },
     fullWidth: { true: "w-full" },
@@ -29,6 +29,12 @@ const container = tv({
   },
   defaultVariants: { variant: "primary", size: "md" },
 });
+
+// Soft coloured elevation for the filled variants (kept on the outer wrapper so it isn't clipped).
+const SHADOW: Partial<Record<ButtonVariant, string>> = {
+  primary: "0 8px 18px rgba(29,78,216,0.30)",
+  destructive: "0 8px 18px rgba(220,38,38,0.30)",
+};
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 
@@ -72,9 +78,10 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     <Animated.View
       style={{
         alignSelf: fullWidth ? "stretch" : "flex-start",
-        transform: [{ scale: pressed && !isDisabled ? 0.97 : 1 }],
+        boxShadow: isDisabled ? undefined : SHADOW[resolvedVariant],
+        transform: [{ scale: pressed && !isDisabled ? 0.94 : 1 }],
         transitionProperty: "transform",
-        transitionDuration: 120,
+        transitionDuration: 110,
         transitionTimingFunction: "ease-out",
       }}
     >
