@@ -86,6 +86,16 @@ Square 1:1, transparent. Save to **`mobile/packages/ui/assets/illustrations/<nam
 | `job-complete.png` | a clean rounded clay house with soft sparkle accents and a teal circular check-mark badge floating in front; "work done" |
 | `rider-marker.png` | **CAMERA OVERRIDE: top-down bird's-eye view** — a compact clay service scooter with a helmeted rider seen from directly above, bold simplified silhouette readable at 48px |
 
+## Set 3 — Error & status states
+Square 1:1, transparent. Same anchor style. Save to **`mobile/packages/ui/assets/illustrations/<name>.png`**.
+Wired via `<ErrorState illustration="…" />` / `<EmptyState illustration="…" />`.
+
+| filename | slot | SUBJECT line |
+|---|---|---|
+| `server-error.png` | `serverError` | a rounded clay server/computer tower tipped slightly with a small teal warning triangle (exclamation mark) floating above it, a couple of soft loose "unplugged" cables curling at the base; friendly "something went wrong" mood, blue body with cream and teal accents |
+| `not-found.png` | `notFound` | a rounded clay signpost with a blank blue arrow board pointing nowhere and a small teal question-mark badge floating beside it, one soft cloud shape behind; calm "page not found" mood, blue with cream accents |
+| `no-connection.png` | `noConnection` | a rounded clay wifi-signal tower / router with the broadcast arcs broken and a small teal "no signal" slash badge floating above; quiet "you're offline" mood, blue body with soft-blue and teal accents |
+
 ---
 
 Once the files are in those folders, tell me the names and I'll register them

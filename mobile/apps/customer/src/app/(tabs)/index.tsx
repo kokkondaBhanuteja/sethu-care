@@ -23,7 +23,13 @@ import {
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
-import { useServices, serviceImage, serviceIcon, heroMascot } from "@/features/catalog";
+import {
+  useServices,
+  serviceImage,
+  servicePhoto,
+  serviceIcon,
+  heroMascot,
+} from "@/features/catalog";
 
 // Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
 const SEARCH_PROMPTS = [
@@ -50,11 +56,11 @@ export default function Home() {
   const gridServices = services.slice(0, 8);
   const [heroIndex, setHeroIndex] = useState(0);
 
-  // Hero carousel slides — the waving handyman mascot on the blue card, per tagline.
+  // Hero carousel — the first card is the big waving handyman mascot; the rest are photo promos.
   const heroSlides = [
-    { key: "hero1", tagline: t("common:home.hero1") },
-    { key: "hero2", tagline: t("common:home.hero2") },
-    { key: "hero3", tagline: t("common:home.hero3") },
+    { key: "hero1", tagline: t("common:home.hero1"), kind: "mascot" as const },
+    { key: "hero2", tagline: t("common:home.hero2"), kind: "photo" as const, slug: "ac-repair" },
+    { key: "hero3", tagline: t("common:home.hero3"), kind: "photo" as const, slug: "electrical" },
   ];
 
   const trust: Array<{ icon: IconName; label: string }> = [
@@ -145,33 +151,45 @@ export default function Home() {
                 <View key={slide.key} style={{ width }} className="px-mobile-margin">
                   <View
                     className="flex-row overflow-hidden rounded-card bg-primary"
-                    style={{ height: 172 }}
+                    style={{ height: 194 }}
                   >
-                    <View className="flex-1 justify-center gap-md p-md">
-                      <Text variant="headlineSm" tone="inverse">
+                    <View className="flex-1 justify-center gap-sm p-md">
+                      <Text variant="headline" tone="inverse">
                         {slide.tagline}
                       </Text>
-                      <View className="self-start rounded-full bg-surface-container-lowest px-md py-1">
+                      <View className="self-start rounded-full bg-surface-container-lowest px-md py-1.5">
                         <Text variant="caption" tone="primary">
                           {t("common:nav.bookNow")}
                         </Text>
                       </View>
                     </View>
-                    <View
-                      style={{
-                        width: 158,
-                        height: 172,
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                      }}
-                    >
+                    {slide.kind === "mascot" ? (
+                      // Large mascot filling the right of the card, bleeding to the bottom edge.
+                      <View
+                        style={{
+                          width: 176,
+                          height: 194,
+                          justifyContent: "flex-end",
+                          alignItems: "center",
+                        }}
+                      >
+                        <AppImage
+                          source={heroMascot}
+                          placeholderColor="transparent"
+                          contentFit="contain"
+                          style={{ width: 210, height: 200 }}
+                        />
+                      </View>
+                    ) : (
                       <AppImage
-                        source={heroMascot}
-                        placeholderColor="transparent"
-                        contentFit="contain"
-                        style={{ width: 172, height: 170 }}
+                        source={servicePhoto(slide.slug)}
+                        placeholderIcon="briefcase"
+                        placeholderIconTone="inverse"
+                        placeholderColor="rgba(255,255,255,0.16)"
+                        contentFit="cover"
+                        style={{ width: 150, height: 194 }}
                       />
-                    </View>
+                    )}
                   </View>
                 </View>
               ))}
