@@ -74,6 +74,31 @@ func (controller *Controller) Lock(ctx context.Context, key string, ttl time.Dur
 	}, true, nil
 }
 
+// LockWait is Lock with a bounded wait: it retries acquisition until it succeeds or maxWait elapses.
+// On timeout it returns acquired=false with NO error — the caller should proceed anyway, because the
+// database (the EXCLUDE constraint) is the real guard; the lock only serialises the common path to
+// cut wasted work. Disabled Redis returns acquired=true immediately.
+func (controller *Controller) LockWait(ctx context.Context, key string, ttl, maxWait time.Duration) (release func(), acquired bool, err error) {
+	if !controller.Enabled() {
+		return func() {}, true, nil
+	}
+	deadline := time.Now().Add(maxWait)
+	for {
+		release, ok, err := controller.Lock(ctx, key, ttl)
+		if err != nil || ok {
+			return release, ok, err
+		}
+		if time.Now().After(deadline) {
+			return func() {}, false, nil
+		}
+		select {
+		case <-ctx.Done():
+			return func() {}, false, ctx.Err()
+		case <-time.After(15 * time.Millisecond):
+		}
+	}
+}
+
 // Allow reports whether key is within limit hits per window (fixed-window counter via INCR+EXPIRE).
 // It FAILS OPEN: a Redis error allows the request, so a Redis blip never takes the API down.
 func (controller *Controller) Allow(ctx context.Context, key string, limit int, window time.Duration) (bool, error) {

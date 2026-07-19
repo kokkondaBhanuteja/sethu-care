@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
@@ -81,10 +82,24 @@ func (forbidden *ForbiddenError) Error() string {
 // §4.2): no other module writes these rows.
 type Service struct {
 	pool *pgxpool.Pool
+	flow *flow.Controller // optional; serialises ASSIGN per technician. nil = no locking.
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool}
+// Option configures a Service.
+type Option func(*Service)
+
+// WithFlow gives the service a Redis flow controller so ASSIGN serialises per technician (cutting
+// contention on the no-double-book constraint). Optional — without it, the constraint alone guards.
+func WithFlow(controller *flow.Controller) Option {
+	return func(service *Service) { service.flow = controller }
+}
+
+func NewService(pool *pgxpool.Pool, opts ...Option) *Service {
+	service := &Service{pool: pool}
+	for _, opt := range opts {
+		opt(service)
+	}
+	return service
 }
 
 // CreateInput is a request to place a booking.
@@ -412,6 +427,18 @@ func authorize(in TransitionInput, bookingRow sqlcgen.GetBookingRow, action Acti
 //   - ErrBookingNotFound      — no such booking
 func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action Action, in TransitionInput) (State, error) {
 	var newState State
+
+	// Serialise ASSIGN per technician so two dispatches for the same tech don't both do the work
+	// and race to the no-double-book constraint. Best-effort: a lock timeout or Redis being absent
+	// just means we proceed — the EXCLUDE constraint is the actual guarantee, so the loser still
+	// gets a clean ScheduleConflictError. Held only across this one transition.
+	if action == ActionAssign && in.AssignTechnician != nil && service.flow != nil {
+		release, _, err := service.flow.LockWait(ctx, "assign:tech:"+in.AssignTechnician.String(), 5*time.Second, 2*time.Second)
+		if err != nil {
+			return "", err
+		}
+		defer release()
+	}
 
 	err := storage.InTx(ctx, service.pool, func(tx pgx.Tx) error {
 		queries := sqlcgen.New(tx)

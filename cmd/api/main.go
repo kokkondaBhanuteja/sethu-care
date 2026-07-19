@@ -95,7 +95,17 @@ func run() error {
 	// The domain services, and the outbox consumers that react to their events: auto-search
 	// (ops), OTP issuance (verification), billing (ledger), and customer notifications. The
 	// worker drives them all off the one event stream.
-	bookingService := booking.NewService(pool)
+	// The Redis flow layer (locks, slot holds, rate limiting). A connect failure is NOT fatal — the
+	// database is the real guard, so we log and run degraded (every primitive answers permissively).
+	flowControl, err := flow.New(rootContext, settings.RedisURL)
+	if err != nil {
+		logger.Warn("Redis unavailable — running without the flow layer (DB remains the guard)", "err", err)
+		flowControl, _ = flow.New(rootContext, "")
+	}
+	defer func() { _ = flowControl.Close() }()
+	logger.Info("flow layer", "redis", flowControl.Enabled())
+
+	bookingService := booking.NewService(pool, booking.WithFlow(flowControl))
 	var identityOptions []identity.Option
 	if settings.DemoPhone != "" && settings.DemoOTP != "" {
 		identityOptions = append(identityOptions, identity.WithDemoAccount(settings.DemoPhone, settings.DemoOTP))
@@ -176,16 +186,6 @@ func run() error {
 	if razorpayClient.Configured() {
 		logger.Info("Razorpay enabled for payment collection")
 	}
-
-	// The Redis flow layer (locks, slot holds, rate limiting). A connect failure is NOT fatal — the
-	// database is the real guard, so we log and run degraded (every primitive answers permissively).
-	flowControl, err := flow.New(rootContext, settings.RedisURL)
-	if err != nil {
-		logger.Warn("Redis unavailable — running without the flow layer (DB remains the guard)", "err", err)
-		flowControl, _ = flow.New(rootContext, "")
-	}
-	defer func() { _ = flowControl.Close() }()
-	logger.Info("flow layer", "redis", flowControl.Enabled())
 
 	var router http.Handler = buildRouter(routerDependencies{
 		pool:                pool,
