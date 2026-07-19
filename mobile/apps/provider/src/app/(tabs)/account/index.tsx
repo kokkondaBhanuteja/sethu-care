@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Alert, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { deleteAccountMutation } from "@sethu/api-client";
 import { useSession } from "@sethu/core";
 import { Screen, Text, Button, Card, Avatar, Icon, PressableScale } from "@sethu/ui";
-import { useTranslation, supportedLanguages, type SupportedLanguage } from "@sethu/i18n";
+import { useTranslation, type SupportedLanguage } from "@sethu/i18n";
+
+import { LanguageSheet } from "@/features/settings/language-sheet";
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: "English",
@@ -20,6 +23,7 @@ export default function Account() {
   const user = useSession((state) => state.user);
   const signOut = useSession((state) => state.signOut);
   const { mutate, isPending } = useMutation(deleteAccountMutation());
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   const goToSignIn = async () => {
     await signOut();
@@ -35,13 +39,6 @@ export default function Account() {
         onPress: () => mutate({}, { onSuccess: goToSignIn }),
       },
     ]);
-  };
-
-  const cycleLanguage = () => {
-    const current = i18n.language as SupportedLanguage;
-    const index = supportedLanguages.indexOf(current);
-    const next = supportedLanguages[(index + 1) % supportedLanguages.length];
-    void i18n.changeLanguage(next);
   };
 
   const currentLanguage =
@@ -66,7 +63,7 @@ export default function Account() {
             </View>
           </Card>
 
-          <PressableScale onPress={cycleLanguage}>
+          <PressableScale onPress={() => setLanguageOpen(true)}>
             <Card className="flex-row items-center gap-md">
               <Icon name="globe" tone="primary" />
               <View className="flex-1">
@@ -98,6 +95,7 @@ export default function Account() {
           </View>
         </View>
       </ScrollView>
+      <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
     </Screen>
   );
 }

@@ -64,6 +64,17 @@ export type { AppImageProps } from "./components/AppImage";
 export { OfferBadge } from "./components/OfferBadge";
 export type { OfferBadgeProps } from "./components/OfferBadge";
 
+// Shared service imagery (clay icons, real photos, mascot) reused across apps.
+export {
+  SERVICE_IMAGES,
+  SERVICE_PHOTOS,
+  serviceImage,
+  servicePhoto,
+  serviceIcon,
+  sampleRating,
+  heroMascot,
+} from "./service-images";
+
 export { Badge } from "./components/Badge";
 export type { BadgeProps, BadgeTone } from "./components/Badge";
 
