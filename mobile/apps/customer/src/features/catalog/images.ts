@@ -21,6 +21,9 @@ export const SERVICE_IMAGES: Record<string, number> = {
   "water-purifier": require("../../../assets/images/services/water-purifier.png"),
 };
 
+// The waving handyman mascot (transparent PNG) for the home hero banner — sits directly on the blue card.
+export const heroMascot = require("../../../assets/images/services/technician.png");
+
 /** Resolve a bundled clay icon for a service by slug (undefined → AppImage shows the glyph fallback). */
 export function serviceImage(slug?: string | null): number | undefined {
   if (!slug) return undefined;

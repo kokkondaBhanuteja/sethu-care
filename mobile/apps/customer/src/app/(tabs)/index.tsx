@@ -23,7 +23,7 @@ import {
 } from "@sethu/ui";
 import { color } from "@sethu/tokens";
 import { useTranslation } from "@sethu/i18n";
-import { useServices, serviceImage, servicePhoto, serviceIcon } from "@/features/catalog";
+import { useServices, serviceImage, serviceIcon, heroMascot } from "@/features/catalog";
 
 // Rotating, Google-Maps-style search prompts (cross-faded while the field is empty).
 const SEARCH_PROMPTS = [
@@ -50,11 +50,11 @@ export default function Home() {
   const gridServices = services.slice(0, 8);
   const [heroIndex, setHeroIndex] = useState(0);
 
-  // Hero carousel slides — reuse the bundled Unsplash service photos as the imagery.
+  // Hero carousel slides — the waving handyman mascot on the blue card, per tagline.
   const heroSlides = [
-    { key: "hero1", tagline: t("common:home.hero1"), slug: "handyman" },
-    { key: "hero2", tagline: t("common:home.hero2"), slug: "ac-repair" },
-    { key: "hero3", tagline: t("common:home.hero3"), slug: "electrical" },
+    { key: "hero1", tagline: t("common:home.hero1") },
+    { key: "hero2", tagline: t("common:home.hero2") },
+    { key: "hero3", tagline: t("common:home.hero3") },
   ];
 
   const trust: Array<{ icon: IconName; label: string }> = [
@@ -157,14 +157,21 @@ export default function Home() {
                         </Text>
                       </View>
                     </View>
-                    <AppImage
-                      source={servicePhoto(slide.slug)}
-                      placeholderIcon="briefcase"
-                      placeholderIconTone="inverse"
-                      placeholderColor="rgba(255,255,255,0.16)"
-                      contentFit="cover"
-                      style={{ width: 148, height: 172 }}
-                    />
+                    <View
+                      style={{
+                        width: 158,
+                        height: 172,
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                      }}
+                    >
+                      <AppImage
+                        source={heroMascot}
+                        placeholderColor="transparent"
+                        contentFit="contain"
+                        style={{ width: 172, height: 170 }}
+                      />
+                    </View>
                   </View>
                 </View>
               ))}
