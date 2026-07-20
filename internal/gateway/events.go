@@ -6,6 +6,7 @@ package gateway
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
@@ -14,10 +15,42 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
+// Status is the lifecycle of an inbox row: RECEIVED (persisted but not yet applied — "parked"),
+// PROCESSED (applied), or FAILED (permanently un-appliable). Stored as TEXT + CHECK on
+// payment_gateway_events.status; the Go constants are the source of truth, pinned to the DB CHECK by
+// internal/schema.
+type Status string
+
 const (
-	statusReceived  = "RECEIVED"
-	statusProcessed = "PROCESSED"
+	StatusReceived  Status = "RECEIVED"
+	StatusProcessed Status = "PROCESSED"
+	StatusFailed    Status = "FAILED"
 )
+
+// AllStatuses lists every status, in declaration order. The drift test asserts this set equals the
+// payment_gateway_events.status CHECK constraint.
+func AllStatuses() []Status {
+	return []Status{StatusReceived, StatusProcessed, StatusFailed}
+}
+
+func (status Status) Valid() bool {
+	switch status {
+	case StatusReceived, StatusProcessed, StatusFailed:
+		return true
+	}
+	return false
+}
+
+func (status Status) String() string { return string(status) }
+
+// ParseStatus validates a raw status string at a trust boundary (e.g. read back from storage).
+func ParseStatus(raw string) (Status, error) {
+	status := Status(raw)
+	if !status.Valid() {
+		return "", fmt.Errorf("gateway: unknown event status %q", raw)
+	}
+	return status, nil
+}
 
 // Store wraps the inbox table.
 type Store struct{ pool *pgxpool.Pool }
@@ -44,7 +77,7 @@ func (store *Store) AlreadyProcessed(ctx context.Context, gatewayEventID string)
 	if err != nil {
 		return false, err
 	}
-	return status == statusProcessed, nil
+	return Status(status) == StatusProcessed, nil
 }
 
 // Record persists the raw event as RECEIVED; a duplicate gateway_event_id is a no-op so the inbox

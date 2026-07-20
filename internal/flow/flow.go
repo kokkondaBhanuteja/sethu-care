@@ -16,6 +16,14 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Redis key prefixes — one namespace per primitive, so the keyspace is greppable and can't collide.
+const (
+	keyPrefixLock = "lock:" // distributed locks (Lock/LockWait)
+	keyPrefixRate = "rl:"   // fixed-window rate-limit counters (Allow)
+	keyPrefixIdem = "idem:" // idempotency result cache (Remember/Recall)
+	keyPrefixHold = "hold:" // slot-reservation holds (Reserve/Release)
+)
+
 // Controller wraps a Redis client. A nil client (New called with an empty URL, or a connect failure
 // the caller chose to tolerate) means "disabled" — every method returns the permissive answer.
 type Controller struct{ rdb *redis.Client }
@@ -67,14 +75,14 @@ func (controller *Controller) Lock(ctx context.Context, key string, ttl time.Dur
 		return func() {}, true, nil
 	}
 	token := randomToken()
-	ok, err := controller.rdb.SetNX(ctx, "lock:"+key, token, ttl).Result()
+	ok, err := controller.rdb.SetNX(ctx, keyPrefixLock+key, token, ttl).Result()
 	if err != nil || !ok {
 		return func() {}, ok, err
 	}
 	return func() {
 		relCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		if err := releaseScript.Run(relCtx, controller.rdb, []string{"lock:" + key}, token).Err(); err != nil {
+		if err := releaseScript.Run(relCtx, controller.rdb, []string{keyPrefixLock + key}, token).Err(); err != nil {
 			return // best effort — the lock expires on its own TTL regardless
 		}
 	}, true, nil
@@ -111,7 +119,7 @@ func (controller *Controller) Allow(ctx context.Context, key string, limit int, 
 	if !controller.Enabled() {
 		return true, nil
 	}
-	rkey := "rl:" + key
+	rkey := keyPrefixRate + key
 	count, err := controller.rdb.Incr(ctx, rkey).Result()
 	if err != nil {
 		return true, err
@@ -130,7 +138,7 @@ func (controller *Controller) Remember(ctx context.Context, key, value string, t
 	if !controller.Enabled() {
 		return nil
 	}
-	return controller.rdb.Set(ctx, "idem:"+key, value, ttl).Err()
+	return controller.rdb.Set(ctx, keyPrefixIdem+key, value, ttl).Err()
 }
 
 // Recall returns a previously Remembered result. ok=false means nothing was stored (or Redis is off).
@@ -138,7 +146,7 @@ func (controller *Controller) Recall(ctx context.Context, key string) (value str
 	if !controller.Enabled() {
 		return "", false, nil
 	}
-	value, err = controller.rdb.Get(ctx, "idem:"+key).Result()
+	value, err = controller.rdb.Get(ctx, keyPrefixIdem+key).Result()
 	if errors.Is(err, redis.Nil) {
 		return "", false, nil
 	}
@@ -154,7 +162,7 @@ func (controller *Controller) Reserve(ctx context.Context, key, value string, tt
 	if !controller.Enabled() {
 		return true, nil
 	}
-	return controller.rdb.SetNX(ctx, "hold:"+key, value, ttl).Result()
+	return controller.rdb.SetNX(ctx, keyPrefixHold+key, value, ttl).Result()
 }
 
 // Release frees a hold early (otherwise it expires on its TTL).
@@ -162,7 +170,7 @@ func (controller *Controller) Release(ctx context.Context, key string) error {
 	if !controller.Enabled() {
 		return nil
 	}
-	return controller.rdb.Del(ctx, "hold:"+key).Err()
+	return controller.rdb.Del(ctx, keyPrefixHold+key).Err()
 }
 
 func randomToken() string {

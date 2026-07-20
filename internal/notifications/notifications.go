@@ -14,15 +14,42 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/topics"
 )
 
-// Channel is how a message reaches the customer.
+// Channel is how a message reaches the customer. Stored as TEXT + CHECK on notification_log.channel;
+// the Go constants are the source of truth, pinned to the DB CHECK by internal/schema.
 type Channel string
 
 const (
 	ChannelSMS  Channel = "SMS"
 	ChannelPush Channel = "PUSH"
 )
+
+// AllChannels lists every channel, in declaration order. The drift test asserts this set equals the
+// notification_log.channel CHECK constraint.
+func AllChannels() []Channel {
+	return []Channel{ChannelSMS, ChannelPush}
+}
+
+func (channel Channel) Valid() bool {
+	switch channel {
+	case ChannelSMS, ChannelPush:
+		return true
+	}
+	return false
+}
+
+func (channel Channel) String() string { return string(channel) }
+
+// ParseChannel validates a raw string at a trust boundary.
+func ParseChannel(raw string) (Channel, error) {
+	channel := Channel(raw)
+	if !channel.Valid() {
+		return "", fmt.Errorf("notifications: unknown channel %q", raw)
+	}
+	return channel, nil
+}
 
 // Service records customer notifications and hands them to a Sender for delivery. It owns the
 // durable record (notification_log); the Sender owns the wire.
@@ -129,27 +156,23 @@ func codeMessage(purpose, code string) string {
 // messageFor is the template for each customer-facing event. Events not listed here produce
 // no notification. Kept deliberately simple (no per-booking interpolation yet) — the point is
 // the pipeline, not the copy.
+// customerMessages maps a booking event to the message the customer hears. Events NOT listed here
+// (booking.created, booking.confirmed, booking.awaiting_completion, review.submitted) have no
+// customer-facing message and are skipped. Keyed by topics.EventName, so a renamed or mistyped topic
+// is a compile error rather than a silently unsent message.
+var customerMessages = map[topics.EventName]string{
+	topics.BookingAssigned:    "A technician has been assigned to your booking.",
+	topics.TechnicianEnRoute:  "Your technician is on the way.",
+	topics.TechnicianArrived:  "Your technician has arrived. We've texted you a start code to share with them.",
+	topics.BookingStarted:     "Your service has started.",
+	topics.BookingCompleted:   "Your service is complete. Thank you for choosing SETHU-CARE!",
+	topics.BookingEscalated:   "We're personally arranging a technician for you — we'll confirm shortly.",
+	topics.BookingFailed:      "We're sorry — we couldn't find a technician. A credit has been added to your account.",
+	topics.BookingCancelled:   "Your booking has been cancelled.",
+	topics.BookingRescheduled: "Your booking has been rescheduled.",
+}
+
 func messageFor(eventType string) (string, bool) {
-	switch eventType {
-	case "booking.assigned":
-		return "A technician has been assigned to your booking.", true
-	case "technician.en_route":
-		return "Your technician is on the way.", true
-	case "technician.arrived":
-		return "Your technician has arrived. We've texted you a start code to share with them.", true
-	case "booking.started":
-		return "Your service has started.", true
-	case "booking.completed":
-		return "Your service is complete. Thank you for choosing SETHU-CARE!", true
-	case "booking.escalated":
-		return "We're personally arranging a technician for you — we'll confirm shortly.", true
-	case "booking.failed":
-		return "We're sorry — we couldn't find a technician. A credit has been added to your account.", true
-	case "booking.cancelled":
-		return "Your booking has been cancelled.", true
-	case "booking.rescheduled":
-		return "Your booking has been rescheduled.", true
-	default:
-		return "", false
-	}
+	body, ok := customerMessages[topics.EventName(eventType)]
+	return body, ok
 }
