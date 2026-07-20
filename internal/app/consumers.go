@@ -17,6 +17,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/topics"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
 
@@ -51,18 +52,18 @@ func RegisterConsumers(dispatcher *outbox.Dispatcher, deps ConsumerDeps) {
 
 	// AUTO-SEARCH: a confirmed booking moves itself into SEARCHING (and thus the assignment
 	// queue) without an admin poking it.
-	dispatcher.Subscribe("booking.confirmed", func(ctx context.Context, event outbox.Event) error {
+	dispatcher.Subscribe(topics.BookingConfirmed.String(), func(ctx context.Context, event outbox.Event) error {
 		return deps.Ops.StartSearch(ctx, event.AggregateID)
 	})
 
 	// DUAL OTP issuance: START code when the technician arrives, COMPLETION code when they say the
 	// work is done. Verification happens interactively on the transition endpoint.
-	dispatcher.Subscribe("technician.arrived", issueOTP(deps, verification.PurposeStart))
-	dispatcher.Subscribe("booking.awaiting_completion", issueOTP(deps, verification.PurposeCompletion))
+	dispatcher.Subscribe(topics.TechnicianArrived.String(), issueOTP(deps, verification.PurposeStart))
+	dispatcher.Subscribe(topics.BookingAwaitingCompletion.String(), issueOTP(deps, verification.PurposeCompletion))
 
 	// BILLING: a completed booking records its ledger entry (REVENUE or CASH_CUSTODY). The
 	// payment method rides the event payload from the completion request.
-	dispatcher.Subscribe("booking.completed", func(ctx context.Context, event outbox.Event) error {
+	dispatcher.Subscribe(topics.BookingCompleted.String(), func(ctx context.Context, event outbox.Event) error {
 		var payload struct {
 			PaymentMethod string `json:"payment_method"`
 		}
@@ -73,13 +74,13 @@ func RegisterConsumers(dispatcher *outbox.Dispatcher, deps ConsumerDeps) {
 	})
 
 	// CREDITS: a booking that FAILED (nobody could be found) gets a goodwill credit.
-	dispatcher.Subscribe("booking.failed", func(ctx context.Context, event outbox.Event) error {
+	dispatcher.Subscribe(topics.BookingFailed.String(), func(ctx context.Context, event outbox.Event) error {
 		return deps.Ledger.IssueFailureCredit(ctx, event.AggregateID, deps.FailedCredit)
 	})
 
 	// RATINGS: a submitted review updates the technician's rating — the signal the assignment
 	// queue ranks by. Reviews publishes; Identity (which owns technicians) recomputes.
-	dispatcher.Subscribe("review.submitted", func(ctx context.Context, event outbox.Event) error {
+	dispatcher.Subscribe(topics.ReviewSubmitted.String(), func(ctx context.Context, event outbox.Event) error {
 		var payload struct {
 			TechnicianID uuid.UUID `json:"technician_id"`
 		}

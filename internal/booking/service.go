@@ -18,6 +18,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/topics"
 )
 
 // NOTE ON PURITY. This file is the IMPURE half of the module — it may import pgx, a pool,
@@ -194,7 +195,7 @@ func (service *Service) Create(ctx context.Context, in CreateInput) (Created, er
 		if err := queries.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
 			AggregateType: "booking",
 			AggregateID:   booking.ID,
-			EventType:     "booking.created",
+			EventType:     topics.BookingCreated.String(),
 			Payload:       payload,
 		}); err != nil {
 			return fmt.Errorf("writing booking.created: %w", err)
@@ -539,7 +540,7 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			if err := queries.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
 				AggregateType: "booking",
 				AggregateID:   bookingID,
-				EventType:     eventType,
+				EventType:     eventType.String(),
 				Payload:       payload,
 			}); err != nil {
 				return fmt.Errorf("writing outbox event: %w", err)
@@ -575,32 +576,32 @@ type transitionEvent struct {
 // KNOWN GAP, surfaced not hidden: CANCEL and RESCHEDULE have no §8 event, so a cancelled
 // booking currently notifies nobody. §8 is the P0 catalog; booking.cancelled /
 // booking.rescheduled must be ADDED to it (and to this switch) before those flows ship.
-func publishedEventFor(action Action) (string, bool) {
+func publishedEventFor(action Action) (topics.EventName, bool) {
 	switch action {
 	case ActionConfirm:
-		return "booking.confirmed", true
+		return topics.BookingConfirmed, true
 	case ActionAssign:
-		return "booking.assigned", true
+		return topics.BookingAssigned, true
 	case ActionDepart:
-		return "technician.en_route", true
+		return topics.TechnicianEnRoute, true
 	case ActionArrive:
-		return "technician.arrived", true
+		return topics.TechnicianArrived, true
 	case ActionVerifyStart:
-		return "booking.started", true
+		return topics.BookingStarted, true
 	case ActionVerifyCompletion:
-		return "booking.completed", true
+		return topics.BookingCompleted, true
 	case ActionEscalate:
-		return "booking.escalated", true
+		return topics.BookingEscalated, true
 	case ActionFail:
-		return "booking.failed", true
+		return topics.BookingFailed, true
 	case ActionRequestCompletion:
 		// Not in the original §8 catalog, added here: it triggers issuing the completion OTP
 		// (the technician says the work is done; the customer gets a code to confirm it).
-		return "booking.awaiting_completion", true
+		return topics.BookingAwaitingCompletion, true
 	case ActionCancel:
-		return "booking.cancelled", true
+		return topics.BookingCancelled, true
 	case ActionReschedule:
-		return "booking.rescheduled", true
+		return topics.BookingRescheduled, true
 	case ActionSearch, ActionResume:
 		return "", false
 	}

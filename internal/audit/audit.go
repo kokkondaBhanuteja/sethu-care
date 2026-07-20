@@ -7,13 +7,17 @@ package audit
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/google/uuid"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
-// ActorKind separates a human from a background job from a payment gateway.
+// ActorKind separates a human from a background job from a payment gateway. Values are lowercase to
+// match the audit_logs.actor_kind CHECK constraint (the DB is the source of truth for existing data;
+// changing the casing would be a breaking migration). Enum contract mirrors every other enum and is
+// pinned to the DB CHECK by internal/schema.
 type ActorKind string
 
 const (
@@ -21,6 +25,31 @@ const (
 	ActorSystem  ActorKind = "system"
 	ActorGateway ActorKind = "gateway"
 )
+
+// AllActorKinds lists every actor kind, in declaration order. The drift test asserts this set
+// equals the audit_logs.actor_kind CHECK constraint.
+func AllActorKinds() []ActorKind {
+	return []ActorKind{ActorUser, ActorSystem, ActorGateway}
+}
+
+func (kind ActorKind) Valid() bool {
+	switch kind {
+	case ActorUser, ActorSystem, ActorGateway:
+		return true
+	}
+	return false
+}
+
+func (kind ActorKind) String() string { return string(kind) }
+
+// ParseActorKind validates a raw string at a trust boundary (e.g. a value read back from storage).
+func ParseActorKind(raw string) (ActorKind, error) {
+	kind := ActorKind(raw)
+	if !kind.Valid() {
+		return "", fmt.Errorf("audit: unknown actor kind %q", raw)
+	}
+	return kind, nil
+}
 
 // Entry is one audited change. Before/After are marshalled to JSONB (nil → SQL null).
 type Entry struct {

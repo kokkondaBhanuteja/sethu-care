@@ -14,6 +14,7 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/topics"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -92,7 +93,7 @@ func (service *Service) Submit(ctx context.Context, bookingID, customerID uuid.U
 		if err := queries.InsertOutboxEvent(ctx, sqlcgen.InsertOutboxEventParams{
 			AggregateType: "review",
 			AggregateID:   reviewID,
-			EventType:     "review.submitted",
+			EventType:     topics.ReviewSubmitted.String(),
 			Payload:       payload,
 		}); err != nil {
 			return fmt.Errorf("writing review.submitted: %w", err)

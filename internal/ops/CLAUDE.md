@@ -1,0 +1,42 @@
+# internal/ops — CLAUDE.md
+
+## Purpose
+The operations console's back end: the manual-assignment queue and the commands ops runs against it. This is the P1 launch path — a human sees the queue and assigns a technician by hand. It owns NO aggregate; it reads across modules and commands them through their contracts.
+
+## Responsibilities
+- `Queue` — bookings awaiting a human assignment, oldest first.
+- `Candidates(bookingID)` — technicians eligible for a booking, ranked by the §5.1 signals (city/skill/online/leave/capacity/shift, PostGIS distance, acceptance, rating).
+- `Technicians` — the admin Employees view (status + current load), unfiltered.
+- `Assign(bookingID, technicianID, adminID)` — verify the technician exists (clean 404), then command the `ASSIGN` transition as admin via `booking.Apply`.
+- `StartSearch(bookingID)` — the auto-search consumer of `booking.confirmed`: moves CONFIRMED→SEARCHING as the system (nil actor) with admin authority; **idempotent** (already-moved / conflict / not-found ⇒ nil, so the outbox stops retrying).
+
+## Owns
+None (cross-reads booking/identity/services/addresses; commands booking).
+
+## Allowed Dependencies
+`booking` (the command surface — a deliberate, documented coupling), `identity` (for `Role`), `money`, `storage/sqlcgen`, stdlib, `pgx`, `google/uuid`.
+
+## Forbidden Dependencies
+`httpapi`/`huma`/`config` and `ledger`. ops commands booking; it must not reach into another domain's tables.
+
+## Contains
+- `ops.go` — `Service`, `New(pool, *booking.Service)`; `QueueEntry`, `Candidate`, `Technician` view types; the methods above; `ErrTechnicianNotFound`.
+
+## Examples
+```go
+ops := ops.New(pool, bookingSvc)
+candidates, err := ops.Candidates(ctx, bookingID)      // ranked
+state, err := ops.Assign(ctx, bookingID, techID, adminID) // ASSIGN via booking.Apply
+// wired as the booking.confirmed outbox consumer:
+err = ops.StartSearch(ctx, bookingID)                  // idempotent
+```
+
+## Best Practices
+- Assignment goes through `booking.Apply` (full authz + state machine + CAS), never a direct write to `bookings`.
+- Consumer methods (`StartSearch`) swallow already-moved / conflict / not-found as success so at-least-once delivery converges.
+- Pre-check existence (`TechnicianExists`) to return a 404 instead of leaking a FK 500.
+
+## Common Mistakes
+- Writing to a booking, ledger, or identity table directly instead of commanding the owning service.
+- Making `StartSearch` retry on a benign "already left CONFIRMED" outcome (it must return nil).
+- Importing `ledger` (forbidden — ops is a command surface, not a money mover).

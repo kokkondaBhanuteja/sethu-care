@@ -25,9 +25,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/gateway"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/order"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
@@ -50,6 +53,9 @@ func TestEveryEnumColumnMatchesItsGoConstants(t *testing.T) {
 		{"payments", "status", toStrings(ledger.AllPaymentStatuses())},
 		{"otp_challenges", "purpose", toStrings(verification.AllPurposes())},
 		{"work_photos", "kind", toStrings(verification.AllWorkPhotoKinds())},
+		{"notification_log", "channel", toStrings(notifications.AllChannels())},
+		{"audit_logs", "actor_kind", toStrings(audit.AllActorKinds())},
+		{"payment_gateway_events", "status", toStrings(gateway.AllStatuses())},
 	}
 
 	for _, tc := range cases {
