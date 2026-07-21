@@ -5,15 +5,12 @@ node_modules/
 # Build output / caches
 dist/
 .turbo/
-.expo/
-web-build/
-expo-env.d.ts
+.next/
+out/
 
-# Native
-ios/Pods/
-*.xcworkspace
-android/.gradle/
-android/app/build/
+# Native (Capacitor ios/ + android/ are COMMITTED source; only their derived
+# artifacts are ignored — the per-project .gitignores inside them handle Pods/build)
+DerivedData/
 
 # Env / secrets
 .env

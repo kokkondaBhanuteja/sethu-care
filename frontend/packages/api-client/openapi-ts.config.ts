@@ -6,7 +6,7 @@ import { defineConfig } from "@hey-api/openapi-ts";
 // external client runtime dependency. No formatter runs, so the output is deterministic and the
 // CI drift diff is stable without needing prettier installed.
 export default defineConfig({
-  input: "../../../api/openapi.yaml",
+  input: "../../../backend/api/openapi.yaml",
   output: "src/generated",
   plugins: ["@hey-api/client-fetch", "@tanstack/react-query"],
 });

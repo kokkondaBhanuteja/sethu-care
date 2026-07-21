@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1d4ed8;
+  --color-primary-dark: #1e40af;
+  --color-secondary: #0d9488;
+  --color-ink: #0b0d0e;
+}
+
+html {
+  scroll-behavior: initial; /* Lenis owns scrolling */
+}
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: #f4f6f7;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+}

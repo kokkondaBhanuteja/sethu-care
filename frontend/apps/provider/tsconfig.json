@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "noEmit": true,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src", "vite.config.ts", "capacitor.config.ts"]
+}

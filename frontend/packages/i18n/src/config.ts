@@ -33,6 +33,16 @@ export function isSupportedLanguage(code: string): code is SupportedLanguage {
   return (supportedLanguages as readonly string[]).includes(code);
 }
 
+/** Best-effort browser/WebView language detection (navigator.language → primary subtag),
+ *  falling back to English. Typed structurally so this package needs no DOM lib — it also runs
+ *  in Node (SSR/tests). The Capacitor apps may override with a device-locale bridge later. */
+export function detectBrowserLanguage(): SupportedLanguage {
+  const nav = (globalThis as { navigator?: { language?: string } }).navigator;
+  const raw = nav?.language ?? "en";
+  const primary = raw.toLowerCase().split("-")[0] ?? "en";
+  return isSupportedLanguage(primary) ? primary : "en";
+}
+
 /** Initialise i18next once, for the given device language. The app passes the language it read
  *  from expo-localization, so this package stays free of any Expo dependency. */
 export function initI18n(language: SupportedLanguage = "en"): typeof i18n {

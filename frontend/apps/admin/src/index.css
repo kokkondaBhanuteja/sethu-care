@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* Brand theme — values mirror @sethu/tokens (primitives/semantic). Generating this file from the
+   tokens package is a follow-up; keep the two in sync manually until then. */
+@theme {
+  --color-primary: #1d4ed8;
+  --color-primary-dark: #1e40af;
+  --color-secondary: #0d9488;
+  --color-surface: #ffffff;
+  --color-background: #f7f8f9;
+  --color-on-surface: #0f172a;
+  --color-muted: #5a646e;
+  --color-error: #c4291c;
+  --color-success: #0e8a4a;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+/* Native WebView safe areas (viewport-fit=cover): keep chrome out of the notch / home bar. */
+header {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem) !important;
+}
+nav {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem) !important;
+}
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-on-surface);
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+}

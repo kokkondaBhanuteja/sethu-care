@@ -9,8 +9,10 @@ export default tseslint.config(
   {
     ignores: [
       "**/node_modules/**",
-      "**/.expo/**",
       "**/.next/**",
+      "**/out/**",
+      "**/ios/**",
+      "**/android/**",
       "**/.turbo/**",
       "**/dist/**",
       "**/web-build/**",

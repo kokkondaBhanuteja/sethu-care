@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SETHU-CARE</string>
+    <string name="title_activity_main">SETHU-CARE</string>
+    <string name="package_name">in.sethucare.customer</string>
+    <string name="custom_url_scheme">in.sethucare.customer</string>
+</resources>

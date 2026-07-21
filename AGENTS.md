@@ -5,8 +5,8 @@ For the deep design rationale, see [`ARCHITECTURE.md`](./ARCHITECTURE.md); this 
 map: how to build, the rules you must not break, what exists, and what is still pending.
 
 SETHU-CARE is an on-demand home-services platform (appliance repair & maintenance) run by an
-appliance manufacturer. One Git repo holds a **Go backend** (built, green) and an **Expo/React
-Native + Next.js mobile monorepo** (in progress).
+appliance manufacturer. One Git repo holds a **Go backend** (`backend/`, built, green) and a
+**web-first frontend workspace** (`frontend/`: Capacitor + Vite apps and a Next.js landing page).
 
 ---
 
@@ -14,28 +14,30 @@ Native + Next.js mobile monorepo** (in progress).
 
 ```
 SETHU-CARE/
-  Makefile  docker-compose.yml  go.mod  sqlc.yaml   # backend toolchain
-  api/openapi.yaml                                   # GENERATED contract (committed)
-  cmd/{api,genopenapi}/                              # composition root + spec generator
-  internal/                                          # one package per bounded context
-    config money identity auth catalog address order booking verification
-    ledger ops notifications media reviews outbox httpapi shared storage schema
-  db/{migrations,queries}/                           # goose migrations + sqlc source queries
-  mobile/                                            # pnpm + Turborepo workspace
-    apps/{customer,provider,admin}/                  # 2 Expo RN apps + 1 Next.js web
-    packages/{tokens,ui,icons,api-client,domain,i18n,core,config,utils}/
+  backend/                                           # the Go service — run make from here
+    Makefile  docker-compose.yml  go.mod  sqlc.yaml  #   backend toolchain
+    api/openapi.yaml                                 #   GENERATED contract (committed)
+    cmd/{api,genopenapi}/                            #   composition root + spec generator
+    internal/                                        #   one package per bounded context
+    db/{migrations,queries}/                         #   goose migrations + sqlc source queries
+  frontend/                                          # pnpm + Turborepo workspace
+    apps/landing/                                    #   Next.js static + GSAP/Lenis/R3F marketing site
+    apps/{customer,provider,admin}/                  #   Vite + React Router SPAs + Capacitor (iOS/Android)
+    packages/{tokens,api-client,domain,i18n,core}/   #   shared; api-client is GENERATED
   ci/                                                # workflow sources + repo ruleset
 ```
 
-The Go module is the repo root. `mobile/go.mod` is a **deliberate stub** (`module
-sethu-care-mobile-ignore`) that walls `mobile/` off from Go's `./...` so `golangci-lint`/`go test`
-never descend into vendored `node_modules`. **Do not delete it.**
+The Go module lives in `backend/` (module path unchanged:
+`github.com/kokkondaBhanuteja/sethu-care`); `go ./...` runs from `backend/` and never sees
+`frontend/`. The three Capacitor apps commit their `ios/`/`android/` projects — they are source
+(unlike Expo prebuild output), managed via `npx cap sync`.
 
 ---
 
 ## 2. How to build & run
 
 ### Backend (Go 1.26)
+All `make` targets run **from `backend/`** (`cd backend` or `make -C backend …`).
 Run **`make check`** before every commit — it is exactly what CI runs (`lint` + `openapi-check` +
 `test -race`). Other targets:
 
@@ -53,32 +55,33 @@ Run **`make check`** before every commit — it is exactly what CI runs (`lint` 
 - Tests use **testcontainers** (a real PostGIS per package) — a full `go test -race ./...` takes a
   few minutes and is finite; do not "wait forever" for it.
 
-### Mobile (pnpm + Turborepo, Node via nvm)
-From `mobile/`:
+### Frontend (pnpm + Turborepo, Node via nvm)
+From `frontend/`:
 
 | Command | Purpose |
 |---|---|
-| `pnpm typecheck` | `turbo run typecheck` across all 9 packages |
+| `pnpm build` | `turbo run build` — landing (Next static export) + 3 Vite apps |
+| `pnpm typecheck` | `turbo run typecheck` across apps + packages |
 | `pnpm lint` | ESLint (flat config) |
 | `pnpm format` / `pnpm format:check` | Prettier write / verify |
-| `pnpm api:generate` | Regenerate the typed client from `api/openapi.yaml` |
+| `pnpm i18n:check` | Locale drift check (en/hi/te must carry every key) |
+| `pnpm api:generate` | Regenerate the typed client from `backend/api/openapi.yaml` |
 
-Run **all three** (`typecheck`, `lint`, `format:check`) before committing mobile code.
+Run **typecheck + lint + format:check** before committing frontend code.
 
-### iOS simulator (native dev-client build)
-The apps use native modules (Reanimated, secure-store, glass-effect), so **Expo Go will not work** —
-you need a dev-client build. The customer app is prebuilt (`apps/customer/ios/`).
+### Capacitor (the 3 mobile apps: customer · provider · admin)
+Each app dir has committed `ios/` + `android/` native projects (Capacitor convention — they are
+source; never delete them casually).
 
 ```bash
-xcrun simctl boot "iPhone 17 Pro" && open -a Simulator
-cd mobile/apps/customer && npx expo run:ios --device "iPhone 17 Pro"
+cd frontend/apps/customer
+pnpm cap:sync            # vite build + cap sync (after any web change)
+pnpm cap:ios             # build + sync + run on the iOS simulator
+pnpm cap:android         # build + sync + run on the Android emulator
 ```
 
-- Requires **Xcode 26.x** (iOS 26 SDK, Liquid Glass) — confirmed present as **Xcode 26.6 / iOS 26.5**.
-- Only **one** `expo run:ios` may build at a time — two concurrent builds lock the DerivedData DB.
-  Kill stragglers (`pkill -f "expo run:ios"; pkill -f xcodebuild`) before retrying.
-- The simulator reaches the backend at `127.0.0.1:8090` because the built `Info.plist` sets
-  `NSAllowsLocalNetworking: true`. `ios/` is **gitignored** (prebuild output) — never commit it.
+- Requires **Xcode 26.x** for iOS; the Android SDK for Android.
+- App IDs: `in.sethucare.customer` / `.provider` / `.admin`.
 - **Demo login (bypasses OTP, no SMS):** phone `+919000000000`, code `000000`.
 
 ---
@@ -114,21 +117,22 @@ These are enforced by the compiler, the database, or a linter — and by review.
 - **Style via NativeWind classes + design tokens only** (`bg-primary`, `text-on-surface`, …). No raw
   hex in components; raw colour values come from `@sethu/tokens` (`color.*`) only when a native prop needs one.
 - Feature-based modules: each `features/<name>/` owns `api/components/…` and exposes a barrel (`index.ts`).
-  Routes under `src/app/` are thin shells (Expo Router).
+  Routes are React Router SPAs; screens stay thin shells over feature modules.
 - Strict tsconfig (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) — build request bodies
   without `undefined` keys.
 
-The repo-root **husky pre-commit hook** runs `lint-staged` (gofmt on `*.go`, Prettier on mobile
+The repo-root **husky pre-commit hook** runs `lint-staged` (gofmt on `*.go`, Prettier on frontend
 `*.{ts,tsx}`). Let it run; don't `--no-verify`.
 
 ---
 
-## 4. The contract pipeline (backend ↔ mobile)
+## 4. The contract pipeline (backend ↔ frontend)
 
 huma handler types → `make openapi` → `api/openapi.yaml` → `@hey-api/openapi-ts` → typed client +
 TanStack Query hooks in `packages/api-client`. The app literally cannot call an endpoint or read a
-field the backend doesn't declare. Auth: `POST /auth/verify` returns a JWT; the app stores it in
-`expo-secure-store` and `configureApiClient` attaches it as a Bearer header.
+field the backend doesn't declare. Auth: `POST /auth/verify` returns a JWT; the app persists it via `@sethu/core`'s
+storage adapter (localStorage on web, a native Capacitor adapter later) and `configureApiClient`
+attaches it as a Bearer header.
 
 **Known wart:** huma is configured `FieldsOptionalByDefault = true`, so **every generated field is
 optional** — app code guards with `?.`/`??`. Marking response DTOs required (see §6) is the fix.
@@ -145,10 +149,10 @@ optional** — app code guards with `?.`/`??`. Marking response DTOs required (s
   `GET /ops/payments` (admin payments queue).
 - **Mobile foundation** — pnpm/Turborepo, 3 apps + 9 shared packages, Indigo-Velvet tokens,
   type-safe i18n (en/hi/te), generated api-client, session/secure-store.
-- **Customer app (Expo)** — auth (OTP + demo bypass, Delete Account) → catalog (skeleton/empty/error
+- **Customer app (Expo — RETIRED, replaced by the Capacitor greenfield in `frontend/`)** — auth (OTP + demo bypass, Delete Account) → catalog (skeleton/empty/error
   states) → service detail → address → optimistic booking → live status → **pay (UPI) + rate** →
   history. Runs natively on iOS 26.
-- **Provider app (Expo)** — online/offline toggle, cash-to-deposit summary, job list → job detail
+- **Provider app (Expo — RETIRED, same)** — online/offline toggle, cash-to-deposit summary, job list → job detail
   lifecycle (travel → arrive → start [OTP] → work done → complete [OTP + payment]) → **work photos**
   (camera → Cloudinary → record) → **UPI QR** or cash deposit. Runs natively on iOS 26.
 - **Admin console (Next.js)** — admin auth + sidebar shell, Overview (live stats), **Assignments**
@@ -202,7 +206,7 @@ Grouped by surface. `[ ]` = not started, `[~]` = partial/seam-in-place.
 - [ ] **EAS** build/submit config + OTA update channels.
 - [ ] **i18n drift CI** (`i18next-cli status --ci`) so locales can't fall out of sync.
 - [x] **CI** — workflows in `.github/workflows/` always run and skip heavy steps when no relevant
-      files changed (so the required `backend`/`mobile` checks never hang as "Expected"); import
+      files changed (so the required `backend`/`frontend` checks never hang as "Expected"); import
       `ci/ruleset-main.json` in repo Rules. Optional: shared-Postgres `services:` container to speed tests.
 - [ ] **Design polish pass** — premium Apple-HIG styling (layout, spacing, glass, motion). Current
       screens are intentionally plain; the token system makes this a style swap, not a rewrite.
@@ -212,9 +216,9 @@ Grouped by surface. `[ ]` = not started, `[~]` = partial/seam-in-place.
 ## 7. Gotchas (quick reference)
 
 - Backend on **`:8090`**, health at **`/health`**, Postgres on **`127.0.0.1:5434`**.
-- **Config/secrets:** `cp .env.example .env` and fill it in — `.env` (gitignored) is auto-loaded on
-  startup (`godotenv` in `cmd/api/main.go`; prod-safe, never overrides real env). `.env.example`
-  (committed) documents every key. All config is read in `internal/config/config.go`. For local
+- **Config/secrets:** `cp .env.example .env` and fill it in — `backend/.env` (gitignored) is auto-loaded on
+  startup (`godotenv` in `backend/cmd/api/main.go`; prod-safe, never overrides real env). `.env.example`
+  (committed) documents every key. All config is read in `backend/internal/config/config.go`. For local
   testing set `ADDR=:8090`, `SETHU_DEV_OTP=true`, and a `SETHU_DEMO_PHONE`/`SETHU_DEMO_OTP`.
 - **Admin console:** `pnpm --filter admin dev` → `localhost:3000` (or 3001 if taken). Admin login is
   phone+OTP; with `SETHU_DEV_OTP=true` the login screen shows the code (no SMS).
@@ -225,7 +229,6 @@ Grouped by surface. `[ ]` = not started, `[~]` = partial/seam-in-place.
   read in dev (LogSender). `/auth/otp` has a **30s per-phone resend guard** (429 if you hammer it).
 - **Contract change checklist:** edit handler/query → `make generate` (sqlc) + `make openapi` →
   `pnpm --filter @sethu/api-client run generate` (or `pnpm api:generate`) → the client has the new op.
-- `mobile/go.mod` stub, gitignored `ios/`/`android/` (also prettier-ignored) — leave them alone.
-- Only one `expo run:ios` build at a time; kill orphans (`pkill -f "expo run:ios"`) before retrying.
+- Capacitor `ios/`/`android/` dirs are **committed source** (prettier-ignored); update via `npx cap sync`, never hand-edit generated web assets inside them.
 - **`sqlc` / `golangci-lint`** install to `~/go/bin`; put it on `PATH` for `make generate`/`make lint`.
 - Commit/push only when asked; branch convention `feat/<kebab-scope>`. Integration branch: `developer`.

@@ -1,4 +1,4 @@
 {
   "*.go": "gofmt -w",
-  "mobile/**/*.{ts,tsx}": "prettier --write --config mobile/.prettierrc.json --ignore-path mobile/.prettierignore"
+  "frontend/**/*.{ts,tsx}": "prettier --write --config frontend/.prettierrc.json --ignore-path frontend/.prettierignore"
 }
