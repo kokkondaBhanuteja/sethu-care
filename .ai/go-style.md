@@ -23,6 +23,11 @@ the code already here. Grounded in review Phase 13 and the in-repo "GO LESSON" c
    internal as the existing files do.
 9. Keep switch statements over enums **exhaustive** — the `exhaustive` linter runs with
    `default-signifies-exhaustive: false`, so a `default:` will NOT excuse a missing case.
+10. **Lint adherence:** `golangci-lint run` (via `make lint`/`make check`) must report **0 issues**
+    before a change is complete. Fix the code, don't mute the linter: a `//nolint:<linter>` directive
+    is allowed only when genuinely unavoidable, always scoped to the specific linter, always with a
+    same-line justification (`//nolint:errcheck // best-effort release; lock expires on TTL anyway`).
+    A bare or unexplained `//nolint` fails review.
 
 ## Examples
 - Value receiver + defined type: `internal/money/money.go`.
@@ -42,3 +47,4 @@ the code already here. Grounded in review Phase 13 and the in-repo "GO LESSON" c
 - [ ] Small immutable types use value receivers.
 - [ ] Domain types are defined types, not aliases.
 - [ ] `gofmt`/`goimports` clean.
+- [ ] `make lint` reports 0 issues; any `//nolint` is linter-scoped with a same-line justification.

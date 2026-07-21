@@ -342,8 +342,10 @@ in `index.css`) — never per-screen. After ANY web change that should reach a d
 - **One responsibility per component.** When a component starts doing more than one
   thing, split it: child components in the same folder, logic into hooks,
   constants/types into their scoped files.
-- **File size: every `.tsx` ≤ 150 lines.** Treat ~100–120 as the signal to look closer.
-  Never split _only_ to hit a number.
+- **File size: every `.tsx` ≤ 150 lines; every other source file (hooks, utils,
+  `.api.ts`) ≤ 200 lines.** Treat ~100–120 as the signal to look closer. When a file
+  outgrows its cap: extract utilities, split components, move logic to hooks — never
+  split _only_ to hit a number.
 - **Reuse before creating.** Before adding a component/hook/util, check the feature, the
   app's `components/`, and the packages. Build configurable, reusable versions of common
   UI (buttons, inputs, lists, modals, sheets, empty/error/loading views); control
@@ -421,6 +423,13 @@ Localization is built in from the start — the pipeline already exists.
   observer, subscription, GSAP tween/ScrollTrigger, and Lenis instance created in an
   effect **must be torn down in that effect's cleanup**. (The landing `Hero` is the
   template: Lenis is destroyed on unmount; GSAP is scoped via `useGSAP`.)
+- **React 19 / hooks discipline** (the patterns the compiler-era lint rules exist for):
+  no synchronous `setState` inside `useEffect` (restructure the logic, or derive during
+  render); never read `ref.current` during render (effects/handlers only);
+  `exhaustive-deps` is satisfied by fixing the logic, never by muting the rule.
+- **Lint adherence:** run `pnpm lint` before considering a change complete; zero
+  errors *and* zero warnings. `eslint-disable` only when genuinely unavoidable, always
+  with a one-line justification on the same line — a silent disable fails review.
 - **Logging:** `console.log` fine in dev; must not ship to production paths.
 
 ---
@@ -433,10 +442,15 @@ of choice when the first test lands; the rules apply from that moment):
 - **Always unit-tested:** every utility function and all validation logic.
 - **Always integration-tested:** critical flows — login/OTP, booking create + the
   60-second cancel window, booking status progression, payment handoff.
+- **E2E:** Playwright, per app, following `.claude/skills/playwright-e2e/SKILL.md` —
+  Page Object Model, `getByRole`-style locators, web-first assertions, dev-OTP auth via
+  a shared `storageState`.
 - **Tested as needed:** components with real logic or conditional rendering. Trivial
   presentational components don't need a test.
 
-Write the test in the **same PR** as the code.
+Write the test in the **same PR** as the code. **Never modify existing test files while
+changing product code** unless the task is explicitly about those tests — a failing test
+is signal, not friction.
 
 ---
 
@@ -460,6 +474,8 @@ Write the test in the **same PR** as the code.
 - [ ] Loading / error / empty / data states handled (Part 9)
 - [ ] Tokens used for all colors, spacing, typography — no arbitrary-value smuggling (Part 6)
 - [ ] Names meaningful (no single-letter identifiers); comments explain _why_ (Part 5)
+- [ ] No unjustified `eslint-disable`; zero lint warnings (Part 11)
+- [ ] No existing test files modified unless the task was about them (Part 12)
 - [ ] No sibling-feature or cross-app imports (Part 1.3)
 - [ ] Capacitor apps: `cap sync` run if the change must reach native
 

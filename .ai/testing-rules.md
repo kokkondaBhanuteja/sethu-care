@@ -22,6 +22,12 @@ Grounded in review Phase 12/13 and `internal/schema`, `internal/storage/storaget
    `classify()`, so a new error can't silently become a 500 (review Phase 9 recommendation).
 8. A test file may import sibling domains to seed data (depguard exempts `*_test.go` from
    `cores-must-not-import-consumers` and `money-is-a-pure-leaf`).
+9. **Never modify existing test files while changing product code** unless the task is explicitly
+   about those tests. Existing tests are the proof that a change preserves behaviour — a failing test
+   is signal, not friction. (Legitimate exceptions: the change intentionally alters the tested
+   behaviour, and the PR says so.)
+10. Write the test in the **same PR** as the code it covers — new service methods, new enum values,
+    and new error mappings arrive with their tests, not as a follow-up.
 
 ## Examples
 - Real-Postgres harness: `internal/storage/storagetest` used by `internal/schema/drift_test.go`.
@@ -40,3 +46,5 @@ Grounded in review Phase 12/13 and `internal/schema`, `internal/storage/storaget
 - [ ] Tests pass under `-race`.
 - [ ] New enum has a drift-test entry; new error has a `classify()` mapping test.
 - [ ] `api/openapi.yaml` regenerated and committed when handlers changed.
+- [ ] No existing test files modified (unless the task was about those tests).
+- [ ] New code arrives with its tests in the same PR.
