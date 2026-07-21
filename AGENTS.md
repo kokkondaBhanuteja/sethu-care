@@ -121,8 +121,9 @@ These are enforced by the compiler, the database, or a linter — and by review.
 - Strict tsconfig (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) — build request bodies
   without `undefined` keys.
 
-The repo-root **husky pre-commit hook** runs `lint-staged` (gofmt on `*.go`, Prettier on frontend
-`*.{ts,tsx}`). Let it run; don't `--no-verify`.
+The repo-root **husky hooks** run `lint-staged` on pre-commit (gofmt on `*.go`, Prettier on
+frontend `*.{ts,tsx}`) and validate Conventional Commits on commit-msg (mirrored by the required
+`git` CI check). Let them run; don't `--no-verify`.
 
 ---
 

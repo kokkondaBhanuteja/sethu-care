@@ -1,0 +1,22 @@
+#!/bin/sh
+# Local mirror of the CI 'git' check (.github/workflows/git.yml): the commit subject must follow
+# Conventional Commits per .claude/skills/git-conventions/SKILL.md. Merge/revert/autosquash
+# subjects are git-generated shapes and pass through.
+subject=$(head -1 "$1")
+
+case "$subject" in
+  Merge\ *|Revert\ *|fixup!*|squash!*) exit 0 ;;
+esac
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|restructure)(\([a-z0-9/,._-]+\))?!?: [^ ].*$'
+if ! printf '%s' "$subject" | grep -qE "$pattern"; then
+  echo "✖ Commit subject must be Conventional: <type>(<scope>): <description>" >&2
+  echo "  e.g. feat(booking): add 60s cancel-window guard" >&2
+  echo "  See .claude/skills/git-conventions/SKILL.md" >&2
+  exit 1
+fi
+
+if [ "${#subject}" -gt 72 ]; then
+  echo "✖ Commit subject is ${#subject} chars — keep it under 72." >&2
+  exit 1
+fi

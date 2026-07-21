@@ -1,0 +1,73 @@
+# Copy to .github/workflows/git.yml
+name: git
+
+# Enforces .claude/skills/git-conventions/SKILL.md on every PR: Conventional Commit PR title
+# (squash-merge inherits it as the commit subject), branch naming, and every PR commit subject.
+# Self-contained (no third-party actions), cheap, and always reports — safe as a required check.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  git:
+    runs-on: ubuntu-latest
+    env:
+      # Types from the skill table; scope is the module touched (lowercase kebab, / allowed).
+      SUBJECT_PATTERN: '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|restructure)(\([a-z0-9/,._-]+\))?!?: [^ ].*$'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history so the PR commit range can be diffed
+
+      - name: PR title follows Conventional Commits
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! printf '%s' "$PR_TITLE" | grep -qE "$SUBJECT_PATTERN"; then
+            echo "::error::PR title must be Conventional: <type>(<scope>): <description> — see .claude/skills/git-conventions/SKILL.md"
+            exit 1
+          fi
+          if [ "${#PR_TITLE}" -gt 72 ]; then
+            echo "::error::PR title is ${#PR_TITLE} chars — keep it under 72."
+            exit 1
+          fi
+
+      - name: Branch name follows conventions
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            dependabot/*|renovate/*) echo "bot branch — skipped"; exit 0 ;;
+          esac
+          if ! printf '%s' "$HEAD_REF" | grep -qE '^(feat|fix|hotfix|docs|chore|refactor|test)/[a-z0-9._-]+$'; then
+            echo "::error::Branch '$HEAD_REF' must match <type>/<kebab-description> (feat|fix|hotfix|docs|chore|refactor|test)."
+            exit 1
+          fi
+
+      - name: Every PR commit subject follows Conventional Commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          failures=0
+          while IFS= read -r subject; do
+            [ -z "$subject" ] && continue
+            # Merge/revert/autosquash subjects are git-generated shapes — allowed as-is.
+            case "$subject" in
+              Merge\ *|Revert\ *|fixup!*|squash!*) continue ;;
+            esac
+            if ! printf '%s' "$subject" | grep -qE "$SUBJECT_PATTERN"; then
+              echo "::error::Commit subject not Conventional: '$subject'"
+              failures=$((failures + 1))
+            elif [ "${#subject}" -gt 72 ]; then
+              echo "::error::Commit subject over 72 chars: '$subject'"
+              failures=$((failures + 1))
+            fi
+          done <<EOF
+          $(git log --format=%s "$BASE_SHA".."$HEAD_SHA")
+          EOF
+          if [ "$failures" -gt 0 ]; then
+            echo "::error::$failures commit(s) violate .claude/skills/git-conventions/SKILL.md"
+            exit 1
+          fi
+          echo "All PR commits conform."
