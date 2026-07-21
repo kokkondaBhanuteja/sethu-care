@@ -6,8 +6,8 @@ description: Conventional Commits, branch naming, and PR conventions for SETHU-C
 # Git Conventions — SETHU-CARE
 
 **Enforced automatically:** locally by the `.husky/commit-msg` hook, and in CI by the
-required `git` check (`.github/workflows/git.yml`) — PR title, branch name, and every PR
-commit subject are validated. What follows is the standard those checks implement.
+required `git` check (`.github/workflows/git.yml`) — branch name and every PR commit
+subject are validated (PR titles are convention, not CI-enforced). What follows is the standard those checks implement.
 
 ## Conventional Commits (required)
 
