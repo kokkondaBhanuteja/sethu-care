@@ -9,9 +9,12 @@
     "./tailwind-preset": "./tailwind-preset.js"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate:css": "node --experimental-strip-types src/generate-css.ts",
+    "check:css": "node --experimental-strip-types src/generate-css.ts && git diff --exit-code ../ui-web/src/styles/tokens.css"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
-  }
+  },
+  "type": "module"
 }

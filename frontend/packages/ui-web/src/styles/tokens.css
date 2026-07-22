@@ -1,0 +1,80 @@
+/* GENERATED from @sethu/tokens (src/web.ts) — DO NOT EDIT.
+ * Regenerate: pnpm --filter @sethu/tokens run generate:css
+ * This is the ONLY place visual values enter the web surfaces: Tailwind v4 reads this @theme
+ * and exposes every entry as token-backed utilities (bg-canvas, text-success-fg, rounded-card,
+ * shadow-lifted, text-kpi, …). Components never hardcode a visual value. */
+
+@theme {
+  /* Colour — canvas, ink, brand */
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-inset: #f1f3f5;
+  --color-inset-hover: #eceef0;
+  --color-ink: #0f172a;
+  --color-muted: #5a646e;
+  --color-faint: #8b959f;
+  --color-border: #e6e8eb;
+  --color-border-strong: #d2d6db;
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #1741b8;
+  --color-on-primary: #ffffff;
+  --color-link: #1d4ed8;
+  --color-ring: #93c5fd;
+
+  /* Tones — tinted bg / saturated fg / border, per status + feature tint */
+  --color-success-bg: #e7f6ee;
+  --color-success-fg: #0e8a4a;
+  --color-success-border: #c4ebd4;
+  --color-warning-bg: #fdf4e3;
+  --color-warning-fg: #b76a00;
+  --color-warning-border: #f4dfb3;
+  --color-danger-bg: #fdecea;
+  --color-danger-fg: #c4291c;
+  --color-danger-border: #f6cbc5;
+  --color-info-bg: #e8f1ff;
+  --color-info-fg: #1d4ed8;
+  --color-info-border: #c8dcfa;
+  --color-neutral-bg: #f1f3f5;
+  --color-neutral-fg: #5a646e;
+  --color-neutral-border: #e0e3e7;
+  --color-tint-amber-bg: #fdf6e5;
+  --color-tint-amber-fg: #b76a00;
+  --color-tint-amber-border: #f7e8c3;
+  --color-tint-green-bg: #e6f8ef;
+  --color-tint-green-fg: #0e8a4a;
+  --color-tint-green-border: #c9efdb;
+  --color-tint-purple-bg: #f1edfd;
+  --color-tint-purple-fg: #6d28d9;
+  --color-tint-purple-border: #e0d7f8;
+  --color-tint-blue-bg: #e8f1ff;
+  --color-tint-blue-fg: #1d4ed8;
+  --color-tint-blue-border: #d0e1fb;
+
+  /* Vivid accents — icon chips, chart series (solid fills, white glyphs) */
+  --color-accent-green: #22c55e;
+  --color-accent-red: #f43f5e;
+  --color-accent-blue: #3b82f6;
+  --color-accent-purple: #8b5cf6;
+  --color-accent-amber: #f59e0b;
+  --color-accent-teal: #14b8a6;
+
+  /* Radii */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-card: 1rem;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-lifted: 0 4px 12px rgb(16 24 40 / 0.08), 0 2px 4px rgb(16 24 40 / 0.04);
+  --shadow-overlay: 0 12px 32px rgb(16 24 40 / 0.14), 0 4px 8px rgb(16 24 40 / 0.06);
+
+  /* Type additions (KPI numbers, table header caption) */
+  --text-kpi: 2rem;
+  --text-kpi--line-height: 2.5rem;
+  --text-kpi-sm: 1.5rem;
+  --text-kpi-sm--line-height: 2rem;
+  --text-table-head: 0.6875rem;
+  --text-table-head--line-height: 1rem;
+}
