@@ -81,7 +81,7 @@ test.describe("manual completion", () => {
       .getByRole("textbox", { name: /Notes \(required\)/ })
       .fill("Customer left the premises and the provider confirmed the work by photo.");
     await manualCompletion.continueButton.click();
-    await manualCompletion.button("Confirm with biometrics").click();
+    await manualCompletion.button("Confirm").click();
     await manualCompletion.passStepUp("Confirm");
 
     // Irreversible on purpose: a completion notifies the customer and releases payout eligibility.

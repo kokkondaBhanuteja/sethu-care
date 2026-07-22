@@ -84,16 +84,17 @@ test.describe("a dialog opened from a trigger", () => {
 
 test.describe("a drawer", () => {
   test("traps focus, and Escape returns it to the control that opened it", async ({ page }) => {
-    // The audit log's "More filters" is the console's canonical Drawer: settings-shaped work that
-    // must not hide the record it acts on.
-    await page.goto(ROUTES.audit);
+    // The redispatch flow is the console's canonical Drawer: settings-shaped work that must not
+    // hide the record it acts on. (The audit "More filters" drawer it replaced was removed as a
+    // duplicate of the inline filter band.)
+    await page.goto(ROUTES.bookingDetail("B-8823"));
 
-    const filters = page.getByRole("button", { name: "More filters" });
-    await expect(filters).toBeVisible();
-    await filters.focus();
-    await filters.press("Enter");
+    const searchAgain = page.getByRole("button", { name: "Search again" }).first();
+    await expect(searchAgain).toBeVisible();
+    await searchAgain.focus();
+    await searchAgain.press("Enter");
 
-    const drawer = page.getByRole("dialog", { name: "Filter entries" });
+    const drawer = page.getByRole("dialog", { name: "Search for a provider again" });
     await expect(drawer).toBeVisible();
     const focusedInside = await drawer.evaluate((panel) => panel.contains(document.activeElement));
     expect(focusedInside).toBe(true);
@@ -101,6 +102,6 @@ test.describe("a drawer", () => {
     await page.keyboard.press("Escape");
 
     await expect(drawer).toBeHidden();
-    await expect(filters).toBeFocused();
+    await expect(searchAgain).toBeFocused();
   });
 });

@@ -5,10 +5,6 @@ import { BOOKING_TRIGGERS, GOODWILL_CAP_BREACH_RUPEES } from "../support/mockTri
  * Refunds (BOX 29–30). Money leaves the platform here, so the two server limits the form mirrors —
  * the ₹500 goodwill cap and the hourly rate limit — get their own tests, and the absence of an undo
  * gets one too.
- *
- * The tests that must PRESS "Continue to confirm" are fixme'd today —
- * `KNOWN_DEFECTS.modalFooterUnreachable` makes them time out on an unreachable button. Do not
- * weaken them to go green — unmark them when the Modal regains its pinned footer.
  */
 
 test("the ordinary refund path loads with the booking's payment restated", async ({ refund }) => {
@@ -27,7 +23,7 @@ test("a goodwill credit above the cap is refused with the reason and the number"
   await refund.amount.fill(GOODWILL_CAP_BREACH_RUPEES);
 
   await refund.expectCapError();
-  // Announced twice by design — as the field's own error and again in the amount summary.
+  // One visible instance (the field's own error); the summary repeats it sr-only for live regions.
   await expect(
     refund.dialog.getByText(/Amounts above the cap need Super Admin approval on desktop\./).first(),
   ).toBeVisible();
@@ -47,9 +43,10 @@ test("the rate-limited state replaces the form instead of disabling it", async (
 
   await expect(refund.rateLimitedTitle).toBeVisible();
   await expect(refund.dialog.getByText(/This limit exists as a fraud control/)).toBeVisible();
-  // A disabled form invites hunting for the disabled control; the form is gone instead.
+  // A disabled form invites hunting for the disabled control; the form AND its commit are gone.
   await expect(refund.typeGroup).toHaveCount(0);
-  await expect(refund.continueToConfirm).toBeDisabled();
+  await expect(refund.continueToConfirm).toHaveCount(0);
+  await expect(refund.dialog.getByRole("button", { name: "Close" })).toBeVisible();
 });
 
 test("a completed refund is announced with NO undo", async ({ refund }) => {
