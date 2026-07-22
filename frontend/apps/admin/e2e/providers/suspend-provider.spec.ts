@@ -3,16 +3,13 @@ import { PROVIDER_TRIGGERS } from "../support/mockTriggers";
 import { chooseOption } from "../support/controls";
 
 /**
- * Suspension (BOX 36–38): four deliberate steps, and step 3 is the point of the whole flow —
+ * Suspension (BOX 36–38): three deliberate steps, and the active-jobs step is the point of the
+ * whole flow —
  * suspending a provider mid-job is invisible to the admin and catastrophic to the person waiting
  * at home, so every live booking must be explicitly handled before the flow can continue.
  *
- * Action type and reason share one pane, so the rail runs 1&2 → 3 → 4.
- *
- * Every test that must PRESS Continue is fixme'd today: the ui-web Modal migration left the
- * footer button below a viewport nothing can scroll (`KNOWN_DEFECTS.modalFooterUnreachable`), so
- * no step past the first can even be reached and those tests can only time out. Do not weaken
- * them to go green — unmark them when the Modal regains its pinned footer.
+ * Action type and reason share the first pane, and the rail says so: "Action & reason" →
+ * "Active jobs" → "Confirm".
  */
 
 const REASON = "Customer safety complaint";
@@ -21,8 +18,8 @@ test.beforeEach(async ({ suspendProvider }) => {
   await suspendProvider.goto(PROVIDER_TRIGGERS.withActiveJobs);
 });
 
-test("the rail names all four steps up front", async ({ suspendProvider }) => {
-  await suspendProvider.expectAllFourSteps();
+test("the rail names all three steps up front", async ({ suspendProvider }) => {
+  await suspendProvider.expectAllSteps();
   await suspendProvider.expectStepNumber(1);
 });
 
@@ -43,12 +40,10 @@ test("step 1 gates on a reason code", async ({ suspendProvider }) => {
 });
 
 /**
- * The race this test exists for (`goNext` reading an unresolved active-jobs query as zero jobs)
- * was fixed, but the test cannot currently prove it stays fixed: the Continue press it needs is
- * blocked by `KNOWN_DEFECTS.modalFooterUnreachable`, which is why it carries the same mark as its
- * neighbours.
+ * Guards the race where `goNext` read an unresolved active-jobs query as zero jobs and skipped
+ * the handling step.
  */
-test("step 3 must not be skipped while the active-jobs query is still in flight", async ({
+test("the active-jobs step must not be skipped while the active-jobs query is still in flight", async ({
   suspendProvider,
 }) => {
   // No wait for the record: this is exactly what a fast operator does.
@@ -58,10 +53,10 @@ test("step 3 must not be skipped while the active-jobs query is still in flight"
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
 });
 
-test("step 3 lists the provider's active jobs", async ({ suspendProvider }) => {
+test("the active-jobs step lists the provider's active jobs", async ({ suspendProvider }) => {
   await suspendProvider.continueFromStepOne(REASON);
 
-  await suspendProvider.expectStepNumber(3);
+  await suspendProvider.expectStepNumber(2);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
   await expect(
     suspendProvider.dialog.getByText(/has \d+ active jobs\. Each must be handled/),
@@ -70,7 +65,9 @@ test("step 3 lists the provider's active jobs", async ({ suspendProvider }) => {
   await expect(suspendProvider.reassign.first()).toBeVisible();
 });
 
-test("step 3 refuses to continue while a job is unhandled", async ({ suspendProvider }) => {
+test("the active-jobs step refuses to continue while a job is unhandled", async ({
+  suspendProvider,
+}) => {
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
 
@@ -80,7 +77,7 @@ test("step 3 refuses to continue while a job is unhandled", async ({ suspendProv
   ).toBeVisible();
 });
 
-test("handling every job unlocks step 4", async ({ suspendProvider }) => {
+test("handling every job unlocks the confirm step", async ({ suspendProvider }) => {
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
 
@@ -88,11 +85,13 @@ test("handling every job unlocks step 4", async ({ suspendProvider }) => {
   await expect(suspendProvider.continueButton).toBeEnabled();
   await suspendProvider.continueButton.click();
 
-  await suspendProvider.expectStepNumber(4);
+  await suspendProvider.expectStepNumber(3);
   await expect(suspendProvider.dialog.getByRole("heading", { name: "Confirm" })).toBeVisible();
 });
 
-test("step 4 shows the message the provider will actually receive", async ({ suspendProvider }) => {
+test("the confirm step shows the message the provider will actually receive", async ({
+  suspendProvider,
+}) => {
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
   await suspendProvider.letEveryJobFinish();
@@ -119,10 +118,12 @@ test("a suspension length is only offered for a temporary suspension", async ({
   ).toHaveCount(0);
 });
 
-test("a provider with no active jobs skips step 3 legitimately", async ({ suspendProvider }) => {
+test("a provider with no active jobs skips the jobs step legitimately", async ({
+  suspendProvider,
+}) => {
   await suspendProvider.goto(PROVIDER_TRIGGERS.withoutActiveJobs);
   await suspendProvider.continueFromStepOne("Document expired or invalid");
 
-  await suspendProvider.expectStepNumber(4);
+  await suspendProvider.expectStepNumber(3);
   await expect(suspendProvider.activeJobsHeading).toHaveCount(0);
 });

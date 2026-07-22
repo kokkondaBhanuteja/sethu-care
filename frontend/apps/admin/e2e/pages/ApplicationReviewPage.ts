@@ -22,7 +22,9 @@ export class ApplicationReviewPage extends ActionFlowPage {
     this.approve = page.getByRole("button", { name: "Approve", exact: true });
     this.rejectReasonGroup = this.dialog.getByRole("group", { name: "Reason" });
     this.rejectNote = this.dialog.getByRole("textbox", { name: "Note (required)" });
-    this.confirmReject = this.dialog.getByRole("button", { name: "Confirm with biometrics" });
+    this.confirmReject = this.dialog.getByRole("button", {
+      name: "Reject application with biometrics",
+    });
     this.finality = page.getByText("Rejection is final. The applicant is notified by SMS.");
   }
 

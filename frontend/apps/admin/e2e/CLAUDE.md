@@ -83,18 +83,9 @@ naming the defect. It is never weakened to go green. Playwright counts an expect
 pass, so the run is green while the defect is open — the `✘` markers in the output are the list of
 open defects, and each one carries its explanation in the spec.
 
-Two are open today:
-
-1. **`bookings/manual-completion.spec.ts` — the whole file.** `/bookings/<any id>/manual-complete`
-   throws `RangeError: Invalid time value` on first render and dies in `RouteErrorBoundary`.
-   `OtpArrivedInterrupt` formats `context?.otpArrivedAtIso ?? ""` in its component body, which runs
-   before any data arrives and whether or not its modal is open. `shell/routes.spec.ts` carries the
-   same expectation for that route, via the `defect` field in `support/routeExpectations.ts`.
-2. **`providers/suspend-provider.spec.ts` — "step 3 must not be skipped…".**
-   `useSuspendProviderFlow.goNext` reads an unresolved active-jobs query as zero active jobs, so a
-   Continue pressed before the record loads skips the reassignment step — the step the flow exists
-   for. The other step-3 tests reach step 3 through `continueFromStepOne()`, which waits for the
-   record first, so they test step 3 rather than re-testing the race.
+None are open today. The former registry (`support/knownDefects.ts`) died with its last two
+entries — the modal pinned-footer regression and the overlay focus-return regression — when both
+fixes landed; the specs that carried their marks run unmarked.
 
 ## Running it
 

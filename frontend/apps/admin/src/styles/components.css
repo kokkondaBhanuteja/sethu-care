@@ -1581,15 +1581,6 @@
     font-weight: 600;
     color: inherit;
   }
-  .steprail__dot {
-    width: 8px;
-    height: 8px;
-    border-radius: var(--r-full);
-    background: var(--brand);
-  }
-  .steprail__dot--danger {
-    background: var(--danger);
-  }
   .steprail__foot {
     margin-top: auto;
     padding: var(--s3) var(--s2) 0;

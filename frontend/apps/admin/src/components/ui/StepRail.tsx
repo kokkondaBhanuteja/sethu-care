@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+
 import { cx } from "../../lib/cx";
 
 export interface StepDefinition {
@@ -10,7 +12,7 @@ export interface StepRailProps {
   steps: readonly StepDefinition[];
   /** Zero-based index of the step being shown. */
   activeIndex: number;
-  /** Marks completed step dots red — used by the flows whose outcome is destructive. */
+  /** Colours the completed-step checks — used by the flows whose outcome is destructive. */
   tone?: "brand" | "danger";
   footer?: React.ReactNode;
 }
@@ -36,8 +38,12 @@ export function StepRail({ label, steps, activeIndex, tone = "brand", footer }: 
           >
             <span className="steprail__marker">
               {index < activeIndex ? (
-                <span
-                  className={cx("steprail__dot", tone === "danger" && "steprail__dot--danger")}
+                // A check, not a filled dot: in a danger-toned rail a red dot on a finished
+                // step reads as a failure. The glyph says "done"; the tone keeps the flow's colour.
+                <Check
+                  className={cx("size-3.5", tone === "danger" ? "text-danger-fg" : "text-primary")}
+                  strokeWidth={2.5}
+                  aria-hidden
                 />
               ) : (
                 <span className="steprail__num">{index + 1}</span>

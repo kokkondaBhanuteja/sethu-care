@@ -53,15 +53,15 @@ export class SuspendProviderPage extends ActionFlowPage {
     await this.continueButton.click();
   }
 
-  async expectAllFourSteps(): Promise<void> {
-    for (const name of ["Action type", "Reason", "Active jobs", "Confirm"]) {
+  async expectAllSteps(): Promise<void> {
+    for (const name of ["Action & reason", "Active jobs", "Confirm"]) {
       await expect(this.step(name)).toBeVisible();
     }
   }
 
-  /** The counter is the modal's subtitle: "1 of 4", "3 of 4", "4 of 4". */
+  /** The counter is the modal's subtitle: "1 of 3", "2 of 3", "3 of 3". */
   async expectStepNumber(current: number): Promise<void> {
-    await expect(this.dialog.getByText(`${current} of 4`)).toBeVisible();
+    await expect(this.dialog.getByText(`${current} of 3`)).toBeVisible();
   }
 
   /**
