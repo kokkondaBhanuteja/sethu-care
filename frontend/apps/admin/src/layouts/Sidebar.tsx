@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, Suspense, lazy, useState } from "react";
 import { NavLink } from "react-router";
 import { ChevronDown, Zap } from "lucide-react";
 import { useSession } from "@sethu/core";
@@ -7,7 +7,13 @@ import { useTranslation } from "@sethu/i18n";
 import { cx } from "../lib/cx";
 import { Avatar } from "../components/ui/Avatar";
 import { Icon } from "../components/ui/Icon";
-import { SignOutConfirm } from "../features/settings/SignOutConfirm";
+// Lazy on purpose: the shell is on the critical path and this dialog is not. Importing it eagerly
+// pulled the whole settings feature — its api, mocks and fixtures — into the entry chunk.
+const SignOutConfirm = lazy(() =>
+  import("../features/settings/SignOutConfirm").then((module) => ({
+    default: module.SignOutConfirm,
+  })),
+);
 import { APP_BUILD } from "../lib/env";
 import { useShellCounters } from "../queries/useShellCounters";
 import { SIDEBAR_GROUPS, type NavItem } from "./navigation.constants";
@@ -64,7 +70,11 @@ export function Sidebar() {
               <Icon glyph={ChevronDown} size="sm" label={t("nav.openMenu")} />
             </span>
           </button>
-          <SignOutConfirm isOpen={isSigningOut} onDismiss={() => setIsSigningOut(false)} />
+          {isSigningOut ? (
+            <Suspense fallback={null}>
+              <SignOutConfirm isOpen onDismiss={() => setIsSigningOut(false)} />
+            </Suspense>
+          ) : null}
         </>
       ) : null}
 

@@ -2,8 +2,13 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router";
 
 import { RouteErrorBoundary } from "../components/ErrorBoundary";
-import { DesktopOnlySummary } from "../features/settings/DesktopOnlySummary";
-import { DESKTOP_SURFACES } from "../features/settings/settings.constants";
+// Lazy: these render only on a phone reaching a desktop-only route, which is the rarest path in
+// the app. Eager imports put the settings feature on the critical path for every user.
+const DesktopOnlySummary = lazy(() =>
+  import("../features/settings/DesktopOnlySummary").then((module) => ({
+    default: module.DesktopOnlySummary,
+  })),
+);
 import { Spinner } from "../components/ui/Spinner";
 import { AdminShell } from "../layouts/AdminShell";
 import { ADMIN_ACTIONS } from "../lib/permissions/actions";
@@ -140,7 +145,7 @@ export function AppRoutes() {
                 element={
                   <SurfaceGuard
                     destinationLabelKey="nav.payouts"
-                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.payouts} />}
+                    summary={<DesktopOnlySummary surface="payouts" />}
                   />
                 }
               >
@@ -150,7 +155,7 @@ export function AppRoutes() {
                 element={
                   <SurfaceGuard
                     destinationLabelKey="nav.services"
-                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.services} />}
+                    summary={<DesktopOnlySummary surface="services" />}
                   />
                 }
               >
@@ -160,7 +165,7 @@ export function AppRoutes() {
                 element={
                   <SurfaceGuard
                     destinationLabelKey="nav.pricing"
-                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.pricing} />}
+                    summary={<DesktopOnlySummary surface="pricing" />}
                   />
                 }
               >
@@ -170,7 +175,7 @@ export function AppRoutes() {
                 element={
                   <SurfaceGuard
                     destinationLabelKey="nav.reports"
-                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.reports} />}
+                    summary={<DesktopOnlySummary surface="reports" />}
                   />
                 }
               >
@@ -180,7 +185,7 @@ export function AppRoutes() {
                 element={
                   <SurfaceGuard
                     destinationLabelKey="nav.platformSettings"
-                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.platform} />}
+                    summary={<DesktopOnlySummary surface="platform" />}
                   />
                 }
               >

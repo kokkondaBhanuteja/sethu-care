@@ -1,4 +1,10 @@
-export { initI18n, isSupportedLanguage, supportedLanguages, detectBrowserLanguage } from "./config";
+export {
+  initI18n,
+  loadLanguage,
+  isSupportedLanguage,
+  supportedLanguages,
+  detectBrowserLanguage,
+} from "./config";
 export type { SupportedLanguage } from "./config";
 export { defaultNS, resources } from "./resources";
 export type { AppResources } from "./resources";

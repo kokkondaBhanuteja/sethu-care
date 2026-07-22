@@ -1,0 +1,216 @@
+
+
+========== /bookings/B-8823/cancel @1440 -> http://localhost:4175/bookings/B-8823/cancel
+- dialog "Cancel booking":
+  - text: "Cancel booking #B-8823"
+  - button "Close"
+  - paragraph: This cannot be undone
+  - list:
+    - listitem: Ravi Kumar will be notified by SMS
+    - listitem: ₹1,499.00 refund will be initiated
+  - group "Reason (required)":
+    - text: Reason (required)
+    - radio "Customer unreachable"
+    - text: Customer unreachable
+    - radio "Duplicate booking"
+    - text: Duplicate booking
+    - radio "No provider available"
+    - text: No provider available
+    - radio "Pricing dispute"
+    - text: Pricing dispute
+    - radio "Safety concern Triggers a safety review"
+    - text: Safety concern Triggers a safety review
+    - radio "Test / internal"
+    - text: Test / internal
+    - radio "Fraud suspected Triggers a safety review"
+    - text: Fraud suspected Triggers a safety review
+    - radio "Other — note required"
+    - text: Other — note required
+    - radio "Out of service area"
+    - text: Out of service area
+  - text: Marked reasons trigger a safety review. Note
+  - textbox "Note":
+    - /placeholder: What happened?
+  - paragraph: 0/500
+  - paragraph: Refund
+  - text: Policy refund ₹1,499.00 (full)
+  - paragraph: Computed from the cancellation policy.
+  - button "Override amount"
+  - button "Cancel"
+  - button "Continue to confirm"
+---
+
+
+========== /bookings/B-8809/manual-complete @1440 -> http://localhost:4175/bookings/B-8809/manual-complete
+
+
+========== /bookings/B-8790/refund @1440 -> http://localhost:4175/bookings/B-8790/refund
+- dialog "Issue refund":
+  - text: "Issue refund #B-8790 · AC Repair — Deep Clean · Ravi Kumar · ₹1,499.00 paid by UPI ····4242 on 18/07/2026"
+  - button "Close"
+  - group "Refund type":
+    - text: Refund type
+    - radio "Full refund 5–7 days Entire amount to the original method" [checked]
+    - text: Full refund 5–7 days Entire amount to the original method
+    - radio "Partial refund 5–7 days A specified amount to the original method"
+    - text: Partial refund 5–7 days A specified amount to the original method
+    - radio "Wallet credit Instant SetuCare credit, usable immediately"
+    - text: Wallet credit Instant SetuCare credit, usable immediately
+    - radio "Goodwill credit Instant Credit beyond the booking value"
+    - text: Goodwill credit Instant Credit beyond the booking value
+    - radio "Waive cancellation fee Instant Removes an applied fee"
+    - text: Waive cancellation fee Instant Removes an applied fee
+  - text: Amount (₹) (required)
+  - spinbutton "Amount (₹) (required)": "1499"
+  - paragraph: Booking value ₹1,499.00 · already refunded ₹0.00 · refundable ₹1,499.00
+  - group "Reason (required)":
+    - text: Reason (required)
+    - radio "Service not delivered"
+    - text: Service not delivered
+    - radio "Duplicate payment"
+    - text: Duplicate payment
+    - radio "Poor service quality"
+    - text: Poor service quality
+    - radio "Cancellation policy exception"
+    - text: Cancellation policy exception
+    - radio "Provider no-show"
+    - text: Provider no-show
+    - radio "Goodwill / retention"
+    - text: Goodwill / retention
+    - radio "Overcharged"
+    - text: Overcharged
+    - radio "Safety incident"
+    - text: Safety incident
+    - radio "Other"
+    - text: Other
+  - text: Note
+  - textbox "Note":
+    - /placeholder: Note — recorded on the booking and in the audit log
+  - paragraph: 0/500
+  - paragraph: Summary
+  - term: Booking
+  - definition: "#B-8790"
+  - term: Customer
+  - definition: Ravi Kumar
+  - term: Original
+  - definition: UPI ····4242
+  - term: Refund
+  - definition: ₹1,499.00
+  - paragraph: Reaches customer in 5–7 working days
+  - group "Provider payout":
+    - text: Provider payout
+    - radio "Withhold Suresh Mehta's ₹1,049.00 payout Default for provider-at-fault reasons" [checked]
+    - text: Withhold Suresh Mehta's ₹1,049.00 payout Default for provider-at-fault reasons
+    - radio "Pay the provider anyway Requires a note"
+    - text: Pay the provider anyway Requires a note
+  - paragraph: The provider is notified either way.
+  - paragraph: 3 of 10 refunds this hour.
+  - button "Cancel"
+  - button "Continue to confirm"
+---
+
+
+========== /bookings/B-8787/refund @1440 -> http://localhost:4175/bookings/B-8787/refund
+- dialog "Issue refund":
+  - text: "Issue refund #B-8787 · AC Repair — Deep Clean · Ravi Kumar · ₹1,499.00 paid by UPI ····4242 on 18/07/2026"
+  - button "Close"
+  - paragraph: Refund limit reached
+  - paragraph: 10 refunds in the last hour. This limit exists as a fraud control. Try again at 5:12 pm.
+  - button "Cancel"
+  - button "Continue to confirm" [disabled]
+---
+
+
+========== /providers/PRV-882/suspend @1440 -> http://localhost:4175/providers/PRV-882/suspend
+- dialog "Suspend provider":
+  - navigation "Suspend provider steps":
+    - list:
+      - listitem: 1 Action type
+      - listitem: 2 Reason
+      - listitem: 3 Active jobs
+      - listitem: 4 Confirm
+    - text: "Suresh Mehta Suresh Mehta PRV-882 · Avg rating: 4.8"
+  - text: Suspend provider 1 of 4
+  - button "Close"
+  - alert: This stops their income
+  - heading "What should happen?" [level=2]
+  - group "What should happen?":
+    - text: What should happen?
+    - radio "Force offline Removed from dispatch until they come back online Reversible immediately"
+    - text: Force offline Removed from dispatch until they come back online Reversible immediately
+    - radio "Suspend (temporary) Blocked for a set period, then auto-restored Auto-restores" [checked]
+    - text: Suspend (temporary) Blocked for a set period, then auto-restored Auto-restores
+    - radiogroup "Suspension length":
+      - radio "1 day"
+      - radio "3 days"
+      - radio "7 days" [checked]
+      - radio "30 days"
+    - radio "Block (indefinite) Blocked until manually restored Manual restore only"
+    - text: Block (indefinite) Blocked until manually restored Manual restore only
+  - group "Reason (required)":
+    - text: Reason (required)
+    - radio "Customer safety complaint"
+    - text: Customer safety complaint
+    - radio "Repeated cancellations"
+    - text: Repeated cancellations
+    - radio "Poor service quality"
+    - text: Poor service quality
+    - radio "Fraud suspected"
+    - text: Fraud suspected
+    - radio "Document expired or invalid"
+    - text: Document expired or invalid
+    - radio "Unprofessional conduct"
+    - text: Unprofessional conduct
+    - radio "No-show pattern"
+    - text: No-show pattern
+    - radio "Policy violation"
+    - text: Policy violation
+    - radio "Other"
+    - text: Other
+  - text: Add context for the audit log
+  - textbox "Add context for the audit log"
+  - paragraph: 0/500
+  - button "Cancel"
+  - button "Continue" [disabled]
+---
+
+
+========== /providers/applications/APP-4471 @1440 -> http://localhost:4175/providers/applications/APP-4471
+- main:
+  - text: Ajay Verma
+  - paragraph: Ajay Verma
+  - paragraph: +91 98123 45678
+  - paragraph: ajay.verma@gmail.com
+  - paragraph: Miyapur, Hyderabad
+  - paragraph: Applied 17/07/2026
+  - text: Categories Electrical · 6 years claimed AC Repair · 3 years claimed
+  - separator
+  - text: Background check
+  - paragraph: Cleared · 19/07/2026
+  - separator
+  - text: Prior applications
+  - paragraph: None
+  - text: Reviewer notes Reviewer notes
+  - textbox "Reviewer notes":
+    - /placeholder: Add a note for the next reviewer…
+  - button "Add note" [disabled]
+  - group "Uploaded documents":
+    - button "Aadhaar card"
+    - button "Driving licence"
+    - button "Electrical certification"
+    - button "Bank details"
+    - button "Police verification" [pressed]
+    - text: Police verification Document 5 of 5 · uploaded 17/07/2026 · 1.2 MB
+  - group "Document viewer":
+    - article:
+      - paragraph: Police verification certificate
+      - paragraph: "Name: A. VERMA"
+    - button "Zoom out" [disabled]
+    - button "Zoom in"
+    - button "Rotate"
+  - text: Auto-validation
+  - list:
+    - listitem: Expiry check · passed
+    - listitem: Blur detection · passed
+    - listitem: OCR name match · FAILED — read “A. Verma”, expected “Ajay Verma”
+---

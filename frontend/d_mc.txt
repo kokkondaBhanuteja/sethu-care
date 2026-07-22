@@ -1,0 +1,12 @@
+
+
+========== /bookings/B-8809/manual-complete @1440 -> http://localhost:4175/bookings/B-8809/manual-complete
+- paragraph: This screen failed to load
+- paragraph: "The error has been recorded. Retry, or contact support if it keeps happening. (app: Invalid time value)"
+- button "Retry"
+
+
+========== /bookings/B-8823/manual-complete @1440 -> http://localhost:4175/bookings/B-8823/manual-complete
+- paragraph: This screen failed to load
+- paragraph: "The error has been recorded. Retry, or contact support if it keeps happening. (app: Invalid time value)"
+- button "Retry"

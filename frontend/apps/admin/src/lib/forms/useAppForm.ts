@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   useForm,
   type DefaultValues,
@@ -57,11 +57,16 @@ export function useAppForm<TValues extends FieldValues>({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<ApiError | null>(null);
 
-  const submit = form.handleSubmit(async (values) => {
-    // The in-flight flag is the guard: RHF's own isSubmitting resets between the await and the
-    // re-render, which is exactly the window a second click lands in.
-    if (isSubmitting) return;
+  // The ref, not the state, is the guard. RHF's own isSubmitting resets between the await and the
+  // re-render, and a `useState` flag is no better: two taps 40ms apart land in the same commit, so
+  // both handlers close over the pre-submit `false` and the refund is issued twice. The ref is
+  // written synchronously, so the second handler sees the first one's decision.
+  const inFlightRef = useRef(false);
 
+  const submit = form.handleSubmit(async (values) => {
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
     setIsSubmitting(true);
     setFormError(null);
     try {
@@ -71,6 +76,7 @@ export function useAppForm<TValues extends FieldValues>({
       applyFieldErrors(form, error);
       setFormError(error);
     } finally {
+      inFlightRef.current = false;
       setIsSubmitting(false);
     }
   });
