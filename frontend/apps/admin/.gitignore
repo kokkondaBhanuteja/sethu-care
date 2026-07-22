@@ -1,0 +1,4 @@
+
+# Playwright state-sweep build outputs (VITE_MOCK_MODE variants)
+dist-e2e-*/
+e2e/.auth/
