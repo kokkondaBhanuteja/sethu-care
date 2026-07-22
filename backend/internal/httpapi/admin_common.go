@@ -4,15 +4,23 @@ import (
 	"encoding/json"
 	"log/slog"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
+
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 )
 
 // This file and its admin_*.go siblings declare the SETHU-CARE admin console's API contract as
-// huma operations. They are DECLARATION-ONLY: every handler returns 501 so the OpenAPI document
-// (and therefore the console's generated client) exists before the server-side work does. The
-// backend team fills the bodies in behind these signatures without the contract moving.
+// huma operations. The contract was declared first — every handler returned 501 so the OpenAPI
+// document (and therefore the console's generated client) existed before the server-side work
+// did. Phase 1 filled in the operations whose data already exists in the domain (dashboard,
+// bookings list/detail, audit list); the rest still return 501 behind the same frozen contract.
 //
 // Two rules the DTOs below hold themselves to, decided when the contract was reviewed:
 //
@@ -30,16 +38,27 @@ const adminSchemaRefPrefix = "#/components/schemas/"
 // AdminHandler serves the admin console. Every operation is ADMIN-only except the sign-in flows,
 // which cannot be — they are how an admin obtains a token in the first place.
 //
-// The handler holds no services: these operations are contract declarations whose bodies are not
-// written yet. It still takes the logger and follows the NewXHandler/RegisterHuma shape of the
-// other handlers so the server can construct and mount it unchanged once they are.
+// It holds the domain services behind the Phase-1 operations; operations still awaiting their
+// domain (alerts, providers, applications, payouts, …) keep returning 501.
 type AdminHandler struct {
-	log *slog.Logger
+	log      *slog.Logger
+	ops      *ops.Service
+	bookings *booking.Service
+	ledger   *ledger.Service
+	audit    *audit.Service
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger) *AdminHandler {
-	return &AdminHandler{log: log}
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service) *AdminHandler {
+	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService}
+}
+
+// adminBookingReference derives the operator-facing booking reference ("#B-8823A0FF") from the
+// id: the first eight hex digits, uppercased. Bookings carry no stored reference column yet, so
+// the reference is a stable projection of the id — and search reverses the projection by prefix-
+// matching the id.
+func adminBookingReference(bookingID uuid.UUID) string {
+	return "#B-" + strings.ToUpper(strings.ReplaceAll(bookingID.String(), "-", "")[:8])
 }
 
 // RegisterHuma registers every admin-console operation. The list is split across admin_*.go by

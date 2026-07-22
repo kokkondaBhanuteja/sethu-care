@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -294,6 +295,7 @@ func newServer(t *testing.T) *testEnv {
 		Address:      address.New(pool),
 		Ops:          ops.New(pool, bookingService),
 		Ledger:       ledger.NewService(pool),
+		Audit:        audit.NewService(pool),
 		Verification: verifier,
 		Booking:      bookingService,
 		Reviews:      reviewer,

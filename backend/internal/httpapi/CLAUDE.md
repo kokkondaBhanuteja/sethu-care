@@ -27,6 +27,7 @@ Domain services (`booking`, `ledger`, `catalog`, `identity`, `ops`, `address`, `
 - `ratelimit.go` — `RateLimit(control, limit, window, next)`: per-IP fixed-window via `flow.Allow`; exempts `/health` + `/webhooks/*`; fails open; 429 + `Retry-After`. `clientIP` prefers first `X-Forwarded-For` hop.
 - `razorpay_webhook.go` — `RazorpayWebhookHandler`: raw handler, verifies HMAC on raw body, records to `gateway` inbox, captures via `ledger`, excluded from OpenAPI.
 - Per-resource handlers: `bookings.go`, `catalog.go`, `addresses.go`, `ops.go`, `cash.go`, `payments.go`, `photos.go`, `location.go`, `auth.go` — each a `NewXHandler(...).RegisterHuma(api)`.
+- `admin_*.go` — the admin console's contract (`AdminHandler`, frozen shapes; run `make openapi-check`, never regen-drift it). Phase 1 implemented: shell counters, dashboard summary/attention/activity (`ops` service), bookings list/detail (`booking.AdminList`/`AdminDetailByID` + `ledger.PaymentFactsForBooking` for the payment panel — the one deliberate two-service handler, since booking must not read the ledger), audit list (`audit.List`). Everything else still 501s via `notImplemented`. `adminBookingReference` derives the operator reference (#B- + first 8 id hex digits).
 
 ## Examples
 ```go

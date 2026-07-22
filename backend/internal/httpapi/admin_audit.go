@@ -7,6 +7,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 )
 
@@ -224,8 +225,137 @@ type auditPageOutput struct {
 	Body auditPage
 }
 
-func (handler *AdminHandler) listAuditEntries(_ context.Context, _ *opsListAuditEntriesInput) (*auditPageOutput, error) {
-	return nil, notImplemented("opsListAuditEntries")
+// recordedActionOf maps the wire vocabulary to the action string the audit log actually
+// records today: booking transitions driven by an admin. Wire actions nothing records yet
+// (refunds, provider suspensions, …) map to nothing — a filter on them is honestly empty.
+func recordedActionOf(action auditAction) (string, bool) {
+	recorded, ok := map[auditAction]string{
+		auditActionBookingAssign:         "ASSIGN",
+		auditActionBookingRedispatch:     "SEARCH",
+		auditActionBookingCancel:         "CANCEL",
+		auditActionBookingManualComplete: "VERIFY_COMPLETION",
+	}[action]
+	return recorded, ok
+}
+
+// wireActionOf is the reverse of recordedActionOf, for rows coming back out.
+func wireActionOf(recorded string) auditAction {
+	action := map[string]auditAction{
+		"ASSIGN":            auditActionBookingAssign,
+		"SEARCH":            auditActionBookingRedispatch,
+		"CANCEL":            auditActionBookingCancel,
+		"VERIFY_COMPLETION": auditActionBookingManualComplete,
+	}[recorded]
+	return action
+}
+
+// auditRiskOf is the risk classification per audited action, mirroring the console's action
+// registry: assignment and redispatch are medium-risk dispatch moves; cancelling and
+// admin-asserted completion are high-risk (step-up + reason in the registry).
+func auditRiskOf(action auditAction) riskLevel {
+	risk, ok := map[auditAction]riskLevel{
+		auditActionBookingAssign:         riskLevelMedium,
+		auditActionBookingRedispatch:     riskLevelMedium,
+		auditActionBookingCancel:         riskLevelHigh,
+		auditActionBookingManualComplete: riskLevelHigh,
+	}[action]
+	if !ok {
+		return riskLevelNone
+	}
+	return risk
+}
+
+func (handler *AdminHandler) listAuditEntries(ctx context.Context, input *opsListAuditEntriesInput) (*auditPageOutput, error) {
+	emptyPage := &auditPageOutput{Body: auditPage{Items: []auditEntry{}, Total: 0}}
+
+	// Only booking records carry audit entries today; a filter on any other target type (or
+	// on a wire action nothing records yet) truthfully matches nothing.
+	if input.TargetType != "" && input.TargetType != auditTargetTypeBooking {
+		return emptyPage, nil
+	}
+	filter := audit.ListFilter{Limit: input.Limit, Cursor: input.Cursor}
+	if input.Action != "" {
+		recorded, known := recordedActionOf(input.Action)
+		if !known {
+			return emptyPage, nil
+		}
+		filter.Action = recorded
+	}
+	if input.AdminID != "" {
+		adminID, err := parseUUID(input.AdminID, "adminId")
+		if err != nil {
+			return nil, toHumaError(handler.log, err)
+		}
+		filter.AdminID = &adminID
+	}
+	if input.TargetID != "" {
+		targetID, err := parseUUID(input.TargetID, "targetId")
+		if err != nil {
+			return nil, toHumaError(handler.log, err)
+		}
+		filter.TargetID = &targetID
+	}
+	if !input.From.IsZero() {
+		from := input.From
+		filter.From = &from
+	}
+	if !input.To.IsZero() {
+		to := input.To
+		filter.To = &to
+	}
+
+	page, err := handler.audit.List(ctx, filter)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := auditPage{
+		Items:     make([]auditEntry, len(page.Entries)),
+		RangeFrom: page.RangeFrom,
+		RangeTo:   page.RangeTo,
+		Total:     page.Total,
+	}
+	for index, entry := range page.Entries {
+		body.Items[index] = toAuditEntryDTO(entry)
+	}
+	if page.NextCursor != "" {
+		nextCursor := page.NextCursor
+		body.NextCursor = &nextCursor
+	}
+	return &auditPageOutput{Body: body}, nil
+}
+
+// toAuditEntryDTO shapes one recorded entry for the wire. Honesty notes:
+//   - admin.email is empty — identity has no email; admins are phone-provisioned.
+//   - context is zeroed (surface defaults to desktop): capture context (device, IP, OTA
+//     bundle, step-up) is not recorded yet.
+//   - evidence is empty and reason null: neither has storage yet.
+//   - the compensating links are null: no compensating actions exist yet.
+func toAuditEntryDTO(entry audit.ListedEntry) auditEntry {
+	action := wireActionOf(entry.Action)
+	return auditEntry{
+		Action: action,
+		Admin:  auditAdmin{Email: "", ID: entry.AdminID.String(), Name: entry.AdminName},
+		After:  auditStateSnapshot(entry.After),
+		Before: auditStateSnapshot(entry.Before),
+		Context: auditContext{
+			Surface: auditSurfaceDesktop,
+		},
+		Evidence: auditEvidence{
+			CallLogIDs: []string{},
+			PhotoIDs:   []string{},
+			ReportIDs:  []string{},
+		},
+		ID:        entry.ID.String(),
+		Immutable: true,
+		RiskLevel: auditRiskOf(action),
+		Target: auditTarget{
+			ID:        entry.EntityID.String(),
+			Reference: adminBookingReference(entry.EntityID),
+			Type:      auditTargetTypeBooking,
+		},
+		Timestamp: entry.At,
+	}
 }
 
 type auditAdminsOutput struct {

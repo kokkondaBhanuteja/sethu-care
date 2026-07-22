@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -187,8 +188,117 @@ type bookingsPageOutput struct {
 	Body bookingsPage
 }
 
-func (handler *AdminHandler) listBookings(_ context.Context, _ *opsListBookingsInput) (*bookingsPageOutput, error) {
-	return nil, notImplemented("opsListBookings")
+func (handler *AdminHandler) listBookings(ctx context.Context, input *opsListBookingsInput) (*bookingsPageOutput, error) {
+	var segment booking.AdminSegment
+	switch input.Segment {
+	case bookingSegmentActive, "":
+		segment = booking.AdminSegmentActive
+	case bookingSegmentCompleted:
+		segment = booking.AdminSegmentCompleted
+	case bookingSegmentCancelled:
+		segment = booking.AdminSegmentCancelled
+	default:
+		return nil, toHumaError(handler.log, &badRequestError{msg: "unknown segment"})
+	}
+
+	states := make([]booking.State, len(input.State))
+	for index, rawState := range input.State {
+		state, err := booking.ParseState(string(rawState))
+		if err != nil {
+			return nil, toHumaError(handler.log, &badRequestError{msg: "unknown state " + string(rawState)})
+		}
+		states[index] = state
+	}
+
+	listInput := booking.AdminListInput{
+		Segment: segment,
+		States:  states,
+		Zone:    input.Zone,
+		Service: input.Service,
+		Search:  strings.TrimSpace(input.Query),
+		Limit:   input.Limit,
+		Cursor:  input.Cursor,
+	}
+	if !input.From.IsZero() {
+		slotFrom := input.From
+		listInput.SlotFrom = &slotFrom
+	}
+	if !input.To.IsZero() {
+		slotTo := input.To
+		listInput.SlotTo = &slotTo
+	}
+
+	page, err := handler.bookings.AdminList(ctx, listInput)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	now := time.Now()
+	body := bookingsPage{
+		Counts: bookingSegmentCounts{
+			Active:              page.Counts.Active,
+			ActiveHasEscalation: page.Counts.ActiveHasEscalation,
+			Cancelled:           page.Counts.Cancelled,
+			Completed:           page.Counts.Completed,
+		},
+		IsAcrossSegments: page.IsAcrossSegments,
+		Items:            make([]bookingListItem, len(page.Items)),
+		Total:            page.Total,
+	}
+	for index, item := range page.Items {
+		body.Items[index] = bookingListItem{
+			AmountPaise:   item.Amount.Paise(),
+			Area:          item.City,
+			CustomerName:  item.CustomerName,
+			CustomerPhone: item.CustomerPhone,
+			ID:            item.BookingID.String(),
+			// No admin-asserted completion mechanism exists yet, so nothing is admin-verified.
+			IsAdminVerified: false,
+			ProviderName:    item.TechnicianName,
+			ProviderNote:    adminProviderNote(item, now),
+			Reference:       adminBookingReference(item.BookingID),
+			ServiceName:     item.ServiceName,
+			SlotAt:          item.SlotAt,
+			State:           bookingState(item.State.String()),
+		}
+	}
+	if page.NextCursor != "" {
+		nextCursor := page.NextCursor
+		body.NextCursor = &nextCursor
+	}
+	return &bookingsPageOutput{Body: body}, nil
+}
+
+// adminProviderNote derives the trailing provider line from the booking's state and how long
+// it has been there. Variants the platform has no data for yet (an ETA needs live technician
+// location) simply do not occur.
+func adminProviderNote(item booking.AdminListItem, now time.Time) providerNote {
+	minutesSince := func(since time.Time) *int32 {
+		minutes := int32(now.Sub(since).Minutes())
+		if minutes < 0 {
+			minutes = 0
+		}
+		return &minutes
+	}
+	switch item.State {
+	case booking.StateSearching, booking.StateEscalated:
+		return providerNote{Kind: providerNoteKindUnassignedFor, Minutes: minutesSince(item.StateSince)}
+	case booking.StateArrived:
+		return providerNote{Kind: providerNoteKindArrivedAgo, Minutes: minutesSince(item.StateSince)}
+	case booking.StateInProgress:
+		startedAt := item.StateSince
+		return providerNote{Kind: providerNoteKindStartedAt, At: &startedAt}
+	case booking.StateCompleted:
+		if item.ReviewRating != nil {
+			rating := float64(*item.ReviewRating)
+			return providerNote{Kind: providerNoteKindRating, Rating: &rating}
+		}
+		return providerNote{Kind: providerNoteKindNone}
+	case booking.StateDraft, booking.StateConfirmed, booking.StateAssigned, booking.StateEnRoute,
+		booking.StateAwaitingCompletion, booking.StateRescheduled, booking.StateCancelled, booking.StateFailed:
+		return providerNote{Kind: providerNoteKindNone}
+	}
+	return providerNote{Kind: providerNoteKindNone}
 }
 
 // --------------------------------------------------------------- the record
@@ -339,6 +449,178 @@ type bookingDetailOutput struct {
 	Body bookingDetail
 }
 
-func (handler *AdminHandler) getBooking(_ context.Context, _ *opsGetBookingInput) (*bookingDetailOutput, error) {
-	return nil, notImplemented("opsGetBooking")
+func (handler *AdminHandler) getBooking(ctx context.Context, input *opsGetBookingInput) (*bookingDetailOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	detail, err := handler.bookings.AdminDetailByID(ctx, bookingID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err) // classify maps ErrBookingNotFound to 404
+	}
+	// The payment panel composes a second read from the money side — the ledger owns the
+	// payments/REVENUE records and booking (a core) must not reach into them.
+	facts, err := handler.ledger.PaymentFactsForBooking(ctx, detail.BookingID, detail.OrderID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := bookingDetail{
+		AdminActivity: []bookingAdminActivity{},
+		AmountPaise:   detail.Amount.Paise(),
+		Area:          detail.City,
+		CreatedAt:     detail.CreatedAt,
+		Customer: bookingCustomer{
+			Address:      detail.AddressLine1 + ", " + detail.City + " " + detail.Pincode,
+			BookingCount: detail.CustomerBookingCount,
+			JoinedAt:     detail.CustomerSince,
+			Name:         detail.CustomerName,
+			Phone:        detail.CustomerPhone,
+		},
+		// No auto-dispatch engine exists yet: zero rounds and zero declines are the truth,
+		// not placeholders. Notes and admin-verified completions have no storage yet either.
+		DeclinedTotal:   0,
+		DispatchRounds:  []dispatchRound{},
+		ID:              detail.BookingID.String(),
+		IsAdminVerified: false,
+		Notes:           []string{},
+		Payment:         adminPaymentDTO(detail, facts),
+		Reference:       adminBookingReference(detail.BookingID),
+		ServiceTitle:    detail.ServiceName,
+		State:           bookingState(detail.State.String()),
+		Version:         int32(detail.Version),
+	}
+
+	// The timeline opens with the booking's creation (creation is not a transition, so
+	// booking_events has no row for it) and then maps every recorded transition the console
+	// vocabulary can name.
+	timeline := make([]bookingEvent, 0, len(detail.Timeline)+1)
+	timeline = append(timeline, bookingEvent{
+		At:   detail.CreatedAt,
+		ID:   detail.BookingID.String(),
+		Kind: bookingEventKindCreated,
+	})
+	var startedAt, completedAt, escalatedAt *time.Time
+	for _, entry := range detail.Timeline {
+		kind, mapped := adminTimelineKind(entry)
+		entryAt := entry.At
+		switch entry.Action {
+		case booking.ActionVerifyStart:
+			startedAt = &entryAt
+		case booking.ActionVerifyCompletion:
+			completedAt = &entryAt
+		case booking.ActionEscalate:
+			escalatedAt = &entryAt
+		case booking.ActionConfirm, booking.ActionSearch, booking.ActionAssign, booking.ActionDepart,
+			booking.ActionArrive, booking.ActionRequestCompletion, booking.ActionResume,
+			booking.ActionReschedule, booking.ActionCancel, booking.ActionFail:
+			// No marker to record for these.
+		}
+		if !mapped {
+			continue
+		}
+		event := bookingEvent{At: entry.At, ID: entry.EventID.String(), Kind: kind}
+		if entry.ActorName != nil {
+			event.ActorName = *entry.ActorName
+		}
+		if kind == bookingEventKindAutoAssigned && detail.TechnicianName != nil {
+			// booking_events does not record which technician an ASSIGN placed; the current
+			// assignee is the best available answer.
+			event.ProviderName = *detail.TechnicianName
+		}
+		timeline = append(timeline, event)
+
+		if kind == bookingEventKindEscalated {
+			body.AdminActivity = append(body.AdminActivity, bookingAdminActivity{
+				At:   entry.At,
+				ID:   entry.EventID.String(),
+				Kind: bookingAdminActivityKindSystemEscalated,
+			})
+		}
+	}
+	body.Timeline = timeline
+
+	if detail.TechnicianID != nil {
+		provider := bookingProvider{
+			CompletedAt: completedAt,
+			ID:          detail.TechnicianID.String(),
+			Rating:      detail.TechnicianRating,
+			StartedAt:   startedAt,
+		}
+		if detail.TechnicianName != nil {
+			provider.Name = *detail.TechnicianName
+		}
+		body.Provider = nullable[bookingProvider]{Value: &provider}
+	}
+	if detail.State == booking.StateEscalated {
+		since := detail.CreatedAt
+		if escalatedAt != nil {
+			since = *escalatedAt
+		}
+		minutes := int32(time.Since(since).Minutes())
+		if minutes < 0 {
+			minutes = 0
+		}
+		body.Escalation = nullable[bookingEscalation]{Value: &bookingEscalation{
+			Declined:          0,
+			MinutesUnresolved: minutes,
+			Rounds:            0,
+		}}
+	}
+	return &bookingDetailOutput{Body: body}, nil
+}
+
+// adminPaymentDTO fills the (non-nullable) payment panel. When no payment record exists yet —
+// most in-flight bookings — the quoted amount is reported with an empty method and a zero
+// paidAt: the contract has no "no payment yet" variant, so absence is encoded as zero values
+// rather than invented data.
+func adminPaymentDTO(detail booking.AdminDetail, facts ledger.PaymentFacts) bookingPayment {
+	payment := bookingPayment{
+		AmountPaise: detail.Amount.Paise(),
+		IsPrepaid:   false, // payment always follows completion on this platform
+		Last4:       "",    // card rails do not exist; UPI/cash carry no last-four
+	}
+	if !facts.Found {
+		return payment
+	}
+	payment.AmountPaise = facts.Amount.Paise()
+	payment.Method = paymentMethod(facts.Method.String())
+	payment.TransactionID = facts.TransactionID
+	if facts.PaidAt != nil {
+		payment.PaidAt = *facts.PaidAt
+	}
+	return payment
+}
+
+// adminTimelineKind maps a recorded transition to the console's timeline vocabulary. ASSIGN
+// maps to autoAssigned — the vocabulary's only assignment kind — with the acting admin named
+// on the event; transitions outside the vocabulary (CONFIRM, REQUEST_COMPLETION, RESUME,
+// RESCHEDULE) are omitted from the timeline.
+func adminTimelineKind(entry booking.AdminTimelineEntry) (bookingEventKind, bool) {
+	switch entry.Action {
+	case booking.ActionSearch:
+		return bookingEventKindSearching, true
+	case booking.ActionAssign:
+		return bookingEventKindAutoAssigned, true
+	case booking.ActionDepart:
+		return bookingEventKindEnRoute, true
+	case booking.ActionArrive:
+		return bookingEventKindArrived, true
+	case booking.ActionVerifyStart:
+		return bookingEventKindStarted, true
+	case booking.ActionVerifyCompletion:
+		if entry.ActorRole != nil && *entry.ActorRole == identity.RoleAdmin.String() {
+			return bookingEventKindCompletedByAdmin, true
+		}
+		return bookingEventKindCompleted, true
+	case booking.ActionEscalate:
+		return bookingEventKindEscalated, true
+	case booking.ActionCancel:
+		return bookingEventKindCancelled, true
+	case booking.ActionFail:
+		return bookingEventKindAssignmentFailed, true
+	case booking.ActionConfirm, booking.ActionRequestCompletion, booking.ActionResume, booking.ActionReschedule:
+		return "", false
+	}
+	return "", false
 }

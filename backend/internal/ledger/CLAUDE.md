@@ -8,7 +8,7 @@ Owns the money (ROADMAP §6): revenue, cash custody/deposit, goodwill credits, a
 - `IssueFailureCredit` — the `booking.failed` consumer (idempotent): a `CREDIT_ISSUED` attached to the order.
 - `RecordDeposit` — a technician hands in held cash (`CASH_DEPOSIT` offsets `CASH_CUSTODY`).
 - `CaptureUPIPayment` — the money-moved moment: marks the collection CAPTURED and books `REVENUE` atomically (idempotent).
-- Reads: `Reconciliation`, `PositionForTechnician`, `PendingPayments`, `CollectionForBooking`; `SetPaymentLink` persists the hosted link.
+- Reads: `Reconciliation`, `PositionForTechnician`, `PendingPayments`, `CollectionForBooking`; `SetPaymentLink` persists the hosted link; `PaymentFactsForBooking` (`payment_facts.go`) — the admin console's payment panel: REVENUE row → paid (method/amount/time), else CASH_CUSTODY → cash paid at collection, else a pending collection (never reported as done), else not found.
 
 ## Owns
 `ledger_entries`, `payments`, and the read view `technician_cash_position`.

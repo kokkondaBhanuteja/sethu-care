@@ -8,6 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 )
 
 // The operations dashboard: the headline KPIs, the critical-alert band, the needs-attention queue
@@ -108,8 +109,38 @@ type dashboardSummaryOutput struct {
 	Body dashboardSummary
 }
 
-func (handler *AdminHandler) dashboardSummary(_ context.Context, _ *opsDashboardSummaryInput) (*dashboardSummaryOutput, error) {
-	return nil, notImplemented("opsDashboardSummary")
+func (handler *AdminHandler) dashboardSummary(ctx context.Context, input *opsDashboardSummaryInput) (*dashboardSummaryOutput, error) {
+	var period ops.DashboardPeriod
+	switch input.Period {
+	case dashboardPeriodToday, "":
+		period = ops.PeriodToday
+	case dashboardPeriodLiveNow:
+		period = ops.PeriodLiveNow
+	default:
+		return nil, toHumaError(handler.log, &badRequestError{msg: "unknown period"})
+	}
+
+	summary, err := handler.ops.SummaryForPeriod(ctx, period)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &dashboardSummaryOutput{Body: dashboardSummary{
+		AvgAssignDelta:  kpiDelta{IsGood: summary.AvgAssignDelta.IsGood, Value: summary.AvgAssignDelta.Value},
+		AvgAssignMs:     summary.AvgAssignMs,
+		Bookings:        summary.Bookings,
+		BookingsDelta:   kpiDelta{IsGood: summary.BookingsDelta.IsGood, Value: summary.BookingsDelta.Value},
+		CompletionDelta: kpiRateDelta{IsGood: summary.CompletionDelta.IsGood, Value: summary.CompletionDelta.Value},
+		CompletionRate:  summary.CompletionRate,
+		RevenueDelta:    kpiDelta{IsGood: summary.RevenueDelta.IsGood, Value: summary.RevenueDelta.Value},
+		RevenuePaise:    summary.Revenue.Paise(),
+		Sparklines: dashboardSparklines{
+			AvgAssign:  summary.SparkAvgAssign,
+			Bookings:   summary.SparkBookings,
+			Completion: summary.SparkCompletion,
+			Revenue:    summary.SparkRevenue,
+		},
+		UpdatedAt: summary.UpdatedAt,
+	}}, nil
 }
 
 // --------------------------------------------------------------- alert band
@@ -252,8 +283,88 @@ type attentionQueueOutput struct {
 	Body attentionQueue
 }
 
-func (handler *AdminHandler) dashboardAttention(_ context.Context, _ *opsDashboardAttentionInput) (*attentionQueueOutput, error) {
-	return nil, notImplemented("opsDashboardAttention")
+func (handler *AdminHandler) dashboardAttention(ctx context.Context, input *opsDashboardAttentionInput) (*attentionQueueOutput, error) {
+	var filter ops.AttentionFilter
+	switch input.Filter {
+	case attentionFilterAll, "":
+		filter = ops.AttentionFilterAll
+	case attentionFilterEscalated:
+		filter = ops.AttentionFilterEscalated
+	case attentionFilterUnassigned:
+		filter = ops.AttentionFilterUnassigned
+	case attentionFilterSLA:
+		filter = ops.AttentionFilterSLA
+	case attentionFilterDelayed:
+		filter = ops.AttentionFilterDelayed
+	default:
+		return nil, toHumaError(handler.log, &badRequestError{msg: "unknown attention filter"})
+	}
+
+	result, err := handler.ops.AttentionQueue(ctx, filter, input.Limit, input.Cursor)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	queue := attentionQueue{
+		Counts: attentionCounts{
+			All:        result.Counts.All,
+			Delayed:    result.Counts.Delayed,
+			Escalated:  result.Counts.Escalated,
+			SLA:        result.Counts.SLA,
+			Unassigned: result.Counts.Unassigned,
+		},
+		HealthyJobs: result.HealthyJobs,
+		Items:       make([]attentionItem, len(result.Items)),
+		Total:       result.Total,
+		UpdatedAt:   result.UpdatedAt,
+	}
+	for index, item := range result.Items {
+		queue.Items[index] = toAttentionItemDTO(item)
+	}
+	if result.NextCursor != "" {
+		nextCursor := result.NextCursor
+		queue.NextCursor = &nextCursor
+	}
+	if result.LastCleared != nil {
+		queue.LastCleared = nullable[attentionLastCleared]{Value: &attentionLastCleared{
+			AdminName:  result.LastCleared.AdminName,
+			At:         result.LastCleared.At,
+			BookingRef: adminBookingReference(result.LastCleared.BookingID),
+		}}
+	}
+	return &attentionQueueOutput{Body: queue}, nil
+}
+
+// toAttentionItemDTO shapes one queue row for the wire. Fields the platform cannot know yet
+// are honest placeholders: there is no alert engine, so alertId is the booking id standing in
+// (acknowledgeAlert is not implemented) and acknowledged is always false; there is no
+// auto-dispatch engine, so a failed assignment truthfully reports zero rounds and zero
+// declines rather than invented numbers.
+func toAttentionItemDTO(item ops.AttentionItem) attentionItem {
+	unassigned := attentionProviderStateUnassigned
+	dto := attentionItem{
+		Acknowledged:  false,
+		AlertID:       item.BookingID.String(),
+		AmountPaise:   item.Amount.Paise(),
+		Area:          item.City,
+		BookingID:     item.BookingID.String(),
+		BookingRef:    adminBookingReference(item.BookingID),
+		CustomerName:  item.CustomerName,
+		ProviderName:  nil,
+		ProviderState: nullable[attentionProviderState]{Value: &unassigned},
+		Service:       item.ServiceName,
+		SlotAt:        item.SlotAt,
+		SurfacedAt:    item.SurfacedAt,
+	}
+	switch item.Priority {
+	case ops.AttentionEscalated:
+		dto.Priority = attentionPriorityEscalated
+	case ops.AttentionFailedAssignment:
+		dto.Priority = attentionPriorityFailedAssignment
+		zeroRounds, zeroDeclines := int32(0), int32(0)
+		dto.Diagnosis = attentionDiagnosis{DeclinedCount: &zeroDeclines, DispatchRounds: &zeroRounds}
+	}
+	return dto
 }
 
 // ------------------------------------------------------------ activity feed
@@ -297,8 +408,40 @@ type activityFeedOutput struct {
 	Body activityFeed
 }
 
-func (handler *AdminHandler) activityFeed(_ context.Context, _ *opsActivityFeedInput) (*activityFeedOutput, error) {
-	return nil, notImplemented("opsActivityFeed")
+func (handler *AdminHandler) activityFeed(ctx context.Context, input *opsActivityFeedInput) (*activityFeedOutput, error) {
+	entries, err := handler.ops.RecentActivity(ctx, input.Limit)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	feed := activityFeed{Items: make([]activityEntry, len(entries))}
+	for index, entry := range entries {
+		feed.Items[index] = activityEntry{
+			At:           entry.At,
+			BookingRef:   adminBookingReference(entry.BookingID),
+			ID:           entry.EventID.String(),
+			Kind:         activityKindOf(entry.Kind),
+			ProviderName: entry.TechnicianName,
+		}
+	}
+	return &activityFeedOutput{Body: feed}, nil
+}
+
+func activityKindOf(kind ops.ActivityKind) activityKind {
+	switch kind {
+	case ops.ActivityAssigned:
+		return activityKindAssigned
+	case ops.ActivityEnRoute:
+		return activityKindEnRoute
+	case ops.ActivityStarted:
+		return activityKindStarted
+	case ops.ActivityAwaitingOTP:
+		return activityKindAwaitingOTP
+	case ops.ActivityCompleted:
+		return activityKindCompleted
+	case ops.ActivityCancelledByCustomer:
+		return activityKindCancelledByCustomer
+	}
+	return activityKindCompleted // unreachable: the service vocabulary is closed
 }
 
 // ----------------------------------------------------------- shell counters
@@ -315,6 +458,20 @@ type shellCountersOutput struct {
 	Body shellCounters
 }
 
-func (handler *AdminHandler) shellCounters(_ context.Context, _ *struct{}) (*shellCountersOutput, error) {
-	return nil, notImplemented("shellCounters")
+func (handler *AdminHandler) shellCounters(ctx context.Context, _ *struct{}) (*shellCountersOutput, error) {
+	// Honesty rule: a counter the platform cannot know yet is a REAL zero, not a fake.
+	//   - criticalAlerts: no alert engine exists, so no unacknowledged criticals exist.
+	//   - pendingApplications: no provider-applications table exists yet.
+	//   - openTickets: tickets are a v1.1 surface with no storage yet.
+	// needsAttention is real: the ops queue — bookings in SEARCHING or ESCALATED.
+	queue, err := handler.ops.Queue(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &shellCountersOutput{Body: shellCounters{
+		CriticalAlerts:      0,
+		NeedsAttention:      int32(len(queue)),
+		OpenTickets:         0,
+		PendingApplications: 0,
+	}}, nil
 }

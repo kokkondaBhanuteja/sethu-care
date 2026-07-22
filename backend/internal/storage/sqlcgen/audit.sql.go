@@ -9,7 +9,147 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const adminCountAuditLogs = `-- name: AdminCountAuditLogs :one
+SELECT
+  count(*)::int AS total,
+  min(al.created_at)::timestamptz AS range_from,
+  max(al.created_at)::timestamptz AS range_to
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY($1::text[])
+  AND ($2::uuid IS NULL OR al.actor_user_id = $2::uuid)
+  AND ($3::text IS NULL OR al.action = $3::text)
+  AND ($4::uuid IS NULL OR al.entity_id = $4::uuid)
+  AND ($5::timestamptz IS NULL OR al.created_at >= $5::timestamptz)
+  AND ($6::timestamptz IS NULL OR al.created_at < $6::timestamptz)
+`
+
+type AdminCountAuditLogsParams struct {
+	Actions      []string
+	AdminFilter  *uuid.UUID
+	ActionFilter *string
+	EntityFilter *uuid.UUID
+	FromTime     pgtype.Timestamptz
+	ToTime       pgtype.Timestamptz
+}
+
+type AdminCountAuditLogsRow struct {
+	Total     int32
+	RangeFrom pgtype.Timestamptz
+	RangeTo   pgtype.Timestamptz
+}
+
+// Total and timestamp range for the same filter as AdminListAuditLogs (minus the cursor), so
+// the console's "N entries · from – to" line covers the whole result set, not one page.
+func (q *Queries) AdminCountAuditLogs(ctx context.Context, arg AdminCountAuditLogsParams) (AdminCountAuditLogsRow, error) {
+	row := q.db.QueryRow(ctx, adminCountAuditLogs,
+		arg.Actions,
+		arg.AdminFilter,
+		arg.ActionFilter,
+		arg.EntityFilter,
+		arg.FromTime,
+		arg.ToTime,
+	)
+	var i AdminCountAuditLogsRow
+	err := row.Scan(&i.Total, &i.RangeFrom, &i.RangeTo)
+	return i, err
+}
+
+const adminListAuditLogs = `-- name: AdminListAuditLogs :many
+SELECT
+  al.id, al.action, al.entity_type, al.entity_id, al.before, al.after, al.created_at,
+  admin_user.id   AS admin_id,
+  admin_user.name AS admin_name
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY($1::text[])
+  AND ($2::uuid IS NULL OR al.actor_user_id = $2::uuid)
+  AND ($3::text IS NULL OR al.action = $3::text)
+  AND ($4::uuid IS NULL OR al.entity_id = $4::uuid)
+  AND ($5::timestamptz IS NULL OR al.created_at >= $5::timestamptz)
+  AND ($6::timestamptz IS NULL OR al.created_at < $6::timestamptz)
+  AND ($7::timestamptz IS NULL
+       OR al.created_at < $7::timestamptz
+       OR (al.created_at = $7::timestamptz
+           AND al.id < $8::uuid))
+ORDER BY al.created_at DESC, al.id DESC
+LIMIT $9::int
+`
+
+type AdminListAuditLogsParams struct {
+	Actions         []string
+	AdminFilter     *uuid.UUID
+	ActionFilter    *string
+	EntityFilter    *uuid.UUID
+	FromTime        pgtype.Timestamptz
+	ToTime          pgtype.Timestamptz
+	CursorCreatedAt pgtype.Timestamptz
+	CursorID        *uuid.UUID
+	RowLimit        int32
+}
+
+type AdminListAuditLogsRow struct {
+	ID         uuid.UUID
+	Action     string
+	EntityType string
+	EntityID   uuid.UUID
+	Before     []byte
+	After      []byte
+	CreatedAt  pgtype.Timestamptz
+	AdminID    uuid.UUID
+	AdminName  string
+}
+
+// The admin console's audit list: entries recorded against bookings by a human ADMIN actor,
+// restricted to the actions the console's audit vocabulary can name (see internal/audit
+// AdminActions). Keyset-paginated newest first. The users join is read-only display data —
+// identity remains the owner of users.
+func (q *Queries) AdminListAuditLogs(ctx context.Context, arg AdminListAuditLogsParams) ([]AdminListAuditLogsRow, error) {
+	rows, err := q.db.Query(ctx, adminListAuditLogs,
+		arg.Actions,
+		arg.AdminFilter,
+		arg.ActionFilter,
+		arg.EntityFilter,
+		arg.FromTime,
+		arg.ToTime,
+		arg.CursorCreatedAt,
+		arg.CursorID,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminListAuditLogsRow{}
+	for rows.Next() {
+		var i AdminListAuditLogsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Action,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Before,
+			&i.After,
+			&i.CreatedAt,
+			&i.AdminID,
+			&i.AdminName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const insertAuditLog = `-- name: InsertAuditLog :exec
 INSERT INTO audit_logs (actor_user_id, actor_kind, action, entity_type, entity_id, before, after, correlation_id)

@@ -8,7 +8,7 @@ VALUES (@kind, @amount_paise, @order_id, @booking_id, @customer_id, @technician_
 -- name: GetBookingCashCustody :one
 -- The cash a technician is holding for a booking (the CASH_CUSTODY row), so a deposit can
 -- match its amount and be attributed to the right technician.
-SELECT amount_paise, technician_id
+SELECT amount_paise, technician_id, created_at
   FROM ledger_entries
  WHERE booking_id = $1 AND kind = 'CASH_CUSTODY'
  LIMIT 1;
@@ -52,3 +52,12 @@ SELECT EXISTS (
    WHERE (order_id = @order_id AND kind = 'REVENUE')
       OR (booking_id = @booking_id AND kind = 'CASH_CUSTODY')
 ) AS exists;
+
+-- name: GetRevenueEntryForOrder :one
+-- The REVENUE row for an order — the money-moved record behind the console's payment panel.
+-- In P1 an order has exactly one booking, so one REVENUE row is the whole story.
+SELECT amount_paise, method, created_at
+FROM ledger_entries
+WHERE order_id = $1 AND kind = 'REVENUE'
+ORDER BY created_at
+LIMIT 1;

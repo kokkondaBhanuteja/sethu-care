@@ -7,7 +7,7 @@ The core bounded context: the lifecycle of a job. `booking` is the source of tru
 - Own the pure state machine: 13 states × 13 actions in `state.go` + `statemachine.go`, with no default/fallthrough — a `(state, action)` pair absent from the table is illegal.
 - `Create` a booking (order + booking DRAFT + item + `booking.created`) in one transaction.
 - `Apply` a transition atomically: re-read → authorize (role + ownership) → optional Guard → pure decision → optimistic CAS → append `booking_events` → `audit.Record` → conditional outbox.
-- Read models: `Get` (with `AllowedActions`), `ListForCustomer`, `ListForTechnician`.
+- Read models: `Get` (with `AllowedActions`), `ListForCustomer`, `ListForTechnician`; admin console reads in `admin.go`: `AdminList` (segment/state/zone/service/search filters, keyset cursor newest-created first, per-segment counts) and `AdminDetailByID` (full record + `booking_events` timeline). Like `ListForTechnician` these join users/services/addresses (+ the completed job's review) for display only.
 
 ## Owns
 `bookings`, `booking_items`, `booking_events` (append-only). Also writes `orders` and `outbox` rows during `Create`/`Apply` (P0 seam: one-order-one-booking; order creation moves out in P3).
@@ -25,6 +25,7 @@ The core bounded context: the lifecycle of a job. `booking` is the source of tru
 - `statemachine.go` — the `transitions` table, pure `Apply(from, action)`, `AllowedActions`, `ParseState`; `IllegalTransitionError`, `UnknownStateError`.
 - `permission.go` — `CanPerform(role, action)` (the role half of authz).
 - `service.go` — `Service`, `NewService(pool, ...Option)`, `WithFlow`, `Create`, `Get`, `ListForCustomer`, `ListForTechnician`, `Apply`, `TransitionInput` (Actor/ActorRole/AssignTechnician/Guard/PaymentMethod). Errors: `ConflictError` (409), `ScheduleConflictError` (23P01→409), `ForbiddenError` (403), `ErrBookingNotFound`, `ErrVariant*`, `ErrInvalidQuantity`.
+- `admin.go` — the console read models: `AdminList`/`AdminDetailByID`, `AdminSegment` (active/completed/cancelled — cancelled also holds FAILED), `AdminListInput`, `AdminPage`, `AdminDetail`, `ErrInvalidCursor` (→ 400). A non-empty search spans every segment; the cursor is base64("createdAtNanos|id") with a limit+1 peek so a full last page mints no cursor.
 
 ## Examples
 ```go

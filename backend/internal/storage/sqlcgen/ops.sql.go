@@ -13,6 +13,242 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
+const countHealthyJobs = `-- name: CountHealthyJobs :one
+SELECT count(*)::int AS healthy
+FROM bookings
+WHERE state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+`
+
+// Jobs progressing normally right now — everything a technician is actively working. The
+// dashboard's all-clear state counts these instead of showing a zero.
+func (q *Queries) CountHealthyJobs(ctx context.Context) (int32, error) {
+	row := q.db.QueryRow(ctx, countHealthyJobs)
+	var healthy int32
+	err := row.Scan(&healthy)
+	return healthy, err
+}
+
+const dashboardAssignByBucket = `-- name: DashboardAssignByBucket :many
+SELECT
+  width_bucket(
+    EXTRACT(EPOCH FROM assigned.created_at),
+    EXTRACT(EPOCH FROM $1::timestamptz),
+    EXTRACT(EPOCH FROM $2::timestamptz), 8
+  )::int AS bucket,
+  SUM(EXTRACT(EPOCH FROM (assigned.created_at - searching.created_at)) * 1000)::bigint AS total_ms,
+  count(*)::int AS pairs
+FROM booking_events assigned
+JOIN LATERAL (
+  SELECT prior.created_at
+  FROM booking_events prior
+  WHERE prior.booking_id = assigned.booking_id
+    AND prior.to_state = 'SEARCHING'
+    AND prior.created_at <= assigned.created_at
+  ORDER BY prior.created_at DESC
+  LIMIT 1
+) searching ON true
+WHERE assigned.action = 'ASSIGN' AND assigned.to_state = 'ASSIGNED'
+  AND assigned.created_at >= $1::timestamptz AND assigned.created_at < $2::timestamptz
+GROUP BY 1
+`
+
+type DashboardAssignByBucketParams struct {
+	FromTime pgtype.Timestamptz
+	ToTime   pgtype.Timestamptz
+}
+
+type DashboardAssignByBucketRow struct {
+	Bucket  int32
+	TotalMs int64
+	Pairs   int32
+}
+
+// SEARCHING -> ASSIGNED latency per bucket: for every assignment in [from, to), the delta
+// from the most recent SEARCHING entry for the same booking. Sum + count per bucket so the
+// caller can compute both the bucket mean and the window mean without a second query.
+func (q *Queries) DashboardAssignByBucket(ctx context.Context, arg DashboardAssignByBucketParams) ([]DashboardAssignByBucketRow, error) {
+	rows, err := q.db.Query(ctx, dashboardAssignByBucket, arg.FromTime, arg.ToTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DashboardAssignByBucketRow{}
+	for rows.Next() {
+		var i DashboardAssignByBucketRow
+		if err := rows.Scan(&i.Bucket, &i.TotalMs, &i.Pairs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardBookingsByBucket = `-- name: DashboardBookingsByBucket :many
+SELECT
+  width_bucket(
+    EXTRACT(EPOCH FROM created_at),
+    EXTRACT(EPOCH FROM $1::timestamptz),
+    EXTRACT(EPOCH FROM $2::timestamptz), 8
+  )::int AS bucket,
+  count(*)::int AS bookings
+FROM bookings
+WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz
+GROUP BY 1
+`
+
+type DashboardBookingsByBucketParams struct {
+	FromTime pgtype.Timestamptz
+	ToTime   pgtype.Timestamptz
+}
+
+type DashboardBookingsByBucketRow struct {
+	Bucket   int32
+	Bookings int32
+}
+
+// Bookings created in [from, to), grouped into 8 equal time buckets (1-based) for the
+// dashboard sparkline. Empty buckets are absent; the service fills the zeroes.
+func (q *Queries) DashboardBookingsByBucket(ctx context.Context, arg DashboardBookingsByBucketParams) ([]DashboardBookingsByBucketRow, error) {
+	rows, err := q.db.Query(ctx, dashboardBookingsByBucket, arg.FromTime, arg.ToTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DashboardBookingsByBucketRow{}
+	for rows.Next() {
+		var i DashboardBookingsByBucketRow
+		if err := rows.Scan(&i.Bucket, &i.Bookings); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardOutcomesByBucket = `-- name: DashboardOutcomesByBucket :many
+SELECT
+  width_bucket(
+    EXTRACT(EPOCH FROM created_at),
+    EXTRACT(EPOCH FROM $1::timestamptz),
+    EXTRACT(EPOCH FROM $2::timestamptz), 8
+  )::int AS bucket,
+  (count(*) FILTER (WHERE to_state = 'COMPLETED'))::int AS completed,
+  count(*)::int AS terminal
+FROM booking_events
+WHERE to_state IN ('COMPLETED', 'CANCELLED', 'FAILED')
+  AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+GROUP BY 1
+`
+
+type DashboardOutcomesByBucketParams struct {
+	FromTime pgtype.Timestamptz
+	ToTime   pgtype.Timestamptz
+}
+
+type DashboardOutcomesByBucketRow struct {
+	Bucket    int32
+	Completed int32
+	Terminal  int32
+}
+
+// Terminal outcomes in [from, to): how many bookings ENDED in each bucket, and how many of
+// those endings were completions — the completion-rate numerator and denominator.
+func (q *Queries) DashboardOutcomesByBucket(ctx context.Context, arg DashboardOutcomesByBucketParams) ([]DashboardOutcomesByBucketRow, error) {
+	rows, err := q.db.Query(ctx, dashboardOutcomesByBucket, arg.FromTime, arg.ToTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DashboardOutcomesByBucketRow{}
+	for rows.Next() {
+		var i DashboardOutcomesByBucketRow
+		if err := rows.Scan(&i.Bucket, &i.Completed, &i.Terminal); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardRevenueByBucket = `-- name: DashboardRevenueByBucket :many
+SELECT
+  width_bucket(
+    EXTRACT(EPOCH FROM created_at),
+    EXTRACT(EPOCH FROM $1::timestamptz),
+    EXTRACT(EPOCH FROM $2::timestamptz), 8
+  )::int AS bucket,
+  SUM(amount_paise)::bigint AS revenue_paise
+FROM ledger_entries
+WHERE kind = 'REVENUE'
+  AND created_at >= $1::timestamptz AND created_at < $2::timestamptz
+GROUP BY 1
+`
+
+type DashboardRevenueByBucketParams struct {
+	FromTime pgtype.Timestamptz
+	ToTime   pgtype.Timestamptz
+}
+
+type DashboardRevenueByBucketRow struct {
+	Bucket       int32
+	RevenuePaise int64
+}
+
+// REVENUE ledger entries in [from, to), bucketed as above. Read-only: ops reads the ledger's
+// table for the console's aggregates; it never writes money.
+func (q *Queries) DashboardRevenueByBucket(ctx context.Context, arg DashboardRevenueByBucketParams) ([]DashboardRevenueByBucketRow, error) {
+	rows, err := q.db.Query(ctx, dashboardRevenueByBucket, arg.FromTime, arg.ToTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DashboardRevenueByBucketRow{}
+	for rows.Next() {
+		var i DashboardRevenueByBucketRow
+		if err := rows.Scan(&i.Bucket, &i.RevenuePaise); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLastAttentionClear = `-- name: GetLastAttentionClear :one
+SELECT be.created_at, be.booking_id, u.name AS admin_name
+FROM booking_events be
+JOIN users u ON u.id = be.actor_user_id
+WHERE be.action = 'ASSIGN' AND u.role = 'ADMIN'
+ORDER BY be.created_at DESC
+LIMIT 1
+`
+
+type GetLastAttentionClearRow struct {
+	CreatedAt pgtype.Timestamptz
+	BookingID uuid.UUID
+	AdminName string
+}
+
+// The most recent manual assignment by an admin — the last time a human cleared something
+// from the attention queue. Cited by the dashboard's all-clear state.
+func (q *Queries) GetLastAttentionClear(ctx context.Context) (GetLastAttentionClearRow, error) {
+	row := q.db.QueryRow(ctx, getLastAttentionClear)
+	var i GetLastAttentionClearRow
+	err := row.Scan(&i.CreatedAt, &i.BookingID, &i.AdminName)
+	return i, err
+}
+
 const listAssignmentQueue = `-- name: ListAssignmentQueue :many
 SELECT
   b.id, b.state, b.scheduled_for, b.quoted_total_paise, b.created_at,
@@ -65,6 +301,72 @@ func (q *Queries) ListAssignmentQueue(ctx context.Context) ([]ListAssignmentQueu
 			&i.ServiceName,
 			&i.City,
 			&i.Line1,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAttentionQueue = `-- name: ListAttentionQueue :many
+SELECT
+  b.id, b.state, b.scheduled_for, b.quoted_total_paise, b.created_at,
+  u.name AS customer_name,
+  s.name AS service_name,
+  a.city,
+  COALESCE(
+    (SELECT max(be.created_at) FROM booking_events be
+      WHERE be.booking_id = b.id AND be.to_state = b.state),
+    b.created_at
+  )::timestamptz AS surfaced_at
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE b.state IN ('SEARCHING', 'ESCALATED')
+ORDER BY (b.state = 'ESCALATED') DESC, surfaced_at, b.id
+`
+
+type ListAttentionQueueRow struct {
+	ID               uuid.UUID
+	State            string
+	ScheduledFor     pgtype.Timestamptz
+	QuotedTotalPaise money.Money
+	CreatedAt        pgtype.Timestamptz
+	CustomerName     string
+	ServiceName      string
+	City             string
+	SurfacedAt       pgtype.Timestamptz
+}
+
+// The needs-attention queue behind the admin dashboard: the same SEARCHING/ESCALATED set as
+// the assignment queue, enriched with when the booking ENTERED its current state (the moment
+// the problem surfaced). Ordered the way the console renders it — ESCALATED tier first, then
+// oldest surfaced first — so the server, not the client, owns the priority order.
+func (q *Queries) ListAttentionQueue(ctx context.Context) ([]ListAttentionQueueRow, error) {
+	rows, err := q.db.Query(ctx, listAttentionQueue)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAttentionQueueRow{}
+	for rows.Next() {
+		var i ListAttentionQueueRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.ScheduledFor,
+			&i.QuotedTotalPaise,
+			&i.CreatedAt,
+			&i.CustomerName,
+			&i.ServiceName,
+			&i.City,
+			&i.SurfacedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -153,6 +455,59 @@ func (q *Queries) ListCandidateTechnicians(ctx context.Context, id uuid.UUID) ([
 			&i.Rating,
 			&i.MaxConcurrentJobs,
 			&i.ActiveJobs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentBookingActivity = `-- name: ListRecentBookingActivity :many
+SELECT
+  be.id, be.booking_id, be.action, be.created_at,
+  tu.name AS technician_name
+FROM booking_events be
+JOIN bookings b ON b.id = be.booking_id
+LEFT JOIN users actor ON actor.id = be.actor_user_id
+LEFT JOIN users tu    ON tu.id = b.technician_id
+WHERE be.action IN ('ASSIGN', 'DEPART', 'VERIFY_START', 'REQUEST_COMPLETION', 'VERIFY_COMPLETION')
+   OR (be.action = 'CANCEL' AND actor.role = 'CUSTOMER')
+ORDER BY be.created_at DESC, be.id DESC
+LIMIT $1::int
+`
+
+type ListRecentBookingActivityRow struct {
+	ID             uuid.UUID
+	BookingID      uuid.UUID
+	Action         string
+	CreatedAt      pgtype.Timestamptz
+	TechnicianName *string
+}
+
+// The last N booking transitions the console's activity feed can name: only the actions its
+// closed activity vocabulary covers. CANCEL rows count only when the customer did the
+// cancelling — the feed's kind is cancelled_by_customer, and labelling an admin cancel with
+// it would lie. technician_name is the booking's CURRENT technician (booking_events does not
+// record which technician an ASSIGN put on the job).
+func (q *Queries) ListRecentBookingActivity(ctx context.Context, rowLimit int32) ([]ListRecentBookingActivityRow, error) {
+	rows, err := q.db.Query(ctx, listRecentBookingActivity, rowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecentBookingActivityRow{}
+	for rows.Next() {
+		var i ListRecentBookingActivityRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.BookingID,
+			&i.Action,
+			&i.CreatedAt,
+			&i.TechnicianName,
 		); err != nil {
 			return nil, err
 		}

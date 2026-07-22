@@ -9,6 +9,7 @@ The operations console's back end: the manual-assignment queue and the commands 
 - `Technicians` — the admin Employees view (status + current load), unfiltered.
 - `Assign(bookingID, technicianID, adminID)` — verify the technician exists (clean 404), then command the `ASSIGN` transition as admin via `booking.Apply`.
 - `StartSearch(bookingID)` — the auto-search consumer of `booking.confirmed`: moves CONFIRMED→SEARCHING as the system (nil actor) with admin authority; **idempotent** (already-moved / conflict / not-found ⇒ nil, so the outbox stops retrying).
+- **Admin dashboard reads** (`dashboard.go`): `AttentionQueue(filter, limit, cursor)` — the needs-attention queue in the server-owned order (ESCALATED tier first, oldest surfaced first) with per-filter counts, healthy-job count and the last-cleared citation; `RecentActivity(limit)` — the last N transitions the console vocabulary can name; `SummaryForPeriod(today|live_now)` — KPIs (bookings, REVENUE, completion rate, SEARCHING→ASSIGNED latency) with same-window-yesterday deltas and 8-point sparklines. These are read-only cross-module views (bookings, booking_events, and the ledger's REVENUE rows at the SQL level — never the `ledger` Go package, never a write).
 
 ## Owns
 None (cross-reads booking/identity/services/addresses; commands booking).
@@ -20,7 +21,8 @@ None (cross-reads booking/identity/services/addresses; commands booking).
 `httpapi`/`huma`/`config` and `ledger`. ops commands booking; it must not reach into another domain's tables.
 
 ## Contains
-- `ops.go` — `Service`, `New(pool, *booking.Service)`; `QueueEntry`, `Candidate`, `Technician` view types; the methods above; `ErrTechnicianNotFound`.
+- `ops.go` — `Service`, `New(pool, *booking.Service)`; `QueueEntry`, `Candidate`, `Technician` view types; `ErrTechnicianNotFound`.
+- `dashboard.go` — the admin dashboard read models: `AttentionQueue`/`RecentActivity`/`SummaryForPeriod`, their view types (`AttentionItem`, `ActivityEntry`, `DashboardSummary`, …) and `ErrInvalidCursor` (→ 400 in `classify`). Attention pagination is an opaque base64 keyset cursor over (tier, surfacedAt, id).
 
 ## Examples
 ```go

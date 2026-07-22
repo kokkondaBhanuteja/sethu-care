@@ -64,7 +64,7 @@ func (q *Queries) DepositExistsForBooking(ctx context.Context, bookingID *uuid.U
 }
 
 const getBookingCashCustody = `-- name: GetBookingCashCustody :one
-SELECT amount_paise, technician_id
+SELECT amount_paise, technician_id, created_at
   FROM ledger_entries
  WHERE booking_id = $1 AND kind = 'CASH_CUSTODY'
  LIMIT 1
@@ -73,6 +73,7 @@ SELECT amount_paise, technician_id
 type GetBookingCashCustodyRow struct {
 	AmountPaise  money.Money
 	TechnicianID *uuid.UUID
+	CreatedAt    pgtype.Timestamptz
 }
 
 // The cash a technician is holding for a booking (the CASH_CUSTODY row), so a deposit can
@@ -80,7 +81,30 @@ type GetBookingCashCustodyRow struct {
 func (q *Queries) GetBookingCashCustody(ctx context.Context, bookingID *uuid.UUID) (GetBookingCashCustodyRow, error) {
 	row := q.db.QueryRow(ctx, getBookingCashCustody, bookingID)
 	var i GetBookingCashCustodyRow
-	err := row.Scan(&i.AmountPaise, &i.TechnicianID)
+	err := row.Scan(&i.AmountPaise, &i.TechnicianID, &i.CreatedAt)
+	return i, err
+}
+
+const getRevenueEntryForOrder = `-- name: GetRevenueEntryForOrder :one
+SELECT amount_paise, method, created_at
+FROM ledger_entries
+WHERE order_id = $1 AND kind = 'REVENUE'
+ORDER BY created_at
+LIMIT 1
+`
+
+type GetRevenueEntryForOrderRow struct {
+	AmountPaise money.Money
+	Method      *string
+	CreatedAt   pgtype.Timestamptz
+}
+
+// The REVENUE row for an order — the money-moved record behind the console's payment panel.
+// In P1 an order has exactly one booking, so one REVENUE row is the whole story.
+func (q *Queries) GetRevenueEntryForOrder(ctx context.Context, orderID *uuid.UUID) (GetRevenueEntryForOrderRow, error) {
+	row := q.db.QueryRow(ctx, getRevenueEntryForOrder, orderID)
+	var i GetRevenueEntryForOrderRow
+	err := row.Scan(&i.AmountPaise, &i.Method, &i.CreatedAt)
 	return i, err
 }
 

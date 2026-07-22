@@ -87,3 +87,106 @@ JOIN addresses a      ON a.id = b.address_id
 WHERE b.technician_id = $1
   AND b.state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
 ORDER BY b.scheduled_for NULLS LAST, b.created_at;
+
+-- name: AdminListBookings :many
+-- The admin console's booking list: filtered by state set, zone (city), service name, a
+-- free-text search (customer name, phone, or the booking reference — the id's hex prefix),
+-- and slot bounds; keyset-paginated newest-created first. state_since is when the booking
+-- entered its current state (drives the "unassigned for 12m" style row notes); the review
+-- join surfaces the rating a completed job earned.
+SELECT
+  b.id, b.state, b.scheduled_for, b.created_at, b.quoted_total_paise,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  s.name  AS service_name,
+  a.city,
+  tu.name AS technician_name,
+  COALESCE(
+    (SELECT max(be.created_at) FROM booking_events be
+      WHERE be.booking_id = b.id AND be.to_state = b.state),
+    b.created_at
+  )::timestamptz AS state_since,
+  r.rating AS review_rating
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+LEFT JOIN users tu    ON tu.id = b.technician_id
+LEFT JOIN reviews r   ON r.booking_id = b.id
+WHERE b.state = ANY(@states::text[])
+  AND (sqlc.narg('zone')::text IS NULL OR a.city ILIKE sqlc.narg('zone'))
+  AND (sqlc.narg('service_name')::text IS NULL OR s.name ILIKE sqlc.narg('service_name'))
+  AND (sqlc.narg('search_pattern')::text IS NULL
+       OR u.name  ILIKE sqlc.narg('search_pattern')
+       OR u.phone LIKE  sqlc.narg('search_pattern')
+       OR (sqlc.narg('reference_prefix')::text IS NOT NULL
+           AND b.id::text ILIKE sqlc.narg('reference_prefix')))
+  AND (sqlc.narg('slot_from')::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) >= sqlc.narg('slot_from')::timestamptz)
+  AND (sqlc.narg('slot_to')::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) < sqlc.narg('slot_to')::timestamptz)
+  AND (sqlc.narg('cursor_created_at')::timestamptz IS NULL
+       OR b.created_at < sqlc.narg('cursor_created_at')::timestamptz
+       OR (b.created_at = sqlc.narg('cursor_created_at')::timestamptz
+           AND b.id < sqlc.narg('cursor_id')::uuid))
+ORDER BY b.created_at DESC, b.id DESC
+LIMIT @row_limit::int;
+
+-- name: AdminCountBookingsByState :many
+-- Per-state totals under the SAME non-state filters as AdminListBookings, so the segment
+-- chips and the "Showing X of Y" line stay honest while a filter is applied.
+SELECT b.state, count(*)::int AS total
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE (sqlc.narg('zone')::text IS NULL OR a.city ILIKE sqlc.narg('zone'))
+  AND (sqlc.narg('service_name')::text IS NULL OR s.name ILIKE sqlc.narg('service_name'))
+  AND (sqlc.narg('search_pattern')::text IS NULL
+       OR u.name  ILIKE sqlc.narg('search_pattern')
+       OR u.phone LIKE  sqlc.narg('search_pattern')
+       OR (sqlc.narg('reference_prefix')::text IS NOT NULL
+           AND b.id::text ILIKE sqlc.narg('reference_prefix')))
+  AND (sqlc.narg('slot_from')::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) >= sqlc.narg('slot_from')::timestamptz)
+  AND (sqlc.narg('slot_to')::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) < sqlc.narg('slot_to')::timestamptz)
+GROUP BY b.state;
+
+-- name: AdminGetBooking :one
+-- The full record behind the console's booking detail screen, joined for display: the
+-- customer (with their booking count and join date), the service, the address, and the
+-- assigned technician when there is one.
+SELECT
+  b.id, b.order_id, b.state, b.version, b.created_at, b.scheduled_for,
+  b.quoted_total_paise, b.technician_id,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  u.created_at AS customer_since,
+  (SELECT count(*) FROM bookings other WHERE other.customer_id = b.customer_id)::int AS customer_booking_count,
+  s.name AS service_name,
+  a.line1, a.city, a.pincode,
+  tu.name AS technician_name,
+  tech.rating AS technician_rating
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+LEFT JOIN users tu         ON tu.id = b.technician_id
+LEFT JOIN technicians tech ON tech.user_id = b.technician_id
+WHERE b.id = $1;
+
+-- name: AdminGetBookingTimeline :many
+-- Every transition a booking has been through, oldest first, with the actor named where a
+-- human drove it — the console's dispatch timeline.
+SELECT
+  be.id, be.action, be.from_state, be.to_state, be.created_at,
+  actor.name AS actor_name,
+  actor.role AS actor_role
+FROM booking_events be
+LEFT JOIN users actor ON actor.id = be.actor_user_id
+WHERE be.booking_id = $1
+ORDER BY be.created_at, be.id;

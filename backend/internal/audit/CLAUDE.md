@@ -6,12 +6,13 @@ Records who did what to which entity, with a before/after snapshot. Every entry 
 ## Responsibilities
 - Marshal before/after snapshots to JSONB and insert one `audit_logs` row using the caller's tx.
 - Infer `ActorKind` when the caller leaves it blank.
+- Read side for the admin console (`list.go`): `Service`/`NewService(pool)` with `List(ctx, ListFilter)` — admin-actor booking entries within `AdminActions()` (ASSIGN/CANCEL/VERIFY_COMPLETION/SEARCH), newest first, keyset cursor (limit+1 peek), whole-set total + timestamp range, snapshots flattened to `map[string]string`. `ErrInvalidCursor` → 400.
 
 ## Owns
-`audit_logs`. A leaf sink — nothing calls back into it.
+`audit_logs`. A leaf sink — nothing calls back into it. (`List`'s SQL joins `users` read-only for the admin's name; identity stays the owner.)
 
 ## Allowed Dependencies
-`storage/sqlcgen` (`DBTX`), `google/uuid`, `encoding/json`, stdlib.
+`storage/sqlcgen` (`DBTX`), `pgx`/`pgxpool` (the read `Service` holds a pool), `google/uuid`, `encoding/json`, stdlib.
 
 ## Forbidden Dependencies
 - No other domain module (it is a leaf), no `httpapi`, no `config`.

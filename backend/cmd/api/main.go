@@ -23,6 +23,7 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/app"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -116,6 +117,7 @@ func run() error {
 	}
 	identityService := identity.NewService(pool, identityOptions...)
 	opsService := ops.New(pool, bookingService)
+	auditService := audit.NewService(pool)
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
@@ -201,6 +203,7 @@ func run() error {
 		catalogService:      catalogService,
 		addressService:      addressService,
 		opsService:          opsService,
+		auditService:        auditService,
 		signer:              signer,
 		otpSender:           otpSender,
 		devEchoOTP:          settings.DevEchoOTP,
@@ -274,6 +277,7 @@ type routerDependencies struct {
 	catalogService      *catalog.Catalog
 	addressService      *address.Service
 	opsService          *ops.Service
+	auditService        *audit.Service
 	signer              *auth.Signer
 	otpSender           sms.Sender
 	devEchoOTP          bool
@@ -302,6 +306,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Ledger:       dependencies.ledgerService,
 		Verification: dependencies.verificationService,
 		Booking:      dependencies.bookingService,
+		Audit:        dependencies.auditService,
 		Reviews:      dependencies.reviewService,
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,

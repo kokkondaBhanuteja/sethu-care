@@ -1,30 +1,46 @@
 package httpapi
 
 import (
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 )
 
-// The admin console's operations are declared with nil services, so this file deliberately asserts
-// only what stays true once their bodies are written: that every route is MOUNTED (a request does
-// not fall through to 404) and that the role gate at each route is enforced. It needs no database,
-// which is why it runs where the rest of this package's tests need a container.
+// This file asserts what stays true across the whole admin surface — implemented or still 501:
+// that every route is MOUNTED (a request does not fall through to 404) and that the role gate at
+// each route is enforced. The Phase-1 operations now have real bodies, so the harness backs them
+// with real services over a test database; behavioural coverage lives in admin_endpoints_test.go.
 
-// adminAPI builds the same surface the server mounts, with no services behind it.
+// adminAPI builds the same surface the server mounts, backed by the Phase-1 services.
 func adminAPI(t *testing.T) (*http.ServeMux, *auth.Signer) {
 	t.Helper()
+	pool := storagetest.NewPool(t, "../../db/migrations")
 	signer, err := auth.NewSigner("admin-contract-test-secret-long-enough", time.Hour)
 	if err != nil {
 		t.Fatalf("building signer: %v", err)
 	}
+	bookingService := booking.NewService(pool)
 	mux := http.NewServeMux()
-	RegisterAll(NewHumaAPI(mux, signer), Dependencies{Signer: signer})
+	RegisterAll(NewHumaAPI(mux, signer), Dependencies{
+		Signer:  signer,
+		Ops:     ops.New(pool, bookingService),
+		Booking: bookingService,
+		Ledger:  ledger.NewService(pool),
+		Audit:   audit.NewService(pool),
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
 	return mux, signer
 }
 

@@ -13,6 +13,311 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
+const adminCountBookingsByState = `-- name: AdminCountBookingsByState :many
+SELECT b.state, count(*)::int AS total
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+WHERE ($1::text IS NULL OR a.city ILIKE $1)
+  AND ($2::text IS NULL OR s.name ILIKE $2)
+  AND ($3::text IS NULL
+       OR u.name  ILIKE $3
+       OR u.phone LIKE  $3
+       OR ($4::text IS NOT NULL
+           AND b.id::text ILIKE $4))
+  AND ($5::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) >= $5::timestamptz)
+  AND ($6::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) < $6::timestamptz)
+GROUP BY b.state
+`
+
+type AdminCountBookingsByStateParams struct {
+	Zone            *string
+	ServiceName     *string
+	SearchPattern   *string
+	ReferencePrefix *string
+	SlotFrom        pgtype.Timestamptz
+	SlotTo          pgtype.Timestamptz
+}
+
+type AdminCountBookingsByStateRow struct {
+	State string
+	Total int32
+}
+
+// Per-state totals under the SAME non-state filters as AdminListBookings, so the segment
+// chips and the "Showing X of Y" line stay honest while a filter is applied.
+func (q *Queries) AdminCountBookingsByState(ctx context.Context, arg AdminCountBookingsByStateParams) ([]AdminCountBookingsByStateRow, error) {
+	rows, err := q.db.Query(ctx, adminCountBookingsByState,
+		arg.Zone,
+		arg.ServiceName,
+		arg.SearchPattern,
+		arg.ReferencePrefix,
+		arg.SlotFrom,
+		arg.SlotTo,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminCountBookingsByStateRow{}
+	for rows.Next() {
+		var i AdminCountBookingsByStateRow
+		if err := rows.Scan(&i.State, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const adminGetBooking = `-- name: AdminGetBooking :one
+SELECT
+  b.id, b.order_id, b.state, b.version, b.created_at, b.scheduled_for,
+  b.quoted_total_paise, b.technician_id,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  u.created_at AS customer_since,
+  (SELECT count(*) FROM bookings other WHERE other.customer_id = b.customer_id)::int AS customer_booking_count,
+  s.name AS service_name,
+  a.line1, a.city, a.pincode,
+  tu.name AS technician_name,
+  tech.rating AS technician_rating
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+LEFT JOIN users tu         ON tu.id = b.technician_id
+LEFT JOIN technicians tech ON tech.user_id = b.technician_id
+WHERE b.id = $1
+`
+
+type AdminGetBookingRow struct {
+	ID                   uuid.UUID
+	OrderID              uuid.UUID
+	State                string
+	Version              int64
+	CreatedAt            pgtype.Timestamptz
+	ScheduledFor         pgtype.Timestamptz
+	QuotedTotalPaise     money.Money
+	TechnicianID         *uuid.UUID
+	CustomerName         string
+	CustomerPhone        string
+	CustomerSince        pgtype.Timestamptz
+	CustomerBookingCount int32
+	ServiceName          string
+	Line1                string
+	City                 string
+	Pincode              string
+	TechnicianName       *string
+	TechnicianRating     pgtype.Numeric
+}
+
+// The full record behind the console's booking detail screen, joined for display: the
+// customer (with their booking count and join date), the service, the address, and the
+// assigned technician when there is one.
+func (q *Queries) AdminGetBooking(ctx context.Context, id uuid.UUID) (AdminGetBookingRow, error) {
+	row := q.db.QueryRow(ctx, adminGetBooking, id)
+	var i AdminGetBookingRow
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.State,
+		&i.Version,
+		&i.CreatedAt,
+		&i.ScheduledFor,
+		&i.QuotedTotalPaise,
+		&i.TechnicianID,
+		&i.CustomerName,
+		&i.CustomerPhone,
+		&i.CustomerSince,
+		&i.CustomerBookingCount,
+		&i.ServiceName,
+		&i.Line1,
+		&i.City,
+		&i.Pincode,
+		&i.TechnicianName,
+		&i.TechnicianRating,
+	)
+	return i, err
+}
+
+const adminGetBookingTimeline = `-- name: AdminGetBookingTimeline :many
+SELECT
+  be.id, be.action, be.from_state, be.to_state, be.created_at,
+  actor.name AS actor_name,
+  actor.role AS actor_role
+FROM booking_events be
+LEFT JOIN users actor ON actor.id = be.actor_user_id
+WHERE be.booking_id = $1
+ORDER BY be.created_at, be.id
+`
+
+type AdminGetBookingTimelineRow struct {
+	ID        uuid.UUID
+	Action    string
+	FromState string
+	ToState   string
+	CreatedAt pgtype.Timestamptz
+	ActorName *string
+	ActorRole *string
+}
+
+// Every transition a booking has been through, oldest first, with the actor named where a
+// human drove it — the console's dispatch timeline.
+func (q *Queries) AdminGetBookingTimeline(ctx context.Context, bookingID uuid.UUID) ([]AdminGetBookingTimelineRow, error) {
+	rows, err := q.db.Query(ctx, adminGetBookingTimeline, bookingID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminGetBookingTimelineRow{}
+	for rows.Next() {
+		var i AdminGetBookingTimelineRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Action,
+			&i.FromState,
+			&i.ToState,
+			&i.CreatedAt,
+			&i.ActorName,
+			&i.ActorRole,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const adminListBookings = `-- name: AdminListBookings :many
+SELECT
+  b.id, b.state, b.scheduled_for, b.created_at, b.quoted_total_paise,
+  u.name  AS customer_name,
+  u.phone AS customer_phone,
+  s.name  AS service_name,
+  a.city,
+  tu.name AS technician_name,
+  COALESCE(
+    (SELECT max(be.created_at) FROM booking_events be
+      WHERE be.booking_id = b.id AND be.to_state = b.state),
+    b.created_at
+  )::timestamptz AS state_since,
+  r.rating AS review_rating
+FROM bookings b
+JOIN users u          ON u.id = b.customer_id
+JOIN booking_items bi ON bi.booking_id = b.id
+JOIN services s       ON s.id = bi.service_id
+JOIN addresses a      ON a.id = b.address_id
+LEFT JOIN users tu    ON tu.id = b.technician_id
+LEFT JOIN reviews r   ON r.booking_id = b.id
+WHERE b.state = ANY($1::text[])
+  AND ($2::text IS NULL OR a.city ILIKE $2)
+  AND ($3::text IS NULL OR s.name ILIKE $3)
+  AND ($4::text IS NULL
+       OR u.name  ILIKE $4
+       OR u.phone LIKE  $4
+       OR ($5::text IS NOT NULL
+           AND b.id::text ILIKE $5))
+  AND ($6::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) >= $6::timestamptz)
+  AND ($7::timestamptz IS NULL
+       OR COALESCE(b.scheduled_for, b.created_at) < $7::timestamptz)
+  AND ($8::timestamptz IS NULL
+       OR b.created_at < $8::timestamptz
+       OR (b.created_at = $8::timestamptz
+           AND b.id < $9::uuid))
+ORDER BY b.created_at DESC, b.id DESC
+LIMIT $10::int
+`
+
+type AdminListBookingsParams struct {
+	States          []string
+	Zone            *string
+	ServiceName     *string
+	SearchPattern   *string
+	ReferencePrefix *string
+	SlotFrom        pgtype.Timestamptz
+	SlotTo          pgtype.Timestamptz
+	CursorCreatedAt pgtype.Timestamptz
+	CursorID        *uuid.UUID
+	RowLimit        int32
+}
+
+type AdminListBookingsRow struct {
+	ID               uuid.UUID
+	State            string
+	ScheduledFor     pgtype.Timestamptz
+	CreatedAt        pgtype.Timestamptz
+	QuotedTotalPaise money.Money
+	CustomerName     string
+	CustomerPhone    string
+	ServiceName      string
+	City             string
+	TechnicianName   *string
+	StateSince       pgtype.Timestamptz
+	ReviewRating     *int32
+}
+
+// The admin console's booking list: filtered by state set, zone (city), service name, a
+// free-text search (customer name, phone, or the booking reference — the id's hex prefix),
+// and slot bounds; keyset-paginated newest-created first. state_since is when the booking
+// entered its current state (drives the "unassigned for 12m" style row notes); the review
+// join surfaces the rating a completed job earned.
+func (q *Queries) AdminListBookings(ctx context.Context, arg AdminListBookingsParams) ([]AdminListBookingsRow, error) {
+	rows, err := q.db.Query(ctx, adminListBookings,
+		arg.States,
+		arg.Zone,
+		arg.ServiceName,
+		arg.SearchPattern,
+		arg.ReferencePrefix,
+		arg.SlotFrom,
+		arg.SlotTo,
+		arg.CursorCreatedAt,
+		arg.CursorID,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminListBookingsRow{}
+	for rows.Next() {
+		var i AdminListBookingsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.State,
+			&i.ScheduledFor,
+			&i.CreatedAt,
+			&i.QuotedTotalPaise,
+			&i.CustomerName,
+			&i.CustomerPhone,
+			&i.ServiceName,
+			&i.City,
+			&i.TechnicianName,
+			&i.StateSince,
+			&i.ReviewRating,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const applyBookingTransition = `-- name: ApplyBookingTransition :execrows
 UPDATE bookings
    SET state         = $1,
