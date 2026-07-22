@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { cx } from "../../lib/cx";
 import { useToastStore, type Toast } from "../../lib/toast/toastStore";
@@ -20,6 +20,25 @@ export function ToastHost({ aboveActionBar = false }: ToastHostProps) {
   );
 }
 
+/**
+ * Whole seconds left of the toast's window. The 2px progress line alone is not a legible deadline
+ * for a destructive undo, so the action also states it ("Undo · 8s").
+ */
+function useRemainingSeconds(durationMs: number, enabled: boolean): number {
+  const [remainingSeconds, setRemainingSeconds] = useState(() => Math.ceil(durationMs / 1000));
+
+  useEffect(() => {
+    if (!enabled) return;
+    const deadline = Date.now() + durationMs;
+    const interval = window.setInterval(() => {
+      setRemainingSeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+    }, 250);
+    return () => window.clearInterval(interval);
+  }, [durationMs, enabled]);
+
+  return remainingSeconds;
+}
+
 interface ToastViewProps {
   toast: Toast;
   onDismiss: (id: string) => void;
@@ -27,6 +46,10 @@ interface ToastViewProps {
 }
 
 function ToastView({ toast, onDismiss, aboveActionBar }: ToastViewProps) {
+  // A countdown only where there is a deadline to beat: an action inside a draining window.
+  const showsCountdown = toast.action !== undefined && toast.showProgress;
+  const remainingSeconds = useRemainingSeconds(toast.durationMs, showsCountdown);
+
   useEffect(() => {
     const timer = window.setTimeout(() => onDismiss(toast.id), toast.durationMs);
     return () => window.clearTimeout(timer);
@@ -49,6 +72,13 @@ function ToastView({ toast, onDismiss, aboveActionBar }: ToastViewProps) {
       {toast.action ? (
         <button type="button" className="toast__action" onClick={handleAction}>
           {toast.action.label}
+          {showsCountdown ? (
+            // aria-hidden keeps the accessible name stable ("Undo") instead of renaming the
+            // button every second.
+            <span aria-hidden className="toast__action-count">
+              {` · ${remainingSeconds}s`}
+            </span>
+          ) : null}
         </button>
       ) : null}
       {toast.showProgress ? (

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { useSession } from "@sethu/core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -46,11 +46,12 @@ describe("the five groups", () => {
     const { container } = renderSidebar();
 
     const headers = Array.from(container.querySelectorAll(".sidebar__group-header"));
+    // "Finance & config", not "Desktop only": on the rail every item in it works (audit W2-7).
     expect(headers.map((header) => header.textContent)).toEqual([
       "Live",
       "Manage",
       "Records",
-      "Desktop only",
+      "Finance & config",
       "Account",
     ]);
   });
@@ -108,10 +109,21 @@ describe("badges", () => {
   it("announces the count, not just the destination it sits on", () => {
     // A badge whose accessible name is only the destination repeats the link's own label and leaves
     // the number — the only new information — to sighted operators alone.
-    renderSidebar({ ...NO_COUNTERS, needsAttention: 7, openTickets: 4 });
+    renderSidebar({ ...NO_COUNTERS, needsAttention: 7 });
 
     expect(screen.getByRole("link", { name: /7 Needs attention/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /4 Support tickets/ })).toBeInTheDocument();
+  });
+
+  it("never counts on a coming-soon destination — a counter into a dead end is a lure", () => {
+    // Audit W2-4: "Support tickets 4" led to a placeholder. Coming-soon items carry the v1.1
+    // pill instead, and the live counter stays suppressed until the screen exists.
+    renderSidebar({ ...NO_COUNTERS, openTickets: 4 });
+
+    expect(screen.queryByRole("link", { name: /4 Support tickets/ })).not.toBeInTheDocument();
+    for (const destination of ["Support tickets", "Customers", "Analytics"]) {
+      const link = screen.getByRole("link", { name: new RegExp(destination) });
+      expect(within(link).getByText("v1.1")).toBeInTheDocument();
+    }
   });
 
   it("keeps the digit itself out of the announcement, so the count is read once", () => {
@@ -121,12 +133,21 @@ describe("badges", () => {
   });
 });
 
+describe("the collapse trigger", () => {
+  it("offers a visible, labelled toggle — Cmd/Ctrl+B alone is not discoverable (audit W2-2)", () => {
+    renderSidebar();
+
+    expect(screen.getByRole("button", { name: "Toggle sidebar" })).toBeInTheDocument();
+  });
+});
+
 describe("the account row", () => {
   it("stays out of the rail entirely when nobody is signed in", () => {
     renderSidebar();
 
     expect(screen.queryByText("Manage")).toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // The only button left is the collapse trigger — no account affordance without a session.
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
   it("shows the signed-in operator, because desktop has no More tab to hold sign-out", () => {

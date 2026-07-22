@@ -197,6 +197,16 @@ export function isFullScreenTask(pathname: string): boolean {
   );
 }
 
+/**
+ * The tab a concrete pathname belongs to, straight from the route table — the single source the
+ * mobile TabBar highlights from. Raw NavLink prefix matching cannot know that /customers or
+ * /settings/notifications belong under More (audit W2-3).
+ */
+export function tabForPath(pathname: string): Tab | null {
+  const route = ROUTE_TABLE.find((entry) => matchesPattern(entry.pattern, pathname));
+  return route?.tab ?? null;
+}
+
 /** Segment-wise match of a `:param` pattern against a concrete path. */
 function matchesPattern(pattern: string, pathname: string): boolean {
   const patternParts = pattern.split("/");

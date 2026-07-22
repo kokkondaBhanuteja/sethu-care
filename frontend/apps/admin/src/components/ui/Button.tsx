@@ -46,7 +46,9 @@ export const BUTTON_VARIANTS = {
 
 /** Heights stay semantic: 36 inline in a card, 48 for a sticky primary footer (h-12 = 48px). */
 export const BUTTON_SIZES = {
-  inline: { size: "sm" },
+  // 32px suits a dense desktop table row, but sits below the app's 44px tap floor on touch —
+  // below the 768px shell split (max-md) the minimum is lifted; desktop density is untouched.
+  inline: { size: "sm", extra: "max-md:min-h-11" },
   section: { size: "md" },
   secondary: { size: "lg", extra: "h-11" },
   primary: { size: "lg", extra: "h-12" },

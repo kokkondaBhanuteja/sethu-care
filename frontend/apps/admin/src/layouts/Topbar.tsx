@@ -1,6 +1,5 @@
 import { Fragment } from "react";
 import { Link } from "react-router";
-import { Bell } from "lucide-react";
 import { useSession } from "@sethu/core";
 import { useTranslation } from "@sethu/i18n";
 import {
@@ -14,9 +13,6 @@ import {
 } from "@sethu/ui-web";
 
 import { Avatar } from "../components/ui/Avatar";
-import { Icon } from "../components/ui/Icon";
-import { ROUTES } from "../routes/routes.constants";
-import { useShellCounters } from "../queries/useShellCounters";
 
 export interface Crumb {
   readonly label: string;
@@ -37,11 +33,12 @@ export interface TopbarProps {
 
 /**
  * The desktop topbar, restyled to the global language (P3): ui-web Breadcrumb over react-router
- * links, the alert bell, and the signed-in operator as an AvatarLabel identity block.
+ * links and the signed-in operator as an AvatarLabel identity block. The former alert bell is
+ * gone on purpose — it duplicated the sidebar's Alerts badge and opened no menu (audit W2-6);
+ * one count in one place.
  */
 export function Topbar({ title, crumbs, actions, pageRendersHeading }: TopbarProps) {
   const { t } = useTranslation("adminShell");
-  const { criticalAlerts } = useShellCounters();
   const user = useSession((state) => state.user);
 
   return (
@@ -84,19 +81,6 @@ export function Topbar({ title, crumbs, actions, pageRendersHeading }: TopbarPro
 
       <div className="ml-auto flex items-center gap-3">
         {actions}
-        <Link
-          to={ROUTES.alerts}
-          className="relative inline-flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-inset hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={t("nav.alerts")}
-        >
-          <Icon glyph={Bell} size="lg" />
-          {criticalAlerts > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-fg px-1 text-pill font-semibold text-on-primary">
-              <span aria-hidden>{criticalAlerts}</span>
-              <span className="sr-only">{t("nav.alerts")}</span>
-            </span>
-          ) : null}
-        </Link>
         {user ? (
           <AvatarLabel name={user.name} description={t("nav.roleOperations")}>
             <Avatar name={user.name} size="sm" brand />

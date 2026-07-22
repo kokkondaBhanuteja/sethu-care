@@ -935,6 +935,12 @@
     font-family: inherit;
     cursor: pointer;
   }
+  /* The textual deadline beside the action label ("Undo · 8s"). Tabular digits so the
+   count ticks down without the label shivering. */
+  .toast__action-count {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
   .toast__progress {
     position: absolute;
     left: 0;
@@ -942,6 +948,20 @@
     height: 2px;
     background: var(--toast-link);
     opacity: 0.7;
+  }
+
+  /* Desktop (the 768px shell split — a physical breakpoint, so px): the toast is a compact
+   card anchored bottom-left of the content area (ToastHost mounts inside .app__main, so the
+   sidebar is never covered) rather than a viewport-wide dark bar. Mobile keeps the
+   gutter-to-gutter layout above the tab bar. */
+  @media (min-width: 768px) {
+    .toast {
+      left: var(--s6);
+      right: auto;
+      bottom: var(--s6);
+      width: max-content;
+      max-width: 28rem; /* max-w-md — a readable confirmation line, not a marquee */
+    }
   }
 
   /* =========================================================================
@@ -1210,6 +1230,9 @@
   }
 
   .app__main {
+    /* Positioned so the absolutely-placed .toast anchors to the CONTENT area, not the whole
+     frame — a desktop toast must never sit over the sidebar. */
+    position: relative;
     flex: 1 1 auto;
     min-width: 0;
     display: flex;

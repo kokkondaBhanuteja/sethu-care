@@ -57,8 +57,10 @@ export type SidebarMenuButtonProps<LinkComponent extends ElementType = "button">
   /** The rendered element — pass your router's Link for navigation items. */
   as?: LinkComponent;
   icon?: ReactNode;
-  /** Right-aligned slot (count badge, shortcut hint). Hidden when the rail is collapsed. */
+  /** Right-aligned slot (count badge, shortcut hint). Collapses to a dot on the icon. */
   badge?: ReactNode;
+  /** Tone override for the collapsed badge dot (defaults to the danger tone). */
+  badgeDotClassName?: string;
 } & VariantProps<typeof sidebarMenuButtonVariants> &
   Omit<ComponentPropsWithoutRef<LinkComponent>, "as">;
 
@@ -66,6 +68,7 @@ export function SidebarMenuButton<LinkComponent extends ElementType = "button">(
   as,
   icon,
   badge,
+  badgeDotClassName,
   active,
   muted,
   className,
@@ -74,6 +77,9 @@ export function SidebarMenuButton<LinkComponent extends ElementType = "button">(
 }: SidebarMenuButtonProps<LinkComponent>) {
   const Component = (as ?? "button") as ElementType;
   const { open } = useSidebar();
+  // Collapsed, a badged item still has news: the badge shrinks to a dot on the icon instead of
+  // vanishing, and the badge's own (sr-only-wrapped) content keeps the count for assistive tech.
+  const showsCollapsedDot = badge !== undefined && badge !== null && !open;
   return (
     <Component
       aria-current={active ? "page" : undefined}
@@ -81,11 +87,31 @@ export function SidebarMenuButton<LinkComponent extends ElementType = "button">(
       {...(Component === "button" ? { type: "button" } : {})}
       {...props}
     >
-      {icon}
+      {icon || showsCollapsedDot ? (
+        <span className="relative flex shrink-0 items-center justify-center">
+          {icon}
+          {showsCollapsedDot ? (
+            <span
+              aria-hidden
+              data-slot="sidebar-badge-dot"
+              className={cn(
+                "absolute -right-1 -top-1 size-2 rounded-full bg-danger-fg",
+                badgeDotClassName,
+              )}
+            />
+          ) : null}
+        </span>
+      ) : null}
       <span className="min-w-0 flex-1 truncate text-left group-data-[collapsed]/sidebar:sr-only">
         {children}
       </span>
-      {badge && open ? <span className="shrink-0">{badge}</span> : null}
+      {badge ? (
+        open ? (
+          <span className="shrink-0">{badge}</span>
+        ) : (
+          <span className="sr-only">{badge}</span>
+        )
+      ) : null}
     </Component>
   );
 }

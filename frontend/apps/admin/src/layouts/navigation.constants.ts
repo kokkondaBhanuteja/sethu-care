@@ -27,6 +27,7 @@ export const BADGE_SOURCES = {
   criticalAlerts: "criticalAlerts",
   needsAttention: "needsAttention",
   pendingApplications: "pendingApplications",
+  // Unused by the rail while Tickets is coming-soon (W2-4); the counter itself stays live.
   openTickets: "openTickets",
 } as const;
 
@@ -44,8 +45,12 @@ export interface NavItem {
    * reserved for the queue that means someone is currently stuck (spec §3.1).
    */
   readonly badgeTone?: "danger" | "brand";
-  /** Rendered lighter — administrative surfaces outside the exception-handling loop. */
-  readonly muted?: boolean;
+  /**
+   * A v1.1 destination that exists for deep-link and rail completeness only. It never carries a
+   * live counter — a count on a coming-soon screen lures the operator into a dead end — and the
+   * rail marks it with a version pill instead (audit W2-4).
+   */
+  readonly comingSoon?: boolean;
   /** Match only the exact path — set on section roots that are prefixes of their children. */
   readonly end?: boolean;
 }
@@ -92,37 +97,28 @@ export const SIDEBAR_GROUPS: readonly NavGroup[] = [
         badge: BADGE_SOURCES.criticalAlerts,
         badgeTone: "danger",
       },
-      { to: ROUTES.customers, labelKey: "nav.customers", icon: User },
-      {
-        to: ROUTES.tickets,
-        labelKey: "nav.tickets",
-        icon: MessageSquare,
-        badge: BADGE_SOURCES.openTickets,
-        badgeTone: "brand",
-      },
+      { to: ROUTES.customers, labelKey: "nav.customers", icon: User, comingSoon: true },
+      // No openTickets badge while the screen is coming-soon: "Support tickets 4" on a
+      // placeholder is a counter luring into a dead end (audit W2-4).
+      { to: ROUTES.tickets, labelKey: "nav.tickets", icon: MessageSquare, comingSoon: true },
     ],
   },
   {
     titleKey: "nav.groupRecords",
     items: [
-      { to: ROUTES.analytics, labelKey: "nav.analytics", icon: BarChart3 },
+      { to: ROUTES.analytics, labelKey: "nav.analytics", icon: BarChart3, comingSoon: true },
       { to: ROUTES.audit, labelKey: "nav.audit", icon: FileText },
     ],
   },
   {
-    // Muted on purpose: an ops manager working an escalation should not have their eye pulled into
-    // pricing or reports.
-    titleKey: "nav.groupDesktopOnly",
+    // "Finance & config", not "Desktop only": on desktop — the only place this rail exists —
+    // every one of these items works, and the old label read as "disabled" (audit W2-7).
+    titleKey: "nav.groupFinance",
     items: [
-      { to: ROUTES.services, labelKey: "nav.services", icon: Tags, muted: true },
-      { to: ROUTES.payouts, labelKey: "nav.payouts", icon: Landmark, muted: true },
-      { to: ROUTES.reports, labelKey: "nav.reports", icon: Download, muted: true },
-      {
-        to: ROUTES.platformSettings,
-        labelKey: "nav.platformSettings",
-        icon: Settings,
-        muted: true,
-      },
+      { to: ROUTES.services, labelKey: "nav.services", icon: Tags },
+      { to: ROUTES.payouts, labelKey: "nav.payouts", icon: Landmark },
+      { to: ROUTES.reports, labelKey: "nav.reports", icon: Download },
+      { to: ROUTES.platformSettings, labelKey: "nav.platformSettings", icon: Settings },
     ],
   },
   {

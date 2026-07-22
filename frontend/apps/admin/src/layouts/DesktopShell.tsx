@@ -23,8 +23,9 @@ export function DesktopShell() {
       <Sidebar />
       <div className="app__main" id="admin-main">
         <Outlet />
+        {/* Inside app__main so the desktop toast anchors to the content area, off the sidebar. */}
+        <ToastHost />
       </div>
-      <ToastHost />
     </div>
   );
 }

@@ -19,7 +19,7 @@ const NO_COUNTERS: ShellCounters = {
   openTickets: 0,
 };
 
-function renderTabBar(counters: ShellCounters = NO_COUNTERS) {
+function renderTabBar(counters: ShellCounters = NO_COUNTERS, pathname = "/live") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -28,7 +28,7 @@ function renderTabBar(counters: ShellCounters = NO_COUNTERS) {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={["/live"]}>{children}</MemoryRouter>
+        <MemoryRouter initialEntries={[pathname]}>{children}</MemoryRouter>
       </QueryClientProvider>
     );
   }
@@ -66,6 +66,21 @@ describe("the five tabs", () => {
 
     expect(screen.getByRole("link", { name: /Live/ })).toHaveClass("is-active");
     expect(screen.getByRole("link", { name: /Bookings/ })).not.toHaveClass("is-active");
+  });
+
+  it("derives the active tab from the route table, not from path prefixes", () => {
+    // /customers shares no path with /more, but the route table files it under More — raw
+    // NavLink matching left such screens with no active tab at all (audit W2-3).
+    renderTabBar(NO_COUNTERS, "/customers");
+
+    expect(screen.getByRole("link", { name: /More/ })).toHaveClass("is-active");
+    expect(screen.getByRole("link", { name: /Live/ })).not.toHaveClass("is-active");
+  });
+
+  it("keeps a settings screen under More too, and announces it as the current page", () => {
+    renderTabBar(NO_COUNTERS, "/settings/notifications");
+
+    expect(screen.getByRole("link", { name: /More/ })).toHaveAttribute("aria-current", "page");
   });
 });
 

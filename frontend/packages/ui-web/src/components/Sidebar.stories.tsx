@@ -115,6 +115,8 @@ export const Default: Story = {
   ),
 };
 
+// Collapsed, the Alerts badge shrinks to a dot on its icon (badgeDotClassName retints it) — a
+// collapsed rail never silently drops the "something is waiting" signal.
 export const CollapsedByDefault: Story = {
   args: { label: "Primary" },
   render: () => (

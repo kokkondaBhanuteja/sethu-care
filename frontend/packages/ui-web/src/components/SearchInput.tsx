@@ -19,6 +19,7 @@ export function SearchInput({
   clearLabel,
   onClear,
   clearButtonClassName,
+  inputClassName,
   value,
   ...props
 }: SearchInputProps) {
@@ -26,6 +27,9 @@ export function SearchInput({
   return (
     <Input
       value={value}
+      // Chromium draws its own ::-webkit-search-cancel-button on type="search", which would sit
+      // beside our clear button as a second ✕ — this component owns the clear affordance.
+      inputClassName={cn("[&::-webkit-search-cancel-button]:appearance-none", inputClassName)}
       leading={<Search aria-hidden className="text-faint" />}
       trailing={
         hasValue ? (

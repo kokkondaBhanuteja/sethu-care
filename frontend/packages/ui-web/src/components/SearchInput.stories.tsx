@@ -37,3 +37,9 @@ export const Controlled: Story = { render: () => <ControlledSearchExample /> };
 export const Inset: Story = {
   args: { fill: "inset", value: "paracetamol", onChange: () => undefined },
 };
+
+// type="search" callers get exactly one ✕: the native WebKit cancel button is suppressed so it
+// never doubles up beside the component's own clear affordance.
+export const NativeSearchType: Story = {
+  args: { type: "search", value: "paracetamol", onChange: () => undefined },
+};

@@ -125,6 +125,16 @@ describe("Button", () => {
     expect(button).toHaveClass("bg-danger-fg", "h-12", "w-full");
   });
 
+  it("lifts inline buttons to the 44px tap floor on touch widths without changing desktop density", () => {
+    // h-8 (32px) is right in a desktop table row; max-md:min-h-11 raises only the mobile shell.
+    render(<Button size="inline">Acknowledge</Button>);
+
+    expect(screen.getByRole("button", { name: "Acknowledge" })).toHaveClass(
+      "h-8",
+      "max-md:min-h-11",
+    );
+  });
+
   it("forwards the accessible name a caller sets explicitly, for icon-only buttons", () => {
     render(<Button iconStart={Trash2} aria-label="Remove evidence" />);
 

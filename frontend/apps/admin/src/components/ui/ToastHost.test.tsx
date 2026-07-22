@@ -85,6 +85,41 @@ describe("ToastHost", () => {
     }
   });
 
+  it("states the seconds left on the action, because a 2px line is not a legible deadline", () => {
+    vi.useFakeTimers();
+    try {
+      render(<ToastHost />);
+      act(() => {
+        showToast({
+          message: "Booking cancelled",
+          durationMs: 10_000,
+          action: { label: "Undo", onAction: vi.fn() },
+        });
+      });
+
+      const undoButton = screen.getByRole("button", { name: "Undo" });
+      expect(undoButton).toHaveTextContent("Undo · 10s");
+
+      act(() => {
+        vi.advanceTimersByTime(2_100);
+      });
+      expect(undoButton).toHaveTextContent("Undo · 8s");
+      // The countdown is visual only — the accessible name must not change every second.
+      expect(screen.getByRole("button", { name: "Undo" })).toBe(undoButton);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps a plain confirmation free of any countdown, because it offers no window", () => {
+    render(<ToastHost />);
+    act(() => {
+      showToast({ message: "Note added" });
+    });
+
+    expect(screen.getByRole("status")).toHaveTextContent(/^Note added$/);
+  });
+
   it("shows only the newest toast, because a stack buries the action it describes", () => {
     render(<ToastHost />);
     act(() => {

@@ -101,17 +101,20 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
   // Desktop has no More menu — the always-visible sidebar is its equivalent, so /more lands on the
   // one destination the sidebar does not name (pages/MoreMenuPage.tsx).
   [ROUTES.more]: { url: ROUTES.more, heading: "Profile", redirectsTo: ROUTES.profile },
-  [ROUTES.customers]: { url: ROUTES.customers, heading: "Customers — Coming in v1.1" },
+  // W2 (audit finding 3): the v1.1 placeholders now render inside the standard page frame, so
+  // the page heading is the Topbar h1 (the section name) — the "… — Coming in v1.1" line is the
+  // EmptyState's h3 below it. Exact matching keeps the two apart.
+  [ROUTES.customers]: { url: ROUTES.customers, heading: "Customers" },
   [ROUTE_PATTERNS.customerDetail]: {
     url: ROUTES.customerDetail("CUS-1"),
-    heading: "Customers — Coming in v1.1",
+    heading: "Customers",
   },
-  [ROUTES.tickets]: { url: ROUTES.tickets, heading: "Support tickets — Coming in v1.1" },
+  [ROUTES.tickets]: { url: ROUTES.tickets, heading: "Support tickets" },
   [ROUTE_PATTERNS.ticketDetail]: {
     url: ROUTES.ticketDetail("TCK-1"),
-    heading: "Support tickets — Coming in v1.1",
+    heading: "Support tickets",
   },
-  [ROUTES.analytics]: { url: ROUTES.analytics, heading: "Analytics — Coming in v1.1" },
+  [ROUTES.analytics]: { url: ROUTES.analytics, heading: "Analytics" },
   [ROUTES.audit]: { url: ROUTES.audit, heading: "Audit log" },
   [ROUTES.notificationSettings]: { url: ROUTES.notificationSettings, heading: "Notifications" },
   [ROUTES.securitySettings]: { url: ROUTES.securitySettings, heading: "Security & devices" },

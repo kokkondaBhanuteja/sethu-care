@@ -4,7 +4,7 @@ Scope: Route targets. One default-exported component per route in `routes/routes
 
 Purpose: Pages WIRE, they do not implement — read route params, compose feature components, choose the desktop or mobile variant.
 
-Contents: one file per route (see `routes/AppRoutes.tsx` for the mapping).
+Contents: one file per route (see `routes/AppRoutes.tsx` for the mapping). The v1.1 placeholder pages (customers, tickets, analytics) compose `layouts/PageFrame` + `ComingSoonState` with an interim path — a placeholder still gets the standard shell chrome and never dead-ends.
 
 Business logic: none. If a page grows logic, it belongs in the feature's `use<Screen>()` hook.
 

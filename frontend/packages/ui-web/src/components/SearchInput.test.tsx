@@ -32,6 +32,22 @@ describe("SearchInput", () => {
     expect(onClear).toHaveBeenCalledOnce();
   });
 
+  it("suppresses the native search cancel button so only its own clear ✕ renders", () => {
+    render(
+      <SearchInput
+        aria-label="Search"
+        clearLabel="Clear search"
+        type="search"
+        value="paracetamol"
+        onChange={() => undefined}
+      />,
+    );
+    // jsdom cannot render the pseudo-element; the utility class on the input is the contract.
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveClass(
+      "[&::-webkit-search-cancel-button]:appearance-none",
+    );
+  });
+
   it("stays controlled — typing reaches the caller's onChange", async () => {
     const onChange = vi.fn();
     render(

@@ -1,9 +1,9 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router";
 import { Monitor } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
-import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
+import { MobileAppBar } from "../layouts/MobileAppBar";
 import { useIsDesktop } from "../hooks/useBreakpoint";
 
 export interface SurfaceGuardProps {
@@ -23,25 +23,24 @@ export interface SurfaceGuardProps {
  */
 export function SurfaceGuard({ destinationLabelKey, summary }: SurfaceGuardProps) {
   const isDesktop = useIsDesktop();
-  const navigate = useNavigate();
   const { t } = useTranslation("adminShell");
 
   if (isDesktop) return <Outlet />;
 
   return (
-    <div className="screen__scroll gut">
-      {summary}
-      <EmptyState
-        icon={Monitor}
-        title={t("state.desktopOnlyTitle")}
-        body={`${t(destinationLabelKey)} — ${t("state.desktopOnlyBody")}`}
-        grow
-        actions={
-          <Button variant="outline" size="secondary" block onClick={() => void navigate(-1)}>
-            {t("state.desktopOnlyBack")}
-          </Button>
-        }
-      />
-    </div>
+    <>
+      {/* The standard app bar (audit W2-9): the notice starts with the screen's identity and the
+          standard back chevron, not mid-content with a floating button. */}
+      <MobileAppBar title={t(destinationLabelKey)} showBack />
+      <div className="screen__scroll gut flex flex-col">
+        {summary}
+        <EmptyState
+          icon={Monitor}
+          title={t("state.desktopOnlyTitle")}
+          body={`${t(destinationLabelKey)} — ${t("state.desktopOnlyBody")}`}
+          grow
+        />
+      </div>
+    </>
   );
 }
