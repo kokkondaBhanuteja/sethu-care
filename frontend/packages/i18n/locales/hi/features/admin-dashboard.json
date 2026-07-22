@@ -19,14 +19,14 @@
     "countCapped": "9+ need attention",
     "example": "{{reason}} {{booking}} · {{age}}",
     "viewAll": "View all",
-    "open": "Open the needs-attention queue"
+    "open": "Open the needs-attention list"
   },
   "kpi": {
     "sectionLabel": "Key figures",
     "bookings": "Bookings",
     "revenue": "Revenue",
     "completion": "Completion",
-    "avgAssign": "Avg assign",
+    "avgAssign": "Avg time to assign",
     "loading": "Loading key figures",
     "noValue": "—"
   },
@@ -34,7 +34,7 @@
     "title": "Needs attention",
     "seeAll": "See all",
     "tableCaption": "Bookings needing attention, ordered by priority",
-    "loading": "Loading the attention queue",
+    "loading": "Loading bookings that need attention",
     "orderNote": "Showing {{shown}} of {{total}} · ordered by priority, not time",
     "refreshedAt": "Auto-refreshing · updated {{time}}",
     "allClearTitle": "Nothing needs attention",
@@ -69,7 +69,7 @@
     "noResponse": "No response"
   },
   "filters": {
-    "label": "Filter the attention queue",
+    "label": "Filter bookings that need attention",
     "all": "All",
     "escalated": "Escalated ({{count}})",
     "unassigned": "Unassigned ({{count}})",
@@ -86,9 +86,9 @@
     "call": "Call",
     "cancel": "Cancel",
     "reassign": "Reassign",
-    "redispatch": "Re-dispatch",
+    "redispatch": "Search again",
     "acknowledged": "{{booking}} acknowledged",
-    "acknowledgeFailed": "{{booking}} could not be acknowledged. It is back in the queue.",
+    "acknowledgeFailed": "{{booking}} could not be acknowledged. It is back in the list.",
     "offlineReason": "Reconnect to act",
     "noPermission": "You don't have permission for this",
     "rowActions": "Actions for {{booking}}"

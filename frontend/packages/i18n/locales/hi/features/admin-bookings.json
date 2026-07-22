@@ -47,7 +47,7 @@
     "provider": "Provider"
   },
   "table": {
-    "caption": "Bookings queue"
+    "caption": "Bookings list"
   },
   "state": {
     "DRAFT": "Pending",
@@ -81,7 +81,7 @@
     "provider": "Provider",
     "payment": "Payment",
     "timeline": "Timeline",
-    "dispatchRounds": "Dispatch rounds",
+    "dispatchRounds": "Search attempts",
     "adminActions": "Admin actions",
     "notes": "Notes"
   },
@@ -89,9 +89,9 @@
     "label": "Booking timeline",
     "created": "Created",
     "searching": "Searching for provider",
-    "dispatchRound": "Round {{number}} · {{radius}} km · {{contacted}} contacted · {{declined}} declined",
-    "dispatchRoundShort": "Round {{number}} · {{radius}} km · {{declined}} declined",
-    "autoAssigned": "Auto-assigned to {{name}} · round {{number}} · {{radius}} km",
+    "dispatchRound": "Attempt {{number}} · {{radius}} km · {{contacted}} contacted · {{declined}} declined",
+    "dispatchRoundShort": "Attempt {{number}} · {{radius}} km · {{declined}} declined",
+    "autoAssigned": "Auto-assigned to {{name}} · attempt {{number}} · {{radius}} km",
     "enRoute": "En route",
     "arrived": "Arrived",
     "started": "Started · OTP verified",
@@ -99,7 +99,7 @@
     "completed": "Completed",
     "completedByAdmin": "Completed · verified by {{name}} (admin)",
     "assignmentFailed": "Assignment failed",
-    "escalated": "Escalated to ops",
+    "escalated": "Escalated to admins",
     "cancelled": "Cancelled"
   },
   "detail": {
@@ -109,8 +109,8 @@
     "priceLineWithArea": "{{amount}} · Prepaid ({{method}}) · {{area}}",
     "customerHistory": "{{count}} bookings · joined {{joined}}",
     "notAssigned": "Not assigned",
-    "dispatchSummary": "{{rounds}} dispatch rounds · {{declined}} declined",
-    "dispatchSummaryInline": "Not assigned · {{rounds}} rounds · {{declined}} declined",
+    "dispatchSummary": "{{rounds}} search attempts · {{declined}} declined",
+    "dispatchSummaryInline": "Not assigned · {{rounds}} attempts · {{declined}} declined",
     "paymentLine": "{{amount}} prepaid · {{method}} ····{{last4}}",
     "paymentMeta": "Paid {{time}} · {{transactionId}}",
     "providerStarted": "Started {{time}}",
@@ -130,8 +130,8 @@
   },
   "banner": {
     "escalatedTitle": "Escalated · {{age}} unresolved",
-    "escalatedDetail": "No provider found after {{rounds}} dispatch rounds",
-    "escalatedWide": "Escalated · {{age}} unresolved — no provider found after {{rounds}} dispatch rounds",
+    "escalatedDetail": "No provider found after {{rounds}} search attempts",
+    "escalatedWide": "Escalated · {{age}} unresolved — no provider found after {{rounds}} search attempts",
     "concurrentChange": "This booking was just assigned to {{provider}} by {{actor}}.",
     "reload": "Reload",
     "intentResolved": "This booking has already been resolved. Review the record before acting on it again.",
@@ -145,7 +145,7 @@
     "acknowledge": "Acknowledge",
     "assign": "Assign provider",
     "cancel": "Cancel booking",
-    "redispatch": "Re-dispatch",
+    "redispatch": "Search again",
     "manualComplete": "Manual completion",
     "refund": "Issue refund",
     "call": "Call",
@@ -165,6 +165,6 @@
     "completedTitle": "No completed bookings yet",
     "completedBody": "Jobs appear here once a technician closes them.",
     "cancelledTitle": "No cancelled bookings",
-    "cancelledBody": "Cancellations and failed dispatches land here."
+    "cancelledBody": "Cancellations and failed provider searches land here."
   }
 }

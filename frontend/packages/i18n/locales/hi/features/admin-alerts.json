@@ -48,7 +48,7 @@
     "createdUnacknowledged": "Created {{time}} · {{age}} · unacknowledged"
   },
   "trigger": {
-    "heading": "Why this fired",
+    "heading": "Why this alert fired",
     "rule": "Rule",
     "threshold": "Threshold",
     "actual": "Actual",
@@ -69,7 +69,7 @@
   },
   "relatedRecord": "Related booking",
   "relatedAlerts": "Related alerts",
-  "dispatchHistory": "Dispatch history",
+  "dispatchHistory": "Search history",
   "notes": {
     "heading": "Notes",
     "label": "Note for other admins",

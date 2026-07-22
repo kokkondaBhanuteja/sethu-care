@@ -3,7 +3,7 @@
   "productName": "SetuCare Admin",
   "nav": {
     "groupLive": "Live",
-    "groupOperations": "Operations",
+    "groupOperations": "Manage",
     "groupRecords": "Records",
     "live": "Live",
     "attention": "Needs attention",
@@ -33,7 +33,7 @@
     "groupAccount": "Account",
     "notifications": "Notifications",
     "security": "Security & devices",
-    "roleOperations": "Operations"
+    "roleOperations": "Admin"
   },
   "state": {
     "retry": "Retry",
@@ -60,10 +60,10 @@
     "staleNotice": "Updated {{age}}",
     "refresh": "Refresh",
     "desktopOnlyTitle": "Best on desktop",
-    "desktopOnlyBody": "This is finance and configuration work — batch runs and ledger changes that need a full screen. Open the console on a desktop browser to continue.",
+    "desktopOnlyBody": "Finance and configuration work needs a full screen. Open the console in a desktop browser to continue.",
     "desktopOnlyBack": "Back",
     "comingSoonTitle": "Coming in v1.1",
-    "comingSoonBody": "This section ships after the core operations console is approved.",
+    "comingSoonBody": "This section ships after the core admin console is approved.",
     "notFoundSubject": "{{subject}} no longer exists"
   },
   "actions": {

@@ -118,7 +118,7 @@
   },
   "action": {
     "BOOKING_ASSIGN": "Assignment",
-    "BOOKING_REDISPATCH": "Re-dispatch",
+    "BOOKING_REDISPATCH": "New provider search",
     "BOOKING_CANCEL": "Cancellation",
     "BOOKING_MANUAL_COMPLETE": "Manual completion",
     "PAYMENT_REFUND": "Refund",

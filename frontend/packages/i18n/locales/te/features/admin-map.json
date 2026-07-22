@@ -2,11 +2,11 @@
   "title": "Live map",
   "shortTitle": "Map",
   "region": {
-    "label": "Live operations map",
-    "hint": "A visual summary. Every provider and job on the map is also in the live operations list, which is reachable by keyboard."
+    "label": "Live map",
+    "hint": "A visual summary. Every provider and job on the map is also in the live activity list, which is reachable by keyboard."
   },
   "summary": {
-    "heading": "Live operations",
+    "heading": "Live activity",
     "counts": "{{jobs}} active · {{providers}} providers online"
   },
   "staleness": {
@@ -79,10 +79,10 @@
   },
   "controls": {
     "recentre": "Recentre on Hyderabad",
-    "openOperations": "Live operations"
+    "openOperations": "Live activity"
   },
   "empty": {
     "title": "Nothing live right now",
-    "body": "No jobs are running and no providers are on shift. Dispatched bookings appear here within 10 seconds."
+    "body": "No jobs are running and no providers are on shift. Assigned bookings appear here within 10 seconds."
   }
 }

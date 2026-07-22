@@ -3,7 +3,7 @@
     "km": "{{value}} km",
     "etaMinutes": "~{{value}} min",
     "none": "—",
-    "roundSummary": "Round {{round}} · {{radius}} km · {{declined}} declined",
+    "roundSummary": "Attempt {{round}} · {{radius}} km · {{declined}} declined",
     "confirmWithBiometrics": "Confirm with biometrics"
   },
   "stepUp": {
@@ -25,7 +25,7 @@
     "tabsLabel": "Candidate list",
     "tabRecommended": "Recommended",
     "tabAll": "All providers",
-    "rankingHint": "Ranked by distance, skill match, availability, rating and load — the same ranking auto-dispatch used.",
+    "rankingHint": "Ranked by distance, skill match, availability, rating and load — the same ranking the automatic search used.",
     "bestMatch": "Best match",
     "assign": "Assign",
     "available": "Available",
@@ -36,12 +36,12 @@
     "declinedAt": "Declined this job {{time}}",
     "cardMetrics": "{{distance}} km · ~{{eta}} min · {{skill}}",
     "cardLoad": "{{jobs}} jobs today · {{completion}} completion",
-    "declinedFooter": "{{count}} providers declined this job across 3 rounds",
+    "declinedFooter": "{{count}} providers declined this job across 3 search attempts",
     "declinedWarning": "This booking has already been declined {{count}} times.",
     "filterSkillOnly": "Skill match only",
     "filterAvailableOnly": "Available now only",
     "rankingTitle": "How this is ranked",
-    "dispatchHistory": "Dispatch history",
+    "dispatchHistory": "Search history",
     "factor": {
       "distance": "Distance / ETA",
       "skill": "Skill match",
@@ -63,7 +63,7 @@
     "emptyTitle": "No providers available",
     "emptyBody": "No certified AC technicians are online within 6 km.",
     "widenRadius": "Widen search radius",
-    "redispatchWithIncentive": "Re-dispatch with incentive",
+    "redispatchWithIncentive": "Search again with incentive",
     "cancelAndRefund": "Cancel booking and refund",
     "offlineTitle": "Assignment needs a live connection",
     "offlineBody": "Assigning from stale data can double-book a technician. Reconnect and try again.",
@@ -121,12 +121,12 @@
     "doneToast": "Booking cancelled · refund initiated"
   },
   "redispatch": {
-    "title": "Re-run auto-dispatch",
+    "title": "Search for a provider again",
     "subtitle": "{{reference}} · {{service}} · {{zone}}",
-    "loading": "Loading dispatch history",
+    "loading": "Loading search history",
     "explainer": "The system will search again with these settings. It picks the provider — you're widening the net.",
-    "previousRounds": "Previous rounds",
-    "roundLine": "Round {{round}} · {{radius}} km · {{contacted}} contacted · {{declined}} declined",
+    "previousRounds": "Previous attempts",
+    "roundLine": "Attempt {{round}} · {{radius}} km · {{contacted}} contacted · {{declined}} declined",
     "radiusLabel": "Search radius",
     "radius": {
       "base": "Default {{km}}km",
@@ -141,14 +141,14 @@
     "includeDecliners": "Include previous decliners",
     "includeDeclinersHint": "{{count}} providers declined this job",
     "priorityBoost": "Priority boost",
-    "priorityBoostHint": "Surfaces this job at the top of provider queues",
+    "priorityBoostHint": "Shows this job at the top of providers' job lists",
     "incentiveLabel": "Incentive bump",
     "incentiveCap": "Added to the provider payout. Cap {{cap}} (50% of booking value).",
     "platformCost": "Platform cost: {{amount}}",
-    "rerun": "Re-run dispatch",
-    "exhaustedTitle": "Three dispatch cycles have failed. Another round is unlikely to help.",
+    "rerun": "Search again",
+    "exhaustedTitle": "Three searches have already failed. Another attempt is unlikely to help.",
     "assignManuallyInstead": "Assign manually instead",
-    "startedToast": "Dispatch re-run started"
+    "startedToast": "New search started"
   },
   "manual": {
     "title": "Manual completion",

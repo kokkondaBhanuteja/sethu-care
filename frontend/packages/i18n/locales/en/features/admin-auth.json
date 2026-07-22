@@ -2,8 +2,8 @@
   "brand": {
     "wordmark": "SetuCare",
     "console": "Admin Console",
-    "panelHeadline": "Operations console",
-    "panelTagline": "Dispatch exceptions, not bookings.",
+    "panelHeadline": "Admin console",
+    "panelTagline": "Handle the exceptions — the system runs the rest.",
     "build": "v{{version}} · {{environment}}"
   },
   "splash": {
