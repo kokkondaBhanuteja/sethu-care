@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { Fingerprint, PhoneOff } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
-import { Topbar } from "../../layouts/Topbar";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Card } from "../../components/ui/Card";
 import { SkeletonList } from "../../components/ui/Skeleton";
@@ -10,14 +10,17 @@ import { RevokeDeviceDialog } from "./RevokeDeviceDialog";
 import { SecurityEventTable } from "./SecurityEventTable";
 import { SecuritySessionGroups } from "./SecuritySessionGroups";
 import { SettingsCard, SettingsGroup, SettingsNote } from "./SettingsGroup";
+import { SettingsShell } from "./SettingsShell";
 import { SettingsSwitchRow } from "./SettingsSwitchRow";
-import { TrustedDeviceTable } from "./TrustedDeviceTable";
+import { TrustedDeviceList } from "./TrustedDeviceList";
+import { SETTINGS_SECTION_IDS } from "./settings.constants";
 import { useSecuritySettings } from "./useSecuritySettings";
-import { useSettingsCrumbs } from "./useSettingsCrumbs";
 import type { TrustedDevice } from "./settings.types";
 
 /**
- * BOX 62, with the revoke-current-device confirm of BOX 63 over it.
+ * BOX 62, with the revoke-current-device confirm of BOX 63 over it — inside the unified Settings
+ * frame. Trusted devices render as identity rows with the revoke affordance on the row, and the
+ * biometric switch states its idle-timeout trade-off in plain words.
  *
  * The lost-device runbook is expanded rather than hidden behind a chevron: if the phone is already
  * gone the admin cannot open a sub-page on it, and the order of the steps is the advice (spec §5.7).
@@ -25,52 +28,47 @@ import type { TrustedDevice } from "./settings.types";
 export function SecuritySettingsDesktop() {
   const { t } = useTranslation("adminSettings");
   const security = useSecuritySettings();
-  const crumbs = useSettingsCrumbs(t("security.title"));
   const [pendingDevice, setPendingDevice] = useState<TrustedDevice | null>(null);
 
   return (
-    <>
-      <Topbar crumbs={crumbs} />
-
-      <main className="main">
-        <div className="settings-col">
-          <QueryBoundary
-            query={security.query}
-            skeleton={<SkeletonList rows={7} label={t("security.loading")} />}
-          >
-            {(settings) => (
-              <>
-                <SettingsGroup title={t("security.groupUnlock")}>
-                  <SettingsCard>
-                    <SettingsSwitchRow
-                      label={t("security.biometricUnlockDesktop")}
-                      checked={settings.biometricUnlock}
-                      onCheckedChange={security.toggleBiometric}
-                    />
-                    <SettingsNote>{t("security.biometricNoteDesktop")}</SettingsNote>
-                  </SettingsCard>
-                </SettingsGroup>
-
-                <TrustedDeviceTable
-                  security={settings}
-                  canRevoke={security.canRevoke}
-                  onRevoke={setPendingDevice}
+    <SettingsShell section={SETTINGS_SECTION_IDS.security}>
+      <QueryBoundary
+        query={security.query}
+        skeleton={<SkeletonList rows={7} label={t("security.loading")} />}
+      >
+        {(settings) => (
+          <>
+            <SettingsGroup title={t("security.groupUnlock")} icon={Fingerprint}>
+              <SettingsCard>
+                <SettingsSwitchRow
+                  label={t("security.biometricUnlockDesktop")}
+                  detail={t("security.biometricDetail")}
+                  checked={settings.biometricUnlock}
+                  onCheckedChange={security.toggleBiometric}
                 />
+                <SettingsNote>{t("security.biometricNoteDesktop")}</SettingsNote>
+              </SettingsCard>
+            </SettingsGroup>
 
-                <SecuritySessionGroups security={settings} side />
+            <TrustedDeviceList
+              security={settings}
+              canRevoke={security.canRevoke}
+              onRevoke={setPendingDevice}
+              withRevokeButton
+            />
 
-                <SecurityEventTable events={settings.events} />
+            <SecuritySessionGroups security={settings} side />
 
-                <SettingsGroup title={t("security.groupLostDevice")}>
-                  <Card>
-                    <LostDeviceSteps />
-                  </Card>
-                </SettingsGroup>
-              </>
-            )}
-          </QueryBoundary>
-        </div>
-      </main>
+            <SecurityEventTable events={settings.events} />
+
+            <SettingsGroup title={t("security.groupLostDevice")} icon={PhoneOff}>
+              <Card>
+                <LostDeviceSteps />
+              </Card>
+            </SettingsGroup>
+          </>
+        )}
+      </QueryBoundary>
 
       <RevokeDeviceDialog
         device={pendingDevice}
@@ -81,6 +79,6 @@ export function SecuritySettingsDesktop() {
         }}
         onDismiss={() => setPendingDevice(null)}
       />
-    </>
+    </SettingsShell>
   );
 }

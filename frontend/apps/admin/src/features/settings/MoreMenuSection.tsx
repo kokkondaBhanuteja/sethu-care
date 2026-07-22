@@ -9,6 +9,8 @@ import type { ShellCounters } from "../../queries/shell.types";
 
 export interface MoreMenuSectionProps {
   title: string;
+  /** One line under the group header saying what the group is for (spec §6.22, clarified). */
+  description?: string;
   items: readonly MoreMenuItem[];
   foot?: string;
   /** The "On desktop" group is drawn a step lighter and links out rather than deeper. */
@@ -19,6 +21,7 @@ export interface MoreMenuSectionProps {
 /** One group of the More menu. Muted rows carry a link-out arrow, never a chevron (spec §6.22). */
 export function MoreMenuSection({
   title,
+  description,
   items,
   foot,
   muted = false,
@@ -28,7 +31,7 @@ export function MoreMenuSection({
   const appearance = useAdminProfile().query.data?.preferences.appearance;
 
   return (
-    <SettingsGroup title={title} foot={foot}>
+    <SettingsGroup title={title} description={description} foot={foot}>
       <SettingsCard muted={muted}>
         {items.map((item) => {
           const count = item.badge && counters ? counters[item.badge] : 0;

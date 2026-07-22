@@ -11,7 +11,9 @@ Contents:
 - `MobileShell.tsx` + `TabBar.tsx` + `MobileAppBar.tsx` — five tabs, sticky app bar, `.screen__scroll` as the scroll container. Mobile keeps the TabBar design (the ui-web sidebar's mobile sheet is deliberately not used here).
 - `PageMain.tsx` — the desktop scroll region (`.main`, edge-to-edge); non-flush content renders inside ui-web `PageShell`, which owns the page padding, the centred max-width column and the 24px between-section rhythm. `MobileScroll` unchanged.
 - `Layout.tsx` — Split/Stack/Gutter/TileGrid/SectionGap. `Stack`'s section gap is 24px, matching PageShell.
-- `ActionBar/AuthLayout/SettingsLayout` — still on the legacy component layer.
+- `ActionBar/AuthLayout` — still on the legacy component layer. (`SettingsLayout` is gone: the
+  settings family's desktop frame is now `features/settings/SettingsShell`, composed on
+  PageMain + ui-web PageHeader.)
 - `navigation.constants.ts` — sidebar groups and mobile tabs, with their badge sources.
 
 Business logic: badge discipline only — the Alerts badge counts unacknowledged CRITICAL alerts alone (spec §3.1).

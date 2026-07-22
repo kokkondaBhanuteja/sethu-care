@@ -17,6 +17,8 @@ export type SettingsRowHeight = keyof typeof SETTINGS_ROW_HEIGHTS;
 
 export interface SettingsRowProps {
   icon?: LucideIcon;
+  /** A composed leading visual (an identity chip) where a bare glyph is not enough. */
+  leading?: ReactNode;
   label: ReactNode;
   /** The consequence or the qualifier, under the label. */
   detail?: ReactNode;
@@ -47,6 +49,7 @@ const DIVIDER = "border-t border-border-subtle first:border-t-0";
  */
 export function SettingsRow({
   icon,
+  leading,
   label,
   detail,
   value,
@@ -66,6 +69,7 @@ export function SettingsRow({
 
   const body = (
     <>
+      {leading}
       {icon ? <Icon glyph={icon} size="nav" className="text-text-2" /> : null}
       <span className={cx("min-w-0", centered ? "" : "grow")}>
         <span className={cx("block text-body", tone === "danger" ? "text-danger" : "text-text-1")}>

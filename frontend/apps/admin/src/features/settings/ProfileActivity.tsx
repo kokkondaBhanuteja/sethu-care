@@ -1,3 +1,4 @@
+import { Activity } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { cx } from "../../lib/cx";
@@ -40,10 +41,10 @@ export function ProfileActivity({ activity, wide = false }: ProfileActivityProps
   ];
 
   return (
-    <SettingsGroup title={wide ? undefined : t("profile.activity")}>
+    <SettingsGroup title={t("profile.activity")} icon={Activity}>
       <SettingsCard className="p-s4">
         <p className="mb-s3 text-pill uppercase tracking-wider text-text-3">
-          {wide ? t("profile.activityDesktop") : t("profile.activityPeriod")}
+          {t("profile.activityPeriod")}
         </p>
         <div className={cx("grid gap-s2", wide ? "grid-cols-4" : "grid-cols-2")}>
           {tiles.map((tile) => (

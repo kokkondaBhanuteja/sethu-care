@@ -7,7 +7,7 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { ProfileActivity } from "./ProfileActivity";
 import { ProfileDetails } from "./ProfileDetails";
 import { ProfilePreferences } from "./ProfilePreferences";
-import { SettingsCard, SettingsGroup } from "./SettingsGroup";
+import { SettingsCard, SettingsGroup, SettingsLead } from "./SettingsGroup";
 import { useAdminProfile } from "./useAdminProfile";
 
 /** BOX 103 — identity, the four facts, the gentle activity read-out, and the preferences. */
@@ -20,6 +20,8 @@ export function AdminProfileMobile() {
       <MobileAppBar title={t("profile.title")} showBack compact onSurface />
 
       <div className="screen__scroll bg-surface pt-s2">
+        <SettingsLead>{t("sections.profileDescription")}</SettingsLead>
+
         <QueryBoundary
           query={query}
           skeleton={

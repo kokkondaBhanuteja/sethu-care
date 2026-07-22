@@ -5,6 +5,7 @@ import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { NotificationDeliveryBanner, QuietHoursBanner } from "./NotificationDeliveryBanner";
 import { NotificationGroups } from "./NotificationGroups";
+import { SettingsLead } from "./SettingsGroup";
 import { isQuietHoursActive } from "./settings.time";
 import { useNotificationPermission } from "./useNotificationPermission";
 import { useNotificationSettings } from "./useNotificationSettings";
@@ -37,6 +38,8 @@ export function NotificationSettingsMobile() {
       ) : null}
 
       <div className="screen__scroll bg-surface pt-s2">
+        <SettingsLead>{t("sections.notificationsDescription")}</SettingsLead>
+
         <QueryBoundary
           query={controls.query}
           skeleton={

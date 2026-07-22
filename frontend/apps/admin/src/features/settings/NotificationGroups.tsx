@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Activity, Users } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { ChoiceSheet } from "./ChoiceSheet";
@@ -53,6 +54,7 @@ export function NotificationGroups({
 
       <NotificationChannelGroup
         title={t("notifications.groupOperational")}
+        icon={Activity}
         channels={OPERATIONAL_CHANNELS}
         settings={settings}
         onToggle={controls.toggleChannel}
@@ -62,6 +64,7 @@ export function NotificationGroups({
 
       <NotificationChannelGroup
         title={t("notifications.groupProvider")}
+        icon={Users}
         channels={PROVIDER_CHANNELS}
         settings={settings}
         onToggle={controls.toggleChannel}

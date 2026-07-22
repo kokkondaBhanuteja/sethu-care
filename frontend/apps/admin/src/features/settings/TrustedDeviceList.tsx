@@ -1,7 +1,8 @@
-import { Check, Smartphone, Tablet } from "lucide-react";
+import { Check, MonitorSmartphone, Smartphone, Tablet } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
+import { Icon } from "../../components/ui/Icon";
 import { Pill } from "../../components/ui/Pill";
 import { formatRelative } from "../../lib/format";
 import { SettingsCard, SettingsGroup } from "./SettingsGroup";
@@ -13,18 +14,26 @@ export interface TrustedDeviceListProps {
   security: SecuritySettings;
   canRevoke: boolean;
   onRevoke: (device: TrustedDevice) => void;
+  /** Desktop widens the revoke affordance from a text link to an outlined button. */
+  withRevokeButton?: boolean;
 }
 
 /**
- * BOX 101. The group header carries the count so the limit is visible before an admin discovers it
- * by failing to add a fourth device; the amber note states the consequence and the remedy in one
- * line, outside the card, because it is about the group rather than any one device.
+ * BOX 62 / 101, shared by both surfaces so the rows can never diverge: each trusted device as an
+ * identity row — device chip, name, then WHEN and WHERE it was last used — with the revoke
+ * affordance on the row itself, not behind a menu. The group header carries the count so the limit
+ * is visible before an admin discovers it by failing to add a fourth device.
  *
  * The current device shows a CURRENT pill where the others show Revoke. Revoking it is possible
  * (BOX 102) but it is a different act, and it does not belong in the same visual slot as routinely
- * dropping an old tablet.
+ * dropping an old tablet — so the row itself opens the confirm instead.
  */
-export function TrustedDeviceList({ security, canRevoke, onRevoke }: TrustedDeviceListProps) {
+export function TrustedDeviceList({
+  security,
+  canRevoke,
+  onRevoke,
+  withRevokeButton = false,
+}: TrustedDeviceListProps) {
   const { t } = useTranslation("adminSettings");
   const isAtLimit = security.devices.length >= security.deviceLimit;
 
@@ -34,6 +43,7 @@ export function TrustedDeviceList({ security, canRevoke, onRevoke }: TrustedDevi
         used: security.devices.length,
         limit: security.deviceLimit,
       })}
+      icon={MonitorSmartphone}
       foot={isAtLimit ? t("security.deviceLimitReached") : undefined}
       footTone="warning"
     >
@@ -42,12 +52,18 @@ export function TrustedDeviceList({ security, canRevoke, onRevoke }: TrustedDevi
           <SettingsRow
             key={device.id}
             height="record"
-            // The current device keeps its CURRENT pill rather than a Revoke button, but the row
-            // itself opens the confirm: revoking it is possible (BOX 102), just not the same act.
             {...(device.isCurrent && canRevoke
               ? { onClick: () => onRevoke(device), affordance: "none" as const }
               : {})}
-            icon={device.kind === DEVICE_KINDS.tablet ? Tablet : Smartphone}
+            leading={
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-inset">
+                <Icon
+                  glyph={device.kind === DEVICE_KINDS.tablet ? Tablet : Smartphone}
+                  size="nav"
+                  className="text-text-2"
+                />
+              </span>
+            }
             label={device.name}
             detail={
               device.isCurrent
@@ -64,7 +80,7 @@ export function TrustedDeviceList({ security, canRevoke, onRevoke }: TrustedDevi
                 </Pill>
               ) : (
                 <Button
-                  variant="textDanger"
+                  variant={withRevokeButton ? "outlineDanger" : "textDanger"}
                   size="inline"
                   disabled={!canRevoke}
                   onClick={() => onRevoke(device)}

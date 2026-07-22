@@ -5,6 +5,7 @@ import {
   BarChart3,
   Bell,
   CircleHelp,
+  CircleUser,
   FileText,
   MessageSquare,
   Shield,
@@ -61,13 +62,57 @@ export const PROVIDER_CHANNELS = [
 ] as const;
 
 /**
- * The channels whose name does not explain itself. Desktop has the width to print the explanation
- * under the label; the phone does not, and the design leaves it off there.
+ * The four sections of the unified desktop Settings area, in nav order. Each route keeps its own
+ * URL (deep links keep working); `SettingsShell` mounts this list as the left sub-nav and
+ * highlights whichever section the current route belongs to.
  */
-export const CHANNELS_WITH_DETAIL: readonly string[] = [
-  "slaAtRisk",
-  "zoneSupplyCritical",
-  "dailySummary",
+export const SETTINGS_SECTION_IDS = {
+  profile: "profile",
+  notifications: "notifications",
+  security: "security",
+  help: "help",
+} as const;
+
+export type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[keyof typeof SETTINGS_SECTION_IDS];
+
+export interface SettingsSection {
+  readonly id: SettingsSectionId;
+  readonly to: string;
+  readonly icon: LucideIcon;
+  /** Keys in this feature's namespace — the section names its label and its one-line scope. */
+  readonly labelKey: string;
+  readonly descriptionKey: string;
+}
+
+export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
+  {
+    id: SETTINGS_SECTION_IDS.profile,
+    to: ROUTES.profile,
+    icon: CircleUser,
+    labelKey: "sections.profile",
+    descriptionKey: "sections.profileDescription",
+  },
+  {
+    id: SETTINGS_SECTION_IDS.notifications,
+    to: ROUTES.notificationSettings,
+    icon: Bell,
+    labelKey: "sections.notifications",
+    descriptionKey: "sections.notificationsDescription",
+  },
+  {
+    id: SETTINGS_SECTION_IDS.security,
+    to: ROUTES.securitySettings,
+    icon: Shield,
+    labelKey: "sections.security",
+    descriptionKey: "sections.securityDescription",
+  },
+  {
+    id: SETTINGS_SECTION_IDS.help,
+    to: ROUTES.support,
+    icon: CircleHelp,
+    labelKey: "sections.help",
+    descriptionKey: "sections.helpDescription",
+  },
 ];
 
 export const APPEARANCE_MODES = ["light", "dark", "system"] as const;

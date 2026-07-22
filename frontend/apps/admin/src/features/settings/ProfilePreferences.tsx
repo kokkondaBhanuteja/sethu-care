@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Segmented } from "../../components/ui/Segmented";
@@ -36,7 +37,7 @@ export function ProfilePreferences({
 
   return (
     <>
-      <SettingsGroup title={t("profile.preferences")}>
+      <SettingsGroup title={t("profile.preferences")} icon={SlidersHorizontal}>
         <SettingsCard>
           <SettingsRow
             height="detail"

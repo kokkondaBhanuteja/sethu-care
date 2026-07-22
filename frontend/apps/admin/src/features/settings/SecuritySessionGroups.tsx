@@ -1,3 +1,4 @@
+import { KeyRound, Lock } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { formatDate } from "../../lib/format";
@@ -23,7 +24,11 @@ export function SecuritySessionGroups({ security, side = false }: SecuritySessio
   const { signOut } = useSignOut();
 
   const sessions = (
-    <SettingsGroup title={t("security.groupSessions")} className={side ? "mb-0 px-0" : undefined}>
+    <SettingsGroup
+      title={t("security.groupSessions")}
+      icon={KeyRound}
+      className={side ? "mb-0 px-0" : undefined}
+    >
       <SettingsCard>
         <SettingsRow
           height="list"
@@ -42,7 +47,11 @@ export function SecuritySessionGroups({ security, side = false }: SecuritySessio
   );
 
   const password = (
-    <SettingsGroup title={t("security.groupPassword")} className={side ? "mb-0 px-0" : undefined}>
+    <SettingsGroup
+      title={t("security.groupPassword")}
+      icon={Lock}
+      className={side ? "mb-0 px-0" : undefined}
+    >
       <SettingsCard>
         <SettingsRow
           height="list"

@@ -4,9 +4,10 @@ import { ROUTES } from "../../routes/routes.constants";
 import type { Crumb } from "../../layouts/Topbar";
 
 /**
- * Every settings screen on desktop is reached from the same place, so they all carry the same
- * two-segment breadcrumb: Settings / <screen>. The parent points at notification settings because
- * desktop has no settings index — the sidebar's ACCOUNT group is the index (BOX 59).
+ * Every desktop settings screen renders inside the unified `SettingsShell`, so they all carry the
+ * same two-segment breadcrumb: Settings / <section>. There is no /settings index route — the
+ * shell's own sub-nav is the index — so the parent crumb points at the first section it lists
+ * after Profile that lives under /settings, which is notifications.
  */
 export function useSettingsCrumbs(current: string): readonly Crumb[] {
   const { t } = useTranslation("adminShell");

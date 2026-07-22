@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Fingerprint, PhoneOff } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { MobileAppBar } from "../../layouts/MobileAppBar";
@@ -9,7 +10,7 @@ import { LostDeviceSteps } from "./LostDeviceSteps";
 import { RevokeDeviceDialog } from "./RevokeDeviceDialog";
 import { SecurityEventList } from "./SecurityEventList";
 import { SecuritySessionGroups } from "./SecuritySessionGroups";
-import { SettingsCard, SettingsGroup, SettingsNote } from "./SettingsGroup";
+import { SettingsCard, SettingsGroup, SettingsLead, SettingsNote } from "./SettingsGroup";
 import { SettingsRow } from "./SettingsRow";
 import { SettingsSwitchRow } from "./SettingsSwitchRow";
 import { TrustedDeviceList } from "./TrustedDeviceList";
@@ -28,6 +29,8 @@ export function SecuritySettingsMobile() {
       <MobileAppBar title={t("security.title")} showBack compact onSurface />
 
       <div className="screen__scroll bg-surface pt-s2">
+        <SettingsLead>{t("sections.securityDescription")}</SettingsLead>
+
         <QueryBoundary
           query={security.query}
           skeleton={
@@ -38,10 +41,11 @@ export function SecuritySettingsMobile() {
         >
           {(settings) => (
             <>
-              <SettingsGroup title={t("security.groupUnlock")}>
+              <SettingsGroup title={t("security.groupUnlock")} icon={Fingerprint}>
                 <SettingsCard>
                   <SettingsSwitchRow
                     label={t("security.biometricUnlock")}
+                    detail={t("security.biometricDetail")}
                     checked={settings.biometricUnlock}
                     onCheckedChange={security.toggleBiometric}
                   />
@@ -59,7 +63,7 @@ export function SecuritySettingsMobile() {
 
               <SecurityEventList events={settings.events} />
 
-              <SettingsGroup title={t("security.groupLostDevice")}>
+              <SettingsGroup title={t("security.groupLostDevice")} icon={PhoneOff}>
                 <SettingsCard>
                   <SettingsRow
                     label={t("security.lostDeviceRow")}

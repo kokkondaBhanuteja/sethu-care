@@ -7,39 +7,64 @@ profile, help & support, sign-out, the desktop payouts screen, and the read-only
 Purpose: Admin spec §6.22, §6.30–§6.34, plus §5.6 (data protection on device) and §5.7 (the
 lost-device runbook). Designs: desktop BOX 59–67, mobile BOX 95–109.
 
+## The IA (desktop: one unified Settings area)
+
+Desktop no longer renders four scattered screens. Every account-family route mounts the same
+frame — `SettingsShell` — so the area reads as ONE place:
+
+```
+Settings (PageHeader h1 + one-line lead)
+├── sub-nav (left, active pill)         SETTINGS_SECTIONS in settings.constants.ts
+│     Profile              /profile
+│     Notifications        /settings/notifications
+│     Security & devices   /settings/security
+│     Help & about         /support
+└── section content (right)             icon-headed SettingsGroup cards, led by the
+                                        section's icon + h2 + one-line description
+```
+
+Routes are unchanged — deep links keep working; the frame highlights whichever section the URL
+belongs to. Mobile keeps the More-menu pattern (BOX 95) with the same clarity applied: every
+group states what it is for (`SettingsGroup description`), every screen leads with its section
+description (`SettingsLead`).
+
 ## The visual family
 
 Every screen here is the same thing: grouped white cards floating on the recessed grey canvas.
 
-- Mobile: `MobileAppBar … onSurface` + `<div className="screen__scroll bg-surface">`.
-- Desktop: `Topbar` + `<main className="main">` + `.settings-col` (720px) or
-  `.settings-col--960` (Help), optionally inside `.settings-layout` with a `SettingsAside`.
-- Inside both: `SettingsGroup` → `SettingsCard` → `SettingsRow` / `SettingsSwitchRow` /
-  `SettingsNote`, with `SettingsGroup`'s `foot` for a line that is about the group.
+- Mobile: `MobileAppBar … onSurface` + `<div className="screen__scroll bg-surface">` +
+  `SettingsLead` as the first line.
+- Desktop: `SettingsShell` (Topbar crumbs + PageMain/PageHeader + `SettingsSectionNav` +
+  section header), optionally with a `SettingsAside` floating right of the column.
+- Inside both: `SettingsGroup` (with `icon` + `description`) → `SettingsCard` → `SettingsRow` /
+  `SettingsSwitchRow` / `SettingsNote`, with `SettingsGroup`'s `foot` for a line about the group.
 
-Do not invent a second treatment. A new settings screen composes these four components.
+Do not invent a second treatment. A new settings screen composes these components, and a new
+desktop settings screen goes INSIDE `SettingsShell` with its own entry in `SETTINGS_SECTIONS`.
 
 ## Contents
 
 | File                                                          | Responsibility                                                    |
 | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `SettingsGroup.tsx` · `SettingsRow.tsx` · `SettingsSwitchRow.tsx` | The group/card/row/note kit the whole family is built from.     |
-| `SettingsAside.tsx`                                           | The explainer that floats beside the 720px column (BOX 60).       |
+| `SettingsShell.tsx` + `SettingsSectionNav.tsx`                | The unified desktop frame and its left sub-nav (active pill).     |
+| `SettingsGroup.tsx` · `SettingsRow.tsx` · `SettingsSwitchRow.tsx` | The group/card/row/note/lead kit the whole family is built from. `SettingsRow`'s `leading` slot carries the device identity chip. |
+| `SettingsAside.tsx`                                           | The explainer that floats beside the reading column (BOX 60).     |
 | `ChoiceSheet.tsx`                                             | The picker behind every value-plus-chevron row.                   |
-| `MoreMenu.mobile.tsx` + `MoreMenuIdentity` + `MoreMenuSection` | BOX 95.                                                           |
+| `MoreMenu.mobile.tsx` + `MoreMenuIdentity` + `MoreMenuSection` | BOX 95, with one-line group descriptions.                        |
 | `SignOutConfirm.tsx` + `useSignOut.ts`                        | BOX 67 (modal) / BOX 96 (sheet).                                  |
 | `NotificationSettings.{desktop,mobile}.tsx`                   | BOX 60/61 and BOX 97–100.                                         |
-| `NotificationGroups` · `CriticalChannelGroup` · `NotificationChannelGroup` · `NotificationScheduleGroups` | The six groups, shared by both surfaces. |
+| `NotificationGroups` · `CriticalChannelGroup` · `NotificationChannelGroup` · `NotificationScheduleGroups` | The six groups, shared by both surfaces. With `withDetails` (desktop) every configurable switch states its one-line consequence. |
 | `NotificationDeliveryBanner.tsx`                              | The permission-denied, critical-channel-off and quiet-hours bands. |
 | `useNotificationPermission.ts`                                | Can an alert actually reach this admin.                           |
-| `SecuritySettings.{desktop,mobile}.tsx` + device/event lists and tables | BOX 62/63 and BOX 101/102.                               |
+| `SecuritySettings.{desktop,mobile}.tsx` + `TrustedDeviceList` (identity rows, BOTH surfaces) + event list/table | BOX 62/63 and BOX 101/102. |
 | `RevokeDeviceDialog.tsx`                                      | The confirm for revoking any device, including this one.          |
 | `LostDeviceSteps.tsx`                                         | Spec §5.7, expanded on desktop, in a sheet on mobile.             |
 | `AdminProfile.{desktop,mobile}.tsx` + `ProfileDetails` · `ProfileActivity` · `ProfilePreferences` | BOX 64 / 103.                          |
-| `HelpSupport.{desktop,mobile}.tsx` + `HelpFaqGroup` · `HelpVersionCard` · `useDiagnostics.ts` | BOX 65 / 104.                             |
-| `PayoutsScreen.tsx` + `PayoutsTable` · `PayoutTotals` · `usePayouts.ts` | BOX 66. Desktop-only.                            |
+| `HelpSupport.{desktop,mobile}.tsx` + `HelpFaqGroup` · `HelpSupportGroups` (get-help / diagnostics / legal, shared) · `HelpVersionCard` · `useDiagnostics.ts` | BOX 65 / 104. |
+| `PayoutsScreen.tsx` + `PayoutsTable` · `PayoutTotals` · `usePayouts.ts` | BOX 66. Desktop-only; NOT part of the Settings area (finance, not account) — it keeps its own Topbar frame. |
 | `DesktopOnlySummary.tsx`                                      | The read-only card for BOX 105–109.                               |
-| `settings.{api,mock,fixtures,types,constants,time}.ts`        | The data boundary, fixtures, vocabularies, IST clock helpers.     |
+| `settings.{api,mock,fixtures,types,constants,time}.ts`        | The data boundary, fixtures, vocabularies, IST clock helpers, and `SETTINGS_SECTIONS`. |
+| `SettingsShell.test.tsx` · `SettingsGroup.test.tsx`           | The frame contract (one h1, section h2, active pill) and the group anatomy. |
 
 ## Business logic
 
@@ -94,10 +119,11 @@ never persisted.
 
 ## Dependencies
 
-`components/ui/*`, `components/states/QueryBoundary`, `layouts/{MobileAppBar,Topbar}`,
+`components/ui/*`, `components/states/QueryBoundary`, `layouts/{MobileAppBar,Topbar,PageMain}`,
 `layouts/navigation.constants` (the tab list, for the default-landing picker), `lib/{format,forms,
 permissions,toast,http,cx}`, `hooks/{useBreakpoint,useStepUp}`, `queries/useShellCounters`,
-`routes/routes.constants`, `mocks/mockTransport`, `@sethu/{core,i18n}`.
+`routes/routes.constants`, `mocks/mockTransport`, `@sethu/{core,i18n}`, `@sethu/ui-web`
+(PageHeader + IconChip in `SettingsShell`).
 
 ## Boundaries
 

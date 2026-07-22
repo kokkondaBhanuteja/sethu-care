@@ -1,13 +1,19 @@
 import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 import { cx } from "../../lib/cx";
 import { Card } from "../../components/ui/Card";
+import { Icon } from "../../components/ui/Icon";
 
 export interface SettingsGroupProps {
   /** The small uppercase header above the card. Omitted on ungrouped cards (the profile row). */
   title?: string;
+  /** A small glyph before the title — what makes each card scannable by shape, not only by word. */
+  icon?: LucideIcon;
   /** The critical-notification group is the only one whose header is red (spec §6.30). */
   tone?: "default" | "danger";
+  /** One line under the header saying what the group holds, before the rows say it in detail. */
+  description?: ReactNode;
   /** A line under the card that is about the group, not about any one row. */
   foot?: ReactNode;
   footTone?: "default" | "warning";
@@ -22,7 +28,9 @@ export interface SettingsGroupProps {
  */
 export function SettingsGroup({
   title,
+  icon,
   tone = "default",
+  description,
   foot,
   footTone = "default",
   children,
@@ -33,13 +41,15 @@ export function SettingsGroup({
       {title ? (
         <h2
           className={cx(
-            "px-s1 text-pill uppercase tracking-wider",
+            "flex items-center gap-s2 px-s1 text-pill uppercase tracking-wider",
             tone === "danger" ? "text-danger" : "text-text-3",
           )}
         >
+          {icon ? <Icon glyph={icon} size="sm" /> : null}
           {title}
         </h2>
       ) : null}
+      {description ? <p className="px-s1 text-caption text-text-3">{description}</p> : null}
       {children}
       {foot ? (
         <p
@@ -99,4 +109,17 @@ export function SettingsNote({ children, className }: SettingsNoteProps) {
       {children}
     </p>
   );
+}
+
+export interface SettingsLeadProps {
+  children: ReactNode;
+}
+
+/**
+ * The one-line statement of what a settings screen holds, straight under the mobile app bar. The
+ * desktop frame carries the same line in its section header (`SettingsShell`); this is the phone's
+ * room-sized version of it.
+ */
+export function SettingsLead({ children }: SettingsLeadProps) {
+  return <p className="mx-s4 px-s1 pb-s2 pt-s1 text-caption text-text-2">{children}</p>;
 }

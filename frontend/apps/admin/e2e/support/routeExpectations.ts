@@ -116,7 +116,9 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
   [ROUTES.notificationSettings]: { url: ROUTES.notificationSettings, heading: "Notifications" },
   [ROUTES.securitySettings]: { url: ROUTES.securitySettings, heading: "Security & devices" },
   [ROUTES.profile]: { url: ROUTES.profile, heading: "Profile" },
-  [ROUTES.support]: { url: ROUTES.support, heading: "Help & support" },
+  // The unified Settings frame names this section "Help & about" on desktop; the mobile More menu
+  // keeps the spec's "Help & support" wording (§6.22).
+  [ROUTES.support]: { url: ROUTES.support, heading: "Help & about" },
 
   [ROUTES.services]: { url: ROUTES.services, heading: "Services & pricing" },
   [ROUTES.pricing]: { url: ROUTES.pricing, heading: "Pricing rules" },

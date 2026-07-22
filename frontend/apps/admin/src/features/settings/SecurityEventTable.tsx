@@ -1,3 +1,4 @@
+import { History } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
@@ -55,7 +56,7 @@ export function SecurityEventTable({ events }: SecurityEventTableProps) {
   ];
 
   return (
-    <SettingsGroup title={t("security.groupEvents")}>
+    <SettingsGroup title={t("security.groupEvents")} icon={History}>
       <SettingsCard>
         <DataTable
           caption={t("security.eventsCaption")}

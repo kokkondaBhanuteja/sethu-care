@@ -1,7 +1,6 @@
 import { Fragment } from "react";
 import { useTranslation } from "@sethu/i18n";
 
-import { Topbar } from "../../layouts/Topbar";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Avatar } from "../../components/ui/Avatar";
 import { Card } from "../../components/ui/Card";
@@ -9,48 +8,42 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { formatDate } from "../../lib/format";
 import { ProfileActivity } from "./ProfileActivity";
 import { ProfilePreferences } from "./ProfilePreferences";
+import { SettingsGroup } from "./SettingsGroup";
+import { SettingsShell } from "./SettingsShell";
+import { SETTINGS_SECTION_IDS } from "./settings.constants";
 import { useAdminProfile } from "./useAdminProfile";
-import { useSettingsCrumbs } from "./useSettingsCrumbs";
 import type { AdminProfile } from "./settings.types";
 
 /**
- * BOX 64 — the identity is horizontal rather than the mobile stack: the avatar and the name read as
- * one object and the four facts sit beside it, not below.
+ * BOX 64 inside the unified Settings frame — the identity card first (who am I here), then the
+ * activity read-out, then the preferences. The identity is horizontal rather than the mobile stack:
+ * the avatar and the name read as one object and the four facts sit beside it, not below.
  */
 export function AdminProfileDesktop() {
   const { t } = useTranslation("adminSettings");
   const { query, savePreferences } = useAdminProfile();
-  const crumbs = useSettingsCrumbs(t("profile.title"));
 
   return (
-    <>
-      <Topbar crumbs={crumbs} />
+    <SettingsShell section={SETTINGS_SECTION_IDS.profile}>
+      <QueryBoundary
+        query={query}
+        skeleton={<SkeletonList rows={6} label={t("profile.loading")} />}
+      >
+        {(profile) => (
+          <>
+            <SettingsGroup>
+              <Card className="flex items-start gap-s6">
+                <Avatar name={profile.name} size="hero" brand />
+                <ProfileFacts profile={profile} />
+              </Card>
+            </SettingsGroup>
 
-      <main className="main">
-        <div className="settings-col">
-          <QueryBoundary
-            query={query}
-            skeleton={<SkeletonList rows={6} label={t("profile.loading")} />}
-          >
-            {(profile) => (
-              <>
-                <Card className="mb-s5 flex items-start gap-s6">
-                  <Avatar name={profile.name} size="hero" brand />
-                  <ProfileFacts profile={profile} />
-                </Card>
-
-                <ProfileActivity activity={profile.activity} wide />
-                <ProfilePreferences
-                  preferences={profile.preferences}
-                  onChange={savePreferences}
-                  wide
-                />
-              </>
-            )}
-          </QueryBoundary>
-        </div>
-      </main>
-    </>
+            <ProfileActivity activity={profile.activity} wide />
+            <ProfilePreferences preferences={profile.preferences} onChange={savePreferences} wide />
+          </>
+        )}
+      </QueryBoundary>
+    </SettingsShell>
   );
 }
 

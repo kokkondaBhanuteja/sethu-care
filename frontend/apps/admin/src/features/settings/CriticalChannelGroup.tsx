@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { Lock, TriangleAlert } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Icon } from "../../components/ui/Icon";
@@ -22,7 +22,7 @@ export function CriticalChannelGroup({ withDetails = false }: CriticalChannelGro
   const { t } = useTranslation("adminSettings");
 
   return (
-    <SettingsGroup title={t("notifications.groupCritical")} tone="danger">
+    <SettingsGroup title={t("notifications.groupCritical")} icon={TriangleAlert} tone="danger">
       <SettingsCard tone="danger">
         {CRITICAL_CHANNELS.map((channel) => (
           <SettingsRow

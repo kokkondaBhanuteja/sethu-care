@@ -1,3 +1,4 @@
+import { History } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { StatusDot } from "../../components/ui/StatusDot";
@@ -23,7 +24,7 @@ export function SecurityEventList({ events }: SecurityEventListProps) {
   const { t } = useTranslation("adminSettings");
 
   return (
-    <SettingsGroup title={t("security.groupEvents")}>
+    <SettingsGroup title={t("security.groupEvents")} icon={History}>
       <SettingsCard>
         {events.map((event) => {
           const tone = eventTone(event);

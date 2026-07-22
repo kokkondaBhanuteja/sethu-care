@@ -60,7 +60,8 @@
     "provider": "{{name}} — {{status}}, {{zone}}",
     "providerOffline": "{{name}} — offline, last seen {{age}}, {{zone}}",
     "job": "{{ref}} — {{service}}, {{state}}, {{zone}}",
-    "cluster": "{{count}} markers in {{zone}} — list them"
+    "cluster": "{{count}} markers in {{zone}} — list them",
+    "clusterZoom": "{{count}} markers — zoom in to separate them"
   },
   "focus": {
     "showing": "Showing {{zone}}",

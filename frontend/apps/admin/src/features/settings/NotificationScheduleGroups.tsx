@@ -1,3 +1,4 @@
+import { Mail, Moon, Volume2 } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { SettingsCard, SettingsGroup, SettingsNote } from "./SettingsGroup";
@@ -40,7 +41,7 @@ export function NotificationScheduleGroups({
 
   return (
     <>
-      <SettingsGroup title={t("notifications.groupDigest")}>
+      <SettingsGroup title={t("notifications.groupDigest")} icon={Mail}>
         <SettingsCard>
           <SettingsSwitchRow
             label={t("notifications.channel.dailySummary")}
@@ -58,10 +59,11 @@ export function NotificationScheduleGroups({
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup title={t("notifications.groupQuietHours")}>
+      <SettingsGroup title={t("notifications.groupQuietHours")} icon={Moon}>
         <SettingsCard>
           <SettingsSwitchRow
             label={t("notifications.quietEnabled")}
+            detail={withDetails ? t("notifications.quietEnabledDetail") : undefined}
             checked={settings.quietHours.enabled}
             disabled={disabled}
             onCheckedChange={onQuietHoursToggle}
@@ -84,6 +86,7 @@ export function NotificationScheduleGroups({
 
       <SettingsGroup
         title={t(withVibrate ? "notifications.groupSound" : "notifications.groupSoundDesktop")}
+        icon={Volume2}
       >
         <SettingsCard>
           <SettingsRow

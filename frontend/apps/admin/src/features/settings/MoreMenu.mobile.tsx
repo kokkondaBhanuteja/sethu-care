@@ -52,6 +52,7 @@ export function MoreMenuMobile() {
 
         <MoreMenuSection
           title={t("more.groupOperations")}
+          description={t("more.groupOperationsDescription")}
           items={MORE_OPERATIONS_ITEMS}
           counters={counters}
         />
@@ -63,7 +64,11 @@ export function MoreMenuMobile() {
           muted
         />
 
-        <MoreMenuSection title={t("more.groupAccount")} items={MORE_ACCOUNT_ITEMS} />
+        <MoreMenuSection
+          title={t("more.groupAccount")}
+          description={t("more.groupAccountDescription")}
+          items={MORE_ACCOUNT_ITEMS}
+        />
 
         <SettingsGroup>
           <SettingsCard>

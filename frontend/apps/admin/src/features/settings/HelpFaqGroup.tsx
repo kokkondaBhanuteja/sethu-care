@@ -17,7 +17,7 @@ export function HelpFaqGroup() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <SettingsGroup title={t("support.groupQuestions")}>
+    <SettingsGroup title={t("support.groupQuestions")} icon={CircleHelp}>
       <SettingsCard>
         {SUPPORT_FAQ_IDS.map((faqId) => {
           const isOpen = openId === faqId;
