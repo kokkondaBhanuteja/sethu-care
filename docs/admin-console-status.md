@@ -76,6 +76,38 @@ halves of the 60-second window).
 
 ---
 
+## Next scope item — build section G
+
+Customers (lookup + profile), Support tickets (list + detail) and Analytics are currently
+`ComingSoonState` stubs. They **are** fully drawn — desktop BOX 68–84, mobile BOX 110–134 — so they
+can be built to the same fidelity as A–F, one agent per feature as before. Refunds, despite being
+listed in section G, is already built in full (desktop BOX 78–81, mobile 125–130) because it is a
+booking action.
+
+Separately, `Services`, `Pricing`, `Reports` and `Platform settings` are also stubs, but for a
+different reason: the spec's route table names them and **no artifact draws them**. They cannot be
+built without inventing UI. They need design before they need engineering.
+
+---
+
+## Pagination — read before "adding" it
+
+There is deliberately **no numbered pager anywhere**, on either surface. The artifacts paginate with
+a count line plus Load more — "Showing 10 of 24 active bookings", "Showing 10 of 84 · Kompally has 2
+of the 5 providers this zone needs". `components/ui/Pagination.tsx` implements exactly that, and its
+doc comment records the reasoning: these are queues an operator scans top-down looking for the worst
+problem, where "page 3" has no meaning.
+
+Currently wired on: bookings list (desktop + mobile) and audit log (desktop + mobile) — the two
+genuinely unbounded datasets. The provider roster and applications queue render their count line but
+have no Load more, because their mock fixtures fit on one page; they need it when the real endpoints
+return more than the page size. The needs-attention feed intentionally has none — it is an exception
+queue that should never be long enough to page.
+
+If a numbered pager is ever wanted, it is a design change, not a missing feature.
+
+---
+
 ## Not done — the remaining work, in priority order
 
 1. **Migrate feature types onto the generated client.** Once the Go contract lands and
