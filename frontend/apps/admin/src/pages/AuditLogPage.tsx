@@ -1,9 +1,24 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { AuditLogScreenDesktop } from "../features/audit/AuditLogScreen.desktop";
+import { AuditLogScreenMobile } from "../features/audit/AuditLogScreen.mobile";
+import { AuditEntryScreenMobile } from "../features/audit/AuditEntryScreen.mobile";
+import { useAuditSelection } from "../features/audit/useAuditEntry";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * `/audit`. Desktop keeps the entry beside the ledger; mobile pushes it as its own screen. Both are
+ * the same `?entry=` selection rendered differently, so a link to a disputed action opens on either.
+ */
 export default function AuditLogPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.audit")} />;
+  const isDesktop = useIsDesktop();
+  const { selectedId, select, clearSelection } = useAuditSelection();
+
+  if (isDesktop) return <AuditLogScreenDesktop />;
+
+  if (selectedId) {
+    return (
+      <AuditEntryScreenMobile entryId={selectedId} onBack={clearSelection} onOpenEntry={select} />
+    );
+  }
+
+  return <AuditLogScreenMobile onSelect={select} />;
 }

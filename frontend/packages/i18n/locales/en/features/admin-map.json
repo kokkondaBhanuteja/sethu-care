@@ -1,1 +1,88 @@
-{}
+{
+  "title": "Live map",
+  "shortTitle": "Map",
+  "region": {
+    "label": "Live operations map",
+    "hint": "A visual summary. Every provider and job on the map is also in the live operations list, which is reachable by keyboard."
+  },
+  "summary": {
+    "heading": "Live operations",
+    "counts": "{{jobs}} active · {{providers}} providers online"
+  },
+  "staleness": {
+    "cached": "Cached · {{age}}",
+    "offline": "Offline · cached",
+    "explain": "Provider positions have stopped updating, so the pins may have moved."
+  },
+  "layers": {
+    "heading": "Layers",
+    "open": "Map layers",
+    "activeJobs": "Active jobs",
+    "providersOnline": "Providers online",
+    "escalationsOnly": "Escalations only",
+    "demandHeatmap": "Demand heatmap",
+    "serviceAreas": "Service-area boundaries"
+  },
+  "legend": {
+    "heading": "Legend",
+    "providerOnline": "Available provider",
+    "providerBusy": "On-job provider",
+    "providerOffline": "Offline provider",
+    "job": "Active job",
+    "escalated": "Escalated job",
+    "cluster": "Cluster"
+  },
+  "attention": {
+    "heading": "Needs attention ({{count}})",
+    "meta": "{{zone}} · {{age}}",
+    "escalated": "Escalated",
+    "noProvider": "No provider"
+  },
+  "providers": {
+    "heading": "Providers ({{count}})",
+    "open": "View all providers",
+    "onJob": "On {{ref}}",
+    "lastSeen": "Last seen {{age}}",
+    "hiddenByLayers": "Provider pins are hidden by the current layers."
+  },
+  "status": {
+    "online": "Available",
+    "busy": "On a job",
+    "offline": "Offline"
+  },
+  "jobState": {
+    "enRoute": "En route",
+    "onSite": "On site",
+    "delayed": "Delayed",
+    "escalated": "Escalated"
+  },
+  "marker": {
+    "provider": "{{name}} — {{status}}, {{zone}}",
+    "providerOffline": "{{name}} — offline, last seen {{age}}, {{zone}}",
+    "job": "{{ref}} — {{service}}, {{state}}, {{zone}}",
+    "cluster": "{{count}} markers in {{zone}} — list them"
+  },
+  "focus": {
+    "showing": "Showing {{zone}}",
+    "clear": "Show whole city"
+  },
+  "zeroSupply": {
+    "title": "No providers online in {{zone}}",
+    "detail": "New bookings in this zone cannot be assigned.",
+    "action": "Open roster"
+  },
+  "location": {
+    "deniedTitle": "Location permission denied",
+    "unavailableTitle": "Location unavailable",
+    "detail": "The map is centred on Hyderabad. Everything else works as normal.",
+    "dismiss": "Dismiss"
+  },
+  "controls": {
+    "recentre": "Recentre on Hyderabad",
+    "openOperations": "Live operations"
+  },
+  "empty": {
+    "title": "Nothing live right now",
+    "body": "No jobs are running and no providers are on shift. Dispatched bookings appear here within 10 seconds."
+  }
+}

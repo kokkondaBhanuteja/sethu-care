@@ -1,9 +1,26 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { BiometricUnlockMobile } from "../features/auth/BiometricUnlock.mobile";
+import { SessionLockDesktop } from "../features/auth/SessionLock.desktop";
+import { useSessionLock } from "../features/auth/useSessionLock";
+import { useUnlock } from "../features/auth/useUnlock";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * `/unlock` — re-verify identity without a full login.
+ *
+ * A browser has no fingerprint sensor, so the two shells run different step-ups: desktop re-asks
+ * for the password behind a non-dismissible modal (design BOX 58), a phone asks the sensor and
+ * falls back to the device passcode (spec §5.4, design BOX 92–94).
+ */
 export default function UnlockPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("productName")} />;
+  const isDesktop = useIsDesktop();
+
+  return isDesktop ? <DesktopLock /> : <MobileUnlock />;
+}
+
+function DesktopLock() {
+  return <SessionLockDesktop lock={useSessionLock()} />;
+}
+
+function MobileUnlock() {
+  return <BiometricUnlockMobile unlock={useUnlock()} />;
 }

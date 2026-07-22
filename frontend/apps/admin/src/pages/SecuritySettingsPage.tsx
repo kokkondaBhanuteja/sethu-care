@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { SecuritySettingsDesktop } from "../features/settings/SecuritySettings.desktop";
+import { SecuritySettingsMobile } from "../features/settings/SecuritySettings.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** BOX 62/63 on desktop, BOX 101/102 on mobile. */
 export default function SecuritySettingsPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.settings")} />;
+  return useIsDesktop() ? <SecuritySettingsDesktop /> : <SecuritySettingsMobile />;
 }

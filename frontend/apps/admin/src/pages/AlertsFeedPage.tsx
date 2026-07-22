@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { AlertsFeedDesktop } from "../features/alerts/AlertsFeed.desktop";
+import { AlertsFeedMobile } from "../features/alerts/AlertsFeed.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** `/alerts` — spec §6.20. */
 export default function AlertsFeedPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.alerts")} />;
+  return useIsDesktop() ? <AlertsFeedDesktop /> : <AlertsFeedMobile />;
 }

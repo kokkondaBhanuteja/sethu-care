@@ -1,9 +1,16 @@
-import { useTranslation } from "@sethu/i18n";
+import { Navigate } from "react-router";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
+import { MoreMenuMobile } from "../features/settings/MoreMenu.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { ROUTES } from "../routes/routes.constants";
 
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * BOX 95. Mobile only: desktop has no More menu, because the always-visible sidebar is its
+ * equivalent (BOX 59). A deep link to /more on a desktop lands on the profile, which is the one
+ * destination in the menu the sidebar does not name.
+ */
 export default function MoreMenuPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.more")} />;
+  const isDesktop = useIsDesktop();
+  if (isDesktop) return <Navigate to={ROUTES.profile} replace />;
+  return <MoreMenuMobile />;
 }

@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { NotificationSettingsDesktop } from "../features/settings/NotificationSettings.desktop";
+import { NotificationSettingsMobile } from "../features/settings/NotificationSettings.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** BOX 60/61 on desktop, BOX 97–100 on mobile. */
 export default function NotificationSettingsPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.settings")} />;
+  return useIsDesktop() ? <NotificationSettingsDesktop /> : <NotificationSettingsMobile />;
 }

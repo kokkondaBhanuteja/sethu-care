@@ -1,9 +1,11 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { NeedsAttentionFeedDesktop } from "../features/dashboard/NeedsAttentionFeed.desktop";
+import { NeedsAttentionFeedMobile } from "../features/dashboard/NeedsAttentionFeed.mobile";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * `/live/attention` — the complete, prioritised queue behind the dashboard's top-of-queue preview
+ * (spec §6.6). Both variants read the same `useNeedsAttention()` hook.
+ */
 export default function NeedsAttentionPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.attention")} />;
+  return useIsDesktop() ? <NeedsAttentionFeedDesktop /> : <NeedsAttentionFeedMobile />;
 }

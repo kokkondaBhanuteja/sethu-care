@@ -24,6 +24,12 @@ export interface StatusDotProps {
    */
   label: string;
   visualLabel?: boolean;
+  /**
+   * Suppresses the screen-reader label entirely. Only for a dot inside an element whose own
+   * accessible name ALREADY contains the status word — otherwise assistive tech reads it twice.
+   * The label prop stays required so choosing this is a deliberate act, not an omission.
+   */
+  labelledByParent?: boolean;
   className?: string;
 }
 
@@ -36,6 +42,7 @@ export function StatusDot({
   pulse = false,
   label,
   visualLabel = false,
+  labelledByParent = false,
   className,
 }: StatusDotProps) {
   const dot = (
@@ -51,6 +58,8 @@ export function StatusDot({
       )}
     />
   );
+
+  if (labelledByParent) return dot;
 
   if (!visualLabel) {
     return (

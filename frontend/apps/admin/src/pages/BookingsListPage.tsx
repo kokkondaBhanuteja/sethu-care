@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { BookingsListDesktop } from "../features/bookings/BookingsList.desktop";
+import { BookingsListMobile } from "../features/bookings/BookingsList.mobile";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Route target for `/bookings` (spec §6.8). Picks the shell variant; the feature does the rest. */
 export default function BookingsListPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  return useIsDesktop() ? <BookingsListDesktop /> : <BookingsListMobile />;
 }

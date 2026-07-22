@@ -1,9 +1,9 @@
-import { useTranslation } from "@sethu/i18n";
+import { PayoutsScreen } from "../features/settings/PayoutsScreen";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * BOX 66. Desktop-only by product rule (spec §1.5) — `SurfaceGuard` renders the "Best on desktop"
+ * notice in this route's place on a phone, so this component only ever runs on a wide screen.
+ */
 export default function PayoutsPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.payouts")} />;
+  return <PayoutsScreen />;
 }

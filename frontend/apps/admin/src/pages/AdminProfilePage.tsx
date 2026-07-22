@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { AdminProfileDesktop } from "../features/settings/AdminProfile.desktop";
+import { AdminProfileMobile } from "../features/settings/AdminProfile.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** BOX 64 on desktop, BOX 103 on mobile. */
 export default function AdminProfilePage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.profile")} />;
+  return useIsDesktop() ? <AdminProfileDesktop /> : <AdminProfileMobile />;
 }

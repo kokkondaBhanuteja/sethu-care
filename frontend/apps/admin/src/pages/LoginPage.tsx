@@ -1,9 +1,6 @@
-import { useTranslation } from "@sethu/i18n";
+import { LoginScreen } from "../features/auth/LoginScreen";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** `/login` — the first factor (spec §6.2). AuthLayout picks the split or the stack. */
 export default function LoginPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("productName")} />;
+  return <LoginScreen />;
 }

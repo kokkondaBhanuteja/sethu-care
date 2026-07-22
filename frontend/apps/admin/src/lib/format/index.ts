@@ -37,6 +37,22 @@ const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
 /** `₹2,14,500.00` — the full, unambiguous amount. Use where the exact figure matters. */
 export const formatMoney = formatPaise;
 
+const wholeRupeeFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "currency",
+  currency: "INR",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+/**
+ * `₹1,499` — the design's list and card treatment, where two trailing zeros are noise in a column
+ * an operator is scanning. Use `formatMoney` wherever the exact paise matter: a refund amount, a
+ * settlement line, anything an operator might have to reconcile.
+ */
+export function formatMoneyWhole(paise: number): string {
+  return wholeRupeeFormatter.format(paiseToRupees(paise));
+}
+
 /** `₹2.1L` / `₹1.4Cr` — KPI tiles and dense table cells, where the magnitude is the message. */
 export function formatMoneyCompact(paise: number): string {
   const rupees = paiseToRupees(paise);

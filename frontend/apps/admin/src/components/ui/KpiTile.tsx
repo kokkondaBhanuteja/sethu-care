@@ -33,7 +33,15 @@ export function KpiTile({ label, value, trend, sparkline, className }: KpiTilePr
         <div className="kpi-tile__foot">
           {trend ? (
             <span className={cx("trend", trend.isGood ? "trend--good" : "trend--bad")}>
-              {trend.direction === "up" ? "▲" : "▼"} {trend.delta}
+              {/* The glyph alone announces as "black up-pointing triangle"; the direction word
+                  carries the meaning for assistive tech, and "better"/"worse" carries the tone,
+                  because up is not reliably good here (rising assign time is bad news). */}
+              <span aria-hidden>{trend.direction === "up" ? "▲" : "▼"}</span>
+              <span className="sr-only">
+                {trend.direction === "up" ? "up" : "down"} {trend.delta},{" "}
+                {trend.isGood ? "better" : "worse"}
+              </span>
+              <span aria-hidden> {trend.delta}</span>
             </span>
           ) : null}
           {sparkline && sparkline.length > 1 ? (
