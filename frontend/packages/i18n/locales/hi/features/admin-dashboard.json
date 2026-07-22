@@ -32,7 +32,7 @@
   },
   "attention": {
     "title": "Needs attention",
-    "seeAll": "See all",
+    "seeAll": "View all",
     "tableCaption": "Bookings needing attention, ordered by priority",
     "loading": "Loading bookings that need attention",
     "orderNote": "Showing {{shown}} of {{total}} · ordered by priority, not time",
