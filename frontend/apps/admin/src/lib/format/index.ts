@@ -69,21 +69,25 @@ function trimZero(value: number): string {
 
 /** `20/07/2026` */
 export function formatDate(iso: string | Date): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   return dateFormatter.format(toDate(iso));
 }
 
 /** `20 Jul` */
 export function formatDateShort(iso: string | Date): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   return shortDateFormatter.format(toDate(iso));
 }
 
 /** `3:42 PM` */
 export function formatTime(iso: string | Date): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   return timeFormatter.format(toDate(iso));
 }
 
 /** `20 Jul, 3:42 PM` — the timeline and audit-log stamp. */
 export function formatDateTime(iso: string | Date): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   const value = toDate(iso);
   return `${shortDateFormatter.format(value)}, ${timeFormatter.format(value)}`;
 }
@@ -97,6 +101,7 @@ const DAY_MS = 24 * HOUR_MS;
  * answer than "17 Jul" when an operator is reconstructing what happened.
  */
 export function formatRelative(iso: string | Date, now: Date = new Date()): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   const elapsed = now.getTime() - toDate(iso).getTime();
   if (elapsed < MINUTE_MS) return "just now";
   if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m ago`;
@@ -125,6 +130,7 @@ export function formatDuration(milliseconds: number): string {
  * assignment time) keep their seconds; ages do not.
  */
 export function formatAge(iso: string | Date, now: Date = new Date()): string {
+  if (isUnrenderable(iso)) return INVALID_DATE_PLACEHOLDER;
   const elapsed = Math.max(0, now.getTime() - toDate(iso).getTime());
   if (elapsed < MINUTE_MS) return `${Math.floor(elapsed / 1000)}s`;
   if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m`;
@@ -145,6 +151,21 @@ export function formatPercent(fraction: number): string {
   return `${trimZero(fraction * 100)}%`;
 }
 
+/** Rendered in place of a timestamp that is absent or unparseable. */
+const INVALID_DATE_PLACEHOLDER = "—";
+
 function toDate(value: string | Date): Date {
   return value instanceof Date ? value : new Date(value);
+}
+
+/**
+ * True when a value cannot be rendered as a date.
+ *
+ * These formatters are called from ~40 screens, and `Intl.DateTimeFormat.format` THROWS on an
+ * invalid date rather than returning something useless. A single absent timestamp therefore used to
+ * take down an entire route — it killed the whole manual-completion flow. A missing date is a data
+ * problem worth showing as a dash; it is not worth losing the screen over.
+ */
+function isUnrenderable(value: string | Date): boolean {
+  return Number.isNaN(toDate(value).getTime());
 }

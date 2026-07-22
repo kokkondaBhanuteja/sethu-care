@@ -59,9 +59,16 @@ export function useSuspendProviderFlow() {
   const hasActiveJobs = activeJobs.length > 0;
   const isDirty = reasonCode !== null || note.length > 0 || Object.keys(jobResolutions).length > 0;
 
+  // Step 1 also waits for the active-jobs query to settle. `hasActiveJobs` drives whether goNext
+  // skips step 3, and it reads an empty array until the data lands — so an operator who picked a
+  // reason inside the request window jumped straight to Confirm and suspended a provider mid-job
+  // with nobody reassigned. Step 3 exists precisely to stop that, so it must not be skippable by
+  // being fast.
   const canContinue =
     paneIndex === 0
-      ? reasonCode !== null && (reasonCode !== SUSPEND_REASON_CODES.other || note.trim().length > 0)
+      ? reasonCode !== null &&
+        (reasonCode !== SUSPEND_REASON_CODES.other || note.trim().length > 0) &&
+        !activeJobsQuery.isPending
       : paneIndex === 1
         ? unresolvedCount === 0
         : true;
