@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "i18n:check": "node scripts/check-i18n.mjs",
     "i18n:sync-admin": "node scripts/sync-admin-locales.mjs",
-    "api:generate": "pnpm --filter @sethu/api-client run generate"
+    "api:generate": "pnpm --filter @sethu/api-client run generate",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
