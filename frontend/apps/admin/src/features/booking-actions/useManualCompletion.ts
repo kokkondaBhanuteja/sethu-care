@@ -35,6 +35,9 @@ export type ManualCompletionValues = z.infer<typeof manualCompletionSchema>;
 
 const LAST_STEP = MANUAL_COMPLETION_STEP_IDS.length - 1;
 
+/** Manual completion has no undo window in the risk register, so this handler cannot run. */
+const NEVER_CALLED = () => undefined;
+
 /**
  * The deliberately effortful alternative to an OTP override (spec §1.6). Four named steps, one
  * decision each, and no route to the confirm step that skips evidence or attestation.
@@ -101,8 +104,9 @@ export function useManualCompletion() {
       rotate();
       setIsDirty(false);
       // No undo, on purpose: the customer is notified and payout eligibility is released the moment
-      // this lands. It is corrected by a compensating, itself-audited action (spec §5.5).
-      announce({ message: t("manual.doneToast"), onUndo: () => setIsDirty(false) });
+      // this lands. It is corrected by a compensating, itself-audited action (spec §5.5). The
+      // registry gives this action a null window, so `onUndo` is never called and no Undo appears.
+      announce({ message: t("manual.doneToast"), onUndo: NEVER_CALLED });
       exit();
     },
   });

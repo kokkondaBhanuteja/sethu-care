@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** Injected by vite.config.ts from package.json — see lib/env.ts APP_BUILD. */
+declare const __APP_VERSION__: string;
+
 // Declaring the app's own variables narrows them from vite/client's index signature, so
 // lib/env.ts reads real types instead of `any`. Add a variable here and in .env.example
 // together — never read a VITE_* name that is not declared.

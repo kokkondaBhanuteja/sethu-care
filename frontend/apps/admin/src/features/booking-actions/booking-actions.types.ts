@@ -2,14 +2,7 @@
 // These are the normative contract until the endpoints in docs/admin-api-contract.md land — that
 // document says so explicitly, so a change here is a change to what the backend owes.
 
-import type {
-  CancelReasonCode,
-  ManualCompletionReasonCode,
-  RedispatchRadiusId,
-  RefundPayoutImpact,
-  RefundReasonCode,
-  RefundTypeId,
-} from "./booking-actions.constants";
+import type { RedispatchRadiusId, RefundPayoutImpact } from "./booking-actions.constants";
 
 /** The record header every action screen restates, so the operator never loses the subject. */
 export interface BookingActionSubject {
@@ -133,67 +126,5 @@ export interface RefundContext {
   readonly defaultPayoutImpact: RefundPayoutImpact;
 }
 
-/** Every mutation carries the concurrency version and an idempotency key (contract §Conventions). */
-interface MutationEnvelope {
-  readonly bookingId: string;
-  readonly version: number;
-  /** Sent as the `Idempotency-Key` header; without it a retried refund is a duplicate refund. */
-  readonly idempotencyKey: string;
-}
-
-export interface AssignInput extends MutationEnvelope {
-  readonly providerId: string;
-}
-
-export interface CancelInput extends MutationEnvelope {
-  readonly reasonCode: CancelReasonCode;
-  readonly note: string;
-  readonly refund: {
-    readonly amountPaise: number;
-    readonly isPolicyAmount: boolean;
-    readonly waiveFee: boolean;
-    readonly overrideJustification: string;
-  };
-}
-
-export interface RedispatchInput extends MutationEnvelope {
-  readonly radiusId: RedispatchRadiusId;
-  readonly relaxSkillMatch: boolean;
-  readonly includeDecliners: boolean;
-  readonly priorityBoost: boolean;
-  readonly incentivePaise: number;
-}
-
-export interface ManualCompletionInput extends MutationEnvelope {
-  readonly reasonCode: ManualCompletionReasonCode;
-  readonly note: string;
-  readonly evidence: {
-    readonly workPhotoIds: readonly string[];
-    readonly callAttemptIds: readonly string[];
-    readonly completionReportId: string | null;
-  };
-  readonly attestations: {
-    readonly spokeToProvider: boolean;
-    readonly attemptedCustomer: boolean;
-    readonly believesWorkDone: boolean;
-  };
-}
-
-export interface RefundInput extends MutationEnvelope {
-  readonly refundType: RefundTypeId;
-  readonly amountPaise: number;
-  readonly reasonCode: RefundReasonCode;
-  readonly note: string;
-  readonly payoutImpact: RefundPayoutImpact;
-}
-
-export interface ActionReceipt {
-  readonly bookingId: string;
-  readonly version: number;
-}
-
-export interface RefundReceipt extends ActionReceipt {
-  readonly refundId: string;
-  readonly isPending: boolean;
-  readonly estimatedCompletionIso: string | null;
-}
+// Mutation request/response shapes live next door; re-exported so callers import one module.
+export type * from "./booking-actions.inputs";

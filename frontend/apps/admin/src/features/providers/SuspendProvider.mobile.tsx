@@ -1,9 +1,8 @@
-import { IndianRupee, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
 import { Icon } from "../../components/ui/Icon";
 import { Stepper } from "../../components/ui/StepRail";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
@@ -13,6 +12,7 @@ import { MobileScroll } from "./components/PageBody";
 import { RatingValue } from "./components/Rating";
 import { StepUpChallenge } from "./components/StepUpChallenge";
 import { SuspendActionTypes } from "./components/SuspendActionTypes";
+import { SuspendImpactCard } from "./components/SuspendImpactCard";
 import { SuspendReasonFields } from "./components/SuspendReasonFields";
 import { SuspendStepConfirm } from "./components/SuspendStepConfirm";
 import { SuspendStepJobs } from "./components/SuspendStepJobs";
@@ -70,15 +70,7 @@ export function SuspendProviderMobile() {
       <MobileScroll>
         {flow.paneIndex === 0 ? (
           <div className="flex flex-col gap-s5 px-s4 py-s4">
-            <Card tone="danger" edge="danger">
-              <div className="flex items-start gap-s2">
-                <Icon glyph={IndianRupee} className="text-danger" />
-                <div className="grow">
-                  <p className="text-emph text-danger">{t("suspend.impactTitle")}</p>
-                  <p className="mt-s1 text-label text-text-1">{t("suspend.impactDetail")}</p>
-                </div>
-              </div>
-            </Card>
+            <SuspendImpactCard />
 
             <div>
               <h2 className="text-card text-text-1">{t("suspend.actionQuestion")}</h2>

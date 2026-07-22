@@ -1,1 +1,94 @@
-{}
+{
+  "brand": {
+    "wordmark": "SetuCare",
+    "console": "Admin Console",
+    "panelHeadline": "Operations console",
+    "panelTagline": "Dispatch exceptions, not bookings.",
+    "build": "v{{version}} · {{environment}}"
+  },
+  "splash": {
+    "connecting": "Connecting…",
+    "errorTitle": "Couldn't start",
+    "errorBody": "Check your connection and try again",
+    "retry": "Retry",
+    "signOut": "Sign out"
+  },
+  "update": {
+    "title": "Update required",
+    "body": "This version of the Admin Console is no longer supported.",
+    "action": "Update now"
+  },
+  "login": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@setucare.in",
+    "passwordLabel": "Password",
+    "submit": "Continue",
+    "submitting": "Signing in…",
+    "forgotPassword": "Forgot password?",
+    "provisioningNote": "Admin accounts are created by your Super Admin.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "offlineBanner": "No connection. Signing in needs internet.",
+    "emailInvalid": "Enter a valid email address",
+    "passwordRequired": "Enter your password",
+    "invalidCredentials": "Email or password is incorrect",
+    "locked": "Too many attempts. Try again in {{countdown}}",
+    "lockedLifted": "You can try signing in again.",
+    "disabled": "This account has been disabled. Contact your Super Admin.",
+    "network": "Can't reach SetuCare. Check your connection.",
+    "server": "Something went wrong ({{code}}). Try again."
+  },
+  "otp": {
+    "title": "Verify it's you",
+    "sentTo": "We sent a 6-digit code to",
+    "codeLabel": "6-digit verification code",
+    "expiresIn": "Code expires in {{countdown}}",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "resendPrompt": "Didn't get it?",
+    "resendIn": "Resend in {{countdown}}",
+    "resendNow": "Resend code",
+    "resendNote": "A new code will be sent to the same number.",
+    "resendSent": "A new code is on its way.",
+    "trustDevice": "Trust this device (30 days)",
+    "wrongCode_one": "That code isn't right. {{count}} attempt left.",
+    "wrongCode_other": "That code isn't right. {{count}} attempts left.",
+    "expired": "This code expired.",
+    "tooManyAttempts": "Too many attempts. Sign in again.",
+    "resendLimited": "Too many requests. Try again in {{countdown}}"
+  },
+  "devices": {
+    "title_one": "{{count}} device already trusted",
+    "title_other": "{{count}} devices already trusted",
+    "body": "Revoke one to continue.",
+    "revoke": "Revoke",
+    "lastUsed": "Last used {{when}} · {{location}}",
+    "typePhone": "Phone",
+    "typeTablet": "Tablet",
+    "typeDesktop": "Computer",
+    "revoked": "{{name}} is no longer trusted."
+  },
+  "lock": {
+    "title": "Your session is locked",
+    "body": "You've been inactive for {{minutes}} minutes. Enter your password to continue.",
+    "passwordLabel": "Password",
+    "unlock": "Unlock",
+    "unlocking": "Unlocking…",
+    "signOutInstead": "Sign out instead",
+    "wrongPassword": "That password wasn't recognised. Try again."
+  },
+  "unlock": {
+    "title": "Unlock to continue",
+    "prompt": "Use your fingerprint or face to unlock.",
+    "notRecognised": "Not recognised. Try again or use your passcode.",
+    "unavailable": "Biometric unlock isn't set up on this device. Use your passcode.",
+    "tryAgain": "Try again",
+    "usePasscode": "Use passcode",
+    "passcodeTitle": "Enter your passcode",
+    "passcodeLabel": "Device passcode",
+    "wrongPasscode_one": "That passcode isn't right. {{count}} try left before sign-in.",
+    "wrongPasscode_other": "That passcode isn't right. {{count}} tries left before sign-in.",
+    "exhausted": "Too many attempts. Sign in again.",
+    "signOut": "Sign out"
+  }
+}

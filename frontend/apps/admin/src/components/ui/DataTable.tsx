@@ -36,6 +36,11 @@ export interface DataTableProps<TRow> {
   density?: "dense" | "default" | "roomy";
   /** Tighter horizontal padding, for the nine-column table inside a 900px modal. */
   tight?: boolean;
+  /**
+   * A totals row, rendered in a real `<tfoot>` so it stays associated with the table and is
+   * announced as a summary rather than as one more data row. Cells must match the column count.
+   */
+  footer?: readonly ReactNode[];
   className?: string;
 }
 
@@ -59,6 +64,7 @@ export function DataTable<TRow>({
   rowGroupLabel,
   density = "default",
   tight = false,
+  footer,
   className,
 }: DataTableProps<TRow>) {
   return (
@@ -116,6 +122,20 @@ export function DataTable<TRow>({
             );
           })}
         </tbody>
+        {footer ? (
+          <tfoot>
+            <tr className="table__total">
+              {footer.map((cell, cellIndex) => (
+                <td
+                  key={columns[cellIndex]?.id ?? cellIndex}
+                  className={cx(columns[cellIndex]?.numeric && "num")}
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        ) : null}
       </table>
     </div>
   );

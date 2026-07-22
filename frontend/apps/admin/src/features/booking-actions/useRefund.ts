@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -21,7 +21,7 @@ import {
   type RefundReasonCode,
   type RefundTypeId,
 } from "./booking-actions.constants";
-import { rupeesToPaise } from "./booking-actions.money";
+import { paiseToRupeeInput, rupeesToPaise } from "./booking-actions.money";
 import type { RefundContext } from "./booking-actions.types";
 import { useDiscardGuard } from "./useDiscardGuard";
 import { useIdempotencyKey } from "./useIdempotencyKey";
@@ -35,6 +35,9 @@ const refundSchema = z.object({
 });
 
 export type RefundValues = z.infer<typeof refundSchema>;
+
+/** Refund has no undo window in the risk register, so this handler cannot run. */
+const NEVER_CALLED = () => undefined;
 
 /**
  * The one finance action permitted on mobile (spec §1.5's money boundary): a single bounded amount
@@ -88,14 +91,25 @@ export function useRefund() {
       rotate();
       setIsDirty(false);
       // Never reported as done when the gateway went quiet: the operator must not tell a customer
-      // money is on its way when it is not (spec §6.27).
+      // money is on its way when it is not (spec §6.27). And no undo window in the registry — the
+      // call has already left the building — so no Undo affordance is drawn.
       announce({
         message: receipt.isPending ? t("refund.pendingToast") : t("refund.doneToast"),
-        onUndo: () => setIsDirty(false),
+        onUndo: NEVER_CALLED,
       });
       exit();
     },
   });
+
+  const { form: refundForm } = form;
+  const refundablePaise = query.data?.refundablePaise;
+
+  // Pre-fill per type (spec §6.27 step 2). A blank amount field on a money screen invites a typo;
+  // the full refundable balance is the correct starting point for every type except a partial.
+  useEffect(() => {
+    if (refundablePaise === undefined) return;
+    refundForm.setValue("amountRupees", paiseToRupeeInput(refundablePaise));
+  }, [refundablePaise, refundForm]);
 
   /** The payout default FOLLOWS the reason — it is a consequence, not a separate decision. */
   const selectReason = useCallback(

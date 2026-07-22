@@ -19,6 +19,8 @@ export interface StepUpChallengeProps {
   /** Red for a cancellation, brand for a refund — the commit keeps its own tone. */
   tone: "danger" | "brand";
   confirmLabel: string;
+  /** Anything the design shows verbatim before the commit — the refund's customer notification. */
+  preview?: { readonly label: string; readonly body: string };
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -40,6 +42,7 @@ export function StepUpChallenge({
   summary,
   tone,
   confirmLabel,
+  preview,
   onConfirm,
   onCancel,
 }: StepUpChallengeProps) {
@@ -55,6 +58,16 @@ export function StepUpChallenge({
       <Card tone="surface" density="tight" className="w-full text-left">
         <span className="text-label text-text-1">{summary}</span>
       </Card>
+
+      {/* Shown verbatim, never summarised: it is the only part of this action the customer sees. */}
+      {preview ? (
+        <div className="w-full text-left">
+          <p className="mb-s2 text-pill text-text-3">{preview.label}</p>
+          <div className="rounded-card border border-border-subtle bg-canvas p-s3">
+            <span className="text-label text-text-1">{preview.body}</span>
+          </div>
+        </div>
+      ) : null}
 
       <p className="text-body text-text-2">{t("stepUp.body")}</p>
 

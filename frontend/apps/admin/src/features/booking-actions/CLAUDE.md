@@ -8,7 +8,7 @@ Contents:
 
 - `booking-actions.api.ts` — the ONLY data boundary. Reads and mutations, each wrapping a mock until the endpoints land.
 - `booking-actions.mock.ts` (reads) · `booking-actions.writes.mock.ts` (mutations + the server-enforced failures) · `booking-actions.fixtures.ts` (the artifacts' data).
-- `booking-actions.types.ts` — the normative request/response shapes. `docs/admin-api-contract.md` defers to them.
+- `booking-actions.types.ts` (read contexts) + `booking-actions.inputs.ts` (mutation payloads, re-exported from it) — the normative shapes. `docs/admin-api-contract.md` defers to them.
 - `booking-actions.constants.ts` — query keys and the four reason-code vocabularies, as `as const` objects with derived union types.
 - `booking-actions.money.ts` — the one rupee ⇄ paise conversion, at the form boundary only.
 - `use<Action>.ts` — one hook per action, shared by both shells (the anti-drift rule, spec §2.1).

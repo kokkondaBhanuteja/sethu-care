@@ -9,7 +9,7 @@ import { ADMIN_ACTIONS } from "../../lib/permissions/actions";
 import { useActionPolicy } from "../../lib/permissions/usePermission";
 import { useUndoableAction } from "../../hooks/useUndoableAction";
 import { ROUTES } from "../../routes/routes.constants";
-import { fetchAssignContext, submitAssign } from "./booking-actions.api";
+import { fetchAssignContext, submitAssign, undoAction } from "./booking-actions.api";
 import { BOOKING_ACTION_QUERY_KEYS } from "./booking-actions.constants";
 import type { AssignContext, ProviderCandidate } from "./booking-actions.types";
 import { useIdempotencyKey } from "./useIdempotencyKey";
@@ -60,14 +60,25 @@ export function useAssignProvider() {
     onSubmit: async (values) => {
       const provider =
         query.data?.candidates.find((row) => row.providerId === values.providerId) ?? null;
+      const version = query.data?.booking.version ?? 0;
+      const key = idempotencyKey;
+
       await mutation.mutateAsync(values);
       rotate();
       setSelected(null);
       setSubmitting(null);
-      // The undo window comes from the risk register, never from a number written here.
+      // The undo window comes from the risk register, never from a number written here. Undo is a
+      // compensating, separately audited call — not a client-side rollback.
       announce({
         message: t("assign.assignedToast", { name: provider?.name ?? "" }),
-        onUndo: () => setSelected(provider),
+        onUndo: () => {
+          void undoAction({
+            bookingId,
+            version: version + 1,
+            idempotencyKey: key,
+            undoes: "assign",
+          });
+        },
       });
       close();
     },

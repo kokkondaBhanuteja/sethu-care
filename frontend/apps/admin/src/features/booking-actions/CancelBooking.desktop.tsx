@@ -28,7 +28,7 @@ export function CancelBookingDesktop({ state }: { state: CancelBookingState }) {
         width="large"
         title={t("cancel.title")}
         {...(context ? { subtitle: context.booking.reference } : {})}
-        isDismissable={!state.form.isSubmitting}
+        isDismissable={!state.form.isSubmitting && !state.discard.isPrompting}
         onDismiss={state.requestExit}
         footer={
           <>

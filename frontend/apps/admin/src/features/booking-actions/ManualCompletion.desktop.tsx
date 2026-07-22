@@ -26,6 +26,7 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
   const { t: tShell } = useTranslation("adminShell");
   const context = state.query.data;
   const canContinue = canLeaveStep(state.stepIndex, state.form.form.watch(), state.gaps);
+  const hasOtpArrived = Boolean(context?.otpArrivedAtIso);
 
   if (context?.availableInMinutes != null) {
     return (
@@ -41,7 +42,7 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
       <Modal
         isOpen
         title={t("manual.title")}
-        isDismissable={!state.form.isSubmitting}
+        isDismissable={!state.form.isSubmitting && !state.discard.isPrompting && !hasOtpArrived}
         onDismiss={state.requestExit}
         rail={
           <StepRail
@@ -115,7 +116,7 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
       </Modal>
 
       <OtpArrivedInterrupt
-        isOpen={Boolean(context?.otpArrivedAtIso)}
+        isOpen={hasOtpArrived}
         customerName={context?.booking.customerName ?? ""}
         verifiedAtIso={context?.otpArrivedAtIso ?? ""}
         onViewBooking={state.discard.confirmDiscard}

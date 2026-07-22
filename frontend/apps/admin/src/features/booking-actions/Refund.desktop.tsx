@@ -13,7 +13,7 @@ import { RefundSummaryPanel } from "./RefundSummaryPanel";
 import { StepUpChallenge } from "./StepUpChallenge";
 import type { RefundPayoutImpact, RefundTypeId } from "./booking-actions.constants";
 import { refundLimits } from "./refundLimits";
-import { refundSummaryLine } from "./refundSummary";
+import { refundCustomerMessage, refundSummaryLine } from "./refundSummary";
 import type { RefundState } from "./useRefund";
 
 /**
@@ -46,7 +46,7 @@ export function RefundDesktop({ state }: { state: RefundState }) {
               }),
             }
           : {})}
-        isDismissable={!state.form.isSubmitting}
+        isDismissable={!state.form.isSubmitting && !state.discard.isPrompting}
         onDismiss={state.requestExit}
         footer={
           <>
@@ -109,6 +109,10 @@ export function RefundDesktop({ state }: { state: RefundState }) {
         tone="brand"
         title={t("refund.confirmTitle")}
         summary={refundSummaryLine(context ?? null, values, t)}
+        preview={{
+          label: t("refund.customerWillReceive"),
+          body: refundCustomerMessage(context ?? null, values, t),
+        }}
         confirmLabel={tShell("actions.confirm")}
         onConfirm={state.stepUp.confirm}
         onCancel={state.stepUp.cancel}

@@ -18,18 +18,21 @@ export interface KpiTileProps {
   trend?: KpiTrend;
   /** Eight points describing the period, drawn as the tile's sparkline. */
   sparkline?: readonly number[];
+  /** A footnote under the value — "Cycle closes 25/07". Replaces the trend row when given. */
+  foot?: string;
   className?: string;
 }
 
 const SPARK_WIDTH = 56;
 const SPARK_HEIGHT = 20;
 
-export function KpiTile({ label, value, trend, sparkline, className }: KpiTileProps) {
+export function KpiTile({ label, value, trend, sparkline, foot, className }: KpiTileProps) {
   return (
     <div className={cx("kpi-tile", className)}>
       <div className="kpi-tile__label">{label}</div>
       <div className="kpi-tile__value">{value}</div>
-      {trend || sparkline ? (
+      {foot ? <div className="kpi-tile__foot t-caption c-3">{foot}</div> : null}
+      {!foot && (trend || sparkline) ? (
         <div className="kpi-tile__foot">
           {trend ? (
             <span className={cx("trend", trend.isGood ? "trend--good" : "trend--bad")}>

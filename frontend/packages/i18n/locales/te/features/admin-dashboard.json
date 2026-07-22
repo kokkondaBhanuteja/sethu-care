@@ -1,1 +1,114 @@
-{}
+{
+  "live": {
+    "title": "Live",
+    "connectionLabel": "Connection",
+    "statusLive": "Live",
+    "statusOffline": "Offline",
+    "statusReconnecting": "Reconnecting",
+    "openMap": "Open live map",
+    "refresh": "Refresh"
+  },
+  "period": {
+    "label": "Time window",
+    "today": "Today",
+    "liveNow": "Live now"
+  },
+  "band": {
+    "countOne": "1 needs attention",
+    "countOther": "{{count}} need attention",
+    "countCapped": "9+ need attention",
+    "example": "{{reason}} {{booking}} · {{age}}",
+    "viewAll": "View all",
+    "open": "Open the needs-attention queue"
+  },
+  "kpi": {
+    "sectionLabel": "Key figures",
+    "bookings": "Bookings",
+    "revenue": "Revenue",
+    "completion": "Completion",
+    "avgAssign": "Avg assign",
+    "loading": "Loading key figures",
+    "noValue": "—"
+  },
+  "attention": {
+    "title": "Needs attention",
+    "seeAll": "See all",
+    "tableCaption": "Bookings needing attention, ordered by priority",
+    "loading": "Loading the attention queue",
+    "orderNote": "Showing {{shown}} of {{total}} · ordered by priority, not time",
+    "refreshedAt": "Auto-refreshing · updated {{time}}",
+    "allClearTitle": "Nothing needs attention",
+    "allClearShortTitle": "All clear",
+    "allClearBody": "{{count}} jobs running smoothly.",
+    "lastCleared": "Last cleared {{time}} · {{booking}} resolved by {{admin}}",
+    "filteredEmptyTitle": "No {{filter}} bookings",
+    "clearFilters": "Clear filters",
+    "resolved": "Resolved",
+    "unassigned": "unassigned",
+    "unreachable": "unreachable",
+    "noProvider": "—",
+    "meta": "{{area}} · {{time}} · {{amount}}",
+    "summary": "{{service}} · {{customer}}"
+  },
+  "columns": {
+    "priority": "Priority",
+    "booking": "Booking",
+    "service": "Service",
+    "customer": "Customer",
+    "area": "Area",
+    "reason": "Reason",
+    "provider": "Provider",
+    "age": "Age",
+    "actions": "Actions"
+  },
+  "priority": {
+    "escalated": "Escalated",
+    "slaBreached": "SLA breached",
+    "slaRisk": "SLA risk",
+    "noProvider": "No provider",
+    "noResponse": "No response"
+  },
+  "filters": {
+    "label": "Filter the attention queue",
+    "all": "All",
+    "escalated": "Escalated ({{count}})",
+    "unassigned": "Unassigned ({{count}})",
+    "sla": "SLA ({{count}})",
+    "delayed": "Delayed ({{count}})",
+    "escalatedName": "escalated",
+    "unassignedName": "unassigned",
+    "slaName": "SLA",
+    "delayedName": "delayed"
+  },
+  "actions": {
+    "acknowledge": "Acknowledge",
+    "assign": "Assign",
+    "call": "Call",
+    "cancel": "Cancel",
+    "reassign": "Reassign",
+    "redispatch": "Re-dispatch",
+    "acknowledged": "{{booking}} acknowledged",
+    "acknowledgeFailed": "{{booking}} could not be acknowledged. It is back in the queue.",
+    "offlineReason": "Reconnect to act",
+    "noPermission": "You don't have permission for this",
+    "rowActions": "Actions for {{booking}}"
+  },
+  "activity": {
+    "title": "Activity",
+    "loading": "Loading recent activity",
+    "empty": "Nothing has happened yet today.",
+    "completed": "{{booking}} completed",
+    "started": "{{booking}} started",
+    "enRoute": "{{booking}} en route",
+    "assigned": "{{booking}} assigned to {{provider}}",
+    "awaitingOtp": "{{booking}} arrived, awaiting OTP",
+    "cancelledByCustomer": "{{booking}} cancelled by customer"
+  },
+  "offline": {
+    "banner": "Offline · showing data from {{time}}"
+  },
+  "empty": {
+    "noBookingsTitle": "No bookings today",
+    "noBookingsBody": "Nothing has been booked since midnight. The figures fill in as jobs come through."
+  }
+}

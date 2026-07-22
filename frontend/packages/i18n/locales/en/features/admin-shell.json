@@ -12,7 +12,7 @@
     "providers": "Providers",
     "alerts": "Alerts",
     "customers": "Customers",
-    "tickets": "Tickets",
+    "tickets": "Support tickets",
     "analytics": "Analytics",
     "audit": "Audit log",
     "more": "More",
@@ -28,7 +28,12 @@
     "primary": "Primary",
     "sections": "Sections",
     "openMenu": "Open menu",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "groupDesktopOnly": "Desktop only",
+    "groupAccount": "Account",
+    "notifications": "Notifications",
+    "security": "Security & devices",
+    "roleOperations": "Operations"
   },
   "state": {
     "retry": "Retry",

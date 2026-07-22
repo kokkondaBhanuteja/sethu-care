@@ -13,7 +13,7 @@ import { RefundRateLimited } from "./RefundRateLimited";
 import { StepUpChallenge } from "./StepUpChallenge";
 import type { RefundPayoutImpact } from "./booking-actions.constants";
 import { refundLimits } from "./refundLimits";
-import { refundSummaryLine } from "./refundSummary";
+import { refundCustomerMessage, refundSummaryLine } from "./refundSummary";
 import type { RefundState } from "./useRefund";
 
 /**
@@ -95,6 +95,10 @@ export function RefundMobile({ state }: { state: RefundState }) {
         tone="brand"
         title={t("refund.confirmTitle")}
         summary={refundSummaryLine(context ?? null, values, t)}
+        preview={{
+          label: t("refund.customerWillReceive"),
+          body: refundCustomerMessage(context ?? null, values, t),
+        }}
         confirmLabel={t("shared.confirmWithBiometrics")}
         onConfirm={state.stepUp.confirm}
         onCancel={state.stepUp.cancel}

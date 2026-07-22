@@ -1,1 +1,170 @@
-{}
+{
+  "title": "Bookings",
+  "loading": {
+    "list": "Loading bookings",
+    "detail": "Loading booking"
+  },
+  "segments": {
+    "label": "Booking segments",
+    "active": "Active",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "search": {
+    "label": "Search bookings",
+    "placeholder": "Search ID, phone, name",
+    "resultCountOne": "1 result for",
+    "resultCountMany": "{{count}} results for",
+    "clear": "Clear search",
+    "acrossSegments": "Showing all {{count}} matches across Active, Completed and Cancelled",
+    "emptyTitle": "No bookings match \"{{query}}\"",
+    "emptyBody": "Try a booking ID (#B-8823), a phone number, or a customer name.",
+    "matchLabel": "matches your search"
+  },
+  "filters": {
+    "open": "Filter",
+    "openWithCount": "Filter ({{count}})",
+    "buttonLabel": "Filters, {{count}} active",
+    "clear": "Clear",
+    "title": "Filter bookings",
+    "stateGroup": "Booking state",
+    "apply": "Show results"
+  },
+  "count": {
+    "subjectActive": "active bookings",
+    "subjectCompleted": "completed bookings",
+    "subjectCancelled": "cancelled bookings"
+  },
+  "columns": {
+    "booking": "Booking",
+    "state": "State",
+    "service": "Service",
+    "customer": "Customer",
+    "phone": "Phone",
+    "area": "Area",
+    "time": "Time",
+    "amount": "Amount",
+    "provider": "Provider"
+  },
+  "table": {
+    "caption": "Bookings queue"
+  },
+  "state": {
+    "DRAFT": "Pending",
+    "CONFIRMED": "Confirmed",
+    "SEARCHING": "Searching",
+    "ASSIGNED": "Assigned",
+    "EN_ROUTE": "En route",
+    "ARRIVED": "Waiting start OTP",
+    "IN_PROGRESS": "In progress",
+    "AWAITING_COMPLETION": "Waiting completion OTP",
+    "COMPLETED": "Completed",
+    "ESCALATED": "Escalated",
+    "RESCHEDULED": "Rescheduled",
+    "CANCELLED": "Cancelled",
+    "FAILED": "Failed assignment"
+  },
+  "stateAdminVerified": "Completed (admin verified)",
+  "provider": {
+    "line": "Provider: {{value}}",
+    "unassigned": "unassigned",
+    "unassignedFor": "unassigned · {{minutes}}m",
+    "eta": "{{name}} · ETA {{minutes}}m",
+    "startedAt": "{{name}} · started {{time}}",
+    "arrivedAgo": "{{name}} · arrived {{minutes}}m ago",
+    "rating": "{{name}} · ★{{rating}}",
+    "plain": "{{name}}"
+  },
+  "section": {
+    "preview": "Preview",
+    "customer": "Customer",
+    "provider": "Provider",
+    "payment": "Payment",
+    "timeline": "Timeline",
+    "dispatchRounds": "Dispatch rounds",
+    "adminActions": "Admin actions",
+    "notes": "Notes"
+  },
+  "timeline": {
+    "label": "Booking timeline",
+    "created": "Created",
+    "searching": "Searching for provider",
+    "dispatchRound": "Round {{number}} · {{radius}} km · {{contacted}} contacted · {{declined}} declined",
+    "dispatchRoundShort": "Round {{number}} · {{radius}} km · {{declined}} declined",
+    "autoAssigned": "Auto-assigned to {{name}} · round {{number}} · {{radius}} km",
+    "enRoute": "En route",
+    "arrived": "Arrived",
+    "started": "Started · OTP verified",
+    "completionOtpFailed": "Completion OTP not received — customer phone unreachable",
+    "completed": "Completed",
+    "completedByAdmin": "Completed · verified by {{name}} (admin)",
+    "assignmentFailed": "Assignment failed",
+    "escalated": "Escalated to ops",
+    "cancelled": "Cancelled"
+  },
+  "detail": {
+    "openFull": "Open full detail",
+    "created": "Created {{value}}",
+    "priceLine": "{{amount}} · Prepaid ({{method}})",
+    "priceLineWithArea": "{{amount}} · Prepaid ({{method}}) · {{area}}",
+    "customerHistory": "{{count}} bookings · joined {{joined}}",
+    "notAssigned": "Not assigned",
+    "dispatchSummary": "{{rounds}} dispatch rounds · {{declined}} declined",
+    "dispatchSummaryInline": "Not assigned · {{rounds}} rounds · {{declined}} declined",
+    "paymentLine": "{{amount}} prepaid · {{method}} ····{{last4}}",
+    "paymentMeta": "Paid {{time}} · {{transactionId}}",
+    "providerStarted": "Started {{time}}",
+    "providerCompleted": "Completed {{time}}",
+    "providerRating": "Rating {{rating}}",
+    "noNotes": "No notes on this booking yet.",
+    "addNote": "Add note",
+    "noAdminIntervention": "No admin intervention on this booking",
+    "viewOnMap": "View on map",
+    "moreActions": "More actions"
+  },
+  "activity": {
+    "viewed": "{{name}} viewed · {{time}}",
+    "systemEscalated": "System escalated · {{time}}",
+    "systemAutoAssigned": "System auto-assigned · {{time}}",
+    "verifiedCompletion": "{{name}} verified completion · {{time}}"
+  },
+  "banner": {
+    "escalatedTitle": "Escalated · {{age}} unresolved",
+    "escalatedDetail": "No provider found after {{rounds}} dispatch rounds",
+    "escalatedWide": "Escalated · {{age}} unresolved — no provider found after {{rounds}} dispatch rounds",
+    "concurrentChange": "This booking was just assigned to {{provider}} by {{actor}}.",
+    "reload": "Reload",
+    "intentResolved": "This booking has already been resolved. Review the record before acting on it again.",
+    "verification": "Verified by {{name}} · {{verifiedAt}} · dispute window closes {{closesAt}}",
+    "offlineListTitle": "Offline — showing cached bookings.",
+    "offlineListDetail": "Search covers cached results only.",
+    "offlineDetailTitle": "Offline · showing data from {{time}}",
+    "offlineActionNote": "Reconnect to act on this booking."
+  },
+  "actions": {
+    "acknowledge": "Acknowledge",
+    "assign": "Assign provider",
+    "cancel": "Cancel booking",
+    "redispatch": "Re-dispatch",
+    "manualComplete": "Manual completion",
+    "refund": "Issue refund",
+    "call": "Call",
+    "message": "Message",
+    "callParty": "Call {{name}}",
+    "messageParty": "Message {{name}}",
+    "callProvider": "Call provider",
+    "backToBookings": "Back to bookings"
+  },
+  "notFound": {
+    "title": "This booking no longer exists",
+    "body": "It may have been merged or removed."
+  },
+  "empty": {
+    "activeTitle": "No active bookings",
+    "activeBody": "Every job on the board is either finished or cancelled right now.",
+    "completedTitle": "No completed bookings yet",
+    "completedBody": "Jobs appear here once a technician closes them.",
+    "cancelledTitle": "No cancelled bookings",
+    "cancelledBody": "Cancellations and failed dispatches land here."
+  }
+}

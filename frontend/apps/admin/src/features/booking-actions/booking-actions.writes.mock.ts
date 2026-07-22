@@ -17,6 +17,7 @@ import type {
   RedispatchInput,
   RefundInput,
   RefundReceipt,
+  UndoInput,
 } from "./booking-actions.types";
 
 function options(signal?: AbortSignal): { signal?: AbortSignal } {
@@ -32,6 +33,15 @@ export function submitAssignMock(input: AssignInput, signal?: AbortSignal): Prom
 }
 
 export function submitCancelMock(input: CancelInput, signal?: AbortSignal): Promise<ActionReceipt> {
+  return mockWrite(() => receipt(input), options(signal));
+}
+
+/**
+ * The compensating calls behind the undo windows the risk register grants (30s for assign, 10s for
+ * cancel). Undo is a real, separately audited action — not a client-side rollback — which is why it
+ * needs its own endpoint rather than a "cancel the previous request" flag.
+ */
+export function undoActionMock(input: UndoInput, signal?: AbortSignal): Promise<ActionReceipt> {
   return mockWrite(() => receipt(input), options(signal));
 }
 

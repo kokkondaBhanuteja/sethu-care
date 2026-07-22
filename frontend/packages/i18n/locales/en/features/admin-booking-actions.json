@@ -288,6 +288,7 @@
     "rateLimitedBody": "{{count}} refunds in the last hour. This limit exists as a fraud control. Try again at {{time}}.",
     "rateLimitedBodyNoReset": "{{count}} refunds in the last hour. This limit exists as a fraud control.",
     "doneToast": "Refund initiated",
-    "pendingToast": "Refund pending — the gateway has not confirmed yet"
+    "pendingToast": "Refund pending — the gateway has not confirmed yet",
+    "customerWillReceive": "Customer will receive"
   }
 }

@@ -1,1 +1,103 @@
-{}
+{
+  "feedTitle": "Alerts",
+  "detailTitle": "Alert",
+  "markRead": "Mark read",
+  "needsAction": "Needs action",
+  "informational": "Informational",
+  "today": "Today",
+  "earlier": "Earlier",
+  "criticalStay": "Critical alerts stay here until someone acknowledges them.",
+  "allCaughtUp": "You're all caught up",
+  "allCaughtUpBody": "No alert is waiting on a decision. Anything below is for information only.",
+  "selectAlert": "Select an alert to see details",
+  "loadingFeed": "Loading alerts",
+  "loadingAlert": "Loading this alert",
+  "notFoundSubject": "This alert",
+  "feedRegion": "Alerts feed",
+  "previewRegion": "Selected alert",
+  "filters": {
+    "label": "Filter alerts by severity",
+    "all": "All",
+    "critical": "Critical ({{count}})",
+    "warning": "High ({{count}})",
+    "informational": "Informational ({{count}})"
+  },
+  "severity": {
+    "critical": "Critical",
+    "warning": "High",
+    "informational": "Informational"
+  },
+  "actions": {
+    "acknowledge": "Acknowledge",
+    "open": "Open",
+    "openBooking": "Open booking",
+    "openProvider": "Open provider",
+    "assignProvider": "Assign provider",
+    "addNote": "Add note",
+    "mute": "Mute this alert type",
+    "queued": "Queued"
+  },
+  "status": {
+    "unacknowledged": "Unacknowledged",
+    "acknowledged": "Acknowledged",
+    "noActionRequired": "No action required",
+    "acknowledgedBy": "Acknowledged by {{name}}"
+  },
+  "meta": {
+    "created": "Created {{time}} · {{age}}",
+    "createdUnacknowledged": "Created {{time}} · {{age}} · unacknowledged"
+  },
+  "trigger": {
+    "heading": "Why this fired",
+    "rule": "Rule",
+    "threshold": "Threshold",
+    "actual": "Actual",
+    "settingsNote": "If this threshold looks wrong, adjust it in alert settings.",
+    "settingsLink": "Alert settings"
+  },
+  "ownership": {
+    "heading": "Ownership",
+    "unowned": "Not yet acknowledged",
+    "unownedNote": "Acknowledging tells other admins you own this. It does not mark it resolved.",
+    "owned": "Owned by {{name}} · acknowledged {{time}}",
+    "ownedNote": "Still unresolved — this stays in the needs-attention feed.",
+    "none": "No acknowledgement needed",
+    "noneNote": "Informational alerts are not owned by anyone. This one closes with its support ticket."
+  },
+  "mute": {
+    "blocked": "Critical alert types cannot be muted."
+  },
+  "relatedRecord": "Related booking",
+  "relatedAlerts": "Related alerts",
+  "dispatchHistory": "Dispatch history",
+  "notes": {
+    "heading": "Notes",
+    "label": "Note for other admins",
+    "placeholder": "Add a note for other admins…",
+    "byline": "— {{name}}, {{time}}",
+    "empty": "No notes on this alert yet."
+  },
+  "offline": {
+    "queuedOne": "Offline — 1 acknowledgement queued",
+    "queuedMany": "Offline — {{count}} acknowledgements queued",
+    "syncing": "Back online — sending queued acknowledgements"
+  },
+  "toast": {
+    "acknowledged": "Acknowledged. Other admins can see you own this.",
+    "alreadyAcknowledged": "Already acknowledged by {{name}}.",
+    "queued": "Offline — this acknowledgement will be sent when you reconnect.",
+    "markedRead": "Informational alerts marked read.",
+    "noteAdded": "Note added."
+  },
+  "types": {
+    "bookingEscalated": "Booking escalated",
+    "assignmentFailed": "Assignment failed",
+    "slaAtRisk": "SLA at risk on {{reference}}",
+    "slaBreached": "SLA breached on {{reference}}",
+    "newApplication": "New application — {{name}}",
+    "providerAutoSuspended": "Provider auto-suspended — {{name}}",
+    "lowRating": "★{{rating}} review on {{reference}}",
+    "paymentFailed": "Payment failed — {{reference}}",
+    "dailySummary": "Daily summary — {{date}}"
+  }
+}

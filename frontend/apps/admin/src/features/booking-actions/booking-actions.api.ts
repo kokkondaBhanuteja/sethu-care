@@ -21,6 +21,7 @@ import {
   submitManualCompletionMock,
   submitRedispatchMock,
   submitRefundMock,
+  undoActionMock,
 } from "./booking-actions.writes.mock";
 import type {
   ActionReceipt,
@@ -35,6 +36,7 @@ import type {
   RefundContext,
   RefundInput,
   RefundReceipt,
+  UndoInput,
 } from "./booking-actions.types";
 
 async function read<TData>(load: () => Promise<TData>, failure: string): Promise<TData> {
@@ -106,6 +108,11 @@ export function submitAssign(input: AssignInput): Promise<ActionReceipt> {
 
 export function submitCancel(input: CancelInput): Promise<ActionReceipt> {
   return write(() => submitCancelMock(input), "The booking could not be cancelled.");
+}
+
+/** Reverses an assign or a cancel inside the window the risk register grants it. */
+export function undoAction(input: UndoInput): Promise<ActionReceipt> {
+  return write(() => undoActionMock(input), "That could not be undone.");
 }
 
 export function submitRedispatch(input: RedispatchInput): Promise<ActionReceipt> {

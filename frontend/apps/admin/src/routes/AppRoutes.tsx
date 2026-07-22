@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router";
 
 import { RouteErrorBoundary } from "../components/ErrorBoundary";
+import { DesktopOnlySummary } from "../features/settings/DesktopOnlySummary";
+import { DESKTOP_SURFACES } from "../features/settings/settings.constants";
 import { Spinner } from "../components/ui/Spinner";
 import { AdminShell } from "../layouts/AdminShell";
 import { ADMIN_ACTIONS } from "../lib/permissions/actions";
@@ -134,19 +136,54 @@ export function AppRoutes() {
               <Route path={ROUTE_PATTERNS.ticketDetail} element={<TicketDetailPage />} />
               <Route path={ROUTES.analytics} element={<AnalyticsPage />} />
 
-              <Route element={<SurfaceGuard destinationLabelKey="nav.payouts" />}>
+              <Route
+                element={
+                  <SurfaceGuard
+                    destinationLabelKey="nav.payouts"
+                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.payouts} />}
+                  />
+                }
+              >
                 <Route path={ROUTES.payouts} element={<PayoutsPage />} />
               </Route>
-              <Route element={<SurfaceGuard destinationLabelKey="nav.services" />}>
+              <Route
+                element={
+                  <SurfaceGuard
+                    destinationLabelKey="nav.services"
+                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.services} />}
+                  />
+                }
+              >
                 <Route path={ROUTES.services} element={<ServicesPage />} />
               </Route>
-              <Route element={<SurfaceGuard destinationLabelKey="nav.pricing" />}>
+              <Route
+                element={
+                  <SurfaceGuard
+                    destinationLabelKey="nav.pricing"
+                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.pricing} />}
+                  />
+                }
+              >
                 <Route path={ROUTES.pricing} element={<PricingPage />} />
               </Route>
-              <Route element={<SurfaceGuard destinationLabelKey="nav.reports" />}>
+              <Route
+                element={
+                  <SurfaceGuard
+                    destinationLabelKey="nav.reports"
+                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.reports} />}
+                  />
+                }
+              >
                 <Route path={ROUTES.reports} element={<ReportsPage />} />
               </Route>
-              <Route element={<SurfaceGuard destinationLabelKey="nav.platformSettings" />}>
+              <Route
+                element={
+                  <SurfaceGuard
+                    destinationLabelKey="nav.platformSettings"
+                    summary={<DesktopOnlySummary surface={DESKTOP_SURFACES.platform} />}
+                  />
+                }
+              >
                 <Route path={ROUTES.platformSettings} element={<PlatformSettingsPage />} />
               </Route>
 

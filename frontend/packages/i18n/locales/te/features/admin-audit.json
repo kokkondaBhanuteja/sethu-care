@@ -1,1 +1,173 @@
-{}
+{
+  "title": "Audit log",
+  "entryTitle": "Audit entry",
+  "immutability": {
+    "desktop": "Append-only ledger. Entries cannot be edited or deleted by anyone, including Super Admins. Corrections are recorded as new compensating entries.",
+    "mobile": "Append-only. Entries cannot be edited or deleted — corrections create new entries.",
+    "entry": "This entry is immutable."
+  },
+  "search": {
+    "placeholder": "Search by target ID",
+    "label": "Search audit entries by target ID"
+  },
+  "filters": {
+    "label": "Filter audit entries",
+    "title": "Filter entries",
+    "openFilters": "Filter entries",
+    "more": "More filters",
+    "clear": "Clear",
+    "admin": "Admin",
+    "action": "Action type",
+    "target": "Target type",
+    "range": "Date range",
+    "from": "From",
+    "to": "To",
+    "allAdmins": "All admins",
+    "allActions": "All actions",
+    "allTargets": "All target types",
+    "appliedSearch": "Target ID · {{value}}",
+    "appliedAdmin": "Admin · {{value}}",
+    "appliedAction": "Action type · {{value}}",
+    "appliedTarget": "Target type · {{value}}",
+    "appliedRange": "Date range · {{value}}",
+    "remove": "Remove filter {{value}}",
+    "resultCount": "{{count}} entries",
+    "resultCount_one": "{{count}} entry",
+    "resultCount_other": "{{count}} entries"
+  },
+  "quick": {
+    "all": "All",
+    "bookings": "Bookings",
+    "providers": "Providers",
+    "refunds": "Refunds",
+    "cancellations": "Cancellations",
+    "suspensions": "Suspensions"
+  },
+  "range": {
+    "today": "Today",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "last90": "Last 90 days",
+    "custom": "Custom range"
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "columns": {
+    "time": "Time",
+    "admin": "Admin",
+    "action": "Action",
+    "target": "Target",
+    "change": "Change",
+    "reason": "Reason"
+  },
+  "table": {
+    "caption": "Audit log entries, newest first"
+  },
+  "row": {
+    "reason": "Reason: {{value}}",
+    "noReason": "No reason required"
+  },
+  "state": {
+    "loading": "Loading the audit log",
+    "emptyTitle": "No audit entries yet",
+    "emptyBody": "Every administrative action is recorded here the moment it is taken.",
+    "subject": "entries",
+    "retentionNote": "Showing the last 90 days. Full history and exports are on desktop."
+  },
+  "detail": {
+    "heading": "Entry detail",
+    "emptyTitle": "No entry selected",
+    "empty": "Select a row to see the full record.",
+    "entryId": "Entry ID",
+    "timestamp": "Timestamp",
+    "admin": "Admin",
+    "action": "Action",
+    "risk": "Risk",
+    "target": "Target",
+    "before": "Before",
+    "after": "After",
+    "reasonCode": "Reason code",
+    "note": "Note",
+    "evidence": "Evidence",
+    "stepUp": "Step-up",
+    "stepUpVerified": "Verified (biometric)",
+    "stepUpNotRequired": "Not required for this action",
+    "device": "Device",
+    "surface": "Surface",
+    "appVersion": "App version",
+    "location": "Location",
+    "ip": "IP",
+    "noEvidence": "None recorded",
+    "noReason": "Not required for this action",
+    "photos": "{{count}} photos",
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos",
+    "callLogs": "{{count}} call logs",
+    "callLogs_one": "{{count}} call log",
+    "callLogs_other": "{{count}} call logs",
+    "reports": "{{count}} reports",
+    "reports_one": "{{count}} report",
+    "reports_other": "{{count}} reports"
+  },
+  "compensating": {
+    "corrects": "This entry corrects <ref>{{entryId}}</ref>. The original entry remains unchanged.",
+    "correctedBy": "A later entry, <ref>{{entryId}}</ref>, corrected this action. This entry is unchanged.",
+    "srHint": "Corrections are recorded as new entries; neither entry can be edited."
+  },
+  "action": {
+    "BOOKING_ASSIGN": "Assignment",
+    "BOOKING_REDISPATCH": "Re-dispatch",
+    "BOOKING_CANCEL": "Cancellation",
+    "BOOKING_MANUAL_COMPLETE": "Manual completion",
+    "PAYMENT_REFUND": "Refund",
+    "PAYMENT_REFUND_REVERSE": "Refund reversal",
+    "PAYMENT_GOODWILL": "Goodwill credit",
+    "PROVIDER_SUSPEND": "Suspension",
+    "PROVIDER_BLOCK": "Provider blocked",
+    "PROVIDER_FORCE_OFFLINE": "Forced offline",
+    "APPLICATION_APPROVE": "Application approved",
+    "APPLICATION_REJECT": "Application rejected",
+    "CUSTOMER_BLOCK": "Customer blocked",
+    "DEVICE_REVOKE": "Device revoked",
+    "ALERT_ACKNOWLEDGE": "Alert acknowledged",
+    "NOTE_ADD": "Note added"
+  },
+  "targetType": {
+    "booking": "Booking",
+    "provider": "Provider",
+    "customer": "Customer",
+    "application": "Application",
+    "payment": "Payment",
+    "device": "Device",
+    "alert": "Alert"
+  },
+  "risk": {
+    "none": "No risk",
+    "low": "Low risk",
+    "medium": "Medium risk",
+    "high": "High risk",
+    "critical": "Critical risk"
+  },
+  "reason": {
+    "CUSTOMER_UNREACHABLE": "Customer unreachable",
+    "CUSTOMER_LEFT_PREMISES": "Customer left the premises",
+    "OTP_NOT_RECEIVED": "OTP not received",
+    "SAFETY_CONCERN": "Safety concern",
+    "ESCALATION_RESCUE": "Escalation rescue",
+    "CUSTOMER_SAFETY_COMPLAINT": "Customer safety complaint",
+    "POOR_SERVICE_QUALITY": "Poor service quality",
+    "DUPLICATE_CHARGE": "Duplicate charge",
+    "PROVIDER_NO_SHOW": "Provider no-show",
+    "PARTIAL_SERVICE": "Partial service",
+    "CANCELLED_AFTER_ARRIVAL": "Cancelled after arrival",
+    "REFUND_ISSUED_IN_ERROR": "Refund issued in error",
+    "DOCUMENTS_EXPIRED": "Documents expired",
+    "FRAUD_SUSPECTED": "Fraud suspected",
+    "REPEATED_CANCELLATIONS": "Repeated cancellations",
+    "LOST_DEVICE": "Lost device",
+    "CUSTOMER_ABUSE": "Customer abuse",
+    "SUPPLY_SHORTAGE": "Supply shortage"
+  }
+}

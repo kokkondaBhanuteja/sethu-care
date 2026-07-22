@@ -23,6 +23,18 @@ function isMockMode(value: string): value is MockMode {
   return Object.values(MOCK_MODES).includes(value as MockMode);
 }
 
+/**
+ * The build stamp the sidebar and the Help screen show. Version and build number come from the
+ * package at build time; the environment label is derived rather than configured, so a production
+ * bundle can never be mislabelled by a forgotten variable.
+ */
+export const APP_BUILD = {
+  version: __APP_VERSION__,
+  label: import.meta.env.DEV
+    ? `v${__APP_VERSION__} · Development`
+    : `v${__APP_VERSION__} · Production`,
+} as const;
+
 export const env = {
   /** Local Go API default matches backend/.env.example's ADDR=:8090. */
   apiUrl: import.meta.env.VITE_API_URL ?? "http://localhost:8090",

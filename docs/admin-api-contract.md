@@ -105,6 +105,8 @@ Biometric and device-passcode verification happen on the device and have **no en
 | POST   | `/ops/bookings/{id}/redispatch`      | Re-runs automation with widened parameters. Not a candidate browser (Booking-Workflow-Decisions §7).                                                                                                        |
 | POST   | `/ops/bookings/{id}/manual-complete` | Step-up + reason + evidence ids. The 30-minute lock and evidence gates are **server-enforced**; the console mirrors them for UX only.                                                                       |
 | POST   | `/ops/bookings/{id}/refund`          | Step-up + reason + amount (paise). Server enforces the goodwill cap and the rate limit; both have designed failure states.                                                                                  |
+| POST   | `/ops/bookings/{id}/assign/undo`     | Compensating action for the 30s assign window. Separately audited — not a rollback of the original entry.                                                                                                   |
+| POST   | `/ops/bookings/{id}/cancel/undo`     | Compensating action for the 10s cancel window. Must also reverse the refund it initiated, or say it could not.                                                                                              |
 
 There is deliberately **no reschedule endpoint** — D1 removed rescheduling from the product.
 

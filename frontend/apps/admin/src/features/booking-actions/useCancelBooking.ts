@@ -10,7 +10,7 @@ import { useActionPolicy } from "../../lib/permissions/usePermission";
 import { useStepUp } from "../../hooks/useStepUp";
 import { useUndoableAction } from "../../hooks/useUndoableAction";
 import { ROUTES } from "../../routes/routes.constants";
-import { fetchCancelContext, submitCancel } from "./booking-actions.api";
+import { fetchCancelContext, submitCancel, undoAction } from "./booking-actions.api";
 import {
   BOOKING_ACTION_QUERY_KEYS,
   CANCEL_REASON_CODES,
@@ -90,9 +90,12 @@ export function useCancelBooking() {
       if (!(await stepUp.request())) return;
 
       const context = query.data;
+      const version = context?.booking.version ?? 0;
+      const key = idempotencyKey;
+
       await mutation.mutateAsync({
         bookingId,
-        version: context?.booking.version ?? 0,
+        version,
         idempotencyKey,
         reasonCode: values.reasonCode as CancelReasonCode,
         note: values.note,
@@ -107,8 +110,18 @@ export function useCancelBooking() {
       });
       rotate();
       setIsDirty(false);
-      // 10s of undo, read from the risk register. The cancellation is not committed until it closes.
-      announce({ message: t("cancel.doneToast"), onUndo: () => setIsDirty(false) });
+      // 10s of undo, read from the risk register. Undo is a compensating, separately audited call.
+      announce({
+        message: t("cancel.doneToast"),
+        onUndo: () => {
+          void undoAction({
+            bookingId,
+            version: version + 1,
+            idempotencyKey: key,
+            undoes: "cancel",
+          });
+        },
+      });
       exit();
     },
   });

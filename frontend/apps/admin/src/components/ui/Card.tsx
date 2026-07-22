@@ -25,12 +25,22 @@ export const CARD_EDGES = {
   brand: "card--edge-brand",
 } as const;
 
+/** A 1px outline in a status colour — a lighter mark than the 3px edge, for a whole-card state. */
+export const CARD_OUTLINES = {
+  none: "",
+  danger: "card--outline-danger",
+  warning: "card--outline-warning",
+  success: "card--outline-success",
+} as const;
+
 export type CardTone = keyof typeof CARD_TONES;
 export type CardEdge = keyof typeof CARD_EDGES;
+export type CardOutline = keyof typeof CARD_OUTLINES;
 
 export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, "className"> {
   tone?: CardTone;
   edge?: CardEdge;
+  outline?: CardOutline;
   /** `flush` removes padding for rows and tables; `tight` drops it to 12px. */
   density?: "default" | "flush" | "tight";
   selected?: boolean | "danger";
@@ -41,6 +51,7 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, "classNa
 export function Card({
   tone = "plain",
   edge = "none",
+  outline = "none",
   density = "default",
   selected = false,
   children,
@@ -54,6 +65,7 @@ export function Card({
         "card",
         CARD_TONES[tone],
         CARD_EDGES[edge],
+        CARD_OUTLINES[outline],
         density === "flush" && "card--flush",
         density === "tight" && "card--tight",
         selected === true && "is-selected",
