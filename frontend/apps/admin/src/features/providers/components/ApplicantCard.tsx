@@ -20,7 +20,10 @@ export function ApplicantCard({ review, bare = false }: ApplicantCardProps) {
 
   const body = (
     <div className="flex items-start gap-s4">
-      <Avatar name={review.applicantName} size={bare ? "record" : "profile"} brand />
+      {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+      <span aria-hidden>
+        <Avatar name={review.applicantName} size={bare ? "record" : "profile"} brand />
+      </span>
       <div className="grow min-w-0">
         <p className="text-title text-text-1">{review.applicantName}</p>
         <p className="mt-s1 font-mono text-body text-text-2">{formatPhone(review.phone)}</p>

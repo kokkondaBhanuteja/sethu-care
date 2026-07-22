@@ -13,6 +13,9 @@ export interface ProviderLiveCardProps {
   profile: ProviderProfile;
   /** Desktop gives the map a full-width panel; mobile tucks a small thumb beside the text. */
   variant: "desktop" | "mobile";
+  /** An expired credential demotes a green "Available" to a warning — the record cannot say
+   *  "should not receive new jobs" in one banner and pulse green three hundred pixels below. */
+  hasExpiredCredential?: boolean;
 }
 
 /**
@@ -21,10 +24,15 @@ export interface ProviderLiveCardProps {
  * leaving the line would have the screen contradict its own banner three hundred pixels apart
  * (BOX 39).
  */
-export function ProviderLiveCard({ profile, variant }: ProviderLiveCardProps) {
+export function ProviderLiveCard({
+  profile,
+  variant,
+  hasExpiredCredential = false,
+}: ProviderLiveCardProps) {
   const { t } = useTranslation("adminProviders");
   const statusLabel = useProviderStatusLabel()(profile.status);
   const isSuspended = profile.status === PROVIDER_STATUSES.suspended;
+  const isDegraded = hasExpiredCredential && !isSuspended;
 
   function headline(): string {
     if (isSuspended) return t("profile.liveSuspended");
@@ -32,7 +40,9 @@ export function ProviderLiveCard({ profile, variant }: ProviderLiveCardProps) {
       return t("profile.liveOnJob", { zone: profile.zone });
     }
     if (profile.status === PROVIDER_STATUSES.free) {
-      return t("profile.liveAvailable", { zone: profile.zone });
+      return isDegraded
+        ? t("profile.liveAvailableExpired", { zone: profile.zone })
+        : t("profile.liveAvailable", { zone: profile.zone });
     }
     return t("profile.liveOffline", { zone: profile.zone });
   }
@@ -55,10 +65,10 @@ export function ProviderLiveCard({ profile, variant }: ProviderLiveCardProps) {
         }
         actions={
           <StatusDot
-            tone={isSuspended ? "neutral" : "success"}
+            tone={isSuspended ? "neutral" : isDegraded ? "warning" : "success"}
             fill={isSuspended ? "hollow" : "solid"}
             size="sm"
-            pulse={!isSuspended}
+            pulse={!isSuspended && !isDegraded}
             label={statusLabel}
           />
         }

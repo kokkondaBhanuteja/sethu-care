@@ -109,9 +109,11 @@ export function SuspendActionTypes({
                 className="mt-s3"
                 value={String(durationDays)}
                 onValueChange={(next) => onDurationChange(Number(next))}
+                // Compact "1d / 3d / 7d / 30d": the full words overflowed this card at 1440 and
+                // bled into the neighbouring action card. The group label still says "length".
                 options={SUSPEND_DURATIONS.map((days) => ({
                   value: String(days),
-                  label: t("suspend.durationDays", { count: days }),
+                  label: t("suspend.durationDaysShort", { count: days }),
                 }))}
               />
             ) : null}

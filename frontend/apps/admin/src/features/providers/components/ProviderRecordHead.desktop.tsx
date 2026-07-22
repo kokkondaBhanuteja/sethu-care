@@ -30,12 +30,15 @@ export function ProviderRecordHead({ profile, screen }: ProviderRecordHeadProps)
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <Avatar
-              name={profile.name}
-              size="record"
-              brand
-              status={AVATAR_STATUS_FOR_PROVIDER[profile.status]}
-            />
+            {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+            <span aria-hidden>
+              <Avatar
+                name={profile.name}
+                size="record"
+                brand
+                status={AVATAR_STATUS_FOR_PROVIDER[profile.status]}
+              />
+            </span>
             <span>{profile.name}</span>
             {profile.isVerified ? (
               <Pill tone="success" icon={ShieldCheck}>

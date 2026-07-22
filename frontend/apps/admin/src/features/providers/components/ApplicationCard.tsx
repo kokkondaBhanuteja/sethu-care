@@ -19,7 +19,9 @@ export interface ApplicationCardProps {
 export function ApplicationCard({ row }: ApplicationCardProps) {
   const { t } = useTranslation("adminProviders");
   const isWaitingOnApplicant = row.status === APPLICATION_STATUSES.awaitingDocs;
-  const isOverdue = (row.daysWaiting ?? 0) > 3;
+  // Same thresholds as the ageing pill and the desktop row tint (amber past 2, red past 5 —
+  // spec §6.17): one severity encoding everywhere, so the edge never outranks the pill.
+  const isOverdue = (row.daysWaiting ?? 0) > 5;
 
   return (
     <Link to={ROUTES.applicationReview(row.id)} className="block">

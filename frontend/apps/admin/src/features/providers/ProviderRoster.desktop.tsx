@@ -1,4 +1,4 @@
-import { UserPlus, Users } from "lucide-react";
+import { Ban, UserPlus, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
 import { PageHeader } from "@sethu/ui-web";
@@ -6,12 +6,12 @@ import { PageHeader } from "@sethu/ui-web";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { Pill } from "../../components/ui/Pill";
 import { Segmented } from "../../components/ui/Segmented";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { Topbar } from "../../layouts/Topbar";
 import { ROUTES } from "../../routes/routes.constants";
 import { PageMain } from "../../layouts/PageMain";
-import { RosterCountTags } from "./components/RosterCountTags";
 import { RosterFilterBand } from "./components/RosterFilterBand";
 import { RosterTable } from "./components/RosterTable.desktop";
 import { SupplyBannerDesktop } from "./components/SupplyBanner";
@@ -87,8 +87,17 @@ export function ProviderRosterDesktop() {
         >
           {(data) => (
             <div className="flex flex-col gap-3">
-              <RosterCountTags counts={data.counts} />
-              <RosterTable rows={roster.visibleRows} />
+              {/* The segments and the footer already carry the counts; the one figure neither
+                  shows is who is blocked from dispatch — so only that earns a tag. */}
+              {data.counts.suspended > 0 ? (
+                <Pill tone="warning" icon={Ban} className="self-start">
+                  {t("roster.suspendedCount", { count: data.counts.suspended })}
+                </Pill>
+              ) : null}
+              <RosterTable
+                rows={roster.visibleRows}
+                staleAgeMs={roster.isStale ? roster.statusAgeMs : null}
+              />
               <p className="text-sm text-faint">
                 {t("roster.showing", {
                   shown: roster.visibleRows.length,

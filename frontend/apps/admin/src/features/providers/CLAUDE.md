@@ -37,7 +37,17 @@ anatomy (Live = blue Activity, Performance = green ChartColumn, Skills = purple 
 Documents = amber FileText, Recent jobs = blue Briefcase, Auto-validation = teal ScanSearch).
 The supply shortfall renders as a tinted warning Card above the roster, expiring/expired documents
 as warning/danger pills, and application ageing keeps one severity encoding everywhere: amber past
-2 days, red past 5 (§6.17).
+2 days, red past 5 (§6.17) — the mobile card's danger edge included.
+
+Layout decisions that exist to keep numbers readable at 1440: the profile's Recent-jobs table is
+full-width BELOW the three-column grid (inside the middle column it clipped Rating and hid Amount);
+the performance grid is the escalation tile full-width over a 2×2 of the other four (five tiles in
+a 2/3-col grid always left a hole); the suspend duration Segmented uses compact "1d/3d/7d/30d"
+labels so it cannot bleed out of its action card. The roster surfaces one count tag only — "N
+suspended", the figure the segments and footer don't already carry — and when the live statuses go
+stale (>5 min) the desktop table wears the same warning pill in LAST SEEN that the mobile cards
+wear. A profile with an expired credential demotes the Live card to a warning ("Available —
+expired credential", no pulse) so it cannot contradict the danger banner above it.
 
 ## Business logic
 
@@ -50,8 +60,10 @@ as warning/danger pills, and application ageing keeps one severity encoding ever
   rather than merely absent.
 - **Performance carries no acceptance rate.** Dispatch is automatic (docs/Booking-Workflow-Decisions.md),
   so escalation rate sits where other marketplaces put acceptance, and the screen says so out loud.
-- **Suspension is four deliberate steps** and step 3 is the point of the whole flow: every active
-  booking must be explicitly reassigned or allowed to finish before the suspension can proceed.
+- **Suspension is three deliberate stops** — Action & reason / Active jobs / Confirm, one rail
+  stop per pane so the counter never jumps — and the Active-jobs stop is the point of the whole
+  flow: every active booking must be explicitly reassigned (to a NAMED provider — the button says
+  "Reassign to Priya N.") or allowed to finish before the suspension can proceed.
 - **Risk policy is read, never restated.** `suspendProvider` (high), `blockProvider` (critical) and
   `forceProviderOffline` (medium) — and `approveApplication`, `rejectApplication`,
   `requestDocuments` — come from `lib/permissions/actions.ts` via `useActionPolicy` / `useStepUp` /
@@ -59,7 +71,11 @@ as warning/danger pills, and application ageing keeps one severity encoding ever
 - **The approval gate is server-enforced.** The console mirrors `approvalBlockers` so the reason
   sits above the dead Approve button; it never decides on its own that approval is allowed.
 - **Already-decided is informational.** Another admin deciding first is a legitimate outcome, so it
-  renders a success/danger banner over a dimmed record — never an error state.
+  renders a success/danger banner over a dimmed record — never an error state. The desktop queue's
+  "Pending" segment keeps decided rows as ambient context, but they sit faded under an "Already
+  decided" group header so the segment's label stays honest (mobile filters them out).
+- **No dead affordances.** "Put on hold" and "Add note" are gone until real mutations back them;
+  the reviewer-notes textarea is an explicitly-labelled unsaved draft (`review.reviewerNotesHint`).
 
 ## Reaching each designed state
 

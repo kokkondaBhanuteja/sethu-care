@@ -32,7 +32,10 @@ export function ApplicationsTable({ rows }: ApplicationsTableProps) {
       header: t("applications.columnApplicant"),
       render: (row) => (
         <AvatarLabel name={row.applicantName} description={row.categories.join(", ")}>
-          <Avatar name={row.applicantName} size="sm" />
+          {/* AvatarLabel already announces the name; a hearing avatar would say it twice. */}
+          <span aria-hidden>
+            <Avatar name={row.applicantName} size="sm" />
+          </span>
         </AvatarLabel>
       ),
     },
@@ -84,17 +87,29 @@ export function ApplicationsTable({ rows }: ApplicationsTableProps) {
         rows={rows}
         rowKey={(row) => row.id}
         rowTone={(row) => rowTone(row)}
+        // Decided rows are ambient context under the pending segment; the header marks where
+        // they start. index > 0 guarantees a previous row; `?? row` pacifies the indexed access.
+        rowGroupLabel={(row, index) =>
+          isDecided(row) && index > 0 && !isDecided(rows[index - 1] ?? row)
+            ? t("applications.groupDecided")
+            : null
+        }
         onRowClick={(row) => void navigate(ROUTES.applicationReview(row.id))}
       />
     </Card>
   );
 }
 
-/**
- * The row tint restates the ageing pill's verdict on the same thresholds (amber past 2 days,
- * red past 5 — spec §6.17), so the table never shows two different severities for one age.
- */
-function rowTone(row: ApplicationRow): "default" | "danger" | "warning" {
+/** Approved or rejected — context under a live queue, not work, so those rows dim and group. */
+function isDecided(row: ApplicationRow): boolean {
+  return (
+    row.status === APPLICATION_STATUSES.approved || row.status === APPLICATION_STATUSES.rejected
+  );
+}
+
+/** The tint restates the ageing pill's thresholds (amber >2d, red >5d — §6.17); decided fades. */
+function rowTone(row: ApplicationRow): "default" | "danger" | "warning" | "faded" {
+  if (isDecided(row)) return "faded";
   if (row.daysWaiting === null) return "default";
   if (row.daysWaiting > 5) return "danger";
   if (row.daysWaiting > 2) return "warning";

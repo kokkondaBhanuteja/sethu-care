@@ -67,7 +67,8 @@ export function RejectApplicationDialog({
             isLoading={isSubmitting}
             onClick={handleSubmit}
           >
-            {requiresStepUp ? t("suspend.confirmBiometric") : t("suspend.confirmPlain")}
+            {/* Named commit: a bare "Confirm" on an irreversible action hides what it does. */}
+            {requiresStepUp ? t("review.rejectConfirmBiometric") : t("review.rejectConfirm")}
           </Button>
         </>
       }

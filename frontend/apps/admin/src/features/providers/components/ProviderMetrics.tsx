@@ -3,7 +3,7 @@ import { useTranslation } from "@sethu/i18n";
 import { CardContent, CardHeader, IconChip } from "@sethu/ui-web";
 
 import { Card } from "../../../components/ui/Card";
-import type { ProviderMetric } from "../providers.types";
+import { PROVIDER_METRICS, type ProviderMetric } from "../providers.types";
 import { MetricTile } from "./MetricTile";
 import { SectionLabel } from "./SectionLabel";
 
@@ -21,6 +21,10 @@ export interface ProviderMetricsProps {
  */
 export function ProviderMetrics({ metrics, variant }: ProviderMetricsProps) {
   const { t } = useTranslation("adminProviders");
+  // Escalation is the headline metric, so it takes the full row; the remaining four fill a 2×2 —
+  // five tiles in a plain 2/3-column grid always left a hole.
+  const escalationMetric = metrics.find((metric) => metric.id === PROVIDER_METRICS.escalation);
+  const supportingMetrics = metrics.filter((metric) => metric.id !== PROVIDER_METRICS.escalation);
 
   if (variant === "mobile") {
     return (
@@ -48,8 +52,13 @@ export function ProviderMetrics({ metrics, variant }: ProviderMetricsProps) {
         {t("profile.performance")}
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-          {metrics.map((metric) => (
+        <div className="grid grid-cols-2 gap-2">
+          {escalationMetric ? (
+            <div className="col-span-2">
+              <MetricTile metric={escalationMetric} showTrend />
+            </div>
+          ) : null}
+          {supportingMetrics.map((metric) => (
             <MetricTile key={metric.id} metric={metric} showTrend />
           ))}
         </div>

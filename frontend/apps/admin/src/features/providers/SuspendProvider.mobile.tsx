@@ -59,7 +59,10 @@ export function SuspendProviderMobile() {
 
       {flow.profile ? (
         <div className="flex flex-none items-center gap-s2 bg-surface px-s4 py-s3">
-          <Avatar name={flow.profile.name} size="sm" />
+          {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+          <span aria-hidden>
+            <Avatar name={flow.profile.name} size="sm" />
+          </span>
           <span className="text-label text-text-1">
             {flow.profile.name} · <span className="font-mono">{flow.profile.id}</span> ·{" "}
             <RatingValue value={flow.profile.rating} tight />

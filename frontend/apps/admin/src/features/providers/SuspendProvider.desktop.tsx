@@ -17,8 +17,9 @@ import { useSuspendProviderFlow, TOTAL_STEPS } from "./hooks/useSuspendProviderF
 import { useSuspendSteps } from "./hooks/useSuspendSteps";
 
 /**
- * BOX 36–38. A centred modal with the four-step rail, drawn in danger red rather than brand blue
- * so it is never mistaken for the manual-completion flow it otherwise resembles.
+ * BOX 36–38. A centred modal with the three-step rail (Action & reason / Active jobs / Confirm),
+ * drawn in danger red rather than brand blue so it is never mistaken for the manual-completion
+ * flow it otherwise resembles.
  */
 export function SuspendProviderDesktop() {
   const { t } = useTranslation("adminProviders");
@@ -45,7 +46,10 @@ export function SuspendProviderDesktop() {
             footer={
               flow.profile ? (
                 <div className="flex items-center gap-s2">
-                  <Avatar name={flow.profile.name} size="lg" />
+                  {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+                  <span aria-hidden>
+                    <Avatar name={flow.profile.name} size="lg" />
+                  </span>
                   <span className="grow min-w-0">
                     <span className="block truncate text-label font-semibold text-text-1">
                       {flow.profile.name}

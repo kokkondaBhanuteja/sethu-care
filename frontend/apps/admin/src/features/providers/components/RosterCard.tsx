@@ -36,11 +36,14 @@ export function RosterCard({ row, staleAgeMs }: RosterCardProps) {
         isOffline && "opacity-70",
       )}
     >
-      <Avatar
-        name={row.name}
-        size="lg"
-        {...(isSuspended ? {} : { status: AVATAR_STATUS_FOR_PROVIDER[row.status] })}
-      />
+      {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+      <span aria-hidden>
+        <Avatar
+          name={row.name}
+          size="lg"
+          {...(isSuspended ? {} : { status: AVATAR_STATUS_FOR_PROVIDER[row.status] })}
+        />
+      </span>
 
       <span className="grow min-w-0">
         <span className="flex items-center gap-s2">

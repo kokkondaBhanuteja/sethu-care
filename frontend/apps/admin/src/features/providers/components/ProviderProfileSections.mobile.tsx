@@ -60,7 +60,11 @@ export function ProviderProfileSections({ profile, screen }: ProviderProfileSect
       </div>
 
       <div className="px-s4 pb-s4">
-        <ProviderLiveCard profile={profile} variant="mobile" />
+        <ProviderLiveCard
+          profile={profile}
+          variant="mobile"
+          hasExpiredCredential={Boolean(screen.expiredDocument)}
+        />
       </div>
 
       <SectionGap />

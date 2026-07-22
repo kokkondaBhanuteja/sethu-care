@@ -1,3 +1,4 @@
+import { Clock } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
 import { AvatarLabel } from "@sethu/ui-web";
@@ -5,8 +6,9 @@ import { AvatarLabel } from "@sethu/ui-web";
 import { Avatar } from "../../../components/ui/Avatar";
 import { Card } from "../../../components/ui/Card";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
+import { Pill } from "../../../components/ui/Pill";
 import { cx } from "../../../lib/cx";
-import { formatMoney, formatPercent, formatRelative } from "../../../lib/format";
+import { formatDuration, formatMoney, formatPercent, formatRelative } from "../../../lib/format";
 import { ROUTES } from "../../../routes/routes.constants";
 import { completionBand } from "../providers.constants";
 import { METRIC_BANDS, PROVIDER_STATUSES, type ProviderRosterRow } from "../providers.types";
@@ -21,6 +23,8 @@ const BAND_TEXT = {
 
 export interface RosterTableProps {
   rows: readonly ProviderRosterRow[];
+  /** Age of the roster's live statuses; non-null once old enough to mislead (M36 parity). */
+  staleAgeMs: number | null;
 }
 
 /**
@@ -33,7 +37,7 @@ export interface RosterTableProps {
  * provider gets more work, so it carries its own verdict rather than being compared to a
  * remembered threshold.
  */
-export function RosterTable({ rows }: RosterTableProps) {
+export function RosterTable({ rows, staleAgeMs }: RosterTableProps) {
   const { t } = useTranslation("adminProviders");
   const navigate = useNavigate();
 
@@ -47,7 +51,10 @@ export function RosterTable({ rows }: RosterTableProps) {
           description={row.skills.join(", ")}
           className={cx(isDimmed(row) && "opacity-70")}
         >
-          <Avatar name={row.name} size="md" />
+          {/* AvatarLabel already announces the name; a hearing avatar would say it twice. */}
+          <span aria-hidden>
+            <Avatar name={row.name} size="md" />
+          </span>
         </AvatarLabel>
       ),
     },
@@ -100,11 +107,19 @@ export function RosterTable({ rows }: RosterTableProps) {
     {
       id: "lastSeen",
       header: t("roster.columnLastSeen"),
-      render: (row) => (
-        <span className="text-sm text-muted">
-          {row.lastSeenAt === null ? t("roster.lastSeenNow") : formatRelative(row.lastSeenAt)}
-        </span>
-      ),
+      // A stale roster's live statuses are a wrong answer, not detail — the mobile cards already
+      // wear this pill (M36), and the desktop table must not quietly present the same data as
+      // current. A suspension is a standing decision, so it never reads as stale.
+      render: (row) =>
+        staleAgeMs !== null && row.status !== PROVIDER_STATUSES.suspended ? (
+          <Pill tone="warning" icon={Clock}>
+            {t("roster.staleStatus", { age: formatDuration(staleAgeMs) })}
+          </Pill>
+        ) : (
+          <span className="text-sm text-muted">
+            {row.lastSeenAt === null ? t("roster.lastSeenNow") : formatRelative(row.lastSeenAt)}
+          </span>
+        ),
     },
   ];
 

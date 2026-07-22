@@ -29,8 +29,9 @@ import { useProviderProfile } from "./hooks/useProviderProfile";
 
 /**
  * BOX 39–42. Three columns: what he may do right now, how well he has been doing it, and what
- * customers said about it. The 25/45/30 split gives the middle column the room the performance
- * grid and the ten-row job table both need.
+ * customers said about it. Recent jobs sits full-width BELOW the 25/45/30 grid: inside the middle
+ * column the six-column table clipped its Rating and Amount columns at 1440, and the money column
+ * must be readable without a horizontal scroll.
  */
 export function ProviderProfileDesktop() {
   const { t } = useTranslation("adminProviders");
@@ -71,7 +72,11 @@ export function ProviderProfileDesktop() {
             <PageMain>
               <div className="grid grid-cols-1 gap-s5 lg:grid-cols-20">
                 <div className="flex flex-col gap-s5 lg:col-span-5">
-                  <ProviderLiveCard profile={loaded} variant="desktop" />
+                  <ProviderLiveCard
+                    profile={loaded}
+                    variant="desktop"
+                    hasExpiredCredential={Boolean(screen.expiredDocument)}
+                  />
                   <ProviderSkillsCard skills={loaded.skills} />
                   <Card density="flush">
                     <CardHeader
@@ -92,7 +97,6 @@ export function ProviderProfileDesktop() {
 
                 <div className="flex flex-col gap-s5 lg:col-span-9">
                   <ProviderMetrics metrics={loaded.metrics} variant="desktop" />
-                  <ProviderRecentJobsTable jobs={loaded.recentJobs} />
                 </div>
 
                 <div className="flex flex-col gap-s5 lg:col-span-6">
@@ -100,6 +104,10 @@ export function ProviderProfileDesktop() {
                   <ProviderFeedbackCard feedback={loaded.feedback} />
                   <ProviderPayoutsCard amountPaise={loaded.payoutCyclePaise} />
                 </div>
+              </div>
+
+              <div className="mt-s5">
+                <ProviderRecentJobsTable jobs={loaded.recentJobs} />
               </div>
             </PageMain>
           )

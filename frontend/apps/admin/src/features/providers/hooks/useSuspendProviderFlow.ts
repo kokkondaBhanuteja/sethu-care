@@ -14,9 +14,9 @@ import type {
 } from "../suspend.types";
 import { useSuspendMessages } from "./useSuspendMessages";
 
-/** Rail index for each pane: action+reason share one pane, so the rail jumps 0 → 2 → 3. */
-export const RAIL_INDEX_FOR_PANE: readonly number[] = [0, 2, 3];
-export const TOTAL_STEPS = 4;
+/** One rail stop per pane — "Action & reason" is a single stop, so the counter never jumps. */
+export const RAIL_INDEX_FOR_PANE: readonly number[] = [0, 1, 2];
+export const TOTAL_STEPS = 3;
 
 export function useSuspendProviderFlow() {
   const { providerId = "" } = useParams<{ providerId: string }>();
@@ -59,11 +59,11 @@ export function useSuspendProviderFlow() {
   const hasActiveJobs = activeJobs.length > 0;
   const isDirty = reasonCode !== null || note.length > 0 || Object.keys(jobResolutions).length > 0;
 
-  // Step 1 also waits for the active-jobs query to settle. `hasActiveJobs` drives whether goNext
-  // skips step 3, and it reads an empty array until the data lands — so an operator who picked a
-  // reason inside the request window jumped straight to Confirm and suspended a provider mid-job
-  // with nobody reassigned. Step 3 exists precisely to stop that, so it must not be skippable by
-  // being fast.
+  // The first pane also waits for the active-jobs query to settle. `hasActiveJobs` drives whether
+  // goNext skips the Active-jobs pane, and it reads an empty array until the data lands — so an
+  // operator who picked a reason inside the request window jumped straight to Confirm and
+  // suspended a provider mid-job with nobody reassigned. That pane exists precisely to stop this,
+  // so it must not be skippable by being fast.
   const canContinue =
     paneIndex === 0
       ? reasonCode !== null &&

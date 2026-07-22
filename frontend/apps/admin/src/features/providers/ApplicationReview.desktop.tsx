@@ -90,9 +90,9 @@ export function ApplicationReviewDesktop() {
       {review && !screen.isDecided ? (
         <>
           {blocker ? <ApproveBlockedBanner blocker={blocker} /> : null}
-          {/* The Figma action bar: secondary text actions lead, the decisive pair sits last. */}
+          {/* Secondary actions lead, the decisive pair sits last, Approve outermost — the same
+              order as the mobile bar. "Put on hold" returns only once a real mutation backs it. */}
           <div className="flex flex-none flex-wrap items-center justify-end gap-2 border-t border-border bg-surface px-6 py-3">
-            <Button variant="text">{t("review.putOnHold")}</Button>
             <Button
               variant="outline"
               disabled={!screen.decisions.canRequestDocuments}

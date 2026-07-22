@@ -70,18 +70,10 @@ export function ApplicationReviewMobile() {
 
       {review && !screen.isDecided ? (
         <>
+          {/* Same order as the desktop bar: secondary first, Approve outermost, Reject never in
+              the primary position. */}
           <ActionBar>
             <div className="flex gap-s2">
-              <Button
-                variant="success"
-                size="primary"
-                block
-                disabled={!screen.canApproveNow}
-                isLoading={screen.decisions.isApproving}
-                onClick={screen.decisions.approve}
-              >
-                {t("review.approve")}
-              </Button>
               <Button
                 variant="outline"
                 size="primary"
@@ -100,6 +92,16 @@ export function ApplicationReviewMobile() {
                 onClick={screen.openReject}
               >
                 {t("review.reject")}
+              </Button>
+              <Button
+                variant="success"
+                size="primary"
+                block
+                disabled={!screen.canApproveNow}
+                isLoading={screen.decisions.isApproving}
+                onClick={screen.decisions.approve}
+              >
+                {t("review.approve")}
               </Button>
             </div>
           </ActionBar>

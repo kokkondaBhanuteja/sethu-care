@@ -76,7 +76,8 @@ export function ActiveJobCard({ job, resolution, onResolve }: ActiveJobCardProps
             block
             onClick={() => onResolve(JOB_RESOLUTIONS.reassign)}
           >
-            {t("suspend.jobReassign")}
+            {/* Named target: "Reassign" alone asks for a commitment without saying to whom. */}
+            {t("suspend.jobReassign", { name: job.suggestedProviderName })}
           </Button>
           <Button
             variant="outline"

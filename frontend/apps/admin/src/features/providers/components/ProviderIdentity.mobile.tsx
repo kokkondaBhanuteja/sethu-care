@@ -23,12 +23,15 @@ export function ProviderIdentity({ profile, showContact }: ProviderIdentityProps
   return (
     <div className="px-s4 py-s4">
       <div className="flex items-start gap-s3">
-        <Avatar
-          name={profile.name}
-          size="profile"
-          brand={!isOffboarded}
-          status={AVATAR_STATUS_FOR_PROVIDER[profile.status]}
-        />
+        {/* The name is printed beside it — a hearing avatar would announce it twice. */}
+        <span aria-hidden>
+          <Avatar
+            name={profile.name}
+            size="profile"
+            brand={!isOffboarded}
+            status={AVATAR_STATUS_FOR_PROVIDER[profile.status]}
+          />
+        </span>
 
         <div className="grow min-w-0">
           <div className="flex flex-wrap items-center gap-s2">
