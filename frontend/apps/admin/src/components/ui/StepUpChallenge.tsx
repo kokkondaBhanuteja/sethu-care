@@ -24,6 +24,8 @@ export interface StepUpChallengeProps {
   /** Red for a cancellation or a rejection, brand for a refund — the commit keeps its own tone. */
   tone?: "danger" | "brand";
   confirmLabel?: string;
+  /** "Keep booking" where a plain "Cancel" could read as the destructive verb itself. */
+  cancelLabel?: string;
   /** Shown verbatim before the commit — the refund's customer notification, for example. */
   preview?: { readonly label: string; readonly body: string };
 }
@@ -46,6 +48,7 @@ export function StepUpChallenge({
   summary,
   tone = "danger",
   confirmLabel,
+  cancelLabel,
   preview,
 }: StepUpChallengeProps) {
   const { t } = useTranslation("adminShell");
@@ -54,6 +57,7 @@ export function StepUpChallenge({
 
   const heading = title ?? t("stepUp.title");
   const commitLabel = confirmLabel ?? t("stepUp.verify");
+  const dismissLabel = cancelLabel ?? t("actions.cancel");
   const isBlocked = passcode.length < MIN_PASSCODE_LENGTH;
 
   function reset() {
@@ -116,7 +120,7 @@ export function StepUpChallenge({
         footer={
           <>
             <Button variant="text" size="section" onClick={handleCancel}>
-              {t("actions.cancel")}
+              {dismissLabel}
             </Button>
             <Button
               variant={commitVariant}
@@ -149,7 +153,7 @@ export function StepUpChallenge({
             {commitLabel}
           </Button>
           <Button variant="text" size="secondary" block onClick={handleCancel}>
-            {t("actions.cancel")}
+            {dismissLabel}
           </Button>
         </div>
       </div>

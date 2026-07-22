@@ -1,6 +1,7 @@
 import { useTranslation } from "@sethu/i18n";
 
 import { Badge } from "../../components/ui/Badge";
+import { Pill } from "../../components/ui/Pill";
 import { SettingsCard, SettingsGroup } from "./SettingsGroup";
 import { SettingsRow } from "./SettingsRow";
 import { useAdminProfile } from "./useAdminProfile";
@@ -28,14 +29,20 @@ export function MoreMenuSection({
   counters,
 }: MoreMenuSectionProps) {
   const { t } = useTranslation("adminSettings");
+  const { t: tShell } = useTranslation("adminShell");
   const appearance = useAdminProfile().query.data?.preferences.appearance;
 
   return (
     <SettingsGroup title={title} description={description} foot={foot}>
       <SettingsCard muted={muted}>
         {items.map((item) => {
-          const count = item.badge && counters ? counters[item.badge] : 0;
+          const count = item.badge && !item.comingSoon && counters ? counters[item.badge] : 0;
           const label = t(item.labelKey);
+          const control = item.comingSoon ? (
+            <Pill tone="neutral">{tShell("nav.versionTag")}</Pill>
+          ) : count > 0 ? (
+            <Badge count={count} label={label} tone="brand" />
+          ) : undefined;
           return (
             <SettingsRow
               key={item.to}
@@ -48,7 +55,7 @@ export function MoreMenuSection({
                   ? t(`profile.appearance${capitalise(appearance)}`)
                   : undefined
               }
-              control={count > 0 ? <Badge count={count} label={label} tone="brand" /> : undefined}
+              control={control}
             />
           );
         })}

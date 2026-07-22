@@ -143,14 +143,17 @@ export interface MoreMenuItem {
   readonly icon?: LucideIcon;
   /** Rows whose count comes from the shell counters (spec §3.1 badge discipline). */
   readonly badge?: "openTickets";
+  /** Coming-soon destinations show a version pill, never a live count — a number is a promise
+   *  of actionable work, and these rows lead to a placeholder (audit W2-4). */
+  readonly comingSoon?: true;
   /** Rows that display a live preference value rather than only a chevron. */
   readonly valueFrom?: "appearance";
 }
 
 export const MORE_OPERATIONS_ITEMS: readonly MoreMenuItem[] = [
-  { to: ROUTES.customers, labelKey: "more.itemCustomers", icon: User },
-  { to: ROUTES.tickets, labelKey: "more.itemTickets", icon: MessageSquare, badge: "openTickets" },
-  { to: ROUTES.analytics, labelKey: "more.itemAnalytics", icon: BarChart3 },
+  { to: ROUTES.customers, labelKey: "more.itemCustomers", icon: User, comingSoon: true },
+  { to: ROUTES.tickets, labelKey: "more.itemTickets", icon: MessageSquare, comingSoon: true },
+  { to: ROUTES.analytics, labelKey: "more.itemAnalytics", icon: BarChart3, comingSoon: true },
   { to: ROUTES.audit, labelKey: "more.itemAudit", icon: FileText },
 ];
 

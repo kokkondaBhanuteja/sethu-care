@@ -56,6 +56,7 @@ export function CancelBookingMobile({ state }: { state: CancelBookingState }) {
         // "Confirm", not "Confirm with biometrics": the challenge collects a passcode and no
         // biometric plugin is installed — the label must not promise what the field is not.
         confirmLabel={tShell("actions.confirm")}
+        cancelLabel={t("cancel.keepBooking")}
       />
 
       <DiscardChangesPrompt

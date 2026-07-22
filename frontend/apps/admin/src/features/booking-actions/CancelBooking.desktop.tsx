@@ -64,6 +64,7 @@ export function CancelBookingDesktop({ state }: { state: CancelBookingState }) {
         title={t("cancel.confirmTitle")}
         summary={cancelSummaryLine(context ?? null, state.form.form.watch(), t)}
         confirmLabel={tShell("actions.confirm")}
+        cancelLabel={t("cancel.keepBooking")}
       />
 
       <DiscardChangesPrompt
