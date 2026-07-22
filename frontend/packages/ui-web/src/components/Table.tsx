@@ -21,8 +21,16 @@ const tableVariants = cva("w-full text-sm", {
       default: "[&_td]:py-4 [&_th]:py-3",
       compact: "[&_td]:py-2.5 [&_th]:py-2",
     },
+    // `grid` adds hairline column separators (the wide-ledger reference) so many-column rows
+    // stay visually aligned; `row` keeps only the horizontal hairlines.
+    lines: {
+      row: "",
+      grid:
+        "[&_td:not(:last-child)]:border-r [&_td]:border-border " +
+        "[&_th:not(:last-child)]:border-r [&_th]:border-border",
+    },
   },
-  defaultVariants: { density: "default" },
+  defaultVariants: { density: "default", lines: "row" },
 });
 
 export interface TableProps
@@ -31,10 +39,22 @@ export interface TableProps
   wrapperClassName?: string;
 }
 
-export function Table({ className, wrapperClassName, density, ...props }: TableProps) {
+export function Table({ className, wrapperClassName, density, lines, ...props }: TableProps) {
   return (
-    <div className={cn("w-full overflow-x-auto", wrapperClassName)}>
-      <table className={cn(tableVariants({ density }), className)} {...props} />
+    <div
+      className={cn(
+        // Custom slim scrollbar (the reference's rounded dark thumb on a light track) — token
+        // colours only, both engines: WebKit pseudo-elements + Firefox scrollbar-* properties.
+        "w-full overflow-x-auto pb-1",
+        "[scrollbar-width:thin] [scrollbar-color:var(--color-border-strong)_var(--color-inset)]",
+        "[&::-webkit-scrollbar]:h-1.5",
+        "[&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-inset",
+        "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border-strong",
+        "hover:[&::-webkit-scrollbar-thumb]:bg-faint",
+        wrapperClassName,
+      )}
+    >
+      <table className={cn(tableVariants({ density, lines }), className)} {...props} />
     </div>
   );
 }

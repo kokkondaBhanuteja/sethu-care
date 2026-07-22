@@ -49,6 +49,8 @@ export interface DataTableProps<TRow> {
   onRowClick?: (row: TRow) => void;
   empty?: ReactNode;
   density?: "default" | "compact";
+  /** Column separators for wide many-column tables (the ledger reference). */
+  lines?: "row" | "grid";
   className?: string;
 }
 
@@ -63,6 +65,7 @@ export function DataTable<TRow>({
   onRowClick,
   empty,
   density,
+  lines,
   className,
 }: DataTableProps<TRow>) {
   const [internalSort, setInternalSort] = useState<DataTableSort | null>(null);
@@ -91,7 +94,7 @@ export function DataTable<TRow>({
   };
 
   return (
-    <Table density={density} className={className}>
+    <Table density={density} lines={lines} className={className}>
       <TableHeader>
         <TableRow>
           {visibleColumns.map((column) => {
