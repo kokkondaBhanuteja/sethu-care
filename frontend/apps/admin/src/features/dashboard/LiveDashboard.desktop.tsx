@@ -79,7 +79,7 @@ export function LiveDashboardDesktop() {
         ) : null}
 
         <QueryBoundary query={dashboard.summaryQuery} skeleton={<KpiSkeleton />}>
-          {(summary) => <KpiTiles summary={summary} />}
+          {(summary) => <KpiTiles summary={summary} period={dashboard.period} />}
         </QueryBoundary>
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">

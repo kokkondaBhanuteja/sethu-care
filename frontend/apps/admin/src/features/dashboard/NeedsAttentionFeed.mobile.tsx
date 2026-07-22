@@ -15,7 +15,14 @@ import { useNeedsAttention } from "./useNeedsAttention";
 
 const SKELETON_ROWS = 4;
 const CARD_SKELETON_HEIGHT = "h-row-72";
-const NO_COUNTS = { all: 0, escalated: 0, unassigned: 0, sla: 0, delayed: 0 } as const;
+const NO_COUNTS = {
+  all: 0,
+  escalated: 0,
+  unassigned: 0,
+  sla: 0,
+  delayed: 0,
+  no_response: 0,
+} as const;
 
 /**
  * BOX 30 — the same records as the desktop table, rendered as stacked cards over the same
@@ -34,7 +41,17 @@ export function NeedsAttentionFeedMobile() {
       <MobileAppBar
         title={t("attention.title")}
         showBack
-        actions={<span className="text-sm text-muted">{queue?.counts.all ?? 0}</span>}
+        actions={
+          // "5 open", not a bare "5": an unlabelled number in the app bar reads as noise (UX
+          // audit). The sr-only line carries the full sentence a label attribute can't put on
+          // plain text.
+          <span className="text-sm text-muted">
+            <span aria-hidden>{t("attention.openCount", { count: queue?.counts.all ?? 0 })}</span>
+            <span className="sr-only">
+              {t("attention.openCountLabel", { count: queue?.counts.all ?? 0 })}
+            </span>
+          </span>
+        }
       />
 
       {isOffline && queue ? (
@@ -51,6 +68,10 @@ export function NeedsAttentionFeedMobile() {
         counts={queue?.counts ?? NO_COUNTS}
         onChange={attention.setFilter}
       />
+
+      {/* The desktop feed states the ordering in its card footer; mobile says it here, under the
+          filters, so the 34-minute item sitting below a 12-minute one is never read as a bug. */}
+      <p className="px-4 pb-2 text-xs text-faint">{t("attention.orderedBy")}</p>
 
       <MobileScroll>
         <div className="px-4 pb-6 pt-1">

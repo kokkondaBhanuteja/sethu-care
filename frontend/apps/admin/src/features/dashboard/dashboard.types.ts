@@ -17,16 +17,26 @@ export const ATTENTION_PRIORITIES = {
 
 export type AttentionPriority = (typeof ATTENTION_PRIORITIES)[keyof typeof ATTENTION_PRIORITIES];
 
-/** The chip groups above the feed. `all` is a view, not a server filter. */
+/**
+ * The chip groups above the feed. `all` is a view, not a server filter. Every priority the queue
+ * can hold is reachable through at least one chip — a record findable only under "All" is a record
+ * that gets missed (UX audit: #B-8830 under `no_response` had no chip).
+ */
 export const ATTENTION_FILTERS = {
   all: "all",
   escalated: "escalated",
   unassigned: "unassigned",
   sla: "sla",
   delayed: "delayed",
+  noResponse: "no_response",
 } as const;
 
 export type AttentionFilter = (typeof ATTENTION_FILTERS)[keyof typeof ATTENTION_FILTERS];
+
+/** Narrows a raw URL value to a filter, so a mistyped deep link falls back to "All" quietly. */
+export function isAttentionFilter(value: string): value is AttentionFilter {
+  return (Object.values(ATTENTION_FILTERS) as readonly string[]).includes(value);
+}
 
 /** Which of the two inline buttons a row offers. The reason decides, not the state (spec §6.6). */
 export const ATTENTION_ACTIONS = {

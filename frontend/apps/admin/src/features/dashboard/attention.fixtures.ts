@@ -103,7 +103,7 @@ export function attentionItems(): readonly AttentionItem[] {
 export const EMPTY_QUEUE: AttentionQueue = {
   items: [],
   total: 0,
-  counts: { all: 0, escalated: 0, unassigned: 0, sla: 0, delayed: 0 },
+  counts: { all: 0, escalated: 0, unassigned: 0, sla: 0, delayed: 0, no_response: 0 },
   lastCleared: { at: SLOT_3_30_PM, bookingRef: "#B-8811", adminName: "Priya S." },
   healthyJobs: 42,
   updatedAt: SLOT_3_30_PM,

@@ -4,6 +4,7 @@ import { Card, CardFooter } from "@sethu/ui-web";
 
 import { Banner } from "../../components/ui/Banner";
 import { Icon } from "../../components/ui/Icon";
+import { Pagination } from "../../components/ui/Pagination";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { PageMain } from "../../layouts/PageMain";
 import { Topbar } from "../../layouts/Topbar";
@@ -13,11 +14,19 @@ import { AttentionFilters } from "./AttentionFilters";
 import { ConnectionPill } from "./ConnectionPill";
 import { AttentionSkeleton } from "./DashboardSkeletons";
 import { NeedsAttentionTable } from "./NeedsAttentionTable.desktop";
+import { ATTENTION_FEED_PAGE_SIZE } from "./dashboard.constants";
 import { CONNECTION_STATUSES } from "./useConnectionStatus";
 import { useNeedsAttention } from "./useNeedsAttention";
 
 const SKELETON_ROWS = 6;
-const NO_COUNTS = { all: 0, escalated: 0, unassigned: 0, sla: 0, delayed: 0 } as const;
+const NO_COUNTS = {
+  all: 0,
+  escalated: 0,
+  unassigned: 0,
+  sla: 0,
+  delayed: 0,
+  no_response: 0,
+} as const;
 
 /**
  * BOX 18 — the screen an ops manager leaves open all shift, now one composed Card: the counted
@@ -31,7 +40,7 @@ const NO_COUNTS = { all: 0, escalated: 0, unassigned: 0, sla: 0, delayed: 0 } as
  */
 export function NeedsAttentionFeedDesktop() {
   const { t } = useTranslation("adminDashboard");
-  const attention = useNeedsAttention({ limit: null });
+  const attention = useNeedsAttention({ limit: null, pageSize: ATTENTION_FEED_PAGE_SIZE });
   const queue = attention.query.data;
   const isOffline = attention.connection === CONNECTION_STATUSES.offline;
 
@@ -91,24 +100,35 @@ export function NeedsAttentionFeedDesktop() {
               </div>
             }
           >
-            {(data) => (
-              <>
-                <NeedsAttentionTable
-                  items={data.items}
-                  permissions={attention.permissions}
-                  isBlocked={attention.isActionBlocked}
-                  acknowledgement={attention.acknowledgement}
-                  variant="full"
-                />
-                {/* Says the ordering out loud: the two oldest items are not at the top, and the
-                    manager must not read that as a bug. */}
-                <CardFooter>
-                  <p className="text-xs text-faint">
-                    {t("attention.orderNote", { shown: data.items.length, total: data.total })}
-                  </p>
-                </CardFooter>
-              </>
-            )}
+            {(data) => {
+              const visibleItems =
+                attention.visibleCount === null
+                  ? data.items
+                  : data.items.slice(0, attention.visibleCount);
+              return (
+                <>
+                  <NeedsAttentionTable
+                    items={visibleItems}
+                    permissions={attention.permissions}
+                    isBlocked={attention.isActionBlocked}
+                    acknowledgement={attention.acknowledgement}
+                    variant="full"
+                  />
+                  {/* Says the ordering out loud: the two oldest items are not at the top, and the
+                      manager must not read that as a bug. The count and Load more come from the
+                      shared Pagination composite, so "Showing X of Y" is always reachable
+                      arithmetic — never a total the screen offers no way to reach (UX audit). */}
+                  <CardFooter className="block">
+                    <Pagination
+                      shown={visibleItems.length}
+                      total={data.counts[attention.filter]}
+                      subject={t("attention.orderedBySubject")}
+                      onLoadMore={attention.loadMore}
+                    />
+                  </CardFooter>
+                </>
+              );
+            }}
           </QueryBoundary>
         </Card>
       </PageMain>

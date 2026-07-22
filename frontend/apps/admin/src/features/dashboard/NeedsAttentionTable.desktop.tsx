@@ -18,7 +18,11 @@ export interface NeedsAttentionTableProps {
   permissions: AttentionPermissions;
   isBlocked: boolean;
   acknowledgement: AcknowledgeController;
-  /** The dashboard panel drops Customer and Reason; the feed is the full nine-column queue. */
+  /**
+   * The dashboard panel drops Customer, Area and Reason and folds row actions into one primary
+   * button + overflow, so the compact table fits its card without a horizontal scrollbar from
+   * 1024 up; the feed is the full nine-column queue.
+   */
   variant: "compact" | "full";
 }
 

@@ -86,7 +86,7 @@ export function LiveDashboardMobile() {
           />
 
           <QueryBoundary query={dashboard.summaryQuery} skeleton={<KpiSkeleton />}>
-            {(summary) => <KpiTiles summary={summary} />}
+            {(summary) => <KpiTiles summary={summary} period={dashboard.period} />}
           </QueryBoundary>
 
           <DashboardSectionCard

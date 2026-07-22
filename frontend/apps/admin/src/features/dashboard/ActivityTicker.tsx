@@ -8,12 +8,15 @@ export interface ActivityTickerProps {
   entries: readonly ActivityEntry[];
 }
 
+// Routine progress is NEUTRAL on purpose: the ticker confirms the system is alive, and a column of
+// green/blue/amber dots competed with the alert band for the eye (UX audit). Danger is reserved
+// for a genuine failure — a cancellation is the only event here where a job died.
 const TONES: Readonly<Record<ActivityKind, DotTone>> = {
-  completed: "success",
-  started: "info",
-  en_route: "info",
-  assigned: "info",
-  awaiting_otp: "warning",
+  completed: "neutral",
+  started: "neutral",
+  en_route: "neutral",
+  assigned: "neutral",
+  awaiting_otp: "neutral",
   cancelled_by_customer: "danger",
 };
 

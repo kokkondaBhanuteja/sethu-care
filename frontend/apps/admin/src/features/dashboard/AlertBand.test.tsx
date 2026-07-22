@@ -3,15 +3,17 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
-import { ROUTES } from "../../routes/routes.constants";
 import { AlertBand } from "./AlertBand";
+import { ESCALATED_ATTENTION_LINK } from "./dashboard.constants";
 import { BAND } from "./dashboard.fixtures";
 import type { AlertBandState } from "./dashboard.types";
 
-// The escalation band is the redesign's tinted danger feature card: count as the headline, the
-// worst items beneath, "View all" as the way in. Non-dismissible by design — it leaves only when
-// the underlying alert is acknowledged — and absent entirely on a healthy day, because a band
-// that sometimes says "nothing" trains the eye to ignore it.
+// The escalation band is the redesign's tinted danger feature card: count as the headline and
+// "View all" as the way in. It counts CRITICAL ESCALATIONS and says exactly that — "needs
+// attention" belongs to the queue alone, so the band can never look like it contradicts the
+// sidebar's queue count. Non-dismissible by design — it leaves only when the underlying alert is
+// acknowledged — and absent entirely on a healthy day, because a band that sometimes says
+// "nothing" trains the eye to ignore it.
 
 const HEALTHY: AlertBandState = { criticalCount: 0, examples: [] };
 
@@ -28,22 +30,27 @@ describe("AlertBand", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("headlines the count and announces as an alert", () => {
+  it("headlines the count in the band's own vocabulary and announces as an alert", () => {
     renderBand(BAND, "desktop");
-    expect(screen.getByRole("alert")).toHaveTextContent("2 need attention");
+    expect(screen.getByRole("alert")).toHaveTextContent("2 critical escalations");
   });
 
   it("uses the singular for one and caps the count at 9+", () => {
     renderBand({ ...BAND, criticalCount: 1 }, "desktop");
-    expect(screen.getByText("1 needs attention")).toBeInTheDocument();
+    expect(screen.getByText("1 critical escalation")).toBeInTheDocument();
 
     renderBand({ ...BAND, criticalCount: 12 }, "desktop");
-    expect(screen.getByText("9+ need attention")).toBeInTheDocument();
+    expect(screen.getByText("9+ critical escalations")).toBeInTheDocument();
   });
 
-  it("cites the worst item under the headline — the band points into the queue", () => {
-    renderBand(BAND, "desktop");
+  it("cites the worst item on mobile, where the queue is a navigation away", () => {
+    renderBand(BAND, "mobile");
     expect(screen.getByRole("alert")).toHaveTextContent(/Escalated #B-8823/);
+  });
+
+  it("omits the example lines on desktop — the queue table opens directly beneath the band", () => {
+    renderBand(BAND, "desktop");
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/#B-8823/);
   });
 
   it("is the tinted danger card, never a raw full-width bar", () => {
@@ -53,17 +60,17 @@ describe("AlertBand", () => {
     expect(card?.className).toContain("rounded-card");
   });
 
-  it("offers View all into the feed on desktop", () => {
+  it("deep-links View all into the queue pre-filtered to the escalations it counted", () => {
     renderBand(BAND, "desktop");
     expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute(
       "href",
-      ROUTES.liveAttention,
+      ESCALATED_ATTENTION_LINK,
     );
   });
 
-  it("makes the whole card the tap target on mobile", () => {
+  it("makes the whole card the tap target on mobile, filtered the same way", () => {
     renderBand(BAND, "mobile");
     const link = screen.getByRole("link", { name: "Open the needs-attention list" });
-    expect(link).toHaveAttribute("href", ROUTES.liveAttention);
+    expect(link).toHaveAttribute("href", ESCALATED_ATTENTION_LINK);
   });
 });

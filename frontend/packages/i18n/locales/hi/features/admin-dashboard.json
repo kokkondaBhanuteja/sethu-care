@@ -14,15 +14,17 @@
     "liveNow": "Live now"
   },
   "band": {
-    "countOne": "1 needs attention",
-    "countOther": "{{count}} need attention",
-    "countCapped": "9+ need attention",
+    "countOne": "1 critical escalation",
+    "countOther": "{{count}} critical escalations",
+    "countCapped": "9+ critical escalations",
     "example": "{{reason}} {{booking}} · {{age}}",
     "viewAll": "View all",
     "open": "Open the needs-attention list"
   },
   "kpi": {
     "sectionLabel": "Key figures",
+    "periodToday": "Today so far",
+    "periodLive": "Live right now",
     "bookings": "Bookings",
     "revenue": "Revenue",
     "completion": "Completion",
@@ -35,7 +37,10 @@
     "seeAll": "View all",
     "tableCaption": "Bookings needing attention, ordered by priority",
     "loading": "Loading bookings that need attention",
-    "orderNote": "Showing {{shown}} of {{total}} · ordered by priority, not time",
+    "orderedBy": "Ordered by priority, not time",
+    "orderedBySubject": "· ordered by priority, not time",
+    "openCount": "{{count}} open",
+    "openCountLabel": "{{count}} bookings open in the queue",
     "refreshedAt": "Auto-refreshing · updated {{time}}",
     "allClearTitle": "Nothing needs attention",
     "allClearShortTitle": "All clear",
@@ -70,15 +75,17 @@
   },
   "filters": {
     "label": "Filter bookings that need attention",
-    "all": "All",
+    "all": "All ({{count}})",
     "escalated": "Escalated ({{count}})",
     "unassigned": "Unassigned ({{count}})",
     "sla": "SLA ({{count}})",
     "delayed": "Delayed ({{count}})",
+    "noResponse": "No response ({{count}})",
     "escalatedName": "escalated",
     "unassignedName": "unassigned",
     "slaName": "SLA",
-    "delayedName": "delayed"
+    "delayedName": "delayed",
+    "noResponseName": "no-response"
   },
   "actions": {
     "acknowledge": "Acknowledge",

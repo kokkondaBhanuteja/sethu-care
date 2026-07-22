@@ -9,6 +9,7 @@ import { formatAge } from "../../lib/format";
 import { PRIORITY_PRESENTATION } from "./dashboard.constants";
 import type { AttentionItem, AttentionPriority } from "./dashboard.types";
 import { AttentionActions } from "./AttentionActions";
+import { AttentionCompactActions } from "./AttentionCompactActions";
 import type { AttentionPermissions } from "./useNeedsAttention";
 import type { AcknowledgeController } from "./useAcknowledgeAlert";
 
@@ -21,7 +22,7 @@ export interface ColumnFactoryInput {
   readonly permissions: AttentionPermissions;
   readonly isBlocked: boolean;
   readonly acknowledgement: AcknowledgeController;
-  /** The dashboard panel drops Customer and Reason; the feed is the full nine-column queue. */
+  /** The dashboard panel drops Customer, Area and Reason; the feed is the full nine-column queue. */
   readonly variant: "compact" | "full";
 }
 
@@ -61,10 +62,21 @@ export function buildAttentionColumns(input: ColumnFactoryInput): readonly Colum
     render: (row) => row.bookingRef,
   };
 
+  // Compact keeps the service inside a fixed budget with an ellipsis: the panel must fit its card
+  // without a horizontal scrollbar at 1024, and a scrolled table clips the priority pills first —
+  // the one column that must never be unreadable (UX audit).
   const service: Column = {
     id: "service",
     header: t("columns.service"),
-    render: (row) => row.service,
+    cellClassName: isFull ? undefined : "max-w-40",
+    render: (row) =>
+      isFull ? (
+        row.service
+      ) : (
+        <span className="block truncate" title={row.service}>
+          {row.service}
+        </span>
+      ),
   };
   const customer: Column = {
     id: "customer",
@@ -102,24 +114,31 @@ export function buildAttentionColumns(input: ColumnFactoryInput): readonly Colum
     render: (row) => formatAge(row.surfacedAt),
   };
 
+  // The full feed shows the priority's two text buttons; compact shows one primary rescue plus an
+  // overflow menu, because two text buttons per row is what clipped this column at 1440 and 1024.
   const actions: Column = {
     id: "actions",
     header: t("columns.actions"),
-    render: (row) => (
-      <TableActions>
-        <AttentionActions
-          item={row}
-          permissions={permissions}
-          isBlocked={isBlocked || acknowledgement.resolvingIds.has(row.alertId)}
-          onAcknowledge={() =>
-            acknowledgement.acknowledge({ alertId: row.alertId, bookingRef: row.bookingRef })
-          }
-        />
-      </TableActions>
-    ),
+    render: (row) => {
+      const rowProps = {
+        item: row,
+        permissions,
+        isBlocked: isBlocked || acknowledgement.resolvingIds.has(row.alertId),
+        onAcknowledge: () =>
+          acknowledgement.acknowledge({ alertId: row.alertId, bookingRef: row.bookingRef }),
+      };
+      return (
+        <TableActions>
+          {isFull ? <AttentionActions {...rowProps} /> : <AttentionCompactActions {...rowProps} />}
+        </TableActions>
+      );
+    },
   };
 
+  // Compact drops Customer, Area and Reason — the full feed keeps all nine columns. Area went in
+  // the audit restructure: it is the least diagnostic cell, and its width is what forced the
+  // horizontal scroll that clipped Priority and Actions.
   return isFull
     ? [priority, booking, service, customer, area, reason, provider, age, actions]
-    : [priority, booking, service, area, provider, age, actions];
+    : [priority, booking, service, provider, age, actions];
 }

@@ -25,6 +25,7 @@ const FILTER_PREDICATES: Readonly<Record<AttentionFilter, (item: AttentionItem) 
   [ATTENTION_FILTERS.unassigned]: (item) => item.providerName === null,
   [ATTENTION_FILTERS.sla]: (item) => item.priority === ATTENTION_PRIORITIES.slaBreached,
   [ATTENTION_FILTERS.delayed]: (item) => item.priority === ATTENTION_PRIORITIES.slaRisk,
+  [ATTENTION_FILTERS.noResponse]: (item) => item.priority === ATTENTION_PRIORITIES.noResponse,
 };
 
 /** Worst first; oldest first inside a tier (spec §6.6). Never chronological. */
@@ -43,11 +44,9 @@ function countsFor(all: readonly AttentionItem[]): AttentionQueue["counts"] {
     unassigned: all.filter(FILTER_PREDICATES.unassigned).length,
     sla: all.filter(FILTER_PREDICATES.sla).length,
     delayed: all.filter(FILTER_PREDICATES.delayed).length,
+    no_response: all.filter(FILTER_PREDICATES.no_response).length,
   };
 }
-
-/** Two further items sit beyond the first page, which is what "Showing 5 of 7" is counting. */
-const BEYOND_FIRST_PAGE = 2;
 
 export function fetchAttentionQueueMock(
   filter: AttentionFilter,
@@ -60,7 +59,9 @@ export function fetchAttentionQueueMock(
       const matching = all.filter(FILTER_PREDICATES[filter]);
       return {
         items: limit === null ? matching : matching.slice(0, limit),
-        total: all.length + BEYOND_FIRST_PAGE,
+        // The queue total must equal what an unpaginated fetch returns: a phantom remainder gave
+        // the feed "Showing 5 of 7" with no way to reach the other two (UX audit).
+        total: all.length,
         counts: countsFor(all),
         lastCleared: null,
         healthyJobs: 42,

@@ -2,6 +2,7 @@ import { BellRing, Clock, Phone, UserX } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import type { PillTone } from "../../components/ui/Pill";
+import { ROUTES } from "../../routes/routes.constants";
 import {
   ATTENTION_ACTIONS,
   ATTENTION_FILTERS,
@@ -26,6 +27,21 @@ export const DASHBOARD_QUERY_KEYS = {
 export const DASHBOARD_ATTENTION_LIMIT = 3;
 /** Desktop's wider canvas shows the whole first page of the same queue in its panel. */
 export const DASHBOARD_ATTENTION_LIMIT_DESKTOP = 5;
+
+/**
+ * The feed reveals the queue a page at a time behind "Load more". Sized just under the ~30-row
+ * virtualisation threshold (spec §2.4): a full first page is still one scannable scroll.
+ */
+export const ATTENTION_FEED_PAGE_SIZE = 25;
+
+/** The query-string key the feed reads its filter from, so a deep link can land pre-filtered. */
+export const ATTENTION_FILTER_PARAM = "filter";
+
+/**
+ * Where the alert band points: the queue pre-filtered to the escalations the band is counting.
+ * Landing on "All" made the band's count and the queue's count look like a contradiction.
+ */
+export const ESCALATED_ATTENTION_LINK = `${ROUTES.liveAttention}?${ATTENTION_FILTER_PARAM}=${ATTENTION_FILTERS.escalated}`;
 
 /** Polling stands in for the `admin:live` socket until `GET /ops/stream` exists. */
 export const DASHBOARD_REFETCH_MS = 30_000;
@@ -53,6 +69,7 @@ export const ATTENTION_FILTER_ORDER: readonly AttentionFilter[] = [
   ATTENTION_FILTERS.unassigned,
   ATTENTION_FILTERS.sla,
   ATTENTION_FILTERS.delayed,
+  ATTENTION_FILTERS.noResponse,
 ];
 
 export interface PriorityPresentation {

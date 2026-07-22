@@ -49,6 +49,7 @@ const FILTER_NAME_KEYS = {
   unassigned: "filters.unassignedName",
   sla: "filters.slaName",
   delayed: "filters.delayedName",
+  no_response: "filters.noResponseName",
 } as const satisfies Readonly<Record<AttentionFilter, string>>;
 
 export interface FilteredEmptyProps {

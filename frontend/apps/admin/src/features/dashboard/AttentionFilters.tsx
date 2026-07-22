@@ -20,12 +20,14 @@ const LABEL_KEYS = {
   unassigned: "filters.unassigned",
   sla: "filters.sla",
   delayed: "filters.delayed",
+  no_response: "filters.noResponse",
 } as const satisfies Readonly<Record<AttentionFilter, string>>;
 
 /**
- * The chips carry their counts so the manager can see the shape of the queue without applying one.
- * A chip whose count is zero is disabled rather than hidden: the zero is evidence, not decoration,
- * and a chip that disappears takes the evidence with it.
+ * The chips carry their counts so the manager can see the shape of the queue without applying one —
+ * "All" included, so the arithmetic across the chips is checkable at a glance (UX audit). A chip
+ * whose count is zero is disabled rather than hidden: the zero is evidence, not decoration, and a
+ * chip that disappears takes the evidence with it.
  */
 export function AttentionFilters({
   value,
