@@ -66,7 +66,7 @@ export function Tabs<TValue extends string>({
             role="tab"
             aria-selected={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            className={cx("tabs__tab", isSelected && "is-active")}
+            className={cx("tabs__tab", isSelected && "is-selected")}
             onClick={() => onValueChange(item.value)}
           >
             {item.label}
