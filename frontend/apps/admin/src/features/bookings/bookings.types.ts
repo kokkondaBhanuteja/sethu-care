@@ -49,11 +49,25 @@ export interface BookingSegmentCounts {
   readonly activeHasEscalation: boolean;
 }
 
+/**
+ * The stat-strip figures — deliberately NOT the segment counts the tabs already carry: the tiles
+ * answer "how bad is the exception load?", which no tab count can.
+ */
+export interface BookingsSummary {
+  /** Bookings currently sitting in ESCALATED. */
+  readonly escalated: number;
+  /** Age of the longest-waiting unassigned active booking, or null when everything is assigned. */
+  readonly oldestUnassignedMinutes: number | null;
+  /** Completions dated today — the day's throughput, where the tab counts all history. */
+  readonly completedToday: number;
+}
+
 export interface BookingsPage {
   readonly items: readonly BookingListItem[];
   /** Rows the query matches in total, which is what the count line and Load more compare against. */
   readonly total: number;
   readonly counts: BookingSegmentCounts;
+  readonly summary: BookingsSummary;
   /** True when the result set spans every segment, i.e. a search rather than a segment browse. */
   readonly isAcrossSegments: boolean;
 }

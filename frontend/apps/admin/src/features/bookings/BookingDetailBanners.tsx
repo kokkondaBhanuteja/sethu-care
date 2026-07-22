@@ -63,17 +63,17 @@ export interface EscalationBannerProps {
  * The exception, styled as the design's tinted danger card with a soft icon chip rather than a
  * full-bleed strip — it sits INSIDE the record's card column now, first, above everything it
  * explains. Still `role="alert"`: it is the one condition the operator must not miss.
+ *
+ * On the narrow layout the actions row takes the full card width UNDER the message instead of
+ * beside it: a shrink-0 actions column at 390px squeezed the title into a ~90px sliver, one word
+ * per line under the button.
  */
 export function EscalationBanner({ escalation, actions, isWide = false }: EscalationBannerProps) {
   const { t } = useTranslation("adminBookings");
   const { escalationTitle, escalationWide } = useBookingCopy();
 
   return (
-    <Card
-      tone="danger"
-      role="alert"
-      className={cn("flex flex-wrap items-start gap-3 p-4", !isWide && "mx-s4 my-s2")}
-    >
+    <Card tone="danger" role="alert" className="flex flex-wrap items-start gap-3 p-4">
       <IconChip size="sm" look="soft" className="bg-danger-bg text-danger-fg">
         <Icon glyph={Siren} />
       </IconChip>
@@ -89,7 +89,17 @@ export function EscalationBanner({ escalation, actions, isWide = false }: Escala
           </span>
         )}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div
+          className={cn(
+            isWide
+              ? "flex shrink-0 items-center gap-2"
+              : "flex w-full basis-full flex-col items-stretch gap-2",
+          )}
+        >
+          {actions}
+        </div>
+      ) : null}
     </Card>
   );
 }

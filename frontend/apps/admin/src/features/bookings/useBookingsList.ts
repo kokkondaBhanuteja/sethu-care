@@ -63,6 +63,9 @@ export function useBookingsList(): BookingsListController {
     // A narrowed query keeps the previous rows on screen while the new ones arrive: the §4.10
     // refresh-loading rule, which forbids blanking content the operator is already reading.
     placeholderData: keepPreviousData,
+    // Returning to the queue after an action flow must reflect the write (the row's new state and
+    // segment), not a ≤15s-old cached page.
+    refetchOnMount: "always",
   });
 
   const selectSegment = useCallback((next: BookingSegment) => {

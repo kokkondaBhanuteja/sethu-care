@@ -4,7 +4,7 @@ import { useTranslation } from "@sethu/i18n";
 import { TableActionLink, TableColumnFilter } from "@sethu/ui-web";
 
 import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
-import { formatMoney, formatPhone, formatTime } from "../../lib/format";
+import { formatPhone, formatTime } from "../../lib/format";
 import { ROUTES } from "../../routes/routes.constants";
 import { BOOKING_STATE_PRESENTATION, type BookingState } from "./bookings.constants";
 import { BookingStatePill } from "./BookingStatePill";
@@ -20,7 +20,6 @@ export interface BookingsTableStateFilter {
 
 export interface BookingsTableProps {
   rows: readonly BookingListItem[];
-  /** The active search term. A PHONE column appears only while one is running — see below. */
   search: string;
   onSelect: (booking: BookingListItem) => void;
   /** The row currently open in the preview pane — tinted and `aria-selected`. */
@@ -29,16 +28,16 @@ export interface BookingsTableProps {
   stateFilter?: BookingsTableStateFilter;
 }
 
+/** The exit affordance stays visible even if the table still overflows: sticky against the wrapper. */
+const STICKY_CELL_CLASSES = "sticky right-0 z-10 bg-surface text-right";
+const STICKY_HEAD_CLASSES = "sticky right-0 z-10 bg-inset";
+
 /**
- * The desktop queue. The wider canvas exists so an operator can scan the STATE and PROVIDER columns
- * down the page; mobile stacks the same records into cards instead and is never this table squeezed.
- *
- * The PHONE column is added only while a search is running: without it a phone-number search would
- * highlight nothing, and the matched digits have to be visible for the result set to explain itself
- * (design BOX 16). It is the search key, so it earns a column exactly as long as it is one.
- *
- * A row click selects the preview; the trailing chevron link is the committed "open the record"
- * affordance, so walking the queue and leaving it stay two different gestures.
+ * The desktop queue, on a column budget that fits its card: TIME rides under BOOKING and AREA
+ * under SERVICE as sub-lines, and AMOUNT lives in the preview — the old eight-column table ran
+ * 224px past its wrapper, hiding three columns behind an unnoticed scroll. PHONE exists only
+ * while a search runs (the matched digits must be visible, design BOX 16). Row click selects the
+ * preview; the sticky-right chevron link is the committed "open the record" affordance.
  */
 export function BookingsTable({
   rows,
@@ -67,9 +66,14 @@ export function BookingsTable({
       id: "booking",
       header: t("columns.booking"),
       render: (row) => (
-        <MonoText className="text-text-1">
-          <MatchHighlight text={row.reference} query={search} />
-        </MonoText>
+        <span className="flex flex-col">
+          <MonoText className="text-text-1">
+            <MatchHighlight text={row.reference} query={search} />
+          </MonoText>
+          <span className="text-caption text-text-3 whitespace-nowrap">
+            {formatTime(row.slotAt)}
+          </span>
+        </span>
       ),
     },
     {
@@ -78,7 +82,16 @@ export function BookingsTable({
       ...(stateFilterControl ? { filter: stateFilterControl } : {}),
       render: (row) => <BookingStatePill state={row.state} isAdminVerified={row.isAdminVerified} />,
     },
-    { id: "service", header: t("columns.service"), render: (row) => row.serviceName },
+    {
+      id: "service",
+      header: t("columns.service"),
+      render: (row) => (
+        <span className="flex flex-col">
+          <span>{row.serviceName}</span>
+          <span className="text-caption text-text-3">{row.area}</span>
+        </span>
+      ),
+    },
     { id: "customer", header: t("columns.customer"), render: (row) => row.customerName },
     ...(search
       ? [
@@ -93,19 +106,6 @@ export function BookingsTable({
           },
         ]
       : []),
-    { id: "area", header: t("columns.area"), render: (row) => row.area },
-    {
-      id: "time",
-      header: t("columns.time"),
-      cellClassName: "whitespace-nowrap text-text-2",
-      render: (row) => formatTime(row.slotAt),
-    },
-    {
-      id: "amount",
-      header: t("columns.amount"),
-      numeric: true,
-      render: (row) => formatMoney(row.amountPaise),
-    },
     {
       id: "provider",
       header: t("columns.provider"),
@@ -119,7 +119,8 @@ export function BookingsTable({
     {
       id: "open",
       header: "",
-      cellClassName: "text-right",
+      headerClassName: STICKY_HEAD_CLASSES,
+      cellClassName: STICKY_CELL_CLASSES,
       render: (row) => (
         <TableActionLink
           as={Link}
@@ -141,6 +142,9 @@ export function BookingsTable({
       onRowClick={onSelect}
       selectedRowKey={selectedId ?? null}
       density="dense"
+      // Tighter cell padding shrinks only the table's MINIMUM width (it stretches w-full at 1440
+      // regardless) — the margin that lets the six columns fit beside the preview panel at 1280.
+      tight
     />
   );
 }

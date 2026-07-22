@@ -6,11 +6,18 @@
 import { BOOKING_STATES, type BookingState } from "./bookings.constants";
 import type { BookingListItem, ProviderNote } from "./bookings.types";
 
-/** Every fixture timestamp sits on one day so the rendered times match the artifacts exactly. */
-const FIXTURE_DAY = "2026-07-20";
+/** Every artifact timestamp sits on one day so the rendered times match the designs exactly. */
+export const FIXTURE_DAY = "2026-07-20";
 
-export function istInstant(hoursAndMinutes: string): string {
-  return `${FIXTURE_DAY}T${hoursAndMinutes}:00+05:30`;
+/** The fixture calendar: `fixtureDay()` is the mock's "today", negative offsets are its history. */
+export function fixtureDay(offsetDays = 0): string {
+  const date = new Date(`${FIXTURE_DAY}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+export function istInstant(hoursAndMinutes: string, day: string = FIXTURE_DAY): string {
+  return `${day}T${hoursAndMinutes}:00+05:30`;
 }
 
 export interface BookingSeed {
@@ -21,6 +28,8 @@ export interface BookingSeed {
   readonly customerPhone: string;
   readonly area: string;
   readonly slot: string;
+  /** Fixture calendar day (`fixtureDay(-n)`); omitted seeds sit on the artifact day. */
+  readonly day?: string;
   readonly amountPaise: number;
   readonly providerName: string | null;
   readonly providerNote: ProviderNote;
@@ -37,7 +46,7 @@ export function toItem(seed: BookingSeed): BookingListItem {
     customerName: seed.customerName,
     customerPhone: seed.customerPhone,
     area: seed.area,
-    slotAt: istInstant(seed.slot),
+    slotAt: istInstant(seed.slot, seed.day),
     amountPaise: seed.amountPaise,
     providerName: seed.providerName,
     providerNote: seed.providerNote,

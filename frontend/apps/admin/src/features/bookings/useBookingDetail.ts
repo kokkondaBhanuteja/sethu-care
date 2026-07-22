@@ -41,6 +41,9 @@ export function useBookingDetail(bookingId: string): BookingDetailController {
     queryKey: BOOKING_QUERY_KEYS.detail(bookingId),
     queryFn: ({ signal }) => fetchBookingDetail(bookingId, signal),
     retry: false,
+    // Coming back from an action flow (cancel, assign) must show the state that action created,
+    // not a ≤15s-old cached copy that still offers the action it just performed.
+    refetchOnMount: "always",
   });
 
   const detail = query.data;

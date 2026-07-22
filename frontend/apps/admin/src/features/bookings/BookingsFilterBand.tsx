@@ -49,7 +49,10 @@ export function BookingsFilterBand({
   const singleSelectedState = selectedStates.length === 1 ? (selectedStates[0] ?? "") : "";
 
   return (
+    // Four columns from the shell split up: search (2) + state + Clear share one baseline at every
+    // desktop width — on the default 3-column lg grid the reset wrapped onto its own row at 1180.
     <FilterBand
+      className="md:grid-cols-4 lg:grid-cols-4"
       actions={
         <Button variant="outline" size="section" disabled={!isFiltered} onClick={onClear}>
           {t("filters.clear")}
@@ -76,8 +79,10 @@ export function BookingsFilterBand({
             if (matchedState) onReplaceStates([matchedState]);
           }}
         >
+          {/* "All states", not the field label again — a placeholder that repeats its caption
+              reads as a selection that was never made. */}
           <SelectTrigger id={stateFieldId}>
-            <SelectValue placeholder={t("filters.stateGroup")} />
+            <SelectValue placeholder={t("filters.allStates")} />
           </SelectTrigger>
           <SelectContent>
             {availableStates.map((state) => (

@@ -66,14 +66,18 @@ export function CustomerBlock({ customer, isDisabled = false }: CustomerBlockPro
 
 export interface ProviderBlockProps {
   provider: BookingProvider | null;
-  roundCount: number;
-  declinedTotal: number;
   /** Rendered under the block — the rescue "Assign provider" button, when the state permits one. */
   action?: React.ReactNode;
 }
 
-/** Avatars are drawn initials, never fetched imagery: these screens must render with zero network. */
-export function ProviderBlock({ provider, roundCount, declinedTotal, action }: ProviderBlockProps) {
+/**
+ * Avatars are drawn initials, never fetched imagery: these screens must render with zero network.
+ *
+ * An unassigned provider card says only "Not assigned" — the rounds-and-declines diagnostic
+ * belongs to the escalation banner and the timeline, and repeating it a third time here taught
+ * the eye to skip all three (screen audit).
+ */
+export function ProviderBlock({ provider, action }: ProviderBlockProps) {
   const { t } = useTranslation("adminBookings");
 
   return (
@@ -99,12 +103,7 @@ export function ProviderBlock({ provider, roundCount, declinedTotal, action }: P
           </div>
         </div>
       ) : (
-        <>
-          <p className="text-emph text-danger">{t("detail.notAssigned")}</p>
-          <p className="text-label text-text-2 mt-s1">
-            {t("detail.dispatchSummary", { rounds: roundCount, declined: declinedTotal })}
-          </p>
-        </>
+        <p className="text-emph text-danger">{t("detail.notAssigned")}</p>
       )}
       {action ? <div className="mt-s3">{action}</div> : null}
     </div>

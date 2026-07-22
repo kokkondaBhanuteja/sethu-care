@@ -10,9 +10,13 @@ import type { ShellCounters } from "../queries/shell.types";
 // this file and its callers go away together; nothing above a feature's `.api.ts` knows it exists.
 
 const INITIAL: ShellCounters = {
-  // Matches the approved designs: 2 unacknowledged criticals, 7 needing attention, 4 open tickets.
+  // Matches the approved designs: 2 unacknowledged criticals, 4 open tickets — EXCEPT
+  // needsAttention, which must equal the needs-attention queue's real row count
+  // (features/dashboard/attention.fixtures.ts draws exactly 5): a sidebar badge of 7 over a queue
+  // showing "5 of 5" reads as two rows nobody can find. Kept as a literal because mocks/ sits
+  // below features/ in the import graph; change it WITH the fixture list.
   criticalAlerts: 2,
-  needsAttention: 7,
+  needsAttention: 5,
   pendingApplications: 3,
   openTickets: 4,
 };

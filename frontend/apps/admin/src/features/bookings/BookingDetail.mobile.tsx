@@ -84,10 +84,12 @@ export function BookingDetailMobile({ controller, detail, isOffline }: BookingDe
         <BookingStatePill state={detail.state} isAdminVerified={detail.isAdminVerified} />
       </Gutter>
 
-      <BookingDetailBannerStack controller={controller} detail={detail} isOffline={isOffline} />
-
       <MobileScroll padFor="action" className="px-s4 py-s4">
         <div className="flex flex-col gap-s4">
+          {/* Inside the scroll region on purpose: pinned above it, the escalation strip ate a
+              quarter of a 390px viewport for as long as the record was open (screen audit). The
+              condition still leads the record — it is simply allowed to scroll with it. */}
+          <BookingDetailBannerStack controller={controller} detail={detail} isOffline={isOffline} />
           <Card>
             <CardContent className="pt-4">
               <ServiceSummaryBlock detail={detail} />
@@ -97,11 +99,7 @@ export function BookingDetailMobile({ controller, detail, isOffline }: BookingDe
             <CustomerBlock customer={detail.customer} isDisabled={isLocked} />
           </BookingSectionCard>
           <BookingSectionCard title={t("section.provider")} chip={DETAIL_SECTION_CHIPS.provider}>
-            <ProviderBlock
-              provider={detail.provider}
-              roundCount={detail.dispatchRounds.length}
-              declinedTotal={detail.declinedTotal}
-            />
+            <ProviderBlock provider={detail.provider} />
           </BookingSectionCard>
           <BookingSectionCard title={t("section.timeline")} chip={DETAIL_SECTION_CHIPS.timeline}>
             <TimelineBlock detail={detail} />

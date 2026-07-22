@@ -29,7 +29,6 @@ const CANCELLABLE_STATES: readonly BookingState[] = [
   BOOKING_STATES.enRoute,
   BOOKING_STATES.arrived,
   BOOKING_STATES.escalated,
-  BOOKING_STATES.rescheduled,
   BOOKING_STATES.failed,
 ];
 

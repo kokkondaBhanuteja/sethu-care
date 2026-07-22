@@ -34,6 +34,8 @@ function bar(row: PlaceholderRow, offset: number, alignRight = false) {
 export function BookingsTableSkeleton() {
   const { t } = useTranslation("adminBookings");
 
+  // Mirrors the live table's five-column budget (TIME and AREA are sub-lines there), so nothing
+  // reflows when the data lands.
   const columns: readonly DataTableColumn<PlaceholderRow>[] = [
     { id: "booking", header: t("columns.booking"), render: (row) => bar(row, 0) },
     {
@@ -43,14 +45,6 @@ export function BookingsTableSkeleton() {
     },
     { id: "service", header: t("columns.service"), render: (row) => bar(row, 1) },
     { id: "customer", header: t("columns.customer"), render: (row) => bar(row, 2) },
-    { id: "area", header: t("columns.area"), render: (row) => bar(row, 3) },
-    { id: "time", header: t("columns.time"), render: (row) => bar(row, 1) },
-    {
-      id: "amount",
-      header: t("columns.amount"),
-      numeric: true,
-      render: (row) => bar(row, 2, true),
-    },
     { id: "provider", header: t("columns.provider"), render: (row) => bar(row, 0) },
   ];
 
@@ -62,6 +56,7 @@ export function BookingsTableSkeleton() {
         rows={ROWS}
         rowKey={(row) => row.id}
         density="dense"
+        tight
       />
     </div>
   );

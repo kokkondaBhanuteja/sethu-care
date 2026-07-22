@@ -3,7 +3,7 @@
 // The artifact-accurate rows live in bookings.seed.ts.
 
 import { BOOKING_STATES, type BookingState } from "./bookings.constants";
-import { ACTIVE_SEEDS, toItem } from "./bookings.seed";
+import { ACTIVE_SEEDS, fixtureDay, toItem } from "./bookings.seed";
 import type { BookingListItem } from "./bookings.types";
 
 type NonEmpty<TValue> = readonly [TValue, ...TValue[]];
@@ -42,6 +42,7 @@ function buildFiller(
   count: number,
   firstNumber: number,
   state: BookingState | null,
+  dayForIndex?: (index: number) => string,
 ): readonly BookingListItem[] {
   return Array.from({ length: count }, (_unused, index) => {
     const bookingNumber = firstNumber - index * 3;
@@ -55,11 +56,25 @@ function buildFiller(
       customerPhone: `+9198${String(700000 + bookingNumber).slice(0, 6)}${String(bookingNumber).slice(-2)}`,
       area: cycle(FILLER_AREAS, offset),
       slot: `${hour}:${index % 2 === 0 ? "15" : "45"}`,
+      ...(dayForIndex ? { day: dayForIndex(index) } : {}),
       amountPaise: cycle(FILLER_AMOUNTS, offset),
       providerName: cycle(FILLER_PROVIDERS, offset),
       providerNote: { kind: "rating", rating: 4.4 + (index % 5) / 10 },
     });
   });
+}
+
+/**
+ * The completed segment's 118 span a working week, not one afternoon: the first 28 fillers sit on
+ * the fixture day (30 completions "today" with the two artifact rows), the rest across the six
+ * days before it — which is what makes the "Completed today" summary tile a different fact from
+ * the tab's all-history 118.
+ */
+const COMPLETED_TODAY_FILLER_COUNT = 28;
+
+function completedFillerDay(index: number): string {
+  if (index < COMPLETED_TODAY_FILLER_COUNT) return fixtureDay();
+  return fixtureDay(-(1 + (index % 6)));
 }
 
 export const ACTIVE_BOOKINGS: readonly BookingListItem[] = [
@@ -94,7 +109,7 @@ export const COMPLETED_BOOKINGS: readonly BookingListItem[] = [
     providerNote: { kind: "rating", rating: 4.6 },
     isAdminVerified: true,
   }),
-  ...buildFiller(116, 8770, BOOKING_STATES.completed),
+  ...buildFiller(116, 8770, BOOKING_STATES.completed, completedFillerDay),
 ];
 
 export const CANCELLED_BOOKINGS: readonly BookingListItem[] = [

@@ -28,7 +28,14 @@
     "clear": "Clear",
     "title": "Filter bookings",
     "stateGroup": "Booking state",
+    "allStates": "All states",
     "apply": "Show results"
+  },
+  "summary": {
+    "escalated": "Escalated",
+    "oldestUnassigned": "Oldest unassigned",
+    "completedToday": "Completed today",
+    "noneValue": "—"
   },
   "count": {
     "subjectActive": "active bookings",
@@ -41,9 +48,6 @@
     "service": "Service",
     "customer": "Customer",
     "phone": "Phone",
-    "area": "Area",
-    "time": "Time",
-    "amount": "Amount",
     "provider": "Provider"
   },
   "table": {
@@ -109,8 +113,6 @@
     "priceLineWithArea": "{{amount}} · Prepaid ({{method}}) · {{area}}",
     "customerHistory": "{{count}} bookings · joined {{joined}}",
     "notAssigned": "Not assigned",
-    "dispatchSummary": "{{rounds}} search attempts · {{declined}} declined",
-    "dispatchSummaryInline": "Not assigned · {{rounds}} attempts · {{declined}} declined",
     "paymentLine": "{{amount}} prepaid · {{method}} ····{{last4}}",
     "paymentMeta": "Paid {{time}} · {{transactionId}}",
     "providerStarted": "Started {{time}}",

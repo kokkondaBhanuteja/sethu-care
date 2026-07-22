@@ -86,11 +86,7 @@ export function BookingDetailDesktop({ controller, detail, isOffline }: BookingD
 
           <Stack className="min-w-0">
             <BookingSectionCard title={t("section.provider")} chip={DETAIL_SECTION_CHIPS.provider}>
-              <ProviderBlock
-                provider={detail.provider}
-                roundCount={detail.dispatchRounds.length}
-                declinedTotal={detail.declinedTotal}
-              />
+              <ProviderBlock provider={detail.provider} />
             </BookingSectionCard>
             <BookingSectionCard
               title={t("section.adminActions")}

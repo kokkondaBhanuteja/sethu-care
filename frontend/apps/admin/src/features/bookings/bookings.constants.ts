@@ -1,10 +1,8 @@
 // Vocabulary and presentation rules for the bookings feature.
 //
-// BOOKING_STATES mirrors backend/internal/booking/state.go verbatim (the closed set of thirteen).
-// It lives here rather than in @sethu/domain because neither the generated client
-// (`BookingResponse.state` is a bare `string`) nor @sethu/domain exports it yet. When the backend
-// contract grows a real enum, delete this block and re-export the generated one — nothing else in
-// the feature compares against a literal.
+// BOOKING_STATES mirrors backend/internal/booking/state.go verbatim (the closed set of thirteen);
+// neither the generated client nor @sethu/domain exports it yet. When the backend contract grows a
+// real enum, delete this block and re-export the generated one.
 
 import {
   AlertTriangle,
@@ -60,7 +58,11 @@ export const BOOKING_SEGMENTS = {
 
 export type BookingSegment = (typeof BOOKING_SEGMENTS)[keyof typeof BOOKING_SEGMENTS];
 
-/** Cancelled also holds FAILED — a job nobody could be sent to is a dead booking, not an active one. */
+/**
+ * Cancelled also holds FAILED — a job nobody could be sent to is a dead booking, not an active one.
+ * RESCHEDULED sits in NO segment: D1 deleted rescheduling, so offering it as a filter option would
+ * advertise a state that cannot exist (the constant above stays only as the backend mirror).
+ */
 export const SEGMENT_STATES: Readonly<Record<BookingSegment, readonly BookingState[]>> = {
   [BOOKING_SEGMENTS.active]: [
     BOOKING_STATES.draft,
@@ -72,7 +74,6 @@ export const SEGMENT_STATES: Readonly<Record<BookingSegment, readonly BookingSta
     BOOKING_STATES.inProgress,
     BOOKING_STATES.awaitingCompletion,
     BOOKING_STATES.escalated,
-    BOOKING_STATES.rescheduled,
   ],
   [BOOKING_SEGMENTS.completed]: [BOOKING_STATES.completed],
   [BOOKING_SEGMENTS.cancelled]: [BOOKING_STATES.cancelled, BOOKING_STATES.failed],
@@ -167,6 +168,12 @@ export const RESCUE_STATES: readonly BookingState[] = [
   BOOKING_STATES.failed,
 ];
 
+/** What the "Oldest unassigned" summary tile narrows to: the states a provider-less booking waits in. */
+export const UNASSIGNED_FILTER_STATES: readonly BookingState[] = [
+  BOOKING_STATES.searching,
+  BOOKING_STATES.escalated,
+];
+
 /** Trailing context for the "Showing 10 of 24 …" count line the design puts under every list. */
 export const SEGMENT_SUBJECT_KEYS = {
   [BOOKING_SEGMENTS.active]: "count.subjectActive",
@@ -186,9 +193,6 @@ export const BOOKINGS_PAGE_SIZE = 10;
 /** Spec §6.8: search is server-side and only fires from three characters. */
 export const SEARCH_MIN_LENGTH = 3;
 
-/**
- * Deep-link intent (spec §3.4 rule 4). An action route that finds its booking already resolved
- * sends the operator here instead, and the detail explains what happened rather than opening a
- * sheet for a situation somebody else has already handled.
- */
+/** Deep-link intent (spec §3.4 rule 4): the detail explains an already-resolved action instead
+ *  of opening a sheet for a situation somebody else has handled. */
 export const BOOKING_INTENT_PARAM = "intent";

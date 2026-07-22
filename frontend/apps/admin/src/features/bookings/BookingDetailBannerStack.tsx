@@ -1,7 +1,6 @@
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
-import { BookingActionButtons } from "./BookingActionButtons";
 import {
   ConcurrentChangeBanner,
   EscalationBanner,
@@ -9,7 +8,6 @@ import {
   ResolvedIntentBanner,
   VerificationBanner,
 } from "./BookingDetailBanners";
-import { BOOKING_ACTION_IDS } from "./useBookingActions";
 import type { BookingDetailController } from "./useBookingDetail";
 import type { BookingDetail } from "./bookings.types";
 
@@ -25,6 +23,10 @@ export interface BookingDetailBannerStackProps {
  * Every persistent condition on this record, in the order the design stacks them: the concurrency
  * notice sits ABOVE the escalation banner it invalidates, so the reader learns the strip below is
  * out of date before they read it.
+ *
+ * The escalation banner carries ONLY Acknowledge — the in-place action that never leaves its
+ * evidence. Assign is the header action bar's single filled primary (the sticky bar's, on
+ * mobile); repeating it here put two identical primaries on one screen.
  */
 export function BookingDetailBannerStack({
   controller,
@@ -36,22 +38,10 @@ export function BookingDetailBannerStack({
   const isLocked = controller.isSuperseded || isOffline;
 
   const escalationActions =
-    detail.escalation &&
-    (controller.actions.canAcknowledge || controller.actions.all.length > 0) ? (
-      <>
-        {controller.actions.canAcknowledge ? (
-          <Button variant="primary" size="inline" disabled={isLocked}>
-            {t("actions.acknowledge")}
-          </Button>
-        ) : null}
-        <BookingActionButtons
-          actions={controller.actions.all.filter(
-            (action) => action.id === BOOKING_ACTION_IDS.assign,
-          )}
-          size="inline"
-          isDisabled={isLocked}
-        />
-      </>
+    detail.escalation && controller.actions.canAcknowledge ? (
+      <Button variant="primary" size="inline" disabled={isLocked}>
+        {t("actions.acknowledge")}
+      </Button>
     ) : undefined;
 
   return (

@@ -1,42 +1,31 @@
 // Stands in for GET /ops/bookings and GET /ops/bookings/{id} until the backend serves them
 // (docs/admin-api-contract.md). Filtering, searching and paging happen here so the hook and the
 // components are written against the eventual server semantics, not against an in-memory array.
+//
+// Reads are projected through mocks/bookingStateStore (bookings.projection.ts): a committed mock
+// write moves the record's state here too, so a cancelled booking stops reading as escalated.
 
 import { mockRead } from "../../mocks/mockTransport";
 import { API_ERROR_CODES, apiError } from "../../lib/http/apiError";
-import {
-  BOOKING_SEGMENTS,
-  BOOKING_STATES,
-  SEGMENT_STATES,
-  type BookingSegment,
-} from "./bookings.constants";
+import { BOOKING_STATES, SEGMENT_STATES } from "./bookings.constants";
 import { BOOKING_DETAIL_FIXTURES } from "./booking-detail.fixtures";
 import { ACTIVE_BOOKINGS, CANCELLED_BOOKINGS, COMPLETED_BOOKINGS } from "./bookings.fixtures";
+import { projectDetail, projectListItem } from "./bookings.projection";
+import { FIXTURE_DAY } from "./bookings.seed";
 import type {
   BookingDetail,
   BookingListItem,
   BookingSegmentCounts,
   BookingsPage,
   BookingsQuery,
+  BookingsSummary,
 } from "./bookings.types";
-
-const BY_SEGMENT: Readonly<Record<BookingSegment, readonly BookingListItem[]>> = {
-  [BOOKING_SEGMENTS.active]: ACTIVE_BOOKINGS,
-  [BOOKING_SEGMENTS.completed]: COMPLETED_BOOKINGS,
-  [BOOKING_SEGMENTS.cancelled]: CANCELLED_BOOKINGS,
-};
-
-const COUNTS: BookingSegmentCounts = {
-  active: ACTIVE_BOOKINGS.length,
-  completed: COMPLETED_BOOKINGS.length,
-  cancelled: CANCELLED_BOOKINGS.length,
-  activeHasEscalation: ACTIVE_BOOKINGS.some((item) => item.state === BOOKING_STATES.escalated),
-};
 
 const EMPTY_PAGE: BookingsPage = {
   items: [],
   total: 0,
   counts: { active: 0, completed: 0, cancelled: 0, activeHasEscalation: false },
+  summary: { escalated: 0, oldestUnassignedMinutes: null, completedToday: 0 },
   isAcrossSegments: false,
 };
 
@@ -60,8 +49,39 @@ function matchesSearch(item: BookingListItem, search: string): boolean {
   );
 }
 
+/** Every record with committed writes projected on — recomputed per read, like a server would. */
 function selectAll(): readonly BookingListItem[] {
-  return [...ACTIVE_BOOKINGS, ...COMPLETED_BOOKINGS, ...CANCELLED_BOOKINGS];
+  return [...ACTIVE_BOOKINGS, ...COMPLETED_BOOKINGS, ...CANCELLED_BOOKINGS].map(projectListItem);
+}
+
+/** Counts follow the projected states, so a cancelled booking moves tabs instead of vanishing. */
+function countsOf(pool: readonly BookingListItem[]): BookingSegmentCounts {
+  const inSegment = (item: BookingListItem, states: readonly string[]) =>
+    states.includes(item.state);
+  return {
+    active: pool.filter((item) => inSegment(item, SEGMENT_STATES.active)).length,
+    completed: pool.filter((item) => inSegment(item, SEGMENT_STATES.completed)).length,
+    cancelled: pool.filter((item) => inSegment(item, SEGMENT_STATES.cancelled)).length,
+    activeHasEscalation: pool.some((item) => item.state === BOOKING_STATES.escalated),
+  };
+}
+
+function summaryOf(pool: readonly BookingListItem[]): BookingsSummary {
+  const unassignedAges = pool
+    .filter(
+      (item) =>
+        item.providerNote.kind === "unassignedFor" && SEGMENT_STATES.active.includes(item.state),
+    )
+    .map((item) => (item.providerNote.kind === "unassignedFor" ? item.providerNote.minutes : 0));
+
+  return {
+    escalated: pool.filter((item) => item.state === BOOKING_STATES.escalated).length,
+    oldestUnassignedMinutes: unassignedAges.length > 0 ? Math.max(...unassignedAges) : null,
+    // The mock's clock is the fixture day — the same "today" every timestamp on screen renders.
+    completedToday: pool.filter(
+      (item) => item.state === BOOKING_STATES.completed && item.slotAt.startsWith(FIXTURE_DAY),
+    ).length,
+  };
 }
 
 function produce(query: BookingsQuery): BookingsPage {
@@ -69,7 +89,7 @@ function produce(query: BookingsQuery): BookingsPage {
   // across Active, Completed and Cancelled"), because an operator with a phone number on the line
   // does not know which bucket the booking is in.
   const isAcrossSegments = query.search.length > 0;
-  const pool = isAcrossSegments ? selectAll() : BY_SEGMENT[query.segment];
+  const pool = selectAll();
   const allowed = SEGMENT_STATES[query.segment];
 
   const matched = pool.filter((item) => {
@@ -81,7 +101,8 @@ function produce(query: BookingsQuery): BookingsPage {
   return {
     items: matched.slice(0, query.limit),
     total: matched.length,
-    counts: COUNTS,
+    counts: countsOf(pool),
+    summary: summaryOf(pool),
     isAcrossSegments,
   };
 }
@@ -147,13 +168,13 @@ export function fetchBookingDetailMock(
   return mockRead(
     () => {
       const drawn = BOOKING_DETAIL_FIXTURES.find((detail) => detail.id === bookingId);
-      if (drawn) return drawn;
+      if (drawn) return projectDetail(drawn);
 
       const listed = selectAll().find((item) => item.id === bookingId);
       if (!listed) {
         throw apiError(API_ERROR_CODES.notFound, "This booking no longer exists.", { status: 404 });
       }
-      return deriveDetail(listed);
+      return projectDetail(deriveDetail(listed));
     },
     signal ? { signal } : {},
   );
