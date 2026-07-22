@@ -1,6 +1,7 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 
 import { ToastHost } from "../components/ui/ToastHost";
+import { isFullScreenTask } from "../routes/routes.constants";
 import { TabBar } from "./TabBar";
 
 /**
@@ -12,11 +13,18 @@ import { TabBar } from "./TabBar";
  * alert bands and sticky action bars all resolve against that element, not the viewport.
  */
 export function MobileShell() {
+  const { pathname } = useLocation();
+
+  // Destructive and financial flows are full-screen modal tasks, and the design draws no tab bar on
+  // them. That is a safety property, not a stylistic one: a visible tab bar mid-cancellation is a
+  // one-tap exit from a half-filled irreversible form that bypasses the "Discard changes?" guard.
+  const isTask = isFullScreenTask(pathname);
+
   return (
     <div className="screen">
       <Outlet />
-      <TabBar />
-      <ToastHost />
+      {isTask ? null : <TabBar />}
+      <ToastHost aboveActionBar={isTask} />
     </div>
   );
 }

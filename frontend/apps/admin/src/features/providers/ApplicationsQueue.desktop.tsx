@@ -8,7 +8,7 @@ import { Tabs } from "../../components/ui/Tabs";
 import { Topbar } from "../../layouts/Topbar";
 import { ROUTES } from "../../routes/routes.constants";
 import { ApplicationsTable } from "./components/ApplicationsTable.desktop";
-import { DesktopMain } from "./components/PageBody";
+import { PageMain } from "../../layouts/PageMain";
 import { useApplicationsQueue } from "./hooks/useApplicationsQueue";
 
 /**
@@ -29,7 +29,7 @@ export function ApplicationsQueueDesktop() {
         ]}
       />
 
-      <DesktopMain>
+      <PageMain>
         <div className="flex items-center">
           <Tabs
             label={t("applications.segmentsLabel")}
@@ -67,7 +67,7 @@ export function ApplicationsQueueDesktop() {
         >
           {(data) => <ApplicationsTable rows={data.rows} />}
         </QueryBoundary>
-      </DesktopMain>
+      </PageMain>
     </>
   );
 }

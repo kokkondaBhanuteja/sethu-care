@@ -10,7 +10,7 @@ import { RefundForm } from "./RefundForm";
 import { RefundPayoutChoice } from "./RefundPayoutChoice";
 import { RefundRateLimited } from "./RefundRateLimited";
 import { RefundSummaryPanel } from "./RefundSummaryPanel";
-import { StepUpChallenge } from "./StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import type { RefundPayoutImpact, RefundTypeId } from "./booking-actions.constants";
 import { refundLimits } from "./refundLimits";
 import { refundCustomerMessage, refundSummaryLine } from "./refundSummary";
@@ -104,8 +104,7 @@ export function RefundDesktop({ state }: { state: RefundState }) {
       </Modal>
 
       <StepUpChallenge
-        isOpen={state.stepUp.isChallenging}
-        isDesktop
+        stepUp={state.stepUp}
         tone="brand"
         title={t("refund.confirmTitle")}
         summary={refundSummaryLine(context ?? null, values, t)}
@@ -114,8 +113,6 @@ export function RefundDesktop({ state }: { state: RefundState }) {
           body: refundCustomerMessage(context ?? null, values, t),
         }}
         confirmLabel={tShell("actions.confirm")}
-        onConfirm={state.stepUp.confirm}
-        onCancel={state.stepUp.cancel}
       />
 
       <DiscardChangesPrompt

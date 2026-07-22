@@ -93,6 +93,7 @@
     "passcodeLabel": "Passcode",
     "verify": "Verify",
     "failed": "That passcode wasn't recognised. Try again.",
-    "expired": "Verification expired. Confirm again to continue."
+    "expired": "Verification expired. Confirm again to continue.",
+    "biometricUnavailable": "Biometrics aren't available on this device — enter your passcode."
   }
 }

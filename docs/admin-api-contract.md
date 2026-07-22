@@ -142,16 +142,22 @@ must be mirrored into `@sethu/domain` and the local `as const` deleted.
 
 ## MISSING — providers
 
-| Method | Path                             | Notes                                                                    |
-| ------ | -------------------------------- | ------------------------------------------------------------------------ |
-| GET    | `/ops/providers`                 | Roster with online/busy/offline, zone coverage, ratings.                 |
-| GET    | `/ops/providers/{id}`            | Profile, performance, documents with expiry.                             |
-| POST   | `/ops/providers/{id}/suspend`    | Step-up + reason. Response must list active jobs that need reassignment. |
-| POST   | `/ops/providers/{id}/block`      | Critical risk. Step-up + reason.                                         |
-| GET    | `/ops/applications`              | Applications queue.                                                      |
-| GET    | `/ops/applications/{id}`         | Review, with document URLs for the viewer.                               |
-| POST   | `/ops/applications/{id}/approve` | Undo window 30s.                                                         |
-| POST   | `/ops/applications/{id}/reject`  | Critical risk. Step-up + reason.                                         |
+| Method | Path                                       | Notes                                                                                                                                                                          |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/ops/providers`                           | `?segment=online\|onJob\|all&search=`. Roster rows plus `counts`, `shortfall` (worst zone below threshold, or null), `pendingApplications`, `oldestApplicationDays`, `statusesAsOf`. |
+| GET    | `/ops/providers/{id}`                      | Profile, performance metrics with their §6.16 band, documents with expiry, skills, recent jobs, feedback, flags, payout cycle, `version`.                                        |
+| GET    | `/ops/providers/{id}/active-jobs`          | Step 3 of the suspend flow. Live bookings with stage, customer, ETA/started, amount, and a suggested reassignment target.                                                        |
+| POST   | `/ops/providers/{id}/suspend`              | One payload for all three outcomes, typed by `type` = `force_offline\|suspend\|block`: `{ version, type, durationDays, reasonCode, note, jobResolutions, notifyImmediately }`.    |
+| POST   | `/ops/providers/{id}/block`                | Critical risk. May be folded into `/suspend` with `type=block`; the console sends one shape either way.                                                                          |
+| POST   | `/ops/providers/{id}/force-offline`        | Medium risk, reason code, 30s undo. Same note.                                                                                                                                  |
+| POST   | `/ops/providers/{id}/restore`              | Reverses a suspension or a block; also the undo target inside the 10s window.                                                                                                   |
+| GET    | `/ops/applications`                        | `?segment=pending\|awaitingDocs\|decided`. Rows plus `counts` and `oldestDays` for the 48-hour SLA line.                                                                        |
+| GET    | `/ops/applications/{id}`                   | Review, with document URLs for the viewer, auto-validation results, and **`approvalBlockers[]`** — the server-enforced approval gate the UI mirrors (§6.18).                     |
+| POST   | `/ops/applications/{id}/approve`           | Undo window 30s. `409` when another admin decided first; the body must carry the decision, decider and timestamp so the console can render the already-decided record.           |
+| POST   | `/ops/applications/{id}/reject`            | Critical risk. Step-up + `{ reasonCode, note }`, note ≥ 20 characters. No undo — the applicant is notified by SMS immediately.                                                   |
+| POST   | `/ops/applications/{id}/request-documents` | Low risk. Selects which documents to ask for; sends SMS + push.                                                                                                                 |
+
+Normative client-side shapes: `frontend/apps/admin/src/features/providers/{providers,suspend,applications}.types.ts`.
 
 ## MISSING — live map (spec §6.7)
 

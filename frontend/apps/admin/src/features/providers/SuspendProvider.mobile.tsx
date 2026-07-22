@@ -6,11 +6,11 @@ import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { Stepper } from "../../components/ui/StepRail";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
-import { ActionBar } from "./components/ActionBar";
+import { ActionBar } from "../../layouts/ActionBar";
 import { DiscardChangesDialog } from "./components/DiscardChangesDialog";
-import { MobileScroll } from "./components/PageBody";
+import { MobileScroll } from "../../layouts/PageMain";
 import { RatingValue } from "./components/Rating";
-import { StepUpChallenge } from "./components/StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { SuspendActionTypes } from "./components/SuspendActionTypes";
 import { SuspendImpactCard } from "./components/SuspendImpactCard";
 import { SuspendReasonFields } from "./components/SuspendReasonFields";
@@ -110,6 +110,7 @@ export function SuspendProviderMobile() {
       </MobileScroll>
 
       <ActionBar
+        noteAbove
         note={
           flow.paneIndex === 1 && flow.unresolvedCount > 0
             ? t("suspend.jobsRemaining", { count: flow.unresolvedCount })

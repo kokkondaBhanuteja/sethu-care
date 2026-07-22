@@ -6,16 +6,16 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { NotFoundState } from "../../components/ui/states/NotFoundState";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
 import { cx } from "../../lib/cx";
-import { ActionBar } from "./components/ActionBar";
+import { ActionBar } from "../../layouts/ActionBar";
 import { ApplicationAgePill } from "./components/ApplicationAge";
 import { ApplicationReviewSections } from "./components/ApplicationReviewSections.mobile";
 import {
   ApplicationDecidedBanner,
   ApproveBlockedBanner,
 } from "./components/ApplicationStateBanners";
-import { MobileScroll } from "./components/PageBody";
+import { MobileScroll } from "../../layouts/PageMain";
 import { RejectApplicationDialog } from "./components/RejectApplicationDialog";
-import { StepUpChallenge } from "./components/StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { useApplicationReview } from "./hooks/useApplicationReview";
 
 /**

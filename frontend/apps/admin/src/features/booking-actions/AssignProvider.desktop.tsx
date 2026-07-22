@@ -4,6 +4,7 @@ import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { SkeletonList } from "../../components/ui/Skeleton";
+import { FilteredEmptyState } from "../../components/ui/states/FilteredEmptyState";
 import { Switch } from "../../components/ui/form/Switch";
 import { AssignBlockedOffline, AssignNoCandidates } from "./AssignEmptyStates";
 import { AssignCandidateTable } from "./AssignCandidateTable";
@@ -76,7 +77,11 @@ export function AssignProviderDesktop({ state }: AssignProviderDesktopProps) {
             return (
               <div className="grid gap-s4 lg:grid-cols-4">
                 <div className="min-w-0 lg:col-span-3">
-                  {candidates.length === 0 ? (
+                  {candidates.length === 0 && data.candidates.length > 0 ? (
+                    // Empty-because-filtered is a different fact from "no providers online", and
+                    // the design's dead-end copy would read as a bug over a hidden list (§4.10).
+                    <FilteredEmptyState onClearFilters={filters.clear} />
+                  ) : candidates.length === 0 ? (
                     <AssignNoCandidates bookingId={state.bookingId} />
                   ) : (
                     <AssignCandidateTable

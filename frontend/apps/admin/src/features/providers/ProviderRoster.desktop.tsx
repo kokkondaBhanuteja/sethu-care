@@ -9,7 +9,7 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { Tabs } from "../../components/ui/Tabs";
 import { Topbar } from "../../layouts/Topbar";
 import { ROUTES } from "../../routes/routes.constants";
-import { DesktopMain } from "./components/PageBody";
+import { PageMain } from "../../layouts/PageMain";
 import { RosterCountTags } from "./components/RosterCountTags";
 import { RosterTable } from "./components/RosterTable.desktop";
 import { SupplyBannerDesktop } from "./components/SupplyBanner";
@@ -31,7 +31,7 @@ export function ProviderRosterDesktop() {
         <SupplyBannerDesktop shortfall={roster.query.data.shortfall} />
       ) : null}
 
-      <DesktopMain>
+      <PageMain>
         <div className="flex items-center">
           <Tabs
             label={t("roster.segmentsLabel")}
@@ -86,7 +86,7 @@ export function ProviderRosterDesktop() {
             </>
           )}
         </QueryBoundary>
-      </DesktopMain>
+      </PageMain>
     </>
   );
 }

@@ -19,8 +19,12 @@ export interface DataTableProps<TRow> {
   columns: readonly DataTableColumn<TRow>[];
   rows: readonly TRow[];
   rowKey: (row: TRow) => string;
-  /** Severity tint for a row — the queue tables mark escalated rows red. */
-  rowTone?: (row: TRow) => "default" | "danger" | "warning";
+  /**
+   * Per-row treatment. `danger`/`warning` are severity tints (the queue tables mark escalated
+   * rows red); `muted` greys a row that is settled — a suspended provider, a decided application;
+   * `faded` dims one that is merely stale, such as an offline provider whose data is last-known.
+   */
+  rowTone?: (row: TRow) => "default" | "danger" | "warning" | "muted" | "faded";
   onRowClick?: (row: TRow) => void;
   /**
    * The key of the row currently open in a detail pane. Tints it and marks it `aria-selected`, so
@@ -104,6 +108,8 @@ export function DataTable<TRow>({
                   className={cx(
                     tone === "danger" && "row-danger",
                     tone === "warning" && "row-warning",
+                    tone === "muted" && "row-muted",
+                    tone === "faded" && "row-faded",
                     selectedRowKey === key && "is-selected",
                     onRowClick && "cursor-pointer",
                   )}

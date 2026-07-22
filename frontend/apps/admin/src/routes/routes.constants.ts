@@ -182,3 +182,26 @@ export const ROUTE_TABLE: readonly RouteMeta[] = [
 
 /** Where an authenticated admin lands with no deep-link intent. */
 export const DEFAULT_ROUTE = ROUTES.live;
+
+/**
+ * True for the destructive and financial flows, which mobile presents as full-screen modal tasks
+ * (spec §3.3) — the tab bar is hidden while one is open.
+ *
+ * Leaving the tab bar visible mid-cancellation offers a one-tap escape from a half-filled
+ * irreversible form that skips the "Discard changes?" guard entirely. Every such route already
+ * declares the action it performs, so the route table answers this without a second list.
+ */
+export function isFullScreenTask(pathname: string): boolean {
+  return ROUTE_TABLE.some(
+    (route) => route.action !== undefined && matchesPattern(route.pattern, pathname),
+  );
+}
+
+/** Segment-wise match of a `:param` pattern against a concrete path. */
+function matchesPattern(pattern: string, pathname: string): boolean {
+  const patternParts = pattern.split("/");
+  const pathParts = pathname.split("/");
+  if (patternParts.length !== pathParts.length) return false;
+
+  return patternParts.every((part, index) => part.startsWith(":") || part === pathParts[index]);
+}

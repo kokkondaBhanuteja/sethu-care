@@ -14,7 +14,7 @@ import { MobileAppBar } from "../../layouts/MobileAppBar";
 import { formatDuration, formatTime } from "../../lib/format";
 import { ROUTES } from "../../routes/routes.constants";
 import { ApplicationsEntryRow } from "./components/ApplicationsEntryRow";
-import { MobileScroll } from "./components/PageBody";
+import { MobileScroll } from "../../layouts/PageMain";
 import { RosterCard } from "./components/RosterCard";
 import { SupplyCardMobile } from "./components/SupplyBanner";
 import { useProviderRoster } from "./hooks/useProviderRoster";

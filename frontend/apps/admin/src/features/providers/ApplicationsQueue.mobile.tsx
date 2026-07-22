@@ -9,7 +9,7 @@ import { Segmented } from "../../components/ui/Segmented";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
 import { ApplicationCard } from "./components/ApplicationCard";
-import { MobileScroll } from "./components/PageBody";
+import { MobileScroll } from "../../layouts/PageMain";
 import { useApplicationsQueue } from "./hooks/useApplicationsQueue";
 
 /** M69 / M70. Oldest first, against the 48-hour decision target. */

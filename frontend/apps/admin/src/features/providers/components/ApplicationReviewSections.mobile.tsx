@@ -7,7 +7,7 @@ import { DOCUMENT_VALIDATIONS, type ApplicationReview } from "../applications.ty
 import { ApplicantCard, ApplicationFacts } from "./ApplicantCard";
 import { ApplicationDocumentList } from "./ApplicationDocumentList";
 import { DesktopRecommendedCard } from "./ApplicationStateBanners";
-import { SectionGap } from "./PageBody";
+import { SectionGap } from "../../../layouts/Layout";
 import { SectionLabel } from "./SectionLabel";
 
 export interface ApplicationReviewSectionsProps {

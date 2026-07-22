@@ -66,14 +66,14 @@ export function SuspendActionTypes({
       {SUSPEND_ACTION_ORDER.map((actionType) => {
         const isSelected = actionType === value;
         return (
-          <label
+          <div
             key={actionType}
             className={cx(
-              "flex cursor-pointer flex-col rounded-card border bg-canvas p-s3",
+              "flex flex-col rounded-card border bg-canvas p-s3",
               isSelected ? "border-danger bg-bg-danger" : "border-border-subtle",
             )}
           >
-            <span className="flex items-start gap-s2">
+            <label className="flex cursor-pointer items-start gap-s2">
               <input
                 type="radio"
                 name="suspend-action-type"
@@ -98,22 +98,24 @@ export function SuspendActionTypes({
                 <Pill tone={EXIT_TONE[actionType]} icon={EXIT_ICON[actionType]} className="mt-s2">
                   {t(COPY[actionType].exit)}
                 </Pill>
-
-                {isSelected && actionType === SUSPEND_ACTION_TYPES.suspend ? (
-                  <Segmented
-                    label={t("suspend.durationLabel")}
-                    className="mt-s3"
-                    value={String(durationDays)}
-                    onValueChange={(next) => onDurationChange(Number(next))}
-                    options={SUSPEND_DURATIONS.map((days) => ({
-                      value: String(days),
-                      label: t("suspend.durationDays", { count: days }),
-                    }))}
-                  />
-                ) : null}
               </span>
-            </span>
-          </label>
+            </label>
+
+            {/* Duration belongs to the selected card and is meaningless for the other two, so it
+                sits inside it — outside the label, so the segmented control is its own control. */}
+            {isSelected && actionType === SUSPEND_ACTION_TYPES.suspend ? (
+              <Segmented
+                label={t("suspend.durationLabel")}
+                className="mt-s3"
+                value={String(durationDays)}
+                onValueChange={(next) => onDurationChange(Number(next))}
+                options={SUSPEND_DURATIONS.map((days) => ({
+                  value: String(days),
+                  label: t("suspend.durationDays", { count: days }),
+                }))}
+              />
+            ) : null}
+          </div>
         );
       })}
     </fieldset>

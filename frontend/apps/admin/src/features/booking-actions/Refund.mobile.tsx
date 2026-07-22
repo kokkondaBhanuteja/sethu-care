@@ -10,7 +10,7 @@ import { MobileActionScreen } from "./MobileActionScreen";
 import { RefundForm } from "./RefundForm";
 import { RefundPayoutChoice } from "./RefundPayoutChoice";
 import { RefundRateLimited } from "./RefundRateLimited";
-import { StepUpChallenge } from "./StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import type { RefundPayoutImpact } from "./booking-actions.constants";
 import { refundLimits } from "./refundLimits";
 import { refundCustomerMessage, refundSummaryLine } from "./refundSummary";
@@ -90,8 +90,7 @@ export function RefundMobile({ state }: { state: RefundState }) {
       </MobileActionScreen>
 
       <StepUpChallenge
-        isOpen={state.stepUp.isChallenging}
-        isDesktop={false}
+        stepUp={state.stepUp}
         tone="brand"
         title={t("refund.confirmTitle")}
         summary={refundSummaryLine(context ?? null, values, t)}
@@ -100,8 +99,6 @@ export function RefundMobile({ state }: { state: RefundState }) {
           body: refundCustomerMessage(context ?? null, values, t),
         }}
         confirmLabel={t("shared.confirmWithBiometrics")}
-        onConfirm={state.stepUp.confirm}
-        onCancel={state.stepUp.cancel}
       />
 
       <DiscardChangesPrompt

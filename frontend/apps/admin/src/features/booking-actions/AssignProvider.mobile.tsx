@@ -8,6 +8,7 @@ import { CardList } from "../../components/ui/Card";
 import { Icon } from "../../components/ui/Icon";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { Tabs } from "../../components/ui/Tabs";
+import { FilteredEmptyState } from "../../components/ui/states/FilteredEmptyState";
 import { AssignBlockedOffline, AssignNoCandidates } from "./AssignEmptyStates";
 import { AssignCandidateCard } from "./AssignCandidateCard";
 import { AssignConfirmSheet } from "./AssignConfirmSheet";
@@ -84,6 +85,11 @@ export function AssignProviderMobile({ state }: { state: AssignProviderState }) 
               const candidates =
                 tab === TAB_VALUES.recommended ? filters.apply(data.candidates) : data.candidates;
 
+              if (candidates.length === 0 && data.candidates.length > 0) {
+                // Empty-because-filtered, not a dead end: the "no providers online" copy over a
+                // hidden list reads as a bug (§4.10).
+                return <FilteredEmptyState onClearFilters={filters.clear} grow />;
+              }
               if (candidates.length === 0) {
                 return <AssignNoCandidates bookingId={state.bookingId} stacked />;
               }

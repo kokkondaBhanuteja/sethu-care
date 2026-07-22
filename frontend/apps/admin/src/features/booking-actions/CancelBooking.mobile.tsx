@@ -6,7 +6,7 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { CancelBookingForm } from "./CancelBookingForm";
 import { DiscardChangesPrompt } from "./DiscardChangesPrompt";
 import { MobileActionScreen } from "./MobileActionScreen";
-import { StepUpChallenge } from "./StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { cancelSummaryLine } from "./cancelSummary";
 import type { CancelBookingState } from "./useCancelBooking";
 
@@ -48,14 +48,11 @@ export function CancelBookingMobile({ state }: { state: CancelBookingState }) {
       </MobileActionScreen>
 
       <StepUpChallenge
-        isOpen={state.stepUp.isChallenging}
-        isDesktop={false}
+        stepUp={state.stepUp}
         tone="danger"
         title={t("cancel.confirmTitle")}
         summary={cancelSummaryLine(context ?? null, state.form.form.watch(), t)}
         confirmLabel={t("shared.confirmWithBiometrics")}
-        onConfirm={state.stepUp.confirm}
-        onCancel={state.stepUp.cancel}
       />
 
       <DiscardChangesPrompt

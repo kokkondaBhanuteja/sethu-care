@@ -15,10 +15,10 @@ import {
 import { AutoValidationPanel } from "./components/AutoValidationPanel";
 import { DocumentFilmstrip } from "./components/DocumentFilmstrip.desktop";
 import { DocumentViewer } from "./components/DocumentViewer.desktop";
-import { DesktopMain } from "./components/PageBody";
+import { PageMain } from "../../layouts/PageMain";
 import { RejectApplicationDialog } from "./components/RejectApplicationDialog";
 import { ReviewerNotesCard } from "./components/ReviewerNotesCard";
-import { StepUpChallenge } from "./components/StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { useApplicationReview } from "./hooks/useApplicationReview";
 
 /**
@@ -53,14 +53,14 @@ export function ApplicationReviewDesktop() {
         isEmpty={(loaded) => loaded === null}
         empty={<NotFoundState subject={t("review.notFound")} />}
         skeleton={
-          <DesktopMain>
+          <PageMain>
             <SkeletonList rows={6} rowClassName="h-row-72" label={t("review.loadingLabel")} />
-          </DesktopMain>
+          </PageMain>
         }
       >
         {(loaded) =>
           loaded === null ? null : (
-            <DesktopMain>
+            <PageMain>
               <div className="grid grid-cols-1 gap-s3 lg:grid-cols-5">
                 <div className="flex flex-col gap-s3 lg:col-span-2">
                   <ApplicantCard review={loaded} />
@@ -82,7 +82,7 @@ export function ApplicationReviewDesktop() {
                   <AutoValidationPanel checks={loaded.autoValidation} />
                 </div>
               </div>
-            </DesktopMain>
+            </PageMain>
           )
         }
       </QueryBoundary>

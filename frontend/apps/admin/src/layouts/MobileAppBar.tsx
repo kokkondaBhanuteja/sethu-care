@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
 
@@ -10,6 +10,12 @@ export interface MobileAppBarProps {
   title: string;
   /** Pushed screens show a back affordance; tab roots do not. */
   showBack?: boolean;
+  /**
+   * `close` for a full-screen modal task — cancel, refund, manual completion. The X says "abandon
+   * this", where a chevron says "go up a level"; on a form that is about to spend money the
+   * difference matters.
+   */
+  backIcon?: "back" | "close";
   /** Overrides browser-history back — use when the natural parent is not the previous screen. */
   onBack?: () => void;
   /** The smaller 18px title used on pushed detail screens. */
@@ -27,6 +33,7 @@ export interface MobileAppBarProps {
 export function MobileAppBar({
   title,
   showBack = false,
+  backIcon = "back",
   onBack,
   compact = false,
   onSurface = false,
@@ -45,9 +52,9 @@ export function MobileAppBar({
           type="button"
           className="appbar__btn"
           onClick={onBack ?? (() => void navigate(-1))}
-          aria-label={t("actions.back")}
+          aria-label={backIcon === "close" ? t("actions.close") : t("actions.back")}
         >
-          <Icon glyph={ChevronLeft} size="lg" />
+          <Icon glyph={backIcon === "close" ? X : ChevronLeft} size="lg" />
         </button>
       ) : null}
       <h1 className={cx("appbar__title", compact && "appbar__title--sm", "truncate")}>{title}</h1>

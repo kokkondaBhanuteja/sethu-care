@@ -6,7 +6,7 @@ import { Modal } from "../../components/ui/Modal";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { CancelBookingForm } from "./CancelBookingForm";
 import { DiscardChangesPrompt } from "./DiscardChangesPrompt";
-import { StepUpChallenge } from "./StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { cancelSummaryLine } from "./cancelSummary";
 import type { CancelBookingState } from "./useCancelBooking";
 
@@ -57,14 +57,11 @@ export function CancelBookingDesktop({ state }: { state: CancelBookingState }) {
       </Modal>
 
       <StepUpChallenge
-        isOpen={state.stepUp.isChallenging}
-        isDesktop
+        stepUp={state.stepUp}
         tone="danger"
         title={t("cancel.confirmTitle")}
         summary={cancelSummaryLine(context ?? null, state.form.form.watch(), t)}
         confirmLabel={tShell("actions.confirm")}
-        onConfirm={state.stepUp.confirm}
-        onCancel={state.stepUp.cancel}
       />
 
       <DiscardChangesPrompt

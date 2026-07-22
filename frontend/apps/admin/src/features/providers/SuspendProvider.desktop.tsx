@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { StepRail } from "../../components/ui/StepRail";
 import { DiscardChangesDialog } from "./components/DiscardChangesDialog";
-import { StepUpChallenge } from "./components/StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { SuspendActionTypes } from "./components/SuspendActionTypes";
 import { SuspendReasonFields } from "./components/SuspendReasonFields";
 import { SuspendStepConfirm } from "./components/SuspendStepConfirm";

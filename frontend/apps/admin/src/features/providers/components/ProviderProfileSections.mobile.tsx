@@ -7,7 +7,7 @@ import { Icon } from "../../../components/ui/Icon";
 import { formatDate } from "../../../lib/format";
 import type { ProviderProfile } from "../providers.types";
 import type { ProviderProfileScreen } from "../hooks/useProviderProfile";
-import { SectionGap } from "./PageBody";
+import { SectionGap } from "../../../layouts/Layout";
 import { ProviderDocumentList } from "./ProviderDocumentList";
 import { ProviderLiveCard } from "./ProviderLiveCard";
 import { ProviderMetrics } from "./ProviderMetrics";

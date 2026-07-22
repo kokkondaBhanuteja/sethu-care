@@ -11,7 +11,7 @@ import {
   ManualCompletionTooEarly,
   OtpArrivedInterrupt,
 } from "./ManualCompletionNotices";
-import { StepUpChallenge } from "./StepUpChallenge";
+import { StepUpChallenge } from "../../components/ui/StepUpChallenge";
 import { MANUAL_COMPLETION_STEP_IDS } from "./booking-actions.constants";
 import { canLeaveStep } from "./manualCompletionGates";
 import type { ManualCompletionState } from "./useManualCompletion";
@@ -123,14 +123,11 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
       />
 
       <StepUpChallenge
-        isOpen={state.stepUp.isChallenging}
-        isDesktop
+        stepUp={state.stepUp}
         tone="brand"
         title={t("manual.title")}
         summary={t("manual.stepUpSummary", { reference: context?.booking.reference ?? "" })}
         confirmLabel={tShell("actions.confirm")}
-        onConfirm={state.stepUp.confirm}
-        onCancel={state.stepUp.cancel}
       />
 
       <DiscardChangesPrompt

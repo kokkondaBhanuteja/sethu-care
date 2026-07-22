@@ -6,7 +6,7 @@ import { SkeletonList } from "../../components/ui/Skeleton";
 import { NotFoundState } from "../../components/ui/states/NotFoundState";
 import { Topbar } from "../../layouts/Topbar";
 import { ROUTES } from "../../routes/routes.constants";
-import { DesktopMain } from "./components/PageBody";
+import { PageMain } from "../../layouts/PageMain";
 import {
   ExpiredDocumentBanner,
   OffboardedBanner,
@@ -60,14 +60,14 @@ export function ProviderProfileDesktop() {
         isEmpty={(loaded) => loaded === null}
         empty={<NotFoundState subject={t("profile.notFound")} />}
         skeleton={
-          <DesktopMain>
+          <PageMain>
             <SkeletonList rows={6} rowClassName="h-row-72" label={t("profile.loadingLabel")} />
-          </DesktopMain>
+          </PageMain>
         }
       >
         {(loaded) =>
           loaded === null ? null : (
-            <DesktopMain>
+            <PageMain>
               <div className="grid grid-cols-1 gap-s5 lg:grid-cols-20">
                 <div className="flex flex-col gap-s5 lg:col-span-5">
                   <ProviderLiveCard profile={loaded} variant="desktop" />
@@ -92,7 +92,7 @@ export function ProviderProfileDesktop() {
                   <ProviderPayoutsCard amountPaise={loaded.payoutCyclePaise} />
                 </div>
               </div>
-            </DesktopMain>
+            </PageMain>
           )
         }
       </QueryBoundary>

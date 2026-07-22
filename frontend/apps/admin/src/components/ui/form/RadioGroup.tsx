@@ -20,6 +20,8 @@ export interface RadioGroupProps<TValue extends string> {
   /** Colours the selection red — used where every option is a destructive outcome. */
   tone?: "brand" | "danger";
   asCards?: boolean;
+  /** Two columns where the design lays a reason grid out side by side (the cancel reasons). */
+  columns?: 1 | 2;
   error?: string;
   required?: boolean;
   name?: string;
@@ -36,6 +38,7 @@ export function RadioGroup<TValue extends string>({
   onValueChange,
   tone = "brand",
   asCards = false,
+  columns = 1,
   error,
   required = false,
   name,
@@ -52,36 +55,38 @@ export function RadioGroup<TValue extends string>({
     >
       <legend className="field-label">{legend}</legend>
 
-      {options.map((option) => (
-        <label
-          key={option.value}
-          className={cx("opt-row", asCards && "opt-row--card", option.disabled && "is-disabled")}
-        >
-          <input
-            className="sr-only"
-            type="radio"
-            name={groupName}
-            value={option.value}
-            checked={value === option.value}
-            disabled={option.disabled}
-            onChange={() => onValueChange(option.value)}
-          />
-          <span
-            aria-hidden
-            className={cx(
-              "radio",
-              tone === "danger" && "radio--danger",
-              value === option.value && "is-checked",
-            )}
-          />
-          <span className="grow">
-            <span className="t-body c-1 block">{option.label}</span>
-            {option.description ? (
-              <span className="t-caption c-2 block">{option.description}</span>
-            ) : null}
-          </span>
-        </label>
-      ))}
+      <div className={columns === 2 ? "grid grid-cols-2 gap-x-s3" : "contents"}>
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={cx("opt-row", asCards && "opt-row--card", option.disabled && "is-disabled")}
+          >
+            <input
+              className="sr-only"
+              type="radio"
+              name={groupName}
+              value={option.value}
+              checked={value === option.value}
+              disabled={option.disabled}
+              onChange={() => onValueChange(option.value)}
+            />
+            <span
+              aria-hidden
+              className={cx(
+                "radio",
+                tone === "danger" && "radio--danger",
+                value === option.value && "is-checked",
+              )}
+            />
+            <span className="grow">
+              <span className="t-body c-1 block">{option.label}</span>
+              {option.description ? (
+                <span className="t-caption c-2 block">{option.description}</span>
+              ) : null}
+            </span>
+          </label>
+        ))}
+      </div>
 
       {error ? (
         <p id={errorId(groupId)} className="t-caption c-danger" role="alert">
