@@ -40,7 +40,10 @@ export function BookingDetailDesktop({ controller, detail, isOffline }: BookingD
 
   return (
     <>
-      <Topbar crumbs={[{ label: t("title"), to: ROUTES.bookings }, { label: detail.reference }]} />
+      <Topbar
+        crumbs={[{ label: t("title"), to: ROUTES.bookings }, { label: detail.reference }]}
+        pageRendersHeading
+      />
 
       <PageMain>
         <PageHeader

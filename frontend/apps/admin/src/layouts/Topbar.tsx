@@ -30,13 +30,16 @@ export interface TopbarProps {
   crumbs?: readonly Crumb[];
   /** Page-level controls: a search field, a segmented range, a primary action. */
   actions?: React.ReactNode;
+  /** Set when the screen renders its own h1 (ui-web PageHeader) — the topbar then stays pure
+      chrome, so every screen has exactly ONE heading. */
+  pageRendersHeading?: boolean;
 }
 
 /**
  * The desktop topbar, restyled to the global language (P3): ui-web Breadcrumb over react-router
  * links, the alert bell, and the signed-in operator as an AvatarLabel identity block.
  */
-export function Topbar({ title, crumbs, actions }: TopbarProps) {
+export function Topbar({ title, crumbs, actions, pageRendersHeading }: TopbarProps) {
   const { t } = useTranslation("adminShell");
   const { criticalAlerts } = useShellCounters();
   const user = useSession((state) => state.user);
@@ -46,8 +49,11 @@ export function Topbar({ title, crumbs, actions }: TopbarProps) {
       {crumbs ? (
         <>
           {/* A crumbed page still needs exactly one h1: the trail is a <nav> of links, so the
-              trailing crumb IS the page title, announced here and nowhere else. */}
-          <h1 className="sr-only">{crumbs[crumbs.length - 1]?.label}</h1>
+              trailing crumb IS the page title — unless the screen mounts PageHeader, which then
+              owns the single h1 (pageRendersHeading). */}
+          {pageRendersHeading ? null : (
+            <h1 className="sr-only">{crumbs[crumbs.length - 1]?.label}</h1>
+          )}
           <Breadcrumb aria-label={t("nav.sections")}>
             <BreadcrumbList>
               {crumbs.map((crumb, index) => {

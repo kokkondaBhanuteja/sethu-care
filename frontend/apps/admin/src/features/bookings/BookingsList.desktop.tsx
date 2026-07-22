@@ -32,7 +32,7 @@ export function BookingsListDesktop() {
 
   return (
     <>
-      <Topbar crumbs={[{ label: t("title") }]} />
+      <Topbar crumbs={[{ label: t("title") }]} pageRendersHeading />
 
       <PageMain>
         <PageHeader title={t("title")} />
