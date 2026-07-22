@@ -11,5 +11,9 @@ body {
   margin: 0;
   background: var(--color-ink);
   color: var(--color-ink-inverse);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
