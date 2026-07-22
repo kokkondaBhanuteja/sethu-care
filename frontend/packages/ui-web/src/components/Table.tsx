@@ -40,11 +40,13 @@ export function Table({ className, wrapperClassName, density, ...props }: TableP
 }
 
 // `inset` recreates the refs' filled header band; `plain` keeps just the hairline underline.
+// Default look is the reference's filled header band (bg-inset) — it is what makes the header
+// row instantly distinguishable from data rows; `plain` opts out for nested/quiet tables.
 const tableHeaderVariants = cva("[&_tr]:border-b [&_tr]:border-border", {
   variants: {
     look: { plain: "", inset: "bg-inset" },
   },
-  defaultVariants: { look: "plain" },
+  defaultVariants: { look: "inset" },
 });
 
 export interface TableHeaderProps

@@ -170,3 +170,17 @@ export {
   sidebarMenuButtonVariants,
   type SidebarMenuButtonProps,
 } from "./components/SidebarMenu";
+
+// Filters, search-selects & page structure
+export { Combobox, type ComboboxProps, type ComboboxOption } from "./components/Combobox";
+export {
+  TableColumnFilter,
+  type TableColumnFilterProps,
+  type TableColumnFilterOption,
+} from "./components/TableColumnFilter";
+export {
+  PageShell,
+  PageHeader,
+  type PageShellProps,
+  type PageHeaderProps,
+} from "./components/PageHeader";
