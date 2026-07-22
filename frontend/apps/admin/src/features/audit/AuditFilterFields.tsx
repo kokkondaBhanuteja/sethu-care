@@ -18,13 +18,13 @@ export interface AuditFilterFieldsProps {
   filters: AuditFilters;
   admins: readonly AuditAdmin[];
   onChange: (patch: Partial<AuditFilters>) => void;
-  /** `inline` sits in the desktop filter bar; `stack` fills the Drawer and the mobile Sheet. */
+  /** `inline` sits in the desktop filter bar; `stack` fills the mobile Sheet. */
   layout?: "stack" | "inline";
 }
 
 /**
  * The full filter set (spec §6.29): admin, action type, target type, date range. Shared by the
- * desktop Drawer and the mobile Sheet so the two surfaces cannot drift apart.
+ * desktop filter band (inline) and the mobile Sheet so the two surfaces cannot drift apart.
  *
  * Dates are native `type="date"` inputs. The design specifies no custom calendar anywhere in this
  * product, and the platform picker is keyboard- and screen-reader-complete already.

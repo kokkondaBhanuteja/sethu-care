@@ -6,20 +6,24 @@ import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
 import { formatDateShort, formatTime } from "../../lib/format";
 import { AuditActionPill } from "./AuditActionPill";
 import { AuditMono } from "./AuditDefList";
+import { AuditTargetLink } from "./AuditTargetLink";
 import { REASON_LABEL_KEYS } from "./audit.constants";
 import { changeSummary } from "./auditChange";
 import type { AuditEntry } from "./audit.types";
 
 export interface AuditLogTableProps {
   entries: readonly AuditEntry[];
+  /** The `?entry=` selection — the tinted row must match the record the detail panel shows. */
+  selectedEntryId: string | null;
   onSelect: (entryId: string) => void;
 }
 
 /**
  * The ledger. Six columns an ops manager reads down rather than across: who, what, which record,
- * what changed, why. No row carries an action — there is nothing to do to an entry (BOX 48).
+ * what changed, why. No row carries an action — there is nothing to do to an entry (BOX 48). The
+ * target reference is the row's one outward link; clicking it navigates instead of selecting.
  */
-export function AuditLogTable({ entries, onSelect }: AuditLogTableProps) {
+export function AuditLogTable({ entries, selectedEntryId, onSelect }: AuditLogTableProps) {
   const { t } = useTranslation("adminAudit");
 
   const columns = useMemo<readonly DataTableColumn<AuditEntry>[]>(
@@ -54,7 +58,7 @@ export function AuditLogTable({ entries, onSelect }: AuditLogTableProps) {
       {
         id: "target",
         header: t("columns.target"),
-        render: (entry) => <AuditMono brand>{entry.target.reference}</AuditMono>,
+        render: (entry) => <AuditTargetLink target={entry.target} />,
       },
       {
         id: "change",
@@ -82,6 +86,7 @@ export function AuditLogTable({ entries, onSelect }: AuditLogTableProps) {
       rows={entries}
       rowKey={(entry) => entry.id}
       density="dense"
+      selectedRowKey={selectedEntryId}
       onRowClick={(entry) => onSelect(entry.id)}
     />
   );

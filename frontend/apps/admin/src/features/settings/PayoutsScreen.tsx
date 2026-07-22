@@ -16,8 +16,7 @@ import { usePayouts } from "./usePayouts";
 
 /**
  * BOX 66 — the one genuinely desktop-only screen (spec §1.5). Export CSV belongs here because this
- * is a finance surface that feeds a bank file, unlike the audit log, which is append-only and
- * carries no export at all.
+ * is a finance surface that feeds a bank file.
  */
 export function PayoutsScreen() {
   const { t } = useTranslation("adminSettings");

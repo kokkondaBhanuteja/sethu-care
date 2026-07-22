@@ -1,5 +1,4 @@
 import { CheckCircle2 } from "lucide-react";
-import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
 
 import { Icon } from "../../components/ui/Icon";
@@ -7,15 +6,14 @@ import { Pill } from "../../components/ui/Pill";
 import { formatDate, formatTime } from "../../lib/format";
 import { AuditDefList, AuditDefRow, AuditMono } from "./AuditDefList";
 import { AuditEvidenceTags } from "./AuditEvidenceTags";
+import { AuditTargetLink } from "./AuditTargetLink";
 import {
   ACTION_REGISTRY_IDS,
   REASON_LABEL_KEYS,
   RISK_LABEL_KEYS,
   RISK_PILL_TONES,
-  TARGET_TYPE_LABEL_KEYS,
 } from "./audit.constants";
 import { toTransitions } from "./auditChange";
-import { auditTargetRoute } from "./auditTarget";
 import type { AuditEntry, AuditStateSnapshot } from "./audit.types";
 
 export interface AuditEntryFieldsProps {
@@ -30,8 +28,6 @@ export interface AuditEntryFieldsProps {
 export function AuditEntryFields({ entry, twoColumn = false }: AuditEntryFieldsProps) {
   const { t } = useTranslation("adminAudit");
   const reasonKey = entry.reason ? REASON_LABEL_KEYS[entry.reason.code] : undefined;
-  const targetRoute = auditTargetRoute(entry.target);
-  const targetLabel = t(TARGET_TYPE_LABEL_KEYS[entry.target.type]);
 
   return (
     <AuditDefList twoColumn={twoColumn}>
@@ -53,15 +49,7 @@ export function AuditEntryFields({ entry, twoColumn = false }: AuditEntryFieldsP
         <Pill tone={RISK_PILL_TONES[entry.riskLevel]}>{t(RISK_LABEL_KEYS[entry.riskLevel])}</Pill>
       </AuditDefRow>
       <AuditDefRow label={t("detail.target")}>
-        {targetRoute ? (
-          <Link to={targetRoute}>
-            {targetLabel} <AuditMono brand>{entry.target.reference}</AuditMono>
-          </Link>
-        ) : (
-          <>
-            {targetLabel} <AuditMono>{entry.target.reference}</AuditMono>
-          </>
-        )}
+        <AuditTargetLink target={entry.target} withTypeLabel />
       </AuditDefRow>
 
       <AuditDefRow label={t("detail.before")}>

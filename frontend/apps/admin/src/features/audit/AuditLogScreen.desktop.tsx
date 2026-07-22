@@ -1,10 +1,8 @@
-import { useState } from "react";
-import { ScrollText, SlidersHorizontal } from "lucide-react";
+import { Download, ScrollText } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
-import { Drawer } from "../../components/ui/Drawer";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { Pagination } from "../../components/ui/Pagination";
@@ -18,23 +16,54 @@ import { AuditFilterFields } from "./AuditFilterFields";
 import { AuditImmutabilityStrip } from "./AuditImmutabilityStrip";
 import { AuditLogTable } from "./AuditLogTable";
 import { AuditTableSkeleton } from "./AuditSkeletons";
+import { auditCsvFilename, buildAuditCsv, downloadAuditCsv } from "./auditCsv";
 import { useAuditLog } from "./useAuditLog";
 import { useAuditSelection } from "./useAuditEntry";
 
 /**
  * Master–detail rather than an expanding row: an ops manager cross-checking a disputed action needs
  * the row's neighbours — who else touched this booking, in what order — visible while reading the
- * full entry (BOX 48). The detail sits beside the ledger, not over it.
+ * full entry (BOX 48). The detail sits beside the ledger, not over it. The filter band carries the
+ * complete filter set inline; there is no second filter surface to drift from it.
  */
 export function AuditLogScreenDesktop() {
   const { t } = useTranslation("adminAudit");
-  const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const log = useAuditLog();
   const { selectedId, select } = useAuditSelection();
+  const loadedEntries = log.query.data?.items ?? [];
+
+  // A copy of the filtered ledger as the screen shows it — a read, not a mutation; the log itself
+  // stays append-only.
+  const handleExportCsv = () => {
+    if (loadedEntries.length === 0) return;
+    const csv = buildAuditCsv(loadedEntries, {
+      entryId: t("detail.entryId"),
+      timestamp: t("detail.timestamp"),
+      admin: t("columns.admin"),
+      action: t("columns.action"),
+      target: t("columns.target"),
+      change: t("columns.change"),
+      reason: t("columns.reason"),
+    });
+    downloadAuditCsv(csv, auditCsvFilename());
+  };
 
   return (
     <>
-      <Topbar title={t("title")} />
+      <Topbar
+        title={t("title")}
+        actions={
+          <Button
+            variant="outline"
+            size="section"
+            iconStart={Download}
+            onClick={handleExportCsv}
+            disabled={loadedEntries.length === 0}
+          >
+            {t("export.csv")}
+          </Button>
+        }
+      />
       <AuditImmutabilityStrip variant="desktop" />
 
       <main className="main">
@@ -51,14 +80,6 @@ export function AuditLogScreenDesktop() {
             onChange={log.patchFilters}
             layout="inline"
           />
-          <Button
-            variant="text"
-            size="inline"
-            iconStart={SlidersHorizontal}
-            onClick={() => setFilterDrawerOpen(true)}
-          >
-            {t("filters.more")}
-          </Button>
           <Button variant="textBrand" size="inline" onClick={log.clearFilters}>
             {t("filters.clear")}
           </Button>
@@ -90,7 +111,11 @@ export function AuditLogScreenDesktop() {
               >
                 {(page) => (
                   <>
-                    <AuditLogTable entries={page.items} onSelect={select} />
+                    <AuditLogTable
+                      entries={page.items}
+                      selectedEntryId={selectedId}
+                      onSelect={select}
+                    />
                     <Pagination
                       shown={page.items.length}
                       total={page.total}
@@ -111,20 +136,6 @@ export function AuditLogScreenDesktop() {
           </div>
         </div>
       </main>
-
-      <Drawer
-        isOpen={isFilterDrawerOpen}
-        title={t("filters.title")}
-        width="narrow"
-        onDismiss={() => setFilterDrawerOpen(false)}
-        footer={
-          <Button variant="outline" size="secondary" block onClick={log.clearFilters}>
-            {t("filters.clear")}
-          </Button>
-        }
-      >
-        <AuditFilterFields filters={log.filters} admins={log.admins} onChange={log.patchFilters} />
-      </Drawer>
     </>
   );
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "@sethu/i18n";
 import { Avatar } from "../../components/ui/Avatar";
 import { formatTime } from "../../lib/format";
 import { AuditActionPill } from "./AuditActionPill";
-import { AuditMono } from "./AuditDefList";
+import { AuditTargetLink } from "./AuditTargetLink";
 import { REASON_LABEL_KEYS } from "./audit.constants";
 import { changeSummary } from "./auditChange";
 import type { AuditEntry } from "./audit.types";
@@ -16,7 +16,9 @@ export interface AuditEntryRowProps {
 /**
  * A ledger line, not a card: bottom rule, no shadow, no radius, no swipe action. Four flat lines
  * per entry — who, what, from → to, why — read down the column far faster than floating cards
- * (BOX 75). The row opens the entry; it never acts on it.
+ * (BOX 75). The row opens the entry; the target reference is the one nested control and navigates
+ * outward to the record instead. A stretched overlay button keeps the two tap targets valid HTML —
+ * a link inside a button is not — with the link stacked above it.
  */
 export function AuditEntryRow({ entry, onSelect }: AuditEntryRowProps) {
   const { t } = useTranslation("adminAudit");
@@ -24,11 +26,14 @@ export function AuditEntryRow({ entry, onSelect }: AuditEntryRowProps) {
   const reasonLabel = entry.reason ? (reasonKey ? t(reasonKey) : entry.reason.code) : null;
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(entry.id)}
-      className="w-full text-left flex items-start gap-s3 px-s4 py-s3 border-b border-border-subtle"
-    >
+    <div className="relative flex items-start gap-s3 px-s4 py-s3 border-b border-border-subtle">
+      <button
+        type="button"
+        onClick={() => onSelect(entry.id)}
+        aria-label={t("row.openEntry", { reference: entry.target.reference })}
+        className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+
       <Avatar name={entry.admin.name} size="xs" />
       <span className="flex flex-col gap-s1 grow min-w-0">
         <span className="flex items-start justify-between gap-s2">
@@ -43,7 +48,8 @@ export function AuditEntryRow({ entry, onSelect }: AuditEntryRowProps) {
           </span>
         </span>
 
-        <AuditMono brand>{entry.target.reference}</AuditMono>
+        {/* `relative` lifts the link above the stretched row button so its tap wins. */}
+        <AuditTargetLink target={entry.target} className="relative self-start" />
 
         <span className="text-caption text-text-2 break-words">
           {changeSummary(entry.before, entry.after)}
@@ -55,6 +61,6 @@ export function AuditEntryRow({ entry, onSelect }: AuditEntryRowProps) {
           {` · ${entry.context.deviceName}`}
         </span>
       </span>
-    </button>
+    </div>
   );
 }

@@ -14,7 +14,6 @@
     "label": "Filter audit entries",
     "title": "Filter entries",
     "openFilters": "Filter entries",
-    "more": "More filters",
     "clear": "Clear",
     "admin": "Admin",
     "action": "Action type",
@@ -34,6 +33,9 @@
     "resultCount": "{{count}} entries",
     "resultCount_one": "{{count}} entry",
     "resultCount_other": "{{count}} entries"
+  },
+  "export": {
+    "csv": "Export CSV"
   },
   "quick": {
     "all": "All",
@@ -67,7 +69,8 @@
   },
   "row": {
     "reason": "Reason: {{value}}",
-    "noReason": "No reason required"
+    "noReason": "No reason required",
+    "openEntry": "Open audit entry {{reference}}"
   },
   "state": {
     "loading": "Loading the audit log",

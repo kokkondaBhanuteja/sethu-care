@@ -9,10 +9,13 @@ makes "who did this?" provable. It matters more than its size suggests.
 
 ## The one rule this folder exists to protect
 
-**The log is append-only.** There is no edit affordance, no delete affordance, no export control, no
-bulk action and no overflow menu anywhere in this feature, and there is no write function in
-`audit.api.ts` or `audit.mock.ts`. "No audit-log editing or deletion" is a constraint preserved even
-for a full-access admin (§10.1), and the API must reject writes rather than merely have no UI.
+**The log is append-only.** There is no edit affordance, no delete affordance, no bulk action and
+no overflow menu anywhere in this feature, and there is no write function in `audit.api.ts` or
+`audit.mock.ts`. "No audit-log editing or deletion" is a constraint preserved even for a full-access
+admin (§10.1), and the API must reject writes rather than merely have no UI. The one affordance that
+LOOKS like a control — the desktop header's **Export CSV** — is a client-side READ: `auditCsv.ts`
+serialises the currently filtered, currently loaded entries into a Blob download
+(`audit-log-YYYY-MM-DD.csv`) and touches nothing.
 
 A correction is a **compensating entry**: a new, itself-audited action that reverses an earlier one.
 Actions with no undo window — refund, manual completion (§10.3) — are corrected this way and no
@@ -33,12 +36,21 @@ other. `AuditCompensationNote` renders the link from both ends (`compensatesEntr
 - `useAuditLog.ts` — filters, debounce, cursor paging. Both shells call it; neither owns a rule.
 - `useAuditEntry.ts` — `useAuditSelection()` (the `?entry=` parameter) and the entry query.
 - `AuditLogScreen.desktop.tsx` / `AuditLogScreen.mobile.tsx` / `AuditEntryScreen.mobile.tsx`.
-- Presentation: `AuditLogTable`, `AuditEntryRow`, `AuditDayList`, `AuditEntryDetail`,
-  `AuditEntryFields`, `AuditDefList`, `AuditActionPill`, `AuditEvidenceTags`,
-  `AuditCompensationNote`, `AuditImmutabilityStrip`, `AuditAppliedFilters`, `AuditFilterFields`,
-  `AuditDetailPanel`, `AuditSkeletons`.
+  Desktop's filter band carries the complete filter set inline — there is deliberately no "More
+  filters" drawer, because a second surface holding the same four selects only invites drift.
+  Desktop's header action is Export CSV (see the rule above); the mobile entry screen wraps the
+  def-list in the standard `Card` surface like every sibling detail screen.
+- Presentation: `AuditLogTable` (passes the `?entry=` selection down as `selectedRowKey`, so the
+  selected row is visibly tinted), `AuditEntryRow` (a stretched-button row with the target link
+  stacked above it — a link inside a button is invalid HTML), `AuditTargetLink` (the target
+  reference as a real react-router link to the record it names; row click selects, reference click
+  navigates via `stopPropagation`; unroutable types — payments, devices — stay plain mono),
+  `AuditDayList`, `AuditEntryDetail`, `AuditEntryFields`, `AuditDefList`, `AuditActionPill`,
+  `AuditEvidenceTags`, `AuditCompensationNote`, `AuditImmutabilityStrip`, `AuditAppliedFilters`,
+  `AuditFilterFields`, `AuditDetailPanel`, `AuditSkeletons`.
 - Pure helpers: `auditChange.ts` (the `→` transition), `auditGrouping.ts` (IST day groups),
-  `auditTarget.ts` (where a target reference navigates to).
+  `auditTarget.ts` (where a target reference navigates to), `auditCsv.ts` (+ unit tests — CSV
+  serialisation, `audit-log-YYYY-MM-DD.csv` naming, Blob download).
 
 ## Privacy
 
@@ -52,15 +64,15 @@ counts, never as openable customer media.
 `VITE_MOCK_MODE=error|empty|slow` drives the error / genuinely-empty / skeleton states.
 Filtered-empty is reached by filtering, not by a mode.
 
-| Trigger | What it shows |
-| --- | --- |
-| `aud_01J8XKQ2M4` | The Admin spec §10.4 example, verbatim: Ravi Kumar (`adm_44`), `BOOKING_MANUAL_COMPLETE`, critical, `#B-8823`, reason `CUSTOMER_UNREACHABLE`, timestamp `2026-07-20T10:12:11.482Z`. |
-| `aud_4c81de20` | The refund the design's BOX 49 detail pane shows — ₹0 → ₹1,499 on `#B-8790`. Carries `compensatedByEntryId: "aud_c07b5512"`. |
-| `aud_c07b5512` | **The compensating entry (BOX 50).** Refund reversal on `#B-8790`, ₹1,499 → ₹0, `compensatesEntryId: "aud_4c81de20"`. Open it to see the correction relationship. |
-| Filter Action type = Refund + Admin = Priya Sharma | The BOX 49 / BOX 77 filtered view. |
-| Filter Admin = Anjali Rao + Date range = Today | Filtered-empty (`FilteredEmptyState` with Clear filters). |
-| Load more | 45 entries in the ledger; 36 fall inside the default Last-7-days window, at a page size of 25 — so the second page is always one click away. |
-| Search `#B-8790` | Returns exactly the compensating pair, which is the fastest way to see BOX 50. |
+| Trigger                                            | What it shows                                                                                                                                                                       |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aud_01J8XKQ2M4`                                   | The Admin spec §10.4 example, verbatim: Ravi Kumar (`adm_44`), `BOOKING_MANUAL_COMPLETE`, critical, `#B-8823`, reason `CUSTOMER_UNREACHABLE`, timestamp `2026-07-20T10:12:11.482Z`. |
+| `aud_4c81de20`                                     | The refund the design's BOX 49 detail pane shows — ₹0 → ₹1,499 on `#B-8790`. Carries `compensatedByEntryId: "aud_c07b5512"`.                                                        |
+| `aud_c07b5512`                                     | **The compensating entry (BOX 50).** Refund reversal on `#B-8790`, ₹1,499 → ₹0, `compensatesEntryId: "aud_4c81de20"`. Open it to see the correction relationship.                   |
+| Filter Action type = Refund + Admin = Priya Sharma | The BOX 49 / BOX 77 filtered view.                                                                                                                                                  |
+| Filter Admin = Anjali Rao + Date range = Today     | Filtered-empty (`FilteredEmptyState` with Clear filters).                                                                                                                           |
+| Load more                                          | 45 entries in the ledger; 36 fall inside the default Last-7-days window, at a page size of 25 — so the second page is always one click away.                                        |
+| Search `#B-8790`                                   | Returns exactly the compensating pair, which is the fastest way to see BOX 50.                                                                                                      |
 
 "Now" for a named date range is the newest entry in the ledger, not the wall clock — the fixtures are
 dated to the approved designs (20 Jul 2026) and a real clock would empty the log once that date
