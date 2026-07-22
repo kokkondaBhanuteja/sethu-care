@@ -52,12 +52,6 @@ test("step 1 gates on a reason code", async ({ suspendProvider }) => {
 test("step 3 must not be skipped while the active-jobs query is still in flight", async ({
   suspendProvider,
 }) => {
-  test.fail(
-    true,
-    "useSuspendProviderFlow.goNext treats an unresolved active-jobs query as zero active jobs, " +
-      "so a fast Continue on step 1 jumps to Confirm and skips the reassignment step",
-  );
-
   // No wait for the record: this is exactly what a fast operator does.
   await suspendProvider.chooseReason(REASON);
   await suspendProvider.continueButton.click();

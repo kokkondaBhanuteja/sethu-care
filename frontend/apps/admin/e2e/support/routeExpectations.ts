@@ -62,12 +62,6 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
     url: ROUTES.bookingManualComplete(BOOKING_TRIGGERS.ordinary),
     heading: "Manual completion",
     asDialog: true,
-    defect:
-      'ManualCompletion.{desktop,mobile}.tsx pass `context?.otpArrivedAtIso ?? ""` to ' +
-      "OtpArrivedInterrupt, which calls formatTime() on it unconditionally — the component body " +
-      'runs even while its Modal is closed. formatTime("") is `Intl.format(new Date(""))`, ' +
-      "which throws RangeError: Invalid time value. Every manual-completion URL therefore dies in " +
-      "RouteErrorBoundary before any data arrives, for every booking id.",
   },
   [ROUTE_PATTERNS.bookingRefund]: {
     url: ROUTES.bookingRefund(BOOKING_TRIGGERS.refund),
