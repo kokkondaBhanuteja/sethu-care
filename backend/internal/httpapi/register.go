@@ -60,4 +60,5 @@ func RegisterAll(api huma.API, deps Dependencies) {
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	NewLocationHandler(deps.Identity, deps.Verification, deps.Logger).RegisterHuma(api)
 	New(deps.Booking, deps.Verification, deps.Reviews, deps.Flow, deps.Logger).RegisterHuma(api)
+	NewAdminHandler(deps.Logger).RegisterHuma(api)
 }

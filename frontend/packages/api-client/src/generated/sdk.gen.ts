@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, ListTechniciansData, ListTechniciansErrors, ListTechniciansResponses, MyCashPositionData, MyCashPositionErrors, MyCashPositionResponses, PendingPaymentsData, PendingPaymentsErrors, PendingPaymentsResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SetAvailabilityData, SetAvailabilityErrors, SetAvailabilityResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TechnicianLocationData, TechnicianLocationErrors, TechnicianLocationResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, UpdateLocationData, UpdateLocationErrors, UpdateLocationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
+import type { AdminAppVersionData, AdminAppVersionErrors, AdminAppVersionResponses, AdminBootstrapData, AdminBootstrapErrors, AdminBootstrapResponses, AdminGetNotificationSettingsData, AdminGetNotificationSettingsErrors, AdminGetNotificationSettingsResponses, AdminGetProfileData, AdminGetProfileErrors, AdminGetProfileResponses, AdminGetSecuritySettingsData, AdminGetSecuritySettingsErrors, AdminGetSecuritySettingsResponses, AdminListDevicesData, AdminListDevicesErrors, AdminListDevicesResponses, AdminLoginData, AdminLoginErrors, AdminLoginResponses, AdminLogoutData, AdminLogoutErrors, AdminLogoutResponses, AdminQueuedActionsCountData, AdminQueuedActionsCountErrors, AdminQueuedActionsCountResponses, AdminRefreshSessionData, AdminRefreshSessionErrors, AdminRefreshSessionResponses, AdminResendOtpData, AdminResendOtpErrors, AdminResendOtpResponses, AdminRevokeDeviceData, AdminRevokeDeviceErrors, AdminRevokeDeviceResponses, AdminSubmitDiagnosticsData, AdminSubmitDiagnosticsErrors, AdminSubmitDiagnosticsResponses, AdminUnlockData, AdminUnlockErrors, AdminUnlockResponses, AdminUpdateNotificationSettingsData, AdminUpdateNotificationSettingsErrors, AdminUpdateNotificationSettingsResponses, AdminUpdateProfileData, AdminUpdateProfileErrors, AdminUpdateProfileResponses, AdminUpdateSecuritySettingsData, AdminUpdateSecuritySettingsErrors, AdminUpdateSecuritySettingsResponses, AdminVerifyOtpData, AdminVerifyOtpErrors, AdminVerifyOtpResponses, AssignBookingData, AssignBookingErrors, AssignBookingResponses, AssignmentQueueData, AssignmentQueueErrors, AssignmentQueueResponses, BookingCandidatesData, BookingCandidatesErrors, BookingCandidatesResponses, CapturePaymentData, CapturePaymentErrors, CapturePaymentResponses, CashReconciliationData, CashReconciliationErrors, CashReconciliationResponses, CreateAddressData, CreateAddressErrors, CreateAddressResponses, CreateBookingData, CreateBookingErrors, CreateBookingResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateServiceData, CreateServiceErrors, CreateServiceResponses, CreateVariantData, CreateVariantErrors, CreateVariantResponses, DeleteAccountData, DeleteAccountErrors, DeleteAccountResponses, DepositCashData, DepositCashErrors, DepositCashResponses, GetBookingData, GetBookingErrors, GetBookingResponses, GetPaymentData, GetPaymentErrors, GetPaymentResponses, GetServiceData, GetServiceErrors, GetServiceResponses, ListAddressesData, ListAddressesErrors, ListAddressesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListMyBookingsData, ListMyBookingsErrors, ListMyBookingsResponses, ListMyJobsData, ListMyJobsErrors, ListMyJobsResponses, ListPhotosData, ListPhotosErrors, ListPhotosResponses, ListServicesData, ListServicesErrors, ListServicesResponses, ListTechniciansData, ListTechniciansErrors, ListTechniciansResponses, MyCashPositionData, MyCashPositionErrors, MyCashPositionResponses, OpsAcknowledgeAlertData, OpsAcknowledgeAlertErrors, OpsAcknowledgeAlertResponses, OpsActivityFeedData, OpsActivityFeedErrors, OpsActivityFeedResponses, OpsAnalyticsSummaryData, OpsAnalyticsSummaryErrors, OpsAnalyticsSummaryResponses, OpsApproveApplicationData, OpsApproveApplicationErrors, OpsApproveApplicationResponses, OpsAssignContextData, OpsAssignContextErrors, OpsAssignContextResponses, OpsBlockCustomerData, OpsBlockCustomerErrors, OpsBlockCustomerResponses, OpsBlockProviderData, OpsBlockProviderErrors, OpsBlockProviderResponses, OpsCancelBookingData, OpsCancelBookingErrors, OpsCancelBookingResponses, OpsCancelContextData, OpsCancelContextErrors, OpsCancelContextResponses, OpsCreateAlertNoteData, OpsCreateAlertNoteErrors, OpsCreateAlertNoteResponses, OpsCurrentPayoutCycleData, OpsCurrentPayoutCycleErrors, OpsCurrentPayoutCycleResponses, OpsDashboardAttentionData, OpsDashboardAttentionErrors, OpsDashboardAttentionResponses, OpsDashboardBandData, OpsDashboardBandErrors, OpsDashboardBandResponses, OpsDashboardSummaryData, OpsDashboardSummaryErrors, OpsDashboardSummaryResponses, OpsForceProviderOfflineData, OpsForceProviderOfflineErrors, OpsForceProviderOfflineResponses, OpsGetAlertData, OpsGetAlertErrors, OpsGetAlertResponses, OpsGetApplicationData, OpsGetApplicationErrors, OpsGetApplicationResponses, OpsGetAuditEntryData, OpsGetAuditEntryErrors, OpsGetAuditEntryResponses, OpsGetBookingData, OpsGetBookingErrors, OpsGetBookingResponses, OpsGetCustomerData, OpsGetCustomerErrors, OpsGetCustomerResponses, OpsGetProviderData, OpsGetProviderErrors, OpsGetProviderResponses, OpsGetTicketData, OpsGetTicketErrors, OpsGetTicketResponses, OpsListAlertsData, OpsListAlertsErrors, OpsListAlertsResponses, OpsListApplicationsData, OpsListApplicationsErrors, OpsListApplicationsResponses, OpsListAuditAdminsData, OpsListAuditAdminsErrors, OpsListAuditAdminsResponses, OpsListAuditEntriesData, OpsListAuditEntriesErrors, OpsListAuditEntriesResponses, OpsListBookingsData, OpsListBookingsErrors, OpsListBookingsResponses, OpsListCustomersData, OpsListCustomersErrors, OpsListCustomersResponses, OpsListProvidersData, OpsListProvidersErrors, OpsListProvidersResponses, OpsListTicketsData, OpsListTicketsErrors, OpsListTicketsResponses, OpsLiveMapData, OpsLiveMapErrors, OpsLiveMapResponses, OpsManualCompleteBookingData, OpsManualCompleteBookingErrors, OpsManualCompleteBookingResponses, OpsManualCompletionContextData, OpsManualCompletionContextErrors, OpsManualCompletionContextResponses, OpsProviderActiveJobsData, OpsProviderActiveJobsErrors, OpsProviderActiveJobsResponses, OpsReadAllAlertsData, OpsReadAllAlertsErrors, OpsReadAllAlertsResponses, OpsRedispatchBookingData, OpsRedispatchBookingErrors, OpsRedispatchBookingResponses, OpsRedispatchContextData, OpsRedispatchContextErrors, OpsRedispatchContextResponses, OpsRefundBookingData, OpsRefundBookingErrors, OpsRefundBookingResponses, OpsRefundContextData, OpsRefundContextErrors, OpsRefundContextResponses, OpsRejectApplicationData, OpsRejectApplicationErrors, OpsRejectApplicationResponses, OpsReplyToTicketData, OpsReplyToTicketErrors, OpsReplyToTicketResponses, OpsRequestApplicationDocumentsData, OpsRequestApplicationDocumentsErrors, OpsRequestApplicationDocumentsResponses, OpsRestoreProviderData, OpsRestoreProviderErrors, OpsRestoreProviderResponses, OpsSuspendProviderData, OpsSuspendProviderErrors, OpsSuspendProviderResponses, OpsUndoAssignData, OpsUndoAssignErrors, OpsUndoAssignResponses, OpsUndoCancelData, OpsUndoCancelErrors, OpsUndoCancelResponses, PendingPaymentsData, PendingPaymentsErrors, PendingPaymentsResponses, RecordPhotoData, RecordPhotoErrors, RecordPhotoResponses, RequestOtpData, RequestOtpErrors, RequestOtpResponses, ReviewBookingData, ReviewBookingErrors, ReviewBookingResponses, SetAvailabilityData, SetAvailabilityErrors, SetAvailabilityResponses, ShellCountersData, ShellCountersErrors, ShellCountersResponses, SignPhotoUploadData, SignPhotoUploadErrors, SignPhotoUploadResponses, TechnicianLocationData, TechnicianLocationErrors, TechnicianLocationResponses, TransitionBookingData, TransitionBookingErrors, TransitionBookingResponses, UpdateLocationData, UpdateLocationErrors, UpdateLocationResponses, VerifyOtpData, VerifyOtpErrors, VerifyOtpResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -38,6 +38,193 @@ export const createAddress = <ThrowOnError extends boolean = false>(options: Opt
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Verify the second factor and open a session
+ */
+export const adminVerifyOtp = <ThrowOnError extends boolean = false>(options: Options<AdminVerifyOtpData, ThrowOnError>): RequestResult<AdminVerifyOtpResponses, AdminVerifyOtpErrors, ThrowOnError> => (options.client ?? client).post<AdminVerifyOtpResponses, AdminVerifyOtpErrors, ThrowOnError>({
+    url: '/admin/auth/2fa',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Issue a fresh second-factor challenge
+ */
+export const adminResendOtp = <ThrowOnError extends boolean = false>(options: Options<AdminResendOtpData, ThrowOnError>): RequestResult<AdminResendOtpResponses, AdminResendOtpErrors, ThrowOnError> => (options.client ?? client).post<AdminResendOtpResponses, AdminResendOtpErrors, ThrowOnError>({
+    url: '/admin/auth/2fa/resend',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Resolve the splash screen's routing decision
+ */
+export const adminBootstrap = <ThrowOnError extends boolean = false>(options?: Options<AdminBootstrapData, ThrowOnError>): RequestResult<AdminBootstrapResponses, AdminBootstrapErrors, ThrowOnError> => (options?.client ?? client).get<AdminBootstrapResponses, AdminBootstrapErrors, ThrowOnError>({ url: '/admin/auth/bootstrap', ...options });
+
+/**
+ * List this account's trusted devices
+ */
+export const adminListDevices = <ThrowOnError extends boolean = false>(options?: Options<AdminListDevicesData, ThrowOnError>): RequestResult<AdminListDevicesResponses, AdminListDevicesErrors, ThrowOnError> => (options?.client ?? client).get<AdminListDevicesResponses, AdminListDevicesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/auth/devices',
+    ...options
+});
+
+/**
+ * Revoke a trusted device
+ */
+export const adminRevokeDevice = <ThrowOnError extends boolean = false>(options: Options<AdminRevokeDeviceData, ThrowOnError>): RequestResult<AdminRevokeDeviceResponses, AdminRevokeDeviceErrors, ThrowOnError> => (options.client ?? client).delete<AdminRevokeDeviceResponses, AdminRevokeDeviceErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/auth/devices/{id}',
+    ...options
+});
+
+/**
+ * Sign in with email and password
+ */
+export const adminLogin = <ThrowOnError extends boolean = false>(options: Options<AdminLoginData, ThrowOnError>): RequestResult<AdminLoginResponses, AdminLoginErrors, ThrowOnError> => (options.client ?? client).post<AdminLoginResponses, AdminLoginErrors, ThrowOnError>({
+    url: '/admin/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Invalidate the session server-side
+ */
+export const adminLogout = <ThrowOnError extends boolean = false>(options: Options<AdminLogoutData, ThrowOnError>): RequestResult<AdminLogoutResponses, AdminLogoutErrors, ThrowOnError> => (options.client ?? client).post<AdminLogoutResponses, AdminLogoutErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/auth/logout',
+    ...options
+});
+
+/**
+ * Refresh the session token
+ */
+export const adminRefreshSession = <ThrowOnError extends boolean = false>(options?: Options<AdminRefreshSessionData, ThrowOnError>): RequestResult<AdminRefreshSessionResponses, AdminRefreshSessionErrors, ThrowOnError> => (options?.client ?? client).post<AdminRefreshSessionResponses, AdminRefreshSessionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/auth/refresh',
+    ...options
+});
+
+/**
+ * Re-verify a locked session with the password
+ */
+export const adminUnlock = <ThrowOnError extends boolean = false>(options: Options<AdminUnlockData, ThrowOnError>): RequestResult<AdminUnlockResponses, AdminUnlockErrors, ThrowOnError> => (options.client ?? client).post<AdminUnlockResponses, AdminUnlockErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/auth/unlock',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Upload diagnostics for support
+ */
+export const adminSubmitDiagnostics = <ThrowOnError extends boolean = false>(options: Options<AdminSubmitDiagnosticsData, ThrowOnError>): RequestResult<AdminSubmitDiagnosticsResponses, AdminSubmitDiagnosticsErrors, ThrowOnError> => (options.client ?? client).post<AdminSubmitDiagnosticsResponses, AdminSubmitDiagnosticsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/diagnostics',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get the signed-in admin's profile
+ */
+export const adminGetProfile = <ThrowOnError extends boolean = false>(options?: Options<AdminGetProfileData, ThrowOnError>): RequestResult<AdminGetProfileResponses, AdminGetProfileErrors, ThrowOnError> => (options?.client ?? client).get<AdminGetProfileResponses, AdminGetProfileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/profile',
+    ...options
+});
+
+/**
+ * Update the admin's preferences
+ */
+export const adminUpdateProfile = <ThrowOnError extends boolean = false>(options: Options<AdminUpdateProfileData, ThrowOnError>): RequestResult<AdminUpdateProfileResponses, AdminUpdateProfileErrors, ThrowOnError> => (options.client ?? client).put<AdminUpdateProfileResponses, AdminUpdateProfileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/profile',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Count unsynced offline actions
+ */
+export const adminQueuedActionsCount = <ThrowOnError extends boolean = false>(options?: Options<AdminQueuedActionsCountData, ThrowOnError>): RequestResult<AdminQueuedActionsCountResponses, AdminQueuedActionsCountErrors, ThrowOnError> => (options?.client ?? client).get<AdminQueuedActionsCountResponses, AdminQueuedActionsCountErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/queued-actions/count',
+    ...options
+});
+
+/**
+ * Get notification channels and quiet hours
+ */
+export const adminGetNotificationSettings = <ThrowOnError extends boolean = false>(options?: Options<AdminGetNotificationSettingsData, ThrowOnError>): RequestResult<AdminGetNotificationSettingsResponses, AdminGetNotificationSettingsErrors, ThrowOnError> => (options?.client ?? client).get<AdminGetNotificationSettingsResponses, AdminGetNotificationSettingsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/settings/notifications',
+    ...options
+});
+
+/**
+ * Update the configurable notification channels
+ */
+export const adminUpdateNotificationSettings = <ThrowOnError extends boolean = false>(options: Options<AdminUpdateNotificationSettingsData, ThrowOnError>): RequestResult<AdminUpdateNotificationSettingsResponses, AdminUpdateNotificationSettingsErrors, ThrowOnError> => (options.client ?? client).put<AdminUpdateNotificationSettingsResponses, AdminUpdateNotificationSettingsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/settings/notifications',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get biometric, device and session security state
+ */
+export const adminGetSecuritySettings = <ThrowOnError extends boolean = false>(options?: Options<AdminGetSecuritySettingsData, ThrowOnError>): RequestResult<AdminGetSecuritySettingsResponses, AdminGetSecuritySettingsErrors, ThrowOnError> => (options?.client ?? client).get<AdminGetSecuritySettingsResponses, AdminGetSecuritySettingsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/settings/security',
+    ...options
+});
+
+/**
+ * Toggle biometric unlock
+ */
+export const adminUpdateSecuritySettings = <ThrowOnError extends boolean = false>(options: Options<AdminUpdateSecuritySettingsData, ThrowOnError>): RequestResult<AdminUpdateSecuritySettingsResponses, AdminUpdateSecuritySettingsErrors, ThrowOnError> => (options.client ?? client).patch<AdminUpdateSecuritySettingsResponses, AdminUpdateSecuritySettingsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/settings/security',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * App, build, environment and OTA bundle
+ */
+export const adminAppVersion = <ThrowOnError extends boolean = false>(options?: Options<AdminAppVersionData, ThrowOnError>): RequestResult<AdminAppVersionResponses, AdminAppVersionErrors, ThrowOnError> => (options?.client ?? client).get<AdminAppVersionResponses, AdminAppVersionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/admin/version',
+    ...options
 });
 
 /**
@@ -255,11 +442,180 @@ export const updateLocation = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * The last N booking-state transitions
+ */
+export const opsActivityFeed = <ThrowOnError extends boolean = false>(options?: Options<OpsActivityFeedData, ThrowOnError>): RequestResult<OpsActivityFeedResponses, OpsActivityFeedErrors, ThrowOnError> => (options?.client ?? client).get<OpsActivityFeedResponses, OpsActivityFeedErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/activity',
+    ...options
+});
+
+/**
+ * The alert feed
+ */
+export const opsListAlerts = <ThrowOnError extends boolean = false>(options?: Options<OpsListAlertsData, ThrowOnError>): RequestResult<OpsListAlertsResponses, OpsListAlertsErrors, ThrowOnError> => (options?.client ?? client).get<OpsListAlertsResponses, OpsListAlertsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/alerts',
+    ...options
+});
+
+/**
+ * Mark the informational tier read
+ */
+export const opsReadAllAlerts = <ThrowOnError extends boolean = false>(options: Options<OpsReadAllAlertsData, ThrowOnError>): RequestResult<OpsReadAllAlertsResponses, OpsReadAllAlertsErrors, ThrowOnError> => (options.client ?? client).post<OpsReadAllAlertsResponses, OpsReadAllAlertsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/alerts/read-all',
+    ...options
+});
+
+/**
+ * Alert detail
+ */
+export const opsGetAlert = <ThrowOnError extends boolean = false>(options: Options<OpsGetAlertData, ThrowOnError>): RequestResult<OpsGetAlertResponses, OpsGetAlertErrors, ThrowOnError> => (options.client ?? client).get<OpsGetAlertResponses, OpsGetAlertErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/alerts/{id}',
+    ...options
+});
+
+/**
+ * Acknowledge an alert
+ */
+export const opsAcknowledgeAlert = <ThrowOnError extends boolean = false>(options: Options<OpsAcknowledgeAlertData, ThrowOnError>): RequestResult<OpsAcknowledgeAlertResponses, OpsAcknowledgeAlertErrors, ThrowOnError> => (options.client ?? client).post<OpsAcknowledgeAlertResponses, OpsAcknowledgeAlertErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/alerts/{id}/acknowledge',
+    ...options
+});
+
+/**
+ * Add a handover note to an alert
+ */
+export const opsCreateAlertNote = <ThrowOnError extends boolean = false>(options: Options<OpsCreateAlertNoteData, ThrowOnError>): RequestResult<OpsCreateAlertNoteResponses, OpsCreateAlertNoteErrors, ThrowOnError> => (options.client ?? client).post<OpsCreateAlertNoteResponses, OpsCreateAlertNoteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/alerts/{id}/notes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Analytics headline metrics (v1.1)
+ */
+export const opsAnalyticsSummary = <ThrowOnError extends boolean = false>(options?: Options<OpsAnalyticsSummaryData, ThrowOnError>): RequestResult<OpsAnalyticsSummaryResponses, OpsAnalyticsSummaryErrors, ThrowOnError> => (options?.client ?? client).get<OpsAnalyticsSummaryResponses, OpsAnalyticsSummaryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/analytics/summary',
+    ...options
+});
+
+/**
+ * The provider-application queue
+ */
+export const opsListApplications = <ThrowOnError extends boolean = false>(options?: Options<OpsListApplicationsData, ThrowOnError>): RequestResult<OpsListApplicationsResponses, OpsListApplicationsErrors, ThrowOnError> => (options?.client ?? client).get<OpsListApplicationsResponses, OpsListApplicationsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/applications',
+    ...options
+});
+
+/**
+ * Application review, with documents and approval blockers
+ */
+export const opsGetApplication = <ThrowOnError extends boolean = false>(options: Options<OpsGetApplicationData, ThrowOnError>): RequestResult<OpsGetApplicationResponses, OpsGetApplicationErrors, ThrowOnError> => (options.client ?? client).get<OpsGetApplicationResponses, OpsGetApplicationErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/applications/{id}',
+    ...options
+});
+
+/**
+ * Approve an application
+ */
+export const opsApproveApplication = <ThrowOnError extends boolean = false>(options: Options<OpsApproveApplicationData, ThrowOnError>): RequestResult<OpsApproveApplicationResponses, OpsApproveApplicationErrors, ThrowOnError> => (options.client ?? client).post<OpsApproveApplicationResponses, OpsApproveApplicationErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/applications/{id}/approve',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Reject an application
+ */
+export const opsRejectApplication = <ThrowOnError extends boolean = false>(options: Options<OpsRejectApplicationData, ThrowOnError>): RequestResult<OpsRejectApplicationResponses, OpsRejectApplicationErrors, ThrowOnError> => (options.client ?? client).post<OpsRejectApplicationResponses, OpsRejectApplicationErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/applications/{id}/reject',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Ask an applicant for more documents
+ */
+export const opsRequestApplicationDocuments = <ThrowOnError extends boolean = false>(options: Options<OpsRequestApplicationDocumentsData, ThrowOnError>): RequestResult<OpsRequestApplicationDocumentsResponses, OpsRequestApplicationDocumentsErrors, ThrowOnError> => (options.client ?? client).post<OpsRequestApplicationDocumentsResponses, OpsRequestApplicationDocumentsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/applications/{id}/request-documents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List the assignment queue
  */
 export const assignmentQueue = <ThrowOnError extends boolean = false>(options?: Options<AssignmentQueueData, ThrowOnError>): RequestResult<AssignmentQueueResponses, AssignmentQueueErrors, ThrowOnError> => (options?.client ?? client).get<AssignmentQueueResponses, AssignmentQueueErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/ops/assignment-queue',
+    ...options
+});
+
+/**
+ * The append-only audit log
+ */
+export const opsListAuditEntries = <ThrowOnError extends boolean = false>(options?: Options<OpsListAuditEntriesData, ThrowOnError>): RequestResult<OpsListAuditEntriesResponses, OpsListAuditEntriesErrors, ThrowOnError> => (options?.client ?? client).get<OpsListAuditEntriesResponses, OpsListAuditEntriesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/audit',
+    ...options
+});
+
+/**
+ * The distinct admins in the audit log, for the filter
+ */
+export const opsListAuditAdmins = <ThrowOnError extends boolean = false>(options?: Options<OpsListAuditAdminsData, ThrowOnError>): RequestResult<OpsListAuditAdminsResponses, OpsListAuditAdminsErrors, ThrowOnError> => (options?.client ?? client).get<OpsListAuditAdminsResponses, OpsListAuditAdminsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/audit/admins',
+    ...options
+});
+
+/**
+ * One audit entry, with before/after and the compensating link
+ */
+export const opsGetAuditEntry = <ThrowOnError extends boolean = false>(options: Options<OpsGetAuditEntryData, ThrowOnError>): RequestResult<OpsGetAuditEntryResponses, OpsGetAuditEntryErrors, ThrowOnError> => (options.client ?? client).get<OpsGetAuditEntryResponses, OpsGetAuditEntryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/audit/{id}',
+    ...options
+});
+
+/**
+ * List bookings for the console
+ */
+export const opsListBookings = <ThrowOnError extends boolean = false>(options?: Options<OpsListBookingsData, ThrowOnError>): RequestResult<OpsListBookingsResponses, OpsListBookingsErrors, ThrowOnError> => (options?.client ?? client).get<OpsListBookingsResponses, OpsListBookingsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings',
+    ...options
+});
+
+/**
+ * Full booking record with the dispatch timeline
+ */
+export const opsGetBooking = <ThrowOnError extends boolean = false>(options: Options<OpsGetBookingData, ThrowOnError>): RequestResult<OpsGetBookingResponses, OpsGetBookingErrors, ThrowOnError> => (options.client ?? client).get<OpsGetBookingResponses, OpsGetBookingErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}',
     ...options
 });
 
@@ -277,11 +633,134 @@ export const assignBooking = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
+ * Candidates, dispatch rounds and the ranking weights behind them
+ */
+export const opsAssignContext = <ThrowOnError extends boolean = false>(options: Options<OpsAssignContextData, ThrowOnError>): RequestResult<OpsAssignContextResponses, OpsAssignContextErrors, ThrowOnError> => (options.client ?? client).get<OpsAssignContextResponses, OpsAssignContextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/assign-context',
+    ...options
+});
+
+/**
+ * Compensate an assignment inside the 30s window
+ */
+export const opsUndoAssign = <ThrowOnError extends boolean = false>(options: Options<OpsUndoAssignData, ThrowOnError>): RequestResult<OpsUndoAssignResponses, OpsUndoAssignErrors, ThrowOnError> => (options.client ?? client).post<OpsUndoAssignResponses, OpsUndoAssignErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/assign/undo',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Cancel a booking
+ */
+export const opsCancelBooking = <ThrowOnError extends boolean = false>(options: Options<OpsCancelBookingData, ThrowOnError>): RequestResult<OpsCancelBookingResponses, OpsCancelBookingErrors, ThrowOnError> => (options.client ?? client).post<OpsCancelBookingResponses, OpsCancelBookingErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/cancel',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Refund policy and on-site state behind a cancellation
+ */
+export const opsCancelContext = <ThrowOnError extends boolean = false>(options: Options<OpsCancelContextData, ThrowOnError>): RequestResult<OpsCancelContextResponses, OpsCancelContextErrors, ThrowOnError> => (options.client ?? client).get<OpsCancelContextResponses, OpsCancelContextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/cancel-context',
+    ...options
+});
+
+/**
+ * Compensate a cancellation inside the 10s window
+ */
+export const opsUndoCancel = <ThrowOnError extends boolean = false>(options: Options<OpsUndoCancelData, ThrowOnError>): RequestResult<OpsUndoCancelResponses, OpsUndoCancelErrors, ThrowOnError> => (options.client ?? client).post<OpsUndoCancelResponses, OpsUndoCancelErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/cancel/undo',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List eligible technicians for a booking
  */
 export const bookingCandidates = <ThrowOnError extends boolean = false>(options: Options<BookingCandidatesData, ThrowOnError>): RequestResult<BookingCandidatesResponses, BookingCandidatesErrors, ThrowOnError> => (options.client ?? client).get<BookingCandidatesResponses, BookingCandidatesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/ops/bookings/{id}/candidates',
+    ...options
+});
+
+/**
+ * Assert a completion the customer's OTP never proved
+ */
+export const opsManualCompleteBooking = <ThrowOnError extends boolean = false>(options: Options<OpsManualCompleteBookingData, ThrowOnError>): RequestResult<OpsManualCompleteBookingResponses, OpsManualCompleteBookingErrors, ThrowOnError> => (options.client ?? client).post<OpsManualCompleteBookingResponses, OpsManualCompleteBookingErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/manual-complete',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The lock, the evidence and the frequency counters behind a manual completion
+ */
+export const opsManualCompletionContext = <ThrowOnError extends boolean = false>(options: Options<OpsManualCompletionContextData, ThrowOnError>): RequestResult<OpsManualCompletionContextResponses, OpsManualCompletionContextErrors, ThrowOnError> => (options.client ?? client).get<OpsManualCompletionContextResponses, OpsManualCompletionContextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/manual-complete-context',
+    ...options
+});
+
+/**
+ * Re-run automation with widened parameters
+ */
+export const opsRedispatchBooking = <ThrowOnError extends boolean = false>(options: Options<OpsRedispatchBookingData, ThrowOnError>): RequestResult<OpsRedispatchBookingResponses, OpsRedispatchBookingErrors, ThrowOnError> => (options.client ?? client).post<OpsRedispatchBookingResponses, OpsRedispatchBookingErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/redispatch',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Rounds, incentive cap and cycle count behind a redispatch
+ */
+export const opsRedispatchContext = <ThrowOnError extends boolean = false>(options: Options<OpsRedispatchContextData, ThrowOnError>): RequestResult<OpsRedispatchContextResponses, OpsRedispatchContextErrors, ThrowOnError> => (options.client ?? client).get<OpsRedispatchContextResponses, OpsRedispatchContextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/redispatch-context',
+    ...options
+});
+
+/**
+ * Refund or credit a booking
+ */
+export const opsRefundBooking = <ThrowOnError extends boolean = false>(options: Options<OpsRefundBookingData, ThrowOnError>): RequestResult<OpsRefundBookingResponses, OpsRefundBookingErrors, ThrowOnError> => (options.client ?? client).post<OpsRefundBookingResponses, OpsRefundBookingErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/refund',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Refundable amount, goodwill cap and rate-limit state behind a refund
+ */
+export const opsRefundContext = <ThrowOnError extends boolean = false>(options: Options<OpsRefundContextData, ThrowOnError>): RequestResult<OpsRefundContextResponses, OpsRefundContextErrors, ThrowOnError> => (options.client ?? client).get<OpsRefundContextResponses, OpsRefundContextErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/bookings/{id}/refund-context',
     ...options
 });
 
@@ -295,11 +774,175 @@ export const cashReconciliation = <ThrowOnError extends boolean = false>(options
 });
 
 /**
+ * List customers (v1.1)
+ */
+export const opsListCustomers = <ThrowOnError extends boolean = false>(options?: Options<OpsListCustomersData, ThrowOnError>): RequestResult<OpsListCustomersResponses, OpsListCustomersErrors, ThrowOnError> => (options?.client ?? client).get<OpsListCustomersResponses, OpsListCustomersErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/customers',
+    ...options
+});
+
+/**
+ * Customer detail (v1.1)
+ */
+export const opsGetCustomer = <ThrowOnError extends boolean = false>(options: Options<OpsGetCustomerData, ThrowOnError>): RequestResult<OpsGetCustomerResponses, OpsGetCustomerErrors, ThrowOnError> => (options.client ?? client).get<OpsGetCustomerResponses, OpsGetCustomerErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/customers/{id}',
+    ...options
+});
+
+/**
+ * Block a customer (v1.1)
+ */
+export const opsBlockCustomer = <ThrowOnError extends boolean = false>(options: Options<OpsBlockCustomerData, ThrowOnError>): RequestResult<OpsBlockCustomerResponses, OpsBlockCustomerErrors, ThrowOnError> => (options.client ?? client).post<OpsBlockCustomerResponses, OpsBlockCustomerErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/customers/{id}/block',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The needs-attention queue, in the server's priority order
+ */
+export const opsDashboardAttention = <ThrowOnError extends boolean = false>(options?: Options<OpsDashboardAttentionData, ThrowOnError>): RequestResult<OpsDashboardAttentionResponses, OpsDashboardAttentionErrors, ThrowOnError> => (options?.client ?? client).get<OpsDashboardAttentionResponses, OpsDashboardAttentionErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/dashboard/attention',
+    ...options
+});
+
+/**
+ * The critical-alert band
+ */
+export const opsDashboardBand = <ThrowOnError extends boolean = false>(options?: Options<OpsDashboardBandData, ThrowOnError>): RequestResult<OpsDashboardBandResponses, OpsDashboardBandErrors, ThrowOnError> => (options?.client ?? client).get<OpsDashboardBandResponses, OpsDashboardBandErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/dashboard/band',
+    ...options
+});
+
+/**
+ * Headline KPIs with deltas and sparklines
+ */
+export const opsDashboardSummary = <ThrowOnError extends boolean = false>(options?: Options<OpsDashboardSummaryData, ThrowOnError>): RequestResult<OpsDashboardSummaryResponses, OpsDashboardSummaryErrors, ThrowOnError> => (options?.client ?? client).get<OpsDashboardSummaryResponses, OpsDashboardSummaryErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/dashboard/summary',
+    ...options
+});
+
+/**
+ * One snapshot of the live operations map
+ */
+export const opsLiveMap = <ThrowOnError extends boolean = false>(options?: Options<OpsLiveMapData, ThrowOnError>): RequestResult<OpsLiveMapResponses, OpsLiveMapErrors, ThrowOnError> => (options?.client ?? client).get<OpsLiveMapResponses, OpsLiveMapErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/live-map',
+    ...options
+});
+
+/**
  * List UPI collections awaiting capture
  */
 export const pendingPayments = <ThrowOnError extends boolean = false>(options?: Options<PendingPaymentsData, ThrowOnError>): RequestResult<PendingPaymentsResponses, PendingPaymentsErrors, ThrowOnError> => (options?.client ?? client).get<PendingPaymentsResponses, PendingPaymentsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/ops/payments',
+    ...options
+});
+
+/**
+ * The open settlement cycle
+ */
+export const opsCurrentPayoutCycle = <ThrowOnError extends boolean = false>(options?: Options<OpsCurrentPayoutCycleData, ThrowOnError>): RequestResult<OpsCurrentPayoutCycleResponses, OpsCurrentPayoutCycleErrors, ThrowOnError> => (options?.client ?? client).get<OpsCurrentPayoutCycleResponses, OpsCurrentPayoutCycleErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/payouts/current',
+    ...options
+});
+
+/**
+ * The provider roster
+ */
+export const opsListProviders = <ThrowOnError extends boolean = false>(options?: Options<OpsListProvidersData, ThrowOnError>): RequestResult<OpsListProvidersResponses, OpsListProvidersErrors, ThrowOnError> => (options?.client ?? client).get<OpsListProvidersResponses, OpsListProvidersErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers',
+    ...options
+});
+
+/**
+ * Provider profile with metrics, documents and history
+ */
+export const opsGetProvider = <ThrowOnError extends boolean = false>(options: Options<OpsGetProviderData, ThrowOnError>): RequestResult<OpsGetProviderResponses, OpsGetProviderErrors, ThrowOnError> => (options.client ?? client).get<OpsGetProviderResponses, OpsGetProviderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}',
+    ...options
+});
+
+/**
+ * The provider's live jobs, for step 3 of the suspend flow
+ */
+export const opsProviderActiveJobs = <ThrowOnError extends boolean = false>(options: Options<OpsProviderActiveJobsData, ThrowOnError>): RequestResult<OpsProviderActiveJobsResponses, OpsProviderActiveJobsErrors, ThrowOnError> => (options.client ?? client).get<OpsProviderActiveJobsResponses, OpsProviderActiveJobsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}/active-jobs',
+    ...options
+});
+
+/**
+ * Block a provider permanently
+ */
+export const opsBlockProvider = <ThrowOnError extends boolean = false>(options: Options<OpsBlockProviderData, ThrowOnError>): RequestResult<OpsBlockProviderResponses, OpsBlockProviderErrors, ThrowOnError> => (options.client ?? client).post<OpsBlockProviderResponses, OpsBlockProviderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}/block',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Force a provider offline
+ */
+export const opsForceProviderOffline = <ThrowOnError extends boolean = false>(options: Options<OpsForceProviderOfflineData, ThrowOnError>): RequestResult<OpsForceProviderOfflineResponses, OpsForceProviderOfflineErrors, ThrowOnError> => (options.client ?? client).post<OpsForceProviderOfflineResponses, OpsForceProviderOfflineErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}/force-offline',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Reverse a suspension or a block
+ */
+export const opsRestoreProvider = <ThrowOnError extends boolean = false>(options: Options<OpsRestoreProviderData, ThrowOnError>): RequestResult<OpsRestoreProviderResponses, OpsRestoreProviderErrors, ThrowOnError> => (options.client ?? client).post<OpsRestoreProviderResponses, OpsRestoreProviderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}/restore',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Suspend a provider, with its active jobs resolved
+ */
+export const opsSuspendProvider = <ThrowOnError extends boolean = false>(options: Options<OpsSuspendProviderData, ThrowOnError>): RequestResult<OpsSuspendProviderResponses, OpsSuspendProviderErrors, ThrowOnError> => (options.client ?? client).post<OpsSuspendProviderResponses, OpsSuspendProviderErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/providers/{id}/suspend',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Counters for every navigation badge
+ */
+export const shellCounters = <ThrowOnError extends boolean = false>(options?: Options<ShellCountersData, ThrowOnError>): RequestResult<ShellCountersResponses, ShellCountersErrors, ThrowOnError> => (options?.client ?? client).get<ShellCountersResponses, ShellCountersErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/shell-counters',
     ...options
 });
 
@@ -310,6 +953,37 @@ export const listTechnicians = <ThrowOnError extends boolean = false>(options?: 
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/ops/technicians',
     ...options
+});
+
+/**
+ * List support tickets (v1.1)
+ */
+export const opsListTickets = <ThrowOnError extends boolean = false>(options?: Options<OpsListTicketsData, ThrowOnError>): RequestResult<OpsListTicketsResponses, OpsListTicketsErrors, ThrowOnError> => (options?.client ?? client).get<OpsListTicketsResponses, OpsListTicketsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/tickets',
+    ...options
+});
+
+/**
+ * Ticket detail with its message thread (v1.1)
+ */
+export const opsGetTicket = <ThrowOnError extends boolean = false>(options: Options<OpsGetTicketData, ThrowOnError>): RequestResult<OpsGetTicketResponses, OpsGetTicketErrors, ThrowOnError> => (options.client ?? client).get<OpsGetTicketResponses, OpsGetTicketErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/tickets/{id}',
+    ...options
+});
+
+/**
+ * Reply to a ticket (v1.1)
+ */
+export const opsReplyToTicket = <ThrowOnError extends boolean = false>(options: Options<OpsReplyToTicketData, ThrowOnError>): RequestResult<OpsReplyToTicketResponses, OpsReplyToTicketErrors, ThrowOnError> => (options.client ?? client).post<OpsReplyToTicketResponses, OpsReplyToTicketErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/ops/tickets/{id}/reply',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

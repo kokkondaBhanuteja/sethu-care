@@ -4,6 +4,54 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type AccountDisabledError = {
+    /**
+     * Always ACCOUNT_DISABLED.
+     */
+    error: string;
+};
+
+export type AccountLockedError = {
+    /**
+     * Always ACCOUNT_LOCKED.
+     */
+    error: string;
+    /**
+     * Seconds. The UI counts it down live.
+     */
+    retryAfter: number;
+};
+
+export type AcknowledgeAlertResult = {
+    alert: Alert;
+    /**
+     * False when another admin acknowledged first. Not an error: the console shows 'acknowledged by someone else' rather than a failure toast.
+     */
+    wonRace: boolean;
+};
+
+export type ActiveJobStage = 'en_route' | 'in_progress';
+
+export type ActivityEntry = {
+    at: string;
+    bookingRef: string;
+    id: string;
+    kind: ActivityKind;
+    /**
+     * Only the assigned kind carries one.
+     */
+    providerName: string | null;
+};
+
+export type ActivityFeed = {
+    items: Array<ActivityEntry>;
+};
+
+/**
+ * An enum, not a prose sentence: the console localises it.
+ */
+export type ActivityKind = 'completed' | 'started' | 'en_route' | 'assigned' | 'awaiting_otp' | 'cancelled_by_customer';
+
 export type AddressResponse = {
     city?: string;
     id?: string;
@@ -16,6 +64,425 @@ export type AddressResponse = {
     pincode?: string;
 };
 
+export type AdminActivitySummary = {
+    actions: number;
+    averageAcknowledgeMs: number;
+    bookingsRescued: number;
+    escalationsAcknowledged: number;
+};
+
+export type AdminBootstrap = {
+    hasSession: boolean;
+    /**
+     * A stored session plus biometric opt-in routes through /unlock.
+     */
+    isBiometricEnabled: boolean;
+    /**
+     * False routes to the blocking forced-update screen — an unsupported build misreports live state.
+     */
+    isVersionSupported: boolean;
+};
+
+export type AdminError = {
+    /**
+     * Machine-readable code. The console additionally derives ApiError.code from the status: 400/422 -> validation, 401 -> unauthorized, 403 -> forbidden, 404 -> not_found, 409 -> conflict, 429 -> rate_limited, 5xx -> server.
+     */
+    code: string;
+    /**
+     * Per-field validation messages, keyed by the request field name.
+     */
+    fields?: {
+        [key: string]: string;
+    };
+    /**
+     * Human-readable explanation. Never rendered verbatim to an operator.
+     */
+    message: string;
+};
+
+export type AdminLoginRequest = {
+    deviceId: string;
+    deviceName: string;
+    email: string;
+    password: string;
+};
+
+export type AdminLoginResult = {
+    /**
+     * Present when status is otp_required.
+     */
+    challenge?: OtpChallenge | null;
+    /**
+     * Present when status is authenticated.
+     */
+    session?: AdminSession | null;
+    status: AdminLoginStatus;
+};
+
+/**
+ * `authenticated` only on an already-trusted device, which skips the second factor.
+ */
+export type AdminLoginStatus = 'otp_required' | 'authenticated';
+
+export type AdminPreferences = {
+    appearance: AppearanceMode;
+    defaultLandingRoute: string;
+    haptics: boolean;
+};
+
+export type AdminProfile = {
+    activity: AdminActivitySummary;
+    adminId: string;
+    email: string;
+    joinedIso: string;
+    /**
+     * Masked at the source. The full number is never sent to this client.
+     */
+    maskedPhone: string;
+    name: string;
+    preferences: AdminPreferences;
+    role: string;
+};
+
+export type AdminResendOtpRequest = {
+    challengeId: string;
+};
+
+export type AdminSession = {
+    /**
+     * Action ids this account may perform. null means full access, which is the v1 single-role behaviour.
+     */
+    permissions: Array<string> | null;
+    token: string;
+    user: AdminSessionUser;
+};
+
+export type AdminSessionUser = {
+    email: string;
+    id: string;
+    name: string;
+    /**
+     * Always ADMIN for this console. Provisioning happens in the web dashboard.
+     */
+    role: string;
+};
+
+export type AdminUnlockRequest = {
+    password: string;
+};
+
+export type AdminVerifyOtpRequest = {
+    challengeId: string;
+    code: string;
+    deviceId: string;
+    trustDevice: boolean;
+};
+
+export type Alert = {
+    acknowledgement: AlertAcknowledgement | null;
+    createdAt: string;
+    id: string;
+    /**
+     * Only the critical tier claims ownership. Everything else is a notification.
+     */
+    requiresAcknowledgement: boolean;
+    severity: AlertSeverity;
+    subject: AlertSubject | null;
+    /**
+     * Values for the supporting line, composed by the console.
+     */
+    summaryParams: AlertSummaryParams;
+    titleParams: AlertTitleParams;
+    type: AlertType;
+};
+
+export type AlertAcknowledgement = {
+    acknowledgedAt: string;
+    adminId: string;
+    adminName: string;
+};
+
+export type AlertBandExample = {
+    bookingRef: string;
+    priority: AttentionPriority;
+    surfacedAt: string;
+};
+
+export type AlertBandState = {
+    /**
+     * Unacknowledged criticals. Above 9 the band renders '9+'.
+     */
+    criticalCount: number;
+    /**
+     * At most two, by design: the band is a pointer into the queue, not the queue.
+     */
+    examples: Array<AlertBandExample>;
+};
+
+export type AlertDetail = {
+    acknowledgement: AlertAcknowledgement | null;
+    /**
+     * Critical types cannot be muted, and the ceiling is shown up front.
+     */
+    canMute: boolean;
+    createdAt: string;
+    description: string;
+    history: Array<AlertHistoryEntry>;
+    id: string;
+    notes: Array<AlertNote>;
+    relatedAlerts: Array<RelatedAlertLink>;
+    relatedRecord: RelatedRecord | null;
+    /**
+     * Only the critical tier claims ownership. Everything else is a notification.
+     */
+    requiresAcknowledgement: boolean;
+    severity: AlertSeverity;
+    subject: AlertSubject | null;
+    /**
+     * Values for the supporting line, composed by the console.
+     */
+    summaryParams: AlertSummaryParams;
+    titleParams: AlertTitleParams;
+    trigger: AlertTrigger;
+    type: AlertType;
+};
+
+export type AlertHistoryEntry = {
+    at: string;
+    body: string;
+    id: string;
+    tone: AlertHistoryTone;
+};
+
+export type AlertHistoryTone = 'info' | 'danger' | 'neutral';
+
+export type AlertNote = {
+    authorName: string;
+    body: string;
+    createdAt: string;
+    id: string;
+};
+
+/**
+ * Three values, not five labels: the design only ever draws three visual tiers. High and Medium triggers both land on `warning`.
+ */
+export type AlertSeverity = 'critical' | 'warning' | 'informational';
+
+export type AlertSubject = {
+    id: string;
+    kind: AlertSubjectKind;
+    /**
+     * The human reference the design prints in mono, e.g. #B-8823.
+     */
+    reference: string;
+};
+
+export type AlertSubjectKind = 'booking' | 'provider';
+
+export type AlertSummaryParams = {
+    reference?: string;
+    service?: string;
+    zone?: string;
+    [key: string]: unknown;
+};
+
+export type AlertTitleParams = {
+    date?: string;
+    name?: string;
+    rating?: string;
+    reference?: string;
+    [key: string]: unknown;
+};
+
+export type AlertTrigger = {
+    actual: string;
+    rule: string;
+    threshold: string;
+};
+
+export type AlertType = 'bookingEscalated' | 'assignmentFailed' | 'slaAtRisk' | 'slaBreached' | 'newApplication' | 'providerAutoSuspended' | 'lowRating' | 'paymentFailed' | 'dailySummary';
+
+export type AlertsPage = {
+    items: Array<Alert>;
+    nextCursor?: string | null;
+    total: number;
+};
+
+export type AnalyticsMetric = {
+    id: string;
+    /**
+     * One point per bucket in the requested period.
+     */
+    points: Array<number>;
+    unit: MetricUnit;
+    value: number;
+};
+
+export type AnalyticsSummary = {
+    bucketStarts: Array<string>;
+    metrics: Array<AnalyticsMetric>;
+    period: string;
+    updatedAt: string;
+};
+
+export type AppVersion = {
+    app: string;
+    build: string;
+    /**
+     * OTA bundle id.
+     */
+    bundle: string;
+    environment: string;
+};
+
+export type AppearanceMode = 'light' | 'dark' | 'system';
+
+export type ApplicationCategory = {
+    name: string;
+    yearsClaimed: number;
+};
+
+export type ApplicationCounts = {
+    awaitingDocs: number;
+    decided: number;
+    pending: number;
+};
+
+export type ApplicationDecidedError = {
+    /**
+     * Always ALREADY_DECIDED.
+     */
+    code: string;
+    /**
+     * The decision, decider and timestamp, so the console can render the already-decided record.
+     */
+    decision: ApplicationDecision;
+    message: string;
+};
+
+export type ApplicationDecision = {
+    at: string;
+    byName: string;
+    outcome: ApplicationDecisionOutcome;
+};
+
+export type ApplicationDecisionOutcome = 'approved' | 'rejected';
+
+export type ApplicationDecisionResult = {
+    applicantName: string;
+    applicationId: string;
+    version?: number;
+};
+
+export type ApplicationDocument = {
+    /**
+     * Account tail, certificate number — whatever the row shows instead of an expiry.
+     */
+    detail?: string;
+    expiresAt?: string;
+    id: string;
+    ocrExpected?: string;
+    /**
+     * OCR verdict shown under a failed row.
+     */
+    ocrRead?: string;
+    pageHeading?: string;
+    /**
+     * Placeholder geometry the desktop viewer draws with zero network.
+     */
+    pageLineWidths?: Array<number>;
+    pageNameLine?: string;
+    /**
+     * The scan's size. The console formats it.
+     */
+    sizeBytes?: number;
+    type: DocumentType;
+    uploadedAt?: string;
+    /**
+     * The scan itself, for the document viewer.
+     */
+    url?: string;
+    validation: DocumentValidation;
+};
+
+export type ApplicationQueue = {
+    counts: ApplicationCounts;
+    nextCursor?: string | null;
+    /**
+     * Age of the oldest undecided application, against the 48-hour SLA.
+     */
+    oldestDays: number;
+    rows: Array<ApplicationRow>;
+    total?: number;
+};
+
+export type ApplicationReview = {
+    address: string;
+    applicantName: string;
+    appliedAt: string;
+    approvalBlockers: Array<ApprovalBlocker>;
+    autoValidation: Array<AutoValidationCheck>;
+    backgroundClearedAt: string | null;
+    categories: Array<ApplicationCategory>;
+    daysWaiting: number | null;
+    decision?: ApplicationDecision;
+    documents: Array<ApplicationDocument>;
+    documentsRequired: number;
+    email: string;
+    id: string;
+    phone: string;
+    priorApplications: number;
+    version: number;
+};
+
+export type ApplicationRow = {
+    applicantName: string;
+    appliedAt: string;
+    awaitingDocumentType?: DocumentType;
+    categories: Array<string>;
+    /**
+     * Null once decided — the 48-hour clock stops with the decision.
+     */
+    daysWaiting: number | null;
+    decidedAt?: string;
+    documentsPresent: number;
+    documentsRequired: number;
+    id: string;
+    status: ApplicationStatus;
+    zone: string;
+};
+
+export type ApplicationSegment = 'pending' | 'awaitingDocs' | 'decided';
+
+export type ApplicationStatus = 'pending' | 'awaiting_docs' | 'approved' | 'rejected';
+
+export type ApprovalBlocker = {
+    code: ApprovalBlockerCode;
+    documentType?: DocumentType;
+    id: string;
+};
+
+/**
+ * Why approval is blocked, as a code.
+ */
+export type ApprovalBlockerCode = 'POLICE_VERIFICATION_PENDING' | 'MISSING_DOCUMENT' | 'EXPIRED_DOCUMENT';
+
+export type ApproveApplicationRequest = {
+    version: number;
+};
+
+export type AssignContext = {
+    booking: BookingActionSubject;
+    candidates: Array<ProviderCandidate>;
+    declinedCount: number;
+    /**
+     * The server itself refuses to serve a stale candidate list.
+     */
+    isBlockedOffline: boolean;
+    rankingWeights: Array<RankingWeight>;
+    rounds: Array<DispatchRound>;
+};
+
 export type AssignOutputBody = {
     booking_id?: string;
     state?: string;
@@ -25,8 +492,382 @@ export type AssignRequest = {
     technician_id?: string;
 };
 
+export type AttentionCounts = {
+    all: number;
+    delayed: number;
+    escalated: number;
+    sla: number;
+    unassigned: number;
+};
+
+export type AttentionDiagnosis = {
+    /**
+     * Providers that declined, where the diagnosis is a failed assignment.
+     */
+    declinedCount: number | null;
+    /**
+     * Auto-dispatch rounds attempted, where the diagnosis is a failed assignment.
+     */
+    dispatchRounds: number | null;
+    /**
+     * Minutes past the SLA or the promised slot, where the diagnosis is a breach or a risk.
+     */
+    minutesOverdue: number | null;
+};
+
+export type AttentionFilter = 'all' | 'escalated' | 'unassigned' | 'sla' | 'delayed';
+
+export type AttentionItem = {
+    acknowledged: boolean;
+    /**
+     * What acknowledgeAlert acts on. Distinct from the booking it points at.
+     */
+    alertId: string;
+    amountPaise: number;
+    area: string;
+    bookingId: string;
+    bookingRef: string;
+    customerName: string;
+    /**
+     * The numbers behind the row's coloured line. Composed into a sentence by the console, alongside priority.
+     */
+    diagnosis: AttentionDiagnosis;
+    priority: AttentionPriority;
+    providerName: string | null;
+    providerState: AttentionProviderState | null;
+    service: string;
+    slotAt: string;
+    /**
+     * When the problem surfaced. The age column is derived, never sent pre-formatted.
+     */
+    surfacedAt: string;
+};
+
+export type AttentionLastCleared = {
+    adminName: string;
+    at: string;
+    bookingRef: string;
+};
+
+/**
+ * Declared worst-first. The SERVER owns the feed's order (tiers, oldest first within a tier); the client never re-sorts. It also names the diagnosis the console renders.
+ */
+export type AttentionPriority = 'escalated' | 'sla_breached' | 'failed_assignment' | 'sla_risk' | 'no_response' | 'escalated_acknowledged';
+
+/**
+ * The provider-column word shown when there is no name. Null renders the em dash.
+ */
+export type AttentionProviderState = 'unassigned' | 'unreachable';
+
+export type AttentionQueue = {
+    counts: AttentionCounts;
+    /**
+     * Jobs running normally right now. The all-clear state counts them instead of the zero.
+     */
+    healthyJobs: number;
+    items: Array<AttentionItem>;
+    /**
+     * Populated only when the queue is empty — the all-clear state cites the last resolution.
+     */
+    lastCleared: AttentionLastCleared | null;
+    nextCursor?: string | null;
+    /**
+     * Total across every filter, so 'Showing 5 of 7' is honest under a filter.
+     */
+    total: number;
+    updatedAt: string;
+};
+
+export type AttentionReason = 'escalated' | 'noProvider';
+
+/**
+ * The SCREAMING_SNAKE audit vocabulary, not the dotted permission-registry id. PAYMENT_REFUND_REVERSE is a compensating action and is itself audited.
+ */
+export type AuditAction = 'BOOKING_ASSIGN' | 'BOOKING_REDISPATCH' | 'BOOKING_CANCEL' | 'BOOKING_MANUAL_COMPLETE' | 'PAYMENT_REFUND' | 'PAYMENT_REFUND_REVERSE' | 'PAYMENT_GOODWILL' | 'PROVIDER_SUSPEND' | 'PROVIDER_BLOCK' | 'PROVIDER_FORCE_OFFLINE' | 'APPLICATION_APPROVE' | 'APPLICATION_REJECT' | 'CUSTOMER_BLOCK' | 'DEVICE_REVOKE' | 'ALERT_ACKNOWLEDGE' | 'NOTE_ADD';
+
+export type AuditAdmin = {
+    email: string;
+    id: string;
+    name: string;
+};
+
+export type AuditAdmins = {
+    items: Array<AuditAdmin>;
+};
+
+export type AuditContext = {
+    appVersion: string;
+    /**
+     * City-level only, captured for mutations alone.
+     */
+    approximateLocation: string;
+    deviceId: string;
+    deviceName: string;
+    /**
+     * Sensitive — detail view only, never the list.
+     */
+    ipAddress: string;
+    otaBundle: string;
+    stepUpVerified: boolean;
+    surface: AuditSurface;
+};
+
+export type AuditEntry = {
+    action: AuditAction;
+    admin: AuditAdmin;
+    after: AuditStateSnapshot;
+    before: AuditStateSnapshot;
+    /**
+     * Set on the corrected entry. The original is NOT modified — the backend derives this link.
+     */
+    compensatedByEntryId: string | null;
+    /**
+     * Set on a compensating entry: the earlier entry this one corrects.
+     */
+    compensatesEntryId: string | null;
+    context: AuditContext;
+    evidence: AuditEvidence;
+    id: string;
+    /**
+     * Always true. Present in the payload so the guarantee travels with the record.
+     */
+    immutable: true;
+    /**
+     * Null for actions the risk register does not require a reason for.
+     */
+    reason: AuditReason | null;
+    riskLevel: RiskLevel;
+    target: AuditTarget;
+    timestamp: string;
+};
+
+export type AuditEvidence = {
+    callLogIds: Array<string>;
+    photoIds: Array<string>;
+    reportIds: Array<string>;
+};
+
+export type AuditPage = {
+    items: Array<AuditEntry>;
+    nextCursor: string | null;
+    /**
+     * Oldest timestamp actually present, for the '4 entries · 20 Jul – 20 Jul' line.
+     */
+    rangeFrom: string | null;
+    rangeTo: string | null;
+    total: number;
+};
+
+export type AuditReason = {
+    code: string;
+    note: string;
+};
+
+/**
+ * Field name -> display value. Values arrive display-ready ('₹1,499', 'Waiting Completion OTP') because the audit log records what an operator was told at the time, not a re-render of today's vocabulary.
+ */
+export type AuditStateSnapshot = {
+    [key: string]: string;
+};
+
+export type AuditSurface = 'mobile' | 'desktop';
+
+export type AuditTarget = {
+    /**
+     * The record's primary key, e.g. bkg_8823.
+     */
+    id: string;
+    /**
+     * The human reference an operator recognises, e.g. #B-8823.
+     */
+    reference: string;
+    type: AuditTargetType;
+};
+
+export type AuditTargetType = 'booking' | 'provider' | 'customer' | 'application' | 'payment' | 'device' | 'alert';
+
+export type AuthTrustedDevice = {
+    id: string;
+    lastUsedAt: string;
+    /**
+     * City-level only.
+     */
+    location: string;
+    name: string;
+    type: DeviceType;
+};
+
+export type AuthTrustedDeviceList = {
+    items: Array<AuthTrustedDevice>;
+};
+
+/**
+ * Which automated check ran, as a code.
+ */
+export type AutoCheckCode = 'EXPIRY' | 'BLUR' | 'OCR';
+
+export type AutoValidationCheck = {
+    code: AutoCheckCode;
+    detail?: string;
+    id: string;
+    passed: boolean;
+};
+
 export type AvailabilityRequest = {
     online?: boolean;
+};
+
+export type BlockCustomerRequest = {
+    note: string;
+    reasonCode: CustomerBlockReasonCode;
+    version: number;
+};
+
+export type BlockCustomerResult = {
+    customerId: string;
+    status: CustomerStatus;
+    version: number;
+};
+
+export type BookingActionReceipt = {
+    bookingId: string;
+    /**
+     * The record's version after the mutation.
+     */
+    version: number;
+};
+
+export type BookingActionSubject = {
+    amountPaise: number;
+    bookingId: string;
+    createdAtIso: string;
+    customerName: string;
+    escalatedMinutes: number | null;
+    paymentMethod: PaymentMethod;
+    providerName: string | null;
+    reference: string;
+    serviceName: string;
+    version: number;
+    zone: string;
+};
+
+export type BookingAdminActivity = {
+    actorName?: string;
+    at: string;
+    id: string;
+    kind: BookingAdminActivityKind;
+};
+
+export type BookingAdminActivityKind = 'viewed' | 'systemEscalated' | 'systemAutoAssigned' | 'verifiedCompletion';
+
+export type BookingConcurrentChange = {
+    actorName: string;
+    at: string;
+    providerName: string;
+};
+
+export type BookingCustomer = {
+    address: string;
+    bookingCount: number;
+    joinedAt: string;
+    name: string;
+    phone: string;
+};
+
+export type BookingDetail = {
+    adminActivity: Array<BookingAdminActivity>;
+    amountPaise: number;
+    area: string;
+    concurrentChange: BookingConcurrentChange | null;
+    createdAt: string;
+    customer: BookingCustomer;
+    declinedTotal: number;
+    dispatchRounds: Array<DispatchRound>;
+    escalation: BookingEscalation | null;
+    id: string;
+    isAdminVerified: boolean;
+    notes: Array<string>;
+    payment: BookingPayment;
+    provider: BookingProvider | null;
+    reference: string;
+    serviceTitle: string;
+    state: BookingState;
+    /**
+     * Includes the auto-dispatch rounds. That diagnostic is the whole reason the timeline exists now that dispatch is automated.
+     */
+    timeline: Array<BookingEvent>;
+    verification: BookingVerification | null;
+    /**
+     * Optimistic-concurrency token; mutations send it back and a stale one is 409.
+     */
+    version: number;
+};
+
+export type BookingEscalation = {
+    declined: number;
+    /**
+     * An elapsed count rather than a timestamp: the banner states an age.
+     */
+    minutesUnresolved: number;
+    rounds: number;
+};
+
+export type BookingEvent = {
+    /**
+     * Named where the event turns on who did it — an admin-verified completion, a manual assign.
+     */
+    actorName?: string;
+    at: string;
+    id: string;
+    kind: BookingEventKind;
+    providerName?: string;
+    /**
+     * Present on dispatchRound events.
+     */
+    round?: DispatchRound;
+};
+
+export type BookingEventKind = 'created' | 'searching' | 'dispatchRound' | 'autoAssigned' | 'enRoute' | 'arrived' | 'started' | 'completionOtpFailed' | 'completed' | 'completedByAdmin' | 'assignmentFailed' | 'escalated' | 'cancelled';
+
+export type BookingListItem = {
+    amountPaise: number;
+    area: string;
+    customerName: string;
+    /**
+     * E.164. Formatted for display by the client.
+     */
+    customerPhone: string;
+    id: string;
+    /**
+     * COMPLETED asserted by an admin rather than proved by the customer's OTP.
+     */
+    isAdminVerified: boolean;
+    providerName: string | null;
+    providerNote: ProviderNote;
+    /**
+     * The operator-facing reference, e.g. #B-8823.
+     */
+    reference: string;
+    serviceName: string;
+    slotAt: string;
+    state: BookingState;
+};
+
+export type BookingPayment = {
+    amountPaise: number;
+    isPrepaid: boolean;
+    last4: string;
+    method: PaymentMethod;
+    paidAt: string;
+    transactionId: string;
+};
+
+export type BookingProvider = {
+    completedAt: string | null;
+    id: string;
+    name: string;
+    rating: number;
+    startedAt: string | null;
 };
 
 export type BookingResponse = {
@@ -36,6 +877,98 @@ export type BookingResponse = {
     quoted_total_paise?: number;
     state?: string;
 };
+
+/**
+ * Three segments, not four: nothing is future-dated, so there is no `scheduled` segment. `cancelled` also holds FAILED.
+ */
+export type BookingSegment = 'active' | 'completed' | 'cancelled';
+
+export type BookingSegmentCounts = {
+    active: number;
+    /**
+     * Drives the pulsing dot on the Active tab.
+     */
+    activeHasEscalation: boolean;
+    cancelled: number;
+    completed: number;
+};
+
+/**
+ * The closed set of thirteen, verbatim from internal/booking/state.go — this schema is generated from booking.AllStates(), so the two cannot drift.
+ */
+export type BookingState = 'DRAFT' | 'CONFIRMED' | 'SEARCHING' | 'ASSIGNED' | 'EN_ROUTE' | 'ARRIVED' | 'IN_PROGRESS' | 'AWAITING_COMPLETION' | 'COMPLETED' | 'ESCALATED' | 'RESCHEDULED' | 'CANCELLED' | 'FAILED';
+
+export type BookingVerification = {
+    disputeWindowClosesAt: string;
+    verifiedAt: string;
+    verifiedByName: string;
+};
+
+export type BookingsPage = {
+    counts: BookingSegmentCounts;
+    /**
+     * True when the result set spans every segment, i.e. a search rather than a browse.
+     */
+    isAcrossSegments: boolean;
+    items: Array<BookingListItem>;
+    nextCursor?: string | null;
+    total: number;
+};
+
+export type CallAttempt = {
+    atIso: string;
+    durationSeconds: number;
+    id: string;
+    outcome: string;
+};
+
+export type CancelBookingRequest = {
+    note: string;
+    reasonCode: CancelReasonCode;
+    refund: CancelRefundInstruction;
+    version: number;
+};
+
+export type CancelContext = {
+    booking: BookingActionSubject;
+    cancellationFeePaise: number;
+    isPolicyRefundFull: boolean;
+    policyRefundPaise: number;
+    /**
+     * Cancelling mid-visit strands two people; the design puts an escape hatch above the form.
+     */
+    technicianOnSite: boolean;
+};
+
+/**
+ * 'Customer requested' is deliberately absent: after the 60-second window a customer request arrives as a support ticket, not an ops cancellation. safety_concern and fraud_suspected route into a safety review rather than a plain refund.
+ */
+export type CancelReasonCode = 'customer_unreachable' | 'duplicate_booking' | 'no_provider_available' | 'pricing_dispute' | 'safety_concern' | 'test_internal' | 'fraud_suspected' | 'other' | 'out_of_service_area';
+
+export type CancelRefundInstruction = {
+    amountPaise: number;
+    isPolicyAmount: boolean;
+    /**
+     * Separately audited when the amount departs from the policy amount.
+     */
+    overrideJustification: string;
+    waiveFee: boolean;
+};
+
+export type CancelUndoReceipt = {
+    bookingId: string;
+    /**
+     * Set when the refund could not be reversed; the console says so rather than implying it was.
+     */
+    refundReversalFailureReason: string | null;
+    refundReversed: boolean;
+    /**
+     * The record's version after the mutation.
+     */
+    version: number;
+};
+
+export type CandidateAvailability = 'available' | 'onJob' | 'declined';
 
 export type CandidateResponse = {
     acceptance_rate?: number;
@@ -75,6 +1008,13 @@ export type CategoryResponse = {
     sort_order?: number;
 };
 
+/**
+ * A wall-clock time of day, HH:mm in IST. Quiet hours and the digest are not tied to a date, so they are not instants.
+ */
+export type ClockTime = string;
+
+export type ConfigurableChannel = 'slaAtRisk' | 'providerNoShow' | 'zoneSupplyCritical' | 'paymentFailure' | 'newApplications' | 'autoSuspensions' | 'documentExpiring' | 'dailySummary';
+
 export type CreateAddressRequest = {
     city?: string;
     is_default?: boolean;
@@ -84,6 +1024,10 @@ export type CreateAddressRequest = {
     line2?: string;
     lng?: number;
     pincode?: string;
+};
+
+export type CreateAlertNoteRequest = {
+    body: string;
 };
 
 export type CreateCategoryRequest = {
@@ -115,6 +1059,83 @@ export type CreateVariantRequest = {
     price?: string;
 };
 
+/**
+ * The four alert types that cannot be silenced. They are NOT preferences: they carry no stored value and must be rejected if sent in an update.
+ */
+export type CriticalChannel = 'bookingEscalated' | 'assignmentFailed' | 'slaBreached' | 'bookingDisputed';
+
+export type CustomerBlockReasonCode = 'abusive_behaviour' | 'fraud_suspected' | 'payment_default' | 'repeated_cancellations' | 'safety_incident' | 'other';
+
+export type CustomerDetail = {
+    address: string;
+    blockedReasonCode?: CustomerBlockReasonCode;
+    bookings: number;
+    cancellations: number;
+    id: string;
+    joinedAt: string;
+    lastBookingAt?: string;
+    lifetimeValuePaise: number;
+    name: string;
+    /**
+     * Masked at the source.
+     */
+    phone: string;
+    recentBookings: Array<BookingListItem>;
+    refundsPaise: number;
+    status: CustomerStatus;
+    version: number;
+};
+
+export type CustomerListItem = {
+    bookings: number;
+    id: string;
+    joinedAt: string;
+    lastBookingAt?: string;
+    lifetimeValuePaise: number;
+    name: string;
+    /**
+     * Masked at the source.
+     */
+    phone: string;
+    status: CustomerStatus;
+};
+
+export type CustomerStatus = 'active' | 'blocked';
+
+export type CustomersPage = {
+    items: Array<CustomerListItem>;
+    nextCursor?: string | null;
+    total: number;
+};
+
+export type DashboardPeriod = 'today' | 'live_now';
+
+export type DashboardSparklines = {
+    avgAssign: Array<number>;
+    bookings: Array<number>;
+    completion: Array<number>;
+    revenue: Array<number>;
+};
+
+export type DashboardSummary = {
+    avgAssignDelta: KpiDelta;
+    /**
+     * Mean SEARCHING -> ASSIGNED. Measures the automation now that dispatch is automatic.
+     */
+    avgAssignMs: number;
+    bookings: number;
+    bookingsDelta: KpiDelta;
+    completionDelta: KpiRateDelta;
+    /**
+     * 0–1.
+     */
+    completionRate: number;
+    revenueDelta: KpiDelta;
+    revenuePaise: number;
+    sparklines: DashboardSparklines;
+    updatedAt: string;
+};
+
 export type DepositOutputBody = {
     status?: string;
 };
@@ -122,6 +1143,60 @@ export type DepositOutputBody = {
 export type DepositRequest = {
     booking_id?: string;
 };
+
+export type DeviceKind = 'phone' | 'tablet';
+
+export type DeviceLimitError = {
+    /**
+     * The occupied trust slots, so the operator can pick one to evict.
+     */
+    devices: Array<AuthTrustedDevice>;
+    /**
+     * Always DEVICE_LIMIT_REACHED.
+     */
+    error: string;
+};
+
+/**
+ * Drives the device-row glyph.
+ */
+export type DeviceType = 'phone' | 'tablet' | 'desktop';
+
+export type DiagnosticsReceipt = {
+    reference: string;
+    submittedAt: string;
+};
+
+export type DiagnosticsRequest = {
+    appVersion: string;
+    deviceModel: string;
+    logs: Array<string>;
+    /**
+     * The last 200 network events, redacted.
+     */
+    networkEvents: Array<string>;
+    osVersion: string;
+    otaBundle?: string;
+};
+
+export type DispatchRound = {
+    contacted: number;
+    declined: number;
+    radiusKm: number;
+    /**
+     * 1-based. Round 2 is the first widened retry.
+     */
+    round: number;
+};
+
+export type DocumentState = 'verified' | 'expiring' | 'expired';
+
+/**
+ * A fixed platform vocabulary, as codes. The console owns the operator-facing wording.
+ */
+export type DocumentType = 'AADHAAR' | 'AADHAAR_CARD' | 'PAN' | 'DRIVING_LICENCE' | 'SKILL_CERTIFICATE' | 'ELECTRICAL_CERTIFICATE' | 'POLICE_VERIFICATION' | 'BANK_PASSBOOK' | 'BANK_DETAILS';
+
+export type DocumentValidation = 'validated' | 'failed' | 'missing';
 
 export type ErrorDetail = {
     /**
@@ -165,6 +1240,28 @@ export type ErrorModel = {
     type?: string;
 };
 
+export type InvalidCredentialsError = {
+    /**
+     * Always INVALID_CREDENTIALS.
+     */
+    error: string;
+};
+
+export type InvalidOtpError = {
+    /**
+     * Shown before the lockout, not after.
+     */
+    attemptsRemaining: number;
+    /**
+     * Always INVALID_OTP.
+     */
+    error: string;
+};
+
+export type JobMapState = 'enRoute' | 'onSite' | 'delayed' | 'escalated';
+
+export type JobResolution = 'reassign' | 'let_finish';
+
 export type JobResponse = {
     allowed_actions?: Array<string> | null;
     booking_id?: string;
@@ -179,6 +1276,25 @@ export type JobResponse = {
     scheduled_for?: string;
     service_name?: string;
     state?: string;
+};
+
+export type KpiDelta = {
+    /**
+     * Whether the movement is good news — a rising assign time is not.
+     */
+    isGood: boolean;
+    /**
+     * Signed change against the same period yesterday, in the metric's own whole unit (count, paise, milliseconds).
+     */
+    value: number;
+};
+
+export type KpiRateDelta = {
+    isGood: boolean;
+    /**
+     * Signed change as a 0–1 fraction.
+     */
+    value: number;
 };
 
 export type ListAddressesOutputBody = {
@@ -197,10 +1313,166 @@ export type ListServicesOutputBody = {
     services?: Array<ServiceResponse> | null;
 };
 
+export type LiveMapSnapshot = {
+    /**
+     * A CITY total, not a count of the markers in this response.
+     */
+    activeJobCount: number;
+    attention: Array<MapAttentionItem>;
+    clusters: Array<MapCluster>;
+    jobs: Array<MapJob>;
+    /**
+     * When the server observed these positions — the input to the staleness chip.
+     */
+    observedAt: string;
+    /**
+     * A CITY total, not a count of the markers in this response.
+     */
+    onlineProviderCount: number;
+    providers: Array<MapProvider>;
+    /**
+     * Zones with nobody online at all. The same zones' providers must be absent from providers — a banner over a zone still showing free technicians is worse than no banner.
+     */
+    zeroSupplyZoneIds: Array<string>;
+    zones: Array<MapZone>;
+};
+
 export type LocationRequest = {
     lat?: number;
     lng?: number;
 };
+
+export type ManualCompleteEvidenceError = {
+    /**
+     * Always EVIDENCE_INSUFFICIENT.
+     */
+    code: string;
+    message: string;
+    /**
+     * Names the evidence still owed, so the UI can point at it.
+     */
+    missing: Array<string>;
+};
+
+export type ManualCompleteRequest = {
+    attestations: ManualCompletionAttestations;
+    evidence: ManualCompletionEvidenceRefs;
+    /**
+     * At least 20 characters — server-enforced.
+     */
+    note: string;
+    reasonCode: ManualCompletionReasonCode;
+    version: number;
+};
+
+export type ManualCompleteTooEarlyError = {
+    /**
+     * When the 30-minute lock lifts.
+     */
+    availableAt: string;
+    /**
+     * Always TOO_EARLY.
+     */
+    code: string;
+    message: string;
+};
+
+export type ManualCompletionAttestations = {
+    attemptedCustomer: boolean;
+    believesWorkDone: boolean;
+    spokeToProvider: boolean;
+};
+
+export type ManualCompletionContext = {
+    adminCompletionsThisWeek: number;
+    /**
+     * Non-null while the server's 30-minute lock still holds.
+     */
+    availableInMinutes: number | null;
+    booking: BookingActionSubject;
+    evidence: ManualCompletionEvidence;
+    minutesSinceWorkReported: number;
+    /**
+     * Set when the customer supplied the OTP mid-flow — the manual path yields.
+     */
+    otpArrivedAtIso: string | null;
+    providerCompletionsInSevenDays: number;
+    providerName: string;
+    workReportedAtIso: string;
+};
+
+export type ManualCompletionEvidence = {
+    callAttempts: Array<CallAttempt>;
+    completionReportAtIso: string | null;
+    completionReportId: string | null;
+    workPhotoIds: Array<string>;
+};
+
+export type ManualCompletionEvidenceRefs = {
+    callAttemptIds: Array<string>;
+    completionReportId: string | null;
+    workPhotoIds: Array<string>;
+};
+
+export type ManualCompletionReasonCode = 'customer_phone_unreachable' | 'customer_left_premises' | 'customer_device_no_signal' | 'customer_refuses_otp' | 'otp_delivery_failure' | 'other';
+
+export type MapAttentionItem = {
+    bookingRef: string;
+    id: string;
+    reason: AttentionReason;
+    waitingSince: string;
+    zoneId: string;
+};
+
+export type MapCluster = {
+    id: string;
+    markerCount: number;
+    position: MapPoint;
+    zoneId: string;
+};
+
+export type MapJob = {
+    bookingRef: string;
+    id: string;
+    position: MapPoint;
+    serviceName: string;
+    state: JobMapState;
+    zoneId: string;
+};
+
+export type MapPoint = {
+    xPercent: number;
+    yPercent: number;
+};
+
+export type MapProvider = {
+    id: string;
+    /**
+     * An offline provider's position is its last known one, so the age travels with it. Positions are throttled to 10s.
+     */
+    locatedAt: string;
+    name: string;
+    /**
+     * Set while status is busy.
+     */
+    onBookingRef?: string;
+    position: MapPoint;
+    status: ProviderMapStatus;
+    zoneId: string;
+};
+
+export type MapZone = {
+    id: string;
+    labelAt: MapPoint;
+    name: string;
+};
+
+/**
+ * Where a metric sits against its target.
+ */
+export type MetricBand = 'good' | 'watch' | 'poor';
+
+export type MetricUnit = 'percent' | 'rating' | 'count';
 
 export type MyBookingsOutputBody = {
     bookings?: Array<SummaryResponse> | null;
@@ -216,6 +1488,47 @@ export type MyJobsOutputBody = {
     jobs?: Array<JobResponse> | null;
 };
 
+export type NotificationChannelSettings = {
+    autoSuspensions: boolean;
+    dailySummary: boolean;
+    documentExpiring: boolean;
+    newApplications: boolean;
+    paymentFailure: boolean;
+    providerNoShow: boolean;
+    slaAtRisk: boolean;
+    zoneSupplyCritical: boolean;
+};
+
+export type NotificationSettings = {
+    channels: NotificationChannelSettings;
+    criticalSound: string;
+    digestTime: ClockTime;
+    /**
+     * Informational and operational alerts held back by quiet hours, waiting to be batched.
+     */
+    queuedDuringQuietHours: number;
+    quietHours: QuietHours;
+    vibrate: boolean;
+};
+
+export type OtpChallenge = {
+    attemptsRemaining: number;
+    challengeId: string;
+    expiresInSeconds: number;
+    /**
+     * Already masked by the server; the console never receives a full number.
+     */
+    maskedMobile: string;
+    resendInSeconds: number;
+};
+
+export type OtpExpiredError = {
+    /**
+     * Always OTP_EXPIRED.
+     */
+    error: string;
+};
+
 export type OtpRequest = {
     phone?: string;
 };
@@ -225,12 +1538,67 @@ export type OtpResponse = {
     sent?: boolean;
 };
 
+export type Paginated = {
+    /**
+     * Absent or null on the last page.
+     */
+    nextCursor?: string | null;
+    /**
+     * Rows the query matches in total, not the size of this page.
+     */
+    total: number;
+};
+
+/**
+ * How the customer paid, from ledger.AllPaymentMethods(). The console owns the wording; the server sends the code.
+ */
+export type PaymentMethod = 'UPI' | 'CASH' | 'ONLINE';
+
 export type PaymentResponse = {
     amount?: string;
     booking_id?: string;
     reference?: string;
     status?: string;
     upi_link?: string;
+};
+
+export type PayoutCycle = {
+    cycleClosesIso: string;
+    lastRunIso: string;
+    lastRunPaise: number;
+    lastRunProviders: number;
+    nextCursor?: string | null;
+    nextRunIso: string;
+    nextRunTime: ClockTime;
+    pendingPaise: number;
+    providersAwaiting: number;
+    rows: Array<PayoutRow>;
+    totals: PayoutTotals;
+    zones: number;
+};
+
+export type PayoutRow = {
+    /**
+     * Negative where a refund or a penalty is deducted from this cycle.
+     */
+    adjustmentsPaise: number;
+    commissionPaise: number;
+    grossPaise: number;
+    jobs: number;
+    netPaise: number;
+    providerId: string;
+    providerName: string;
+    status: PayoutStatus;
+};
+
+export type PayoutStatus = 'ready' | 'onHold' | 'blocked';
+
+export type PayoutTotals = {
+    adjustmentsPaise: number;
+    commissionPaise: number;
+    grossPaise: number;
+    jobs: number;
+    netPaise: number;
 };
 
 export type PendingPaymentResponse = {
@@ -250,6 +1618,205 @@ export type PhotoResponse = {
     id?: string;
     kind?: string;
     url?: string;
+};
+
+export type ProviderActiveJob = {
+    amountPaise: number;
+    bookingId: string;
+    customerName: string;
+    etaMinutes?: number;
+    service: string;
+    stage: ActiveJobStage;
+    startedAt?: string;
+    /**
+     * Who the server would hand this booking to, shown once the operator picks Reassign.
+     */
+    suggestedProviderName: string;
+    zone: string;
+};
+
+export type ProviderActiveJobs = {
+    items: Array<ProviderActiveJob>;
+};
+
+export type ProviderCandidate = {
+    availability: CandidateAvailability;
+    /**
+     * 0–1. Never multiplied at the call site.
+     */
+    completionRate: number;
+    declinedAtIso: string | null;
+    distanceKm: number;
+    etaMinutes: number;
+    freeAtIso: string | null;
+    isBestMatch: boolean;
+    jobsToday: number;
+    name: string;
+    providerId: string;
+    rating: number;
+    /**
+     * The catalogue skill that matched, or null.
+     */
+    skill: string | null;
+};
+
+export type ProviderCurrentJob = {
+    bookingId: string;
+    /**
+     * Null once the provider is on site.
+     */
+    etaMinutes: number | null;
+    stage: ActiveJobStage;
+};
+
+export type ProviderDocument = {
+    daysToExpiry?: number;
+    expiresAt?: string;
+    id: string;
+    state: DocumentState;
+    type: DocumentType;
+};
+
+export type ProviderFeedback = {
+    at: string;
+    author: string;
+    comment: string;
+    id: string;
+    rating: number;
+};
+
+export type ProviderFlag = {
+    code: ProviderFlagCode;
+    count: number;
+    windowDays: number;
+};
+
+export type ProviderFlagCode = 'late_arrival' | 'cancellation' | 'customer_complaint' | 'low_rating' | 'no_show' | 'document_expiring';
+
+export type ProviderJob = {
+    amountPaise: number;
+    at: string;
+    bookingId: string;
+    isCancelled: boolean;
+    rating: number | null;
+    service: string;
+};
+
+export type ProviderMapStatus = 'online' | 'busy' | 'offline';
+
+export type ProviderMetric = {
+    band: MetricBand;
+    id: ProviderMetricId;
+    /**
+     * Eight points describing the 90-day trend.
+     */
+    trend: Array<number>;
+    unit: MetricUnit;
+    /**
+     * Percent metrics arrive as a fraction.
+     */
+    value: number;
+};
+
+export type ProviderMetricId = 'completion' | 'escalation' | 'cancellation' | 'rating' | 'onTime' | 'jobs30';
+
+/**
+ * The trailing provider line, as data plus a discriminant. Never a pre-built sentence: the console localises it.
+ */
+export type ProviderNote = {
+    kind: 'none';
+} | {
+    kind: 'unassignedFor';
+    minutes: number;
+} | {
+    kind: 'eta';
+    minutes: number;
+} | {
+    at: string;
+    kind: 'startedAt';
+} | {
+    kind: 'arrivedAgo';
+    minutes: number;
+} | {
+    kind: 'rating';
+    rating: number;
+};
+
+export type ProviderProfile = {
+    documents: Array<ProviderDocument>;
+    earningsTodayPaise: number;
+    feedback: Array<ProviderFeedback>;
+    flags: Array<ProviderFlag>;
+    id: string;
+    isVerified: boolean;
+    jobsToday: number;
+    jobsTotal: number;
+    joinedAt: string;
+    metrics: Array<ProviderMetric>;
+    name: string;
+    offboardedAt?: string;
+    payoutCyclePaise: number;
+    phone: string;
+    rating: number;
+    recentJobs: Array<ProviderJob>;
+    skills: Array<ProviderSkill>;
+    status: ProviderStatus;
+    suspension?: ProviderSuspension;
+    version: number;
+    zone: string;
+    zones: Array<string>;
+};
+
+export type ProviderRoster = {
+    counts: RosterCounts;
+    nextCursor?: string | null;
+    oldestApplicationDays: number;
+    pendingApplications: number;
+    rows: Array<ProviderRosterRow>;
+    /**
+     * The worst zone below threshold, or null when every zone is at or above it.
+     */
+    shortfall: ZoneSupply | null;
+    /**
+     * When the live statuses were last confirmed — the offline state ages them.
+     */
+    statusesAsOf: string;
+    total?: number;
+};
+
+export type ProviderRosterRow = {
+    /**
+     * 0–1. Coloured against the bands — the table's only coloured number.
+     */
+    completionRate: number;
+    currentJob?: ProviderCurrentJob;
+    earningsTodayPaise: number;
+    id: string;
+    jobsToday: number;
+    /**
+     * Null means 'reporting right now'.
+     */
+    lastSeenAt: string | null;
+    name: string;
+    rating: number;
+    skills: Array<string>;
+    status: ProviderStatus;
+    suspendedUntil?: string;
+    zone: string;
+};
+
+export type ProviderSkill = {
+    certifiedTo?: string;
+    isPending: boolean;
+    name: string;
+};
+
+export type ProviderStatus = 'free' | 'on_job' | 'offline' | 'suspended' | 'offboarded';
+
+export type ProviderSuspension = {
+    byName: string;
+    reasonCode: SuspendReasonCode;
+    until: string;
 };
 
 export type QuestionResponse = {
@@ -277,6 +1844,37 @@ export type QueueOutputBody = {
     queue?: Array<QueueEntryResponse> | null;
 };
 
+export type QueuedActionsCount = {
+    count: number;
+};
+
+export type QuietHours = {
+    enabled: boolean;
+    from: ClockTime;
+    to: ClockTime;
+};
+
+export type RankingWeight = {
+    factorId: string;
+    /**
+     * 0–1, so the client owns the presentation.
+     */
+    weight: number;
+};
+
+export type RateLimitedError = {
+    code: string;
+    message: string;
+    /**
+     * When the limit window reopens.
+     */
+    resetAt: string;
+};
+
+export type ReadAllAlertsResult = {
+    markedRead: number;
+};
+
 export type ReconciliationOutputBody = {
     reconciliation?: Array<CashPositionResponse> | null;
 };
@@ -294,9 +1892,206 @@ export type RecordRequest = {
     version?: string;
 };
 
+export type RedispatchContext = {
+    booking: BookingActionSubject;
+    declinedCount: number;
+    defaultIncentivePaise: number;
+    defaultRadiusId: RedispatchRadius;
+    /**
+     * 3 means automation has exhausted itself and the design demotes the primary button.
+     */
+    failedCycles: number;
+    incentiveCapPaise: number;
+    rounds: Array<DispatchRound>;
+};
+
+export type RedispatchRadius = 'base' | 'plus_50' | 'plus_100' | 'city_wide';
+
+export type RedispatchRequest = {
+    incentivePaise: number;
+    includeDecliners: boolean;
+    priorityBoost: boolean;
+    radiusId: RedispatchRadius;
+    relaxSkillMatch: boolean;
+    version: number;
+};
+
+export type RefundCapError = {
+    /**
+     * The goodwill cap that was exceeded.
+     */
+    capPaise: number;
+    /**
+     * Always EXCEEDS_CAP.
+     */
+    code: string;
+    /**
+     * Carries a field error on amountPaise.
+     */
+    fields?: {
+        [key: string]: string;
+    };
+    message: string;
+};
+
+export type RefundContext = {
+    alreadyRefundedPaise: number;
+    booking: BookingActionSubject;
+    bookingValuePaise: number;
+    defaultPayoutImpact: RefundPayoutImpact;
+    goodwillCapPaise: number;
+    originalMethod: PaymentMethod;
+    paidAtIso: string;
+    providerPayoutPaise: number;
+    rateLimitResetsAtIso: string | null;
+    refundablePaise: number;
+    refundsAllowedPerHour: number;
+    refundsUsedThisHour: number;
+};
+
+export type RefundPayoutImpact = 'withhold' | 'pay_anyway';
+
+/**
+ * service_not_delivered, poor_service_quality, provider_no_show and safety_incident withhold the provider payout by default.
+ */
+export type RefundReasonCode = 'service_not_delivered' | 'duplicate_payment' | 'poor_service_quality' | 'cancellation_policy_exception' | 'provider_no_show' | 'goodwill_retention' | 'overcharged' | 'safety_incident' | 'other';
+
+export type RefundReceipt = {
+    bookingId: string;
+    estimatedCompletionIso: string | null;
+    /**
+     * True on a 202: the gateway has not confirmed. A pending refund is never reported as done.
+     */
+    isPending: boolean;
+    refundId: string;
+    /**
+     * The record's version after the mutation.
+     */
+    version: number;
+};
+
+export type RefundRequest = {
+    amountPaise: number;
+    note: string;
+    payoutImpact: RefundPayoutImpact;
+    reasonCode: RefundReasonCode;
+    refundType: RefundType;
+    version: number;
+};
+
+/**
+ * wallet_credit, goodwill_credit and waive_fee land immediately; card and UPI reversals take the banking week.
+ */
+export type RefundType = 'full' | 'partial' | 'wallet_credit' | 'goodwill_credit' | 'waive_fee';
+
+export type RejectApplicationRequest = {
+    /**
+     * At least 20 characters — server-enforced.
+     */
+    note: string;
+    reasonCode: RejectReasonCode;
+    version: number;
+};
+
+export type RejectReasonCode = 'incomplete_documentation' | 'failed_background_check' | 'insufficient_experience' | 'outside_service_area' | 'duplicate_application' | 'authenticity_concern' | 'capacity_full' | 'other';
+
+export type RelatedAlertLink = {
+    createdAt: string;
+    id: string;
+    severity: AlertSeverity;
+    titleParams: AlertTitleParams;
+    type: AlertType;
+};
+
+export type RelatedRecord = {
+    amountPaise: number | null;
+    /**
+     * Set when kind is booking.
+     */
+    bookingState: BookingState | null;
+    createdAt: string;
+    id: string;
+    kind: AlertSubjectKind;
+    /**
+     * Set when kind is provider.
+     */
+    providerStatus: ProviderStatus | null;
+    reference: string;
+    subtitle: string;
+    title: string;
+};
+
+export type RequestDocumentsRequest = {
+    documentTypes: Array<DocumentType>;
+    note?: string;
+    version: number;
+};
+
+export type RequestDocumentsResult = {
+    applicationId: string;
+    requestedDocumentTypes: Array<DocumentType>;
+    sentAt: string;
+    version: number;
+};
+
+export type RestoreProviderRequest = {
+    note?: string;
+    version: number;
+};
+
+export type RestoreProviderResult = {
+    providerId: string;
+    status: ProviderStatus;
+    version: number;
+};
+
 export type ReviewRequest = {
     comment?: string;
     rating?: number;
+};
+
+export type RevokeDeviceResult = {
+    deviceId: string;
+    /**
+     * True when the revoked device is the caller's own; the console then signs out and destroys every cache.
+     */
+    sessionInvalidated: boolean;
+};
+
+/**
+ * The risk register's classification, carried on every audit entry.
+ */
+export type RiskLevel = 'none' | 'low' | 'medium' | 'high' | 'critical';
+
+export type RosterCounts = {
+    onJob: number;
+    online: number;
+    suspended: number;
+    total: number;
+};
+
+export type RosterSegment = 'online' | 'onJob' | 'all';
+
+export type SecurityEvent = {
+    atIso: string;
+    /**
+     * Null where the event came from a device the account does not recognise. The console renders 'unknown' itself — never a server-supplied placeholder string.
+     */
+    device: string | null;
+    id: string;
+    kind: SecurityEventKind;
+    location: string | null;
+};
+
+export type SecurityEventKind = 'signedIn' | 'failedSignIn' | 'deviceTrusted' | 'passwordChanged';
+
+export type SecuritySettings = {
+    activeSessions: number;
+    biometricUnlock: boolean;
+    deviceLimit: number;
+    devices: Array<TrustedDevice>;
+    events: Array<SecurityEvent>;
+    passwordChangedAtIso: string;
 };
 
 export type ServiceResponse = {
@@ -315,12 +2110,34 @@ export type SetAvailabilityOutputBody = {
     online?: boolean;
 };
 
+export type ShellCounters = {
+    /**
+     * Unacknowledged CRITICAL alerts only. The badge must mean 'a human must act'.
+     */
+    criticalAlerts: number;
+    needsAttention: number;
+    openTickets: number;
+    pendingApplications: number;
+};
+
 export type SignatureResponse = {
     api_key?: string;
     cloud_name?: string;
     folder?: string;
     signature?: string;
     timestamp?: number;
+};
+
+export type StaleVersionError = {
+    /**
+     * Always VERSION_CONFLICT.
+     */
+    code: string;
+    /**
+     * The version the record actually carries now.
+     */
+    currentVersion: number;
+    message: string;
 };
 
 export type StatusOutputBody = {
@@ -336,6 +2153,39 @@ export type SummaryResponse = {
     service_name?: string;
     state?: string;
 };
+
+/**
+ * One payload serves all three outcomes; `type` decides which. force_offline is medium risk with a 30s undo, suspend high, block critical.
+ */
+export type SuspendActionType = 'force_offline' | 'suspend' | 'block';
+
+export type SuspendProviderRequest = {
+    /**
+     * Null for force_offline and block.
+     */
+    durationDays: number | null;
+    /**
+     * bookingId -> how the operator chose to handle it.
+     */
+    jobResolutions: {
+        [key: string]: JobResolution;
+    };
+    note: string;
+    notifyImmediately: boolean;
+    reasonCode: SuspendReasonCode;
+    type: SuspendActionType;
+    version: number;
+};
+
+export type SuspendProviderResult = {
+    durationDays: number | null;
+    effectiveUntil: string | null;
+    providerId: string;
+    type: SuspendActionType;
+    version?: number;
+};
+
+export type SuspendReasonCode = 'safety_complaint' | 'repeated_cancellations' | 'poor_quality' | 'fraud_suspected' | 'document_expired' | 'unprofessional' | 'no_show_pattern' | 'policy_violation' | 'other';
 
 export type TechnicianLocationResponse = {
     available?: boolean;
@@ -360,6 +2210,57 @@ export type TechniciansOutputBody = {
     technicians?: Array<TechnicianResponse> | null;
 };
 
+export type TicketAuthorKind = 'customer' | 'admin' | 'system';
+
+export type TicketDetail = {
+    bookingRef?: string | null;
+    createdAt: string;
+    customerName: string;
+    id: string;
+    messages: Array<TicketMessage>;
+    priority: TicketPriority;
+    reference: string;
+    status: TicketStatus;
+    subject: string;
+    updatedAt: string;
+    version: number;
+};
+
+export type TicketListItem = {
+    bookingRef?: string | null;
+    createdAt: string;
+    customerName: string;
+    id: string;
+    priority: TicketPriority;
+    reference: string;
+    status: TicketStatus;
+    subject: string;
+    updatedAt: string;
+};
+
+export type TicketMessage = {
+    at: string;
+    authorKind: TicketAuthorKind;
+    authorName: string;
+    body: string;
+    id: string;
+};
+
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export type TicketReplyRequest = {
+    body: string;
+    version: number;
+};
+
+export type TicketStatus = 'open' | 'pending_customer' | 'resolved' | 'closed';
+
+export type TicketsPage = {
+    items: Array<TicketListItem>;
+    nextCursor?: string | null;
+    total: number;
+};
+
 export type TransitionRequest = {
     action?: string;
     code?: string;
@@ -367,8 +2268,40 @@ export type TransitionRequest = {
     technician_id?: string;
 };
 
+export type TrustedDevice = {
+    id: string;
+    isCurrent: boolean;
+    kind: DeviceKind;
+    lastUsedIso: string;
+    location: string;
+    name: string;
+};
+
+export type UndoRequest = {
+    undoes: UndoTarget;
+    version: number;
+};
+
+export type UndoTarget = 'assign' | 'cancel';
+
+export type UpdateAdminProfileRequest = {
+    preferences: AdminPreferences;
+};
+
 export type UpdateLocationOutputBody = {
     status?: string;
+};
+
+export type UpdateNotificationSettingsRequest = {
+    channels: NotificationChannelSettings;
+    criticalSound: string;
+    digestTime: ClockTime;
+    quietHours: QuietHours;
+    vibrate: boolean;
+};
+
+export type UpdateSecuritySettingsRequest = {
+    biometricUnlock: boolean;
 };
 
 export type VariantResponse = {
@@ -387,6 +2320,12 @@ export type VerifyResponse = {
     name?: string;
     role?: string;
     token?: string;
+};
+
+export type ZoneSupply = {
+    onlineCount: number;
+    threshold: number;
+    zone: string;
 };
 
 export type ListAddressesData = {
@@ -438,6 +2377,545 @@ export type CreateAddressResponses = {
 };
 
 export type CreateAddressResponse = CreateAddressResponses[keyof CreateAddressResponses];
+
+export type AdminVerifyOtpData = {
+    body: AdminVerifyOtpRequest;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/2fa';
+};
+
+export type AdminVerifyOtpErrors = {
+    /**
+     * Wrong code
+     */
+    400: InvalidOtpError;
+    /**
+     * Trust slots full
+     */
+    409: DeviceLimitError;
+    /**
+     * Expired code
+     */
+    410: OtpExpiredError;
+    /**
+     * Attempts exhausted
+     */
+    423: AccountLockedError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminVerifyOtpError = AdminVerifyOtpErrors[keyof AdminVerifyOtpErrors];
+
+export type AdminVerifyOtpResponses = {
+    /**
+     * OK
+     */
+    200: AdminSession;
+};
+
+export type AdminVerifyOtpResponse = AdminVerifyOtpResponses[keyof AdminVerifyOtpResponses];
+
+export type AdminResendOtpData = {
+    body: AdminResendOtpRequest;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/2fa/resend';
+};
+
+export type AdminResendOtpErrors = {
+    /**
+     * Rate limited — 3 per 10 minutes
+     */
+    429: RateLimitedError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminResendOtpError = AdminResendOtpErrors[keyof AdminResendOtpErrors];
+
+export type AdminResendOtpResponses = {
+    /**
+     * OK — only the latest code is valid
+     */
+    200: OtpChallenge;
+};
+
+export type AdminResendOtpResponse = AdminResendOtpResponses[keyof AdminResendOtpResponses];
+
+export type AdminBootstrapData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/bootstrap';
+};
+
+export type AdminBootstrapErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminBootstrapError = AdminBootstrapErrors[keyof AdminBootstrapErrors];
+
+export type AdminBootstrapResponses = {
+    /**
+     * OK
+     */
+    200: AdminBootstrap;
+};
+
+export type AdminBootstrapResponse = AdminBootstrapResponses[keyof AdminBootstrapResponses];
+
+export type AdminListDevicesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/devices';
+};
+
+export type AdminListDevicesErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminListDevicesError = AdminListDevicesErrors[keyof AdminListDevicesErrors];
+
+export type AdminListDevicesResponses = {
+    /**
+     * OK
+     */
+    200: AuthTrustedDeviceList;
+};
+
+export type AdminListDevicesResponse = AdminListDevicesResponses[keyof AdminListDevicesResponses];
+
+export type AdminRevokeDeviceData = {
+    body?: never;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Device id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/admin/auth/devices/{id}';
+};
+
+export type AdminRevokeDeviceErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminRevokeDeviceError = AdminRevokeDeviceErrors[keyof AdminRevokeDeviceErrors];
+
+export type AdminRevokeDeviceResponses = {
+    /**
+     * OK
+     */
+    200: RevokeDeviceResult;
+};
+
+export type AdminRevokeDeviceResponse = AdminRevokeDeviceResponses[keyof AdminRevokeDeviceResponses];
+
+export type AdminLoginData = {
+    body: AdminLoginRequest;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/login';
+};
+
+export type AdminLoginErrors = {
+    /**
+     * Wrong credentials
+     */
+    401: InvalidCredentialsError;
+    /**
+     * Account disabled
+     */
+    403: AccountDisabledError;
+    /**
+     * Account locked
+     */
+    423: AccountLockedError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminLoginError = AdminLoginErrors[keyof AdminLoginErrors];
+
+export type AdminLoginResponses = {
+    /**
+     * OK
+     */
+    200: AdminLoginResult;
+};
+
+export type AdminLoginResponse = AdminLoginResponses[keyof AdminLoginResponses];
+
+export type AdminLogoutData = {
+    body?: never;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/auth/logout';
+};
+
+export type AdminLogoutErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminLogoutError = AdminLogoutErrors[keyof AdminLogoutErrors];
+
+export type AdminLogoutResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type AdminLogoutResponse = AdminLogoutResponses[keyof AdminLogoutResponses];
+
+export type AdminRefreshSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/refresh';
+};
+
+export type AdminRefreshSessionErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminRefreshSessionError = AdminRefreshSessionErrors[keyof AdminRefreshSessionErrors];
+
+export type AdminRefreshSessionResponses = {
+    /**
+     * OK
+     */
+    200: AdminSession;
+};
+
+export type AdminRefreshSessionResponse = AdminRefreshSessionResponses[keyof AdminRefreshSessionResponses];
+
+export type AdminUnlockData = {
+    body: AdminUnlockRequest;
+    path?: never;
+    query?: never;
+    url: '/admin/auth/unlock';
+};
+
+export type AdminUnlockErrors = {
+    /**
+     * Wrong password
+     */
+    401: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminUnlockError = AdminUnlockErrors[keyof AdminUnlockErrors];
+
+export type AdminUnlockResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type AdminUnlockResponse = AdminUnlockResponses[keyof AdminUnlockResponses];
+
+export type AdminSubmitDiagnosticsData = {
+    body: DiagnosticsRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/diagnostics';
+};
+
+export type AdminSubmitDiagnosticsErrors = {
+    /**
+     * Rejected — the payload carried customer PII
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminSubmitDiagnosticsError = AdminSubmitDiagnosticsErrors[keyof AdminSubmitDiagnosticsErrors];
+
+export type AdminSubmitDiagnosticsResponses = {
+    /**
+     * Accepted
+     */
+    202: DiagnosticsReceipt;
+};
+
+export type AdminSubmitDiagnosticsResponse = AdminSubmitDiagnosticsResponses[keyof AdminSubmitDiagnosticsResponses];
+
+export type AdminGetProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/profile';
+};
+
+export type AdminGetProfileErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminGetProfileError = AdminGetProfileErrors[keyof AdminGetProfileErrors];
+
+export type AdminGetProfileResponses = {
+    /**
+     * OK
+     */
+    200: AdminProfile;
+};
+
+export type AdminGetProfileResponse = AdminGetProfileResponses[keyof AdminGetProfileResponses];
+
+export type AdminUpdateProfileData = {
+    body: UpdateAdminProfileRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/profile';
+};
+
+export type AdminUpdateProfileErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminUpdateProfileError = AdminUpdateProfileErrors[keyof AdminUpdateProfileErrors];
+
+export type AdminUpdateProfileResponses = {
+    /**
+     * OK — the whole updated object
+     */
+    200: AdminProfile;
+};
+
+export type AdminUpdateProfileResponse = AdminUpdateProfileResponses[keyof AdminUpdateProfileResponses];
+
+export type AdminQueuedActionsCountData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/queued-actions/count';
+};
+
+export type AdminQueuedActionsCountErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminQueuedActionsCountError = AdminQueuedActionsCountErrors[keyof AdminQueuedActionsCountErrors];
+
+export type AdminQueuedActionsCountResponses = {
+    /**
+     * OK
+     */
+    200: QueuedActionsCount;
+};
+
+export type AdminQueuedActionsCountResponse = AdminQueuedActionsCountResponses[keyof AdminQueuedActionsCountResponses];
+
+export type AdminGetNotificationSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/settings/notifications';
+};
+
+export type AdminGetNotificationSettingsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminGetNotificationSettingsError = AdminGetNotificationSettingsErrors[keyof AdminGetNotificationSettingsErrors];
+
+export type AdminGetNotificationSettingsResponses = {
+    /**
+     * OK
+     */
+    200: NotificationSettings;
+};
+
+export type AdminGetNotificationSettingsResponse = AdminGetNotificationSettingsResponses[keyof AdminGetNotificationSettingsResponses];
+
+export type AdminUpdateNotificationSettingsData = {
+    body: UpdateNotificationSettingsRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/settings/notifications';
+};
+
+export type AdminUpdateNotificationSettingsErrors = {
+    /**
+     * A critical channel was sent; those are not preferences
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminUpdateNotificationSettingsError = AdminUpdateNotificationSettingsErrors[keyof AdminUpdateNotificationSettingsErrors];
+
+export type AdminUpdateNotificationSettingsResponses = {
+    /**
+     * OK — the whole updated object, so the optimistic update settles on the server's copy
+     */
+    200: NotificationSettings;
+};
+
+export type AdminUpdateNotificationSettingsResponse = AdminUpdateNotificationSettingsResponses[keyof AdminUpdateNotificationSettingsResponses];
+
+export type AdminGetSecuritySettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/settings/security';
+};
+
+export type AdminGetSecuritySettingsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminGetSecuritySettingsError = AdminGetSecuritySettingsErrors[keyof AdminGetSecuritySettingsErrors];
+
+export type AdminGetSecuritySettingsResponses = {
+    /**
+     * OK
+     */
+    200: SecuritySettings;
+};
+
+export type AdminGetSecuritySettingsResponse = AdminGetSecuritySettingsResponses[keyof AdminGetSecuritySettingsResponses];
+
+export type AdminUpdateSecuritySettingsData = {
+    body: UpdateSecuritySettingsRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/admin/settings/security';
+};
+
+export type AdminUpdateSecuritySettingsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminUpdateSecuritySettingsError = AdminUpdateSecuritySettingsErrors[keyof AdminUpdateSecuritySettingsErrors];
+
+export type AdminUpdateSecuritySettingsResponses = {
+    /**
+     * OK — the whole updated object
+     */
+    200: SecuritySettings;
+};
+
+export type AdminUpdateSecuritySettingsResponse = AdminUpdateSecuritySettingsResponses[keyof AdminUpdateSecuritySettingsResponses];
+
+export type AdminAppVersionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/admin/version';
+};
+
+export type AdminAppVersionErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type AdminAppVersionError = AdminAppVersionErrors[keyof AdminAppVersionErrors];
+
+export type AdminAppVersionResponses = {
+    /**
+     * OK
+     */
+    200: AppVersion;
+};
+
+export type AdminAppVersionResponse = AdminAppVersionResponses[keyof AdminAppVersionResponses];
 
 export type RequestOtpData = {
     body: OtpRequest;
@@ -982,6 +3460,465 @@ export type UpdateLocationResponses = {
 
 export type UpdateLocationResponse = UpdateLocationResponses[keyof UpdateLocationResponses];
 
+export type OpsActivityFeedData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+    };
+    url: '/ops/activity';
+};
+
+export type OpsActivityFeedErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsActivityFeedError = OpsActivityFeedErrors[keyof OpsActivityFeedErrors];
+
+export type OpsActivityFeedResponses = {
+    /**
+     * OK
+     */
+    200: ActivityFeed;
+};
+
+export type OpsActivityFeedResponse = OpsActivityFeedResponses[keyof OpsActivityFeedResponses];
+
+export type OpsListAlertsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Omitted returns every tier.
+         */
+        severity?: AlertSeverity;
+        /**
+         * Filter by acknowledgement state.
+         */
+        acknowledged?: boolean;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/alerts';
+};
+
+export type OpsListAlertsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListAlertsError = OpsListAlertsErrors[keyof OpsListAlertsErrors];
+
+export type OpsListAlertsResponses = {
+    /**
+     * OK
+     */
+    200: AlertsPage;
+};
+
+export type OpsListAlertsResponse = OpsListAlertsResponses[keyof OpsListAlertsResponses];
+
+export type OpsReadAllAlertsData = {
+    body?: never;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path?: never;
+    query?: never;
+    url: '/ops/alerts/read-all';
+};
+
+export type OpsReadAllAlertsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsReadAllAlertsError = OpsReadAllAlertsErrors[keyof OpsReadAllAlertsErrors];
+
+export type OpsReadAllAlertsResponses = {
+    /**
+     * OK
+     */
+    200: ReadAllAlertsResult;
+};
+
+export type OpsReadAllAlertsResponse = OpsReadAllAlertsResponses[keyof OpsReadAllAlertsResponses];
+
+export type OpsGetAlertData = {
+    body?: never;
+    path: {
+        /**
+         * Alert id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/alerts/{id}';
+};
+
+export type OpsGetAlertErrors = {
+    /**
+     * Not Found — /alerts/:id is a push-notification target and renders NotFoundState
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetAlertError = OpsGetAlertErrors[keyof OpsGetAlertErrors];
+
+export type OpsGetAlertResponses = {
+    /**
+     * OK
+     */
+    200: AlertDetail;
+};
+
+export type OpsGetAlertResponse = OpsGetAlertResponses[keyof OpsGetAlertResponses];
+
+export type OpsAcknowledgeAlertData = {
+    body?: never;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Alert id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/alerts/{id}/acknowledge';
+};
+
+export type OpsAcknowledgeAlertErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsAcknowledgeAlertError = OpsAcknowledgeAlertErrors[keyof OpsAcknowledgeAlertErrors];
+
+export type OpsAcknowledgeAlertResponses = {
+    /**
+     * OK — first writer wins; a later writer still gets 200 with the winning acknowledgement
+     */
+    200: AcknowledgeAlertResult;
+};
+
+export type OpsAcknowledgeAlertResponse = OpsAcknowledgeAlertResponses[keyof OpsAcknowledgeAlertResponses];
+
+export type OpsCreateAlertNoteData = {
+    body: CreateAlertNoteRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Alert id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/alerts/{id}/notes';
+};
+
+export type OpsCreateAlertNoteErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsCreateAlertNoteError = OpsCreateAlertNoteErrors[keyof OpsCreateAlertNoteErrors];
+
+export type OpsCreateAlertNoteResponses = {
+    /**
+     * Created
+     */
+    201: AlertNote;
+};
+
+export type OpsCreateAlertNoteResponse = OpsCreateAlertNoteResponses[keyof OpsCreateAlertNoteResponses];
+
+export type OpsAnalyticsSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Named range, e.g. last7 or last30.
+         */
+        period?: string;
+    };
+    url: '/ops/analytics/summary';
+};
+
+export type OpsAnalyticsSummaryErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsAnalyticsSummaryError = OpsAnalyticsSummaryErrors[keyof OpsAnalyticsSummaryErrors];
+
+export type OpsAnalyticsSummaryResponses = {
+    /**
+     * OK
+     */
+    200: AnalyticsSummary;
+};
+
+export type OpsAnalyticsSummaryResponse = OpsAnalyticsSummaryResponses[keyof OpsAnalyticsSummaryResponses];
+
+export type OpsListApplicationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to pending.
+         */
+        segment?: ApplicationSegment;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/applications';
+};
+
+export type OpsListApplicationsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListApplicationsError = OpsListApplicationsErrors[keyof OpsListApplicationsErrors];
+
+export type OpsListApplicationsResponses = {
+    /**
+     * OK
+     */
+    200: ApplicationQueue;
+};
+
+export type OpsListApplicationsResponse = OpsListApplicationsResponses[keyof OpsListApplicationsResponses];
+
+export type OpsGetApplicationData = {
+    body?: never;
+    path: {
+        /**
+         * Application id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/applications/{id}';
+};
+
+export type OpsGetApplicationErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetApplicationError = OpsGetApplicationErrors[keyof OpsGetApplicationErrors];
+
+export type OpsGetApplicationResponses = {
+    /**
+     * OK
+     */
+    200: ApplicationReview;
+};
+
+export type OpsGetApplicationResponse = OpsGetApplicationResponses[keyof OpsGetApplicationResponses];
+
+export type OpsApproveApplicationData = {
+    body: ApproveApplicationRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Application id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/applications/{id}/approve';
+};
+
+export type OpsApproveApplicationErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Another admin decided first
+     */
+    409: ApplicationDecidedError;
+    /**
+     * Approval is blocked; see approvalBlockers on the review
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsApproveApplicationError = OpsApproveApplicationErrors[keyof OpsApproveApplicationErrors];
+
+export type OpsApproveApplicationResponses = {
+    /**
+     * OK
+     */
+    200: ApplicationDecisionResult;
+};
+
+export type OpsApproveApplicationResponse = OpsApproveApplicationResponses[keyof OpsApproveApplicationResponses];
+
+export type OpsRejectApplicationData = {
+    body: RejectApplicationRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Application id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/applications/{id}/reject';
+};
+
+export type OpsRejectApplicationErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Another admin decided first
+     */
+    409: ApplicationDecidedError;
+    /**
+     * Validation — the note is shorter than 20 characters
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRejectApplicationError = OpsRejectApplicationErrors[keyof OpsRejectApplicationErrors];
+
+export type OpsRejectApplicationResponses = {
+    /**
+     * OK
+     */
+    200: ApplicationDecisionResult;
+};
+
+export type OpsRejectApplicationResponse = OpsRejectApplicationResponses[keyof OpsRejectApplicationResponses];
+
+export type OpsRequestApplicationDocumentsData = {
+    body: RequestDocumentsRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Application id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/applications/{id}/request-documents';
+};
+
+export type OpsRequestApplicationDocumentsErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRequestApplicationDocumentsError = OpsRequestApplicationDocumentsErrors[keyof OpsRequestApplicationDocumentsErrors];
+
+export type OpsRequestApplicationDocumentsResponses = {
+    /**
+     * OK
+     */
+    200: RequestDocumentsResult;
+};
+
+export type OpsRequestApplicationDocumentsResponse = OpsRequestApplicationDocumentsResponses[keyof OpsRequestApplicationDocumentsResponses];
+
 export type AssignmentQueueData = {
     body?: never;
     path?: never;
@@ -1006,6 +3943,219 @@ export type AssignmentQueueResponses = {
 };
 
 export type AssignmentQueueResponse = AssignmentQueueResponses[keyof AssignmentQueueResponses];
+
+export type OpsListAuditEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter to one admin.
+         */
+        adminId?: string;
+        /**
+         * Filter to one audited action.
+         */
+        action?: AuditAction;
+        /**
+         * Filter to one kind of record.
+         */
+        targetType?: AuditTargetType;
+        /**
+         * Filter to one record.
+         */
+        targetId?: string;
+        /**
+         * Inclusive lower bound.
+         */
+        from?: string;
+        /**
+         * Exclusive upper bound.
+         */
+        to?: string;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/audit';
+};
+
+export type OpsListAuditEntriesErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListAuditEntriesError = OpsListAuditEntriesErrors[keyof OpsListAuditEntriesErrors];
+
+export type OpsListAuditEntriesResponses = {
+    /**
+     * OK
+     */
+    200: AuditPage;
+};
+
+export type OpsListAuditEntriesResponse = OpsListAuditEntriesResponses[keyof OpsListAuditEntriesResponses];
+
+export type OpsListAuditAdminsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ops/audit/admins';
+};
+
+export type OpsListAuditAdminsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListAuditAdminsError = OpsListAuditAdminsErrors[keyof OpsListAuditAdminsErrors];
+
+export type OpsListAuditAdminsResponses = {
+    /**
+     * OK
+     */
+    200: AuditAdmins;
+};
+
+export type OpsListAuditAdminsResponse = OpsListAuditAdminsResponses[keyof OpsListAuditAdminsResponses];
+
+export type OpsGetAuditEntryData = {
+    body?: never;
+    path: {
+        /**
+         * Audit entry id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/audit/{id}';
+};
+
+export type OpsGetAuditEntryErrors = {
+    /**
+     * Not Found — the entry screen is a deep-link target
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetAuditEntryError = OpsGetAuditEntryErrors[keyof OpsGetAuditEntryErrors];
+
+export type OpsGetAuditEntryResponses = {
+    /**
+     * OK
+     */
+    200: AuditEntry;
+};
+
+export type OpsGetAuditEntryResponse = OpsGetAuditEntryResponses[keyof OpsGetAuditEntryResponses];
+
+export type OpsListBookingsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to active.
+         */
+        segment?: BookingSegment;
+        /**
+         * Narrow to specific states within the segment.
+         */
+        state?: Array<BookingState>;
+        /**
+         * Zone name.
+         */
+        zone?: string;
+        /**
+         * Service name.
+         */
+        service?: string;
+        /**
+         * Free-text search. The console only sends it from three characters.
+         */
+        q?: string;
+        /**
+         * Inclusive lower bound on the slot.
+         */
+        from?: string;
+        /**
+         * Exclusive upper bound on the slot.
+         */
+        to?: string;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/bookings';
+};
+
+export type OpsListBookingsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListBookingsError = OpsListBookingsErrors[keyof OpsListBookingsErrors];
+
+export type OpsListBookingsResponses = {
+    /**
+     * OK
+     */
+    200: BookingsPage;
+};
+
+export type OpsListBookingsResponse = OpsListBookingsResponses[keyof OpsListBookingsResponses];
+
+export type OpsGetBookingData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}';
+};
+
+export type OpsGetBookingErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetBookingError = OpsGetBookingErrors[keyof OpsGetBookingErrors];
+
+export type OpsGetBookingResponses = {
+    /**
+     * OK
+     */
+    200: BookingDetail;
+};
+
+export type OpsGetBookingResponse = OpsGetBookingResponses[keyof OpsGetBookingResponses];
 
 export type AssignBookingData = {
     body: AssignRequest;
@@ -1037,6 +4187,210 @@ export type AssignBookingResponses = {
 
 export type AssignBookingResponse = AssignBookingResponses[keyof AssignBookingResponses];
 
+export type OpsAssignContextData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/assign-context';
+};
+
+export type OpsAssignContextErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsAssignContextError = OpsAssignContextErrors[keyof OpsAssignContextErrors];
+
+export type OpsAssignContextResponses = {
+    /**
+     * OK
+     */
+    200: AssignContext;
+};
+
+export type OpsAssignContextResponse = OpsAssignContextResponses[keyof OpsAssignContextResponses];
+
+export type OpsUndoAssignData = {
+    body: UndoRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/assign/undo';
+};
+
+export type OpsUndoAssignErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsUndoAssignError = OpsUndoAssignErrors[keyof OpsUndoAssignErrors];
+
+export type OpsUndoAssignResponses = {
+    /**
+     * OK
+     */
+    200: BookingActionReceipt;
+};
+
+export type OpsUndoAssignResponse = OpsUndoAssignResponses[keyof OpsUndoAssignResponses];
+
+export type OpsCancelBookingData = {
+    body: CancelBookingRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/cancel';
+};
+
+export type OpsCancelBookingErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — stale version, or the booking is already terminal
+     */
+    409: StaleVersionError;
+    /**
+     * Validation — a refund override needs its justification
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsCancelBookingError = OpsCancelBookingErrors[keyof OpsCancelBookingErrors];
+
+export type OpsCancelBookingResponses = {
+    /**
+     * OK
+     */
+    200: BookingActionReceipt;
+};
+
+export type OpsCancelBookingResponse = OpsCancelBookingResponses[keyof OpsCancelBookingResponses];
+
+export type OpsCancelContextData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/cancel-context';
+};
+
+export type OpsCancelContextErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsCancelContextError = OpsCancelContextErrors[keyof OpsCancelContextErrors];
+
+export type OpsCancelContextResponses = {
+    /**
+     * OK
+     */
+    200: CancelContext;
+};
+
+export type OpsCancelContextResponse = OpsCancelContextResponses[keyof OpsCancelContextResponses];
+
+export type OpsUndoCancelData = {
+    body: UndoRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/cancel/undo';
+};
+
+export type OpsUndoCancelErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsUndoCancelError = OpsUndoCancelErrors[keyof OpsUndoCancelErrors];
+
+export type OpsUndoCancelResponses = {
+    /**
+     * OK
+     */
+    200: CancelUndoReceipt;
+};
+
+export type OpsUndoCancelResponse = OpsUndoCancelResponses[keyof OpsUndoCancelResponses];
+
 export type BookingCandidatesData = {
     body?: never;
     path: {
@@ -1067,6 +4421,256 @@ export type BookingCandidatesResponses = {
 
 export type BookingCandidatesResponse = BookingCandidatesResponses[keyof BookingCandidatesResponses];
 
+export type OpsManualCompleteBookingData = {
+    body: ManualCompleteRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/manual-complete';
+};
+
+export type OpsManualCompleteBookingErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Too early — the 30-minute lock still holds
+     */
+    409: ManualCompleteTooEarlyError;
+    /**
+     * Evidence insufficient
+     */
+    422: ManualCompleteEvidenceError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsManualCompleteBookingError = OpsManualCompleteBookingErrors[keyof OpsManualCompleteBookingErrors];
+
+export type OpsManualCompleteBookingResponses = {
+    /**
+     * OK
+     */
+    200: BookingActionReceipt;
+};
+
+export type OpsManualCompleteBookingResponse = OpsManualCompleteBookingResponses[keyof OpsManualCompleteBookingResponses];
+
+export type OpsManualCompletionContextData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/manual-complete-context';
+};
+
+export type OpsManualCompletionContextErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsManualCompletionContextError = OpsManualCompletionContextErrors[keyof OpsManualCompletionContextErrors];
+
+export type OpsManualCompletionContextResponses = {
+    /**
+     * OK
+     */
+    200: ManualCompletionContext;
+};
+
+export type OpsManualCompletionContextResponse = OpsManualCompletionContextResponses[keyof OpsManualCompletionContextResponses];
+
+export type OpsRedispatchBookingData = {
+    body: RedispatchRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/redispatch';
+};
+
+export type OpsRedispatchBookingErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRedispatchBookingError = OpsRedispatchBookingErrors[keyof OpsRedispatchBookingErrors];
+
+export type OpsRedispatchBookingResponses = {
+    /**
+     * OK
+     */
+    200: BookingActionReceipt;
+};
+
+export type OpsRedispatchBookingResponse = OpsRedispatchBookingResponses[keyof OpsRedispatchBookingResponses];
+
+export type OpsRedispatchContextData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/redispatch-context';
+};
+
+export type OpsRedispatchContextErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRedispatchContextError = OpsRedispatchContextErrors[keyof OpsRedispatchContextErrors];
+
+export type OpsRedispatchContextResponses = {
+    /**
+     * OK
+     */
+    200: RedispatchContext;
+};
+
+export type OpsRedispatchContextResponse = OpsRedispatchContextResponses[keyof OpsRedispatchContextResponses];
+
+export type OpsRefundBookingData = {
+    body: RefundRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/refund';
+};
+
+export type OpsRefundBookingErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Exceeds the goodwill cap
+     */
+    422: RefundCapError;
+    /**
+     * Refund rate limit reached
+     */
+    429: RateLimitedError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRefundBookingError = OpsRefundBookingErrors[keyof OpsRefundBookingErrors];
+
+export type OpsRefundBookingResponses = {
+    /**
+     * OK
+     */
+    200: RefundReceipt;
+    /**
+     * Accepted — the gateway has not confirmed; isPending is true
+     */
+    202: RefundReceipt;
+};
+
+export type OpsRefundBookingResponse = OpsRefundBookingResponses[keyof OpsRefundBookingResponses];
+
+export type OpsRefundContextData = {
+    body?: never;
+    path: {
+        /**
+         * Booking id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/bookings/{id}/refund-context';
+};
+
+export type OpsRefundContextErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRefundContextError = OpsRefundContextErrors[keyof OpsRefundContextErrors];
+
+export type OpsRefundContextResponses = {
+    /**
+     * OK
+     */
+    200: RefundContext;
+};
+
+export type OpsRefundContextResponse = OpsRefundContextResponses[keyof OpsRefundContextResponses];
+
 export type CashReconciliationData = {
     body?: never;
     path?: never;
@@ -1091,6 +4695,257 @@ export type CashReconciliationResponses = {
 };
 
 export type CashReconciliationResponse = CashReconciliationResponses[keyof CashReconciliationResponses];
+
+export type OpsListCustomersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Free-text search.
+         */
+        q?: string;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/customers';
+};
+
+export type OpsListCustomersErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListCustomersError = OpsListCustomersErrors[keyof OpsListCustomersErrors];
+
+export type OpsListCustomersResponses = {
+    /**
+     * OK
+     */
+    200: CustomersPage;
+};
+
+export type OpsListCustomersResponse = OpsListCustomersResponses[keyof OpsListCustomersResponses];
+
+export type OpsGetCustomerData = {
+    body?: never;
+    path: {
+        /**
+         * Customer id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/customers/{id}';
+};
+
+export type OpsGetCustomerErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetCustomerError = OpsGetCustomerErrors[keyof OpsGetCustomerErrors];
+
+export type OpsGetCustomerResponses = {
+    /**
+     * OK
+     */
+    200: CustomerDetail;
+};
+
+export type OpsGetCustomerResponse = OpsGetCustomerResponses[keyof OpsGetCustomerResponses];
+
+export type OpsBlockCustomerData = {
+    body: BlockCustomerRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Customer id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/customers/{id}/block';
+};
+
+export type OpsBlockCustomerErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsBlockCustomerError = OpsBlockCustomerErrors[keyof OpsBlockCustomerErrors];
+
+export type OpsBlockCustomerResponses = {
+    /**
+     * OK
+     */
+    200: BlockCustomerResult;
+};
+
+export type OpsBlockCustomerResponse = OpsBlockCustomerResponses[keyof OpsBlockCustomerResponses];
+
+export type OpsDashboardAttentionData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Chip filter. Defaults to all.
+         */
+        filter?: AttentionFilter;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/dashboard/attention';
+};
+
+export type OpsDashboardAttentionErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsDashboardAttentionError = OpsDashboardAttentionErrors[keyof OpsDashboardAttentionErrors];
+
+export type OpsDashboardAttentionResponses = {
+    /**
+     * OK
+     */
+    200: AttentionQueue;
+};
+
+export type OpsDashboardAttentionResponse = OpsDashboardAttentionResponses[keyof OpsDashboardAttentionResponses];
+
+export type OpsDashboardBandData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ops/dashboard/band';
+};
+
+export type OpsDashboardBandErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsDashboardBandError = OpsDashboardBandErrors[keyof OpsDashboardBandErrors];
+
+export type OpsDashboardBandResponses = {
+    /**
+     * OK
+     */
+    200: AlertBandState;
+};
+
+export type OpsDashboardBandResponse = OpsDashboardBandResponses[keyof OpsDashboardBandResponses];
+
+export type OpsDashboardSummaryData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to today.
+         */
+        period?: DashboardPeriod;
+    };
+    url: '/ops/dashboard/summary';
+};
+
+export type OpsDashboardSummaryErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsDashboardSummaryError = OpsDashboardSummaryErrors[keyof OpsDashboardSummaryErrors];
+
+export type OpsDashboardSummaryResponses = {
+    /**
+     * OK
+     */
+    200: DashboardSummary;
+};
+
+export type OpsDashboardSummaryResponse = OpsDashboardSummaryResponses[keyof OpsDashboardSummaryResponses];
+
+export type OpsLiveMapData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Viewport centre, as a percentage of the city bounding box.
+         */
+        centreXPercent?: number;
+        /**
+         * Viewport centre, as a percentage of the city bounding box.
+         */
+        centreYPercent?: number;
+        /**
+         * 1 = the whole service city.
+         */
+        zoom?: number;
+        /**
+         * Marker cap. The console renders at most 200.
+         */
+        limit?: number;
+    };
+    url: '/ops/live-map';
+};
+
+export type OpsLiveMapErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsLiveMapError = OpsLiveMapErrors[keyof OpsLiveMapErrors];
+
+export type OpsLiveMapResponses = {
+    /**
+     * OK
+     */
+    200: LiveMapSnapshot;
+};
+
+export type OpsLiveMapResponse = OpsLiveMapResponses[keyof OpsLiveMapResponses];
 
 export type PendingPaymentsData = {
     body?: never;
@@ -1117,6 +4972,355 @@ export type PendingPaymentsResponses = {
 
 export type PendingPaymentsResponse = PendingPaymentsResponses[keyof PendingPaymentsResponses];
 
+export type OpsCurrentPayoutCycleData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/payouts/current';
+};
+
+export type OpsCurrentPayoutCycleErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsCurrentPayoutCycleError = OpsCurrentPayoutCycleErrors[keyof OpsCurrentPayoutCycleErrors];
+
+export type OpsCurrentPayoutCycleResponses = {
+    /**
+     * OK
+     */
+    200: PayoutCycle;
+};
+
+export type OpsCurrentPayoutCycleResponse = OpsCurrentPayoutCycleResponses[keyof OpsCurrentPayoutCycleResponses];
+
+export type OpsListProvidersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to online.
+         */
+        segment?: RosterSegment;
+        /**
+         * Free-text search over name, phone and zone.
+         */
+        search?: string;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/providers';
+};
+
+export type OpsListProvidersErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListProvidersError = OpsListProvidersErrors[keyof OpsListProvidersErrors];
+
+export type OpsListProvidersResponses = {
+    /**
+     * OK
+     */
+    200: ProviderRoster;
+};
+
+export type OpsListProvidersResponse = OpsListProvidersResponses[keyof OpsListProvidersResponses];
+
+export type OpsGetProviderData = {
+    body?: never;
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}';
+};
+
+export type OpsGetProviderErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetProviderError = OpsGetProviderErrors[keyof OpsGetProviderErrors];
+
+export type OpsGetProviderResponses = {
+    /**
+     * OK
+     */
+    200: ProviderProfile;
+};
+
+export type OpsGetProviderResponse = OpsGetProviderResponses[keyof OpsGetProviderResponses];
+
+export type OpsProviderActiveJobsData = {
+    body?: never;
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}/active-jobs';
+};
+
+export type OpsProviderActiveJobsErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsProviderActiveJobsError = OpsProviderActiveJobsErrors[keyof OpsProviderActiveJobsErrors];
+
+export type OpsProviderActiveJobsResponses = {
+    /**
+     * OK
+     */
+    200: ProviderActiveJobs;
+};
+
+export type OpsProviderActiveJobsResponse = OpsProviderActiveJobsResponses[keyof OpsProviderActiveJobsResponses];
+
+export type OpsBlockProviderData = {
+    body: SuspendProviderRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}/block';
+};
+
+export type OpsBlockProviderErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsBlockProviderError = OpsBlockProviderErrors[keyof OpsBlockProviderErrors];
+
+export type OpsBlockProviderResponses = {
+    /**
+     * OK
+     */
+    200: SuspendProviderResult;
+};
+
+export type OpsBlockProviderResponse = OpsBlockProviderResponses[keyof OpsBlockProviderResponses];
+
+export type OpsForceProviderOfflineData = {
+    body: SuspendProviderRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}/force-offline';
+};
+
+export type OpsForceProviderOfflineErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsForceProviderOfflineError = OpsForceProviderOfflineErrors[keyof OpsForceProviderOfflineErrors];
+
+export type OpsForceProviderOfflineResponses = {
+    /**
+     * OK
+     */
+    200: SuspendProviderResult;
+};
+
+export type OpsForceProviderOfflineResponse = OpsForceProviderOfflineResponses[keyof OpsForceProviderOfflineResponses];
+
+export type OpsRestoreProviderData = {
+    body: RestoreProviderRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}/restore';
+};
+
+export type OpsRestoreProviderErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsRestoreProviderError = OpsRestoreProviderErrors[keyof OpsRestoreProviderErrors];
+
+export type OpsRestoreProviderResponses = {
+    /**
+     * OK
+     */
+    200: RestoreProviderResult;
+};
+
+export type OpsRestoreProviderResponse = OpsRestoreProviderResponses[keyof OpsRestoreProviderResponses];
+
+export type OpsSuspendProviderData = {
+    body: SuspendProviderRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Provider id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/providers/{id}/suspend';
+};
+
+export type OpsSuspendProviderErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Validation — an active job was left unresolved
+     */
+    422: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsSuspendProviderError = OpsSuspendProviderErrors[keyof OpsSuspendProviderErrors];
+
+export type OpsSuspendProviderResponses = {
+    /**
+     * OK
+     */
+    200: SuspendProviderResult;
+};
+
+export type OpsSuspendProviderResponse = OpsSuspendProviderResponses[keyof OpsSuspendProviderResponses];
+
+export type ShellCountersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/ops/shell-counters';
+};
+
+export type ShellCountersErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type ShellCountersError = ShellCountersErrors[keyof ShellCountersErrors];
+
+export type ShellCountersResponses = {
+    /**
+     * OK
+     */
+    200: ShellCounters;
+};
+
+export type ShellCountersResponse = ShellCountersResponses[keyof ShellCountersResponses];
+
 export type ListTechniciansData = {
     body?: never;
     path?: never;
@@ -1141,6 +5345,122 @@ export type ListTechniciansResponses = {
 };
 
 export type ListTechniciansResponse = ListTechniciansResponses[keyof ListTechniciansResponses];
+
+export type OpsListTicketsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Defaults to open.
+         */
+        status?: TicketStatus;
+        /**
+         * Page size. Omitted takes the server default.
+         */
+        limit?: number;
+        /**
+         * Opaque cursor from a previous response's nextCursor.
+         */
+        cursor?: string;
+    };
+    url: '/ops/tickets';
+};
+
+export type OpsListTicketsErrors = {
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsListTicketsError = OpsListTicketsErrors[keyof OpsListTicketsErrors];
+
+export type OpsListTicketsResponses = {
+    /**
+     * OK
+     */
+    200: TicketsPage;
+};
+
+export type OpsListTicketsResponse = OpsListTicketsResponses[keyof OpsListTicketsResponses];
+
+export type OpsGetTicketData = {
+    body?: never;
+    path: {
+        /**
+         * Ticket id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/tickets/{id}';
+};
+
+export type OpsGetTicketErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsGetTicketError = OpsGetTicketErrors[keyof OpsGetTicketErrors];
+
+export type OpsGetTicketResponses = {
+    /**
+     * OK
+     */
+    200: TicketDetail;
+};
+
+export type OpsGetTicketResponse = OpsGetTicketResponses[keyof OpsGetTicketResponses];
+
+export type OpsReplyToTicketData = {
+    body: TicketReplyRequest;
+    headers: {
+        /**
+         * Idempotency key, minted once per operator intent (not per network attempt). Replaying a key must return the first result rather than acting again.
+         */
+        'Idempotency-Key': string;
+    };
+    path: {
+        /**
+         * Ticket id
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/ops/tickets/{id}/reply';
+};
+
+export type OpsReplyToTicketErrors = {
+    /**
+     * Not Found
+     */
+    404: AdminError;
+    /**
+     * Conflict — the record moved since it was read
+     */
+    409: StaleVersionError;
+    /**
+     * Error
+     */
+    default: AdminError;
+};
+
+export type OpsReplyToTicketError = OpsReplyToTicketErrors[keyof OpsReplyToTicketErrors];
+
+export type OpsReplyToTicketResponses = {
+    /**
+     * Created
+     */
+    201: TicketMessage;
+};
+
+export type OpsReplyToTicketResponse = OpsReplyToTicketResponses[keyof OpsReplyToTicketResponses];
 
 export type CapturePaymentData = {
     body?: CaptureRequest;
