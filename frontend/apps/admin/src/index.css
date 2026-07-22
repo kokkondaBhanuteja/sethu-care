@@ -47,15 +47,15 @@
   --color-text-on-dark: #ffffff;
 
   /* -- Brand -------------------------------------------------------------- */
-  --color-brand: #0f6fff; /* primary action, links, selection */
-  --color-brand-hover: #0b59cc;
+  --color-brand: var(--color-primary); /* primary action, links, selection — the ONE blue */
+  --color-brand-hover: var(--color-primary-hover);
   --color-tint-selected: #e8f1ff; /* selected row / selected card tint */
 
   /* -- Status ------------------------------------------------------------- */
   --color-success: #0e8a4a;
   --color-warning: #b76a00;
   --color-danger: #c4291c;
-  --color-info: #0f6fff;
+  --color-info: var(--color-info-fg);
   --color-neutral: #5a646e;
 
   /* -- Status backgrounds ------------------------------------------------- */
@@ -67,7 +67,7 @@
 
   /* -- The only dark surfaces in the product ------------------------------ */
   --color-toast-bg: #1c2023;
-  --color-toast-link: #4d94ff;
+  --color-toast-link: #4d94ff; /* link tint for the dark toast surface only — not a brand blue */
 
   /* -- Type families ------------------------------------------------------ */
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -279,8 +279,9 @@
   --icon-3xl: var(--spacing-icon-3xl);
   --icon-stroke: 1.5;
 
-  /* WCAG 2.2 AA — a visible 2px ring with 2px offset, never removed. */
-  --focus-ring: 2px solid var(--brand);
+  /* WCAG 2.2 AA — a visible 2px ring with 2px offset, never removed.
+     Same hue as the ui-web focus-visible ring so both systems read as one. */
+  --focus-ring: 2px solid var(--color-ring);
   --focus-offset: 2px;
 
   /* Native WebView safe areas (viewport-fit=cover), resolved once here so no
