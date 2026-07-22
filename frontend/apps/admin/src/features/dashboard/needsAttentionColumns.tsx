@@ -29,7 +29,7 @@ const MONO_CELL = "font-mono text-mono tabular-nums whitespace-nowrap";
 
 /** The reason is the only cell carrying the status colour — it is the diagnosis (spec §6.6). */
 function reasonTone(priority: AttentionPriority): string {
-  return PRIORITY_PRESENTATION[priority].tone === "danger" ? "text-danger" : "text-warning";
+  return PRIORITY_PRESENTATION[priority].tone === "danger" ? "text-danger-fg" : "text-warning-fg";
 }
 
 export function buildAttentionColumns(input: ColumnFactoryInput): readonly Column[] {
@@ -77,7 +77,7 @@ export function buildAttentionColumns(input: ColumnFactoryInput): readonly Colum
     id: "reason",
     header: t("columns.reason"),
     render: (row) => (
-      <span className={cx("text-label font-medium", reasonTone(row.priority))}>{row.reason}</span>
+      <span className={cx("text-sm font-medium", reasonTone(row.priority))}>{row.reason}</span>
     ),
   };
 
@@ -88,10 +88,10 @@ export function buildAttentionColumns(input: ColumnFactoryInput): readonly Colum
     header: t("columns.provider"),
     render: (row) => {
       if (!isFull && row.providerState) {
-        return <span className="text-danger">{t(`attention.${row.providerState}`)}</span>;
+        return <span className="text-danger-fg">{t(`attention.${row.providerState}`)}</span>;
       }
       if (row.providerName) return row.providerName;
-      return <span className="text-text-3">{t("attention.noProvider")}</span>;
+      return <span className="text-faint">{t("attention.noProvider")}</span>;
     },
   };
 

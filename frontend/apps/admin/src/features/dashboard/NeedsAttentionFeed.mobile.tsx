@@ -4,6 +4,7 @@ import { useTranslation } from "@sethu/i18n";
 import { Banner } from "../../components/ui/Banner";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
+import { MobileScroll } from "../../layouts/PageMain";
 import { formatTime } from "../../lib/format";
 import { AttentionAllClear, AttentionFilteredEmpty } from "./AttentionEmptyStates";
 import { AttentionFilters } from "./AttentionFilters";
@@ -33,7 +34,7 @@ export function NeedsAttentionFeedMobile() {
       <MobileAppBar
         title={t("attention.title")}
         showBack
-        actions={<span className="text-body text-text-2">{queue?.counts.all ?? 0}</span>}
+        actions={<span className="text-sm text-muted">{queue?.counts.all ?? 0}</span>}
       />
 
       {isOffline && queue ? (
@@ -51,8 +52,8 @@ export function NeedsAttentionFeedMobile() {
         onChange={attention.setFilter}
       />
 
-      <div className="screen__scroll">
-        <div className="gut pt-s1">
+      <MobileScroll>
+        <div className="px-4 pb-6 pt-1">
           <QueryBoundary
             query={attention.query}
             skeleton={<AttentionSkeleton rows={SKELETON_ROWS} rowHeight={CARD_SKELETON_HEIGHT} />}
@@ -84,8 +85,7 @@ export function NeedsAttentionFeedMobile() {
             )}
           </QueryBoundary>
         </div>
-        <div className="h-s4" />
-      </div>
+      </MobileScroll>
     </>
   );
 }

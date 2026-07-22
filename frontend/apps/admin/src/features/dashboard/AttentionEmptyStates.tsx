@@ -31,7 +31,7 @@ export function AttentionAllClear({ healthyJobs, lastCleared, compact = false }:
         body={t("attention.allClearBody", { count: healthyJobs })}
       />
       {!compact && lastCleared ? (
-        <p className="text-caption text-text-3 text-center mt-s2">
+        <p className="mt-s2 text-center text-xs text-faint">
           {t("attention.lastCleared", {
             time: formatTime(lastCleared.at),
             booking: lastCleared.bookingRef,
@@ -67,7 +67,9 @@ export function AttentionFilteredEmpty({ filter, onClearFilters }: FilteredEmpty
 
   return (
     <div className="flex flex-col items-center gap-s2 py-s8">
-      <p className="text-card text-text-1">{t("attention.filteredEmptyTitle", { filter: name })}</p>
+      <p className="text-base font-medium text-ink">
+        {t("attention.filteredEmptyTitle", { filter: name })}
+      </p>
       <Button variant="textBrand" size="inline" onClick={onClearFilters}>
         {t("attention.clearFilters")}
       </Button>

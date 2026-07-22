@@ -1,19 +1,21 @@
 import { Link } from "react-router";
-import { MapPin, RefreshCw, WifiOff } from "lucide-react";
+import { Activity, MapPin, RefreshCw, TriangleAlert, WifiOff } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { buttonVariants } from "@sethu/ui-web";
 
 import { Banner } from "../../components/ui/Banner";
 import { Icon } from "../../components/ui/Icon";
-import { SectionHeader } from "../../components/ui/Panel";
-import { Segmented } from "../../components/ui/Segmented";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
+import { Segmented } from "../../components/ui/Segmented";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
+import { MobileScroll } from "../../layouts/PageMain";
 import { formatTime } from "../../lib/format";
 import { ROUTES } from "../../routes/routes.constants";
 import { ActivityTicker } from "./ActivityTicker";
 import { AlertBand } from "./AlertBand";
 import { AttentionAllClear } from "./AttentionEmptyStates";
 import { ConnectionPill } from "./ConnectionPill";
+import { DashboardSectionCard } from "./DashboardSectionCard";
 import { ActivitySkeleton, AttentionSkeleton, KpiSkeleton } from "./DashboardSkeletons";
 import { KpiTiles } from "./KpiTiles";
 import { NeedsAttentionCards } from "./NeedsAttentionCards.mobile";
@@ -27,8 +29,9 @@ const MOBILE_ACTIVITY_LIMIT = 3;
 const ATTENTION_CARD_SKELETON_HEIGHT = "h-row-72";
 
 /**
- * BOX 2 — the app bar and the alert band sit OUTSIDE the scroll region as flex-none siblings, which
- * guarantees the band can never be scrolled away. That is the point of a non-dismissible band.
+ * BOX 2 — the app bar and the alert card sit OUTSIDE the scroll region as flex-none siblings, which
+ * guarantees the card can never be scrolled away. That is the point of a non-dismissible band.
+ * Below it, the same digestibility language as desktop: KPI grid, then the two section cards.
  */
 export function LiveDashboardMobile() {
   const { t } = useTranslation("adminDashboard");
@@ -67,11 +70,11 @@ export function LiveDashboardMobile() {
       ) : null}
 
       {dashboard.bandQuery.data ? (
-        <AlertBand band={dashboard.bandQuery.data} variant="mobile" />
+        <AlertBand band={dashboard.bandQuery.data} variant="mobile" className="mx-4 mt-3" />
       ) : null}
 
-      <div className="screen__scroll">
-        <div className="gut pt-s3">
+      <MobileScroll>
+        <div className="flex flex-col gap-6 px-4 py-4">
           <Segmented
             label={t("period.label")}
             value={dashboard.period}
@@ -81,64 +84,62 @@ export function LiveDashboardMobile() {
               { value: DASHBOARD_PERIODS.liveNow, label: t("period.liveNow") },
             ]}
           />
-        </div>
 
-        <div className="gut pt-s4">
-          <QueryBoundary query={dashboard.summaryQuery} skeleton={<KpiSkeleton layout="grid" />}>
-            {(summary) => <KpiTiles summary={summary} layout="grid" />}
+          <QueryBoundary query={dashboard.summaryQuery} skeleton={<KpiSkeleton />}>
+            {(summary) => <KpiTiles summary={summary} />}
           </QueryBoundary>
-        </div>
 
-        <SectionHeader
-          title={t("attention.title")}
-          action={
-            <Link to={ROUTES.liveAttention} className="text-brand">
-              {t("attention.seeAll")}
-            </Link>
-          }
-        />
-
-        <div className="gut">
-          <QueryBoundary
-            query={attention.query}
-            skeleton={
-              <AttentionSkeleton
-                rows={DASHBOARD_ATTENTION_LIMIT}
-                rowHeight={ATTENTION_CARD_SKELETON_HEIGHT}
-              />
-            }
-            isEmpty={(queue) => queue.items.length === 0}
-            empty={
-              <AttentionAllClear
-                healthyJobs={attention.query.data?.healthyJobs ?? 0}
-                lastCleared={null}
-                compact
-              />
+          <DashboardSectionCard
+            icon={TriangleAlert}
+            accent="amber"
+            title={t("attention.title")}
+            actions={
+              <Link
+                to={ROUTES.liveAttention}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                {t("attention.seeAll")}
+              </Link>
             }
           >
-            {(queue) => (
-              <NeedsAttentionCards
-                items={queue.items}
-                permissions={attention.permissions}
-                isBlocked={attention.isActionBlocked}
-                acknowledgement={attention.acknowledgement}
-              />
-            )}
-          </QueryBoundary>
-        </div>
+            <QueryBoundary
+              query={attention.query}
+              skeleton={
+                <AttentionSkeleton
+                  rows={DASHBOARD_ATTENTION_LIMIT}
+                  rowHeight={ATTENTION_CARD_SKELETON_HEIGHT}
+                />
+              }
+              isEmpty={(queue) => queue.items.length === 0}
+              empty={
+                <AttentionAllClear
+                  healthyJobs={attention.query.data?.healthyJobs ?? 0}
+                  lastCleared={null}
+                  compact
+                />
+              }
+            >
+              {(queue) => (
+                <NeedsAttentionCards
+                  items={queue.items}
+                  permissions={attention.permissions}
+                  isBlocked={attention.isActionBlocked}
+                  acknowledgement={attention.acknowledgement}
+                />
+              )}
+            </QueryBoundary>
+          </DashboardSectionCard>
 
-        <SectionHeader title={t("activity.title")} />
-        <div className="gut">
-          <QueryBoundary
-            query={dashboard.activityQuery}
-            skeleton={<ActivitySkeleton rows={MOBILE_ACTIVITY_LIMIT} />}
-          >
-            {(entries) => <ActivityTicker entries={entries} />}
-          </QueryBoundary>
+          <DashboardSectionCard icon={Activity} accent="brand" title={t("activity.title")}>
+            <QueryBoundary
+              query={dashboard.activityQuery}
+              skeleton={<ActivitySkeleton rows={MOBILE_ACTIVITY_LIMIT} />}
+            >
+              {(entries) => <ActivityTicker entries={entries} />}
+            </QueryBoundary>
+          </DashboardSectionCard>
         </div>
-
-        <div className="h-s4" />
-      </div>
+      </MobileScroll>
     </>
   );
 }

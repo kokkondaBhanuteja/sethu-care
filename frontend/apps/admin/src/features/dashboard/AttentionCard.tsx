@@ -62,15 +62,15 @@ export function AttentionCard({
           <Pill tone={presentation.tone} icon={presentation.icon}>
             {priorityLabel(item.priority)}
           </Pill>
-          <span className="font-mono text-mono tabular-nums text-text-2">{item.bookingRef}</span>
+          <span className="font-mono text-mono tabular-nums text-muted">{item.bookingRef}</span>
         </div>
-        <span className="text-caption text-text-3 flex-none">{formatAge(item.surfacedAt)}</span>
+        <span className="flex-none text-xs text-faint">{formatAge(item.surfacedAt)}</span>
       </div>
 
-      <p className="text-emph text-text-1 mt-s2">
+      <p className="mt-s2 text-sm font-medium text-ink">
         {t("attention.summary", { service: item.service, customer: item.customerName })}
       </p>
-      <p className="text-label text-text-2">
+      <p className="text-sm text-muted">
         {t("attention.meta", {
           area: item.area,
           time: formatTime(item.slotAt),
@@ -79,8 +79,8 @@ export function AttentionCard({
       </p>
       <p
         className={cx(
-          "text-label font-medium mt-s1",
-          presentation.tone === "danger" ? "text-danger" : "text-warning",
+          "mt-s1 text-sm font-medium",
+          presentation.tone === "danger" ? "text-danger-fg" : "text-warning-fg",
         )}
       >
         {item.reason}

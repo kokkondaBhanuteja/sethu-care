@@ -26,16 +26,16 @@ export function ActivityTicker({ entries }: ActivityTickerProps) {
   const { t } = useTranslation("adminDashboard");
 
   return (
-    <ul className="list-none m-0 p-0">
+    <ul className="m-0 list-none p-0">
       {entries.map((entry) => {
         const description = describe(entry, t);
         return (
-          <li key={entry.id} className="flex items-center gap-s2 h-row-40">
+          <li key={entry.id} className="flex items-center gap-2 py-2">
             {/* The dot's colour is never the only carrier of meaning (spec §4.8): it repeats what
                 the line says, so a screen reader loses nothing by the tint being invisible. */}
             <StatusDot tone={TONES[entry.kind]} label={description} />
-            <span className="grow min-w-0 text-label text-text-1">{description}</span>
-            <span className="text-caption text-text-3 flex-none">{formatAge(entry.at)}</span>
+            <span className="min-w-0 grow text-sm text-muted">{description}</span>
+            <span className="flex-none text-xs text-faint">{formatAge(entry.at)}</span>
           </li>
         );
       })}
