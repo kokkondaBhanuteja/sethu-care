@@ -5,7 +5,8 @@ import { useTranslation } from "@sethu/i18n";
 import { Card } from "../../components/ui/Card";
 import { Icon } from "../../components/ui/Icon";
 import { Pill } from "../../components/ui/Pill";
-import { formatRelative, formatTime } from "../../lib/format";
+import { formatRelative } from "../../lib/format";
+import { formatAlertTime } from "./alerts.time";
 import {
   ALERT_TYPE_ICONS,
   SEVERITY_CARD_EDGES,
@@ -57,7 +58,7 @@ export function AlertSeverityHeader({ alert, actions }: AlertSeverityHeaderProps
           <h1 className="mt-s3 mb-0 text-title text-text-1">{titleOf(alert)}</h1>
           <p className="mt-s1 mb-0 text-label text-text-2">
             {t("meta.created", {
-              time: formatTime(alert.createdAt),
+              time: formatAlertTime(alert.createdAt),
               age: formatRelative(alert.createdAt),
             })}
           </p>

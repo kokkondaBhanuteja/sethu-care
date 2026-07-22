@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { FilterBand, FilterField, PageHeader } from "@sethu/ui-web";
 
 import { QueryBoundary } from "../../components/states/QueryBoundary";
-import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
 import { FilterBar } from "../../components/ui/FilterBar";
 import { PageMain } from "../../layouts/PageMain";
 import { Topbar } from "../../layouts/Topbar";
@@ -18,8 +19,11 @@ import { countUnacknowledgedCritical, splitTiers } from "./alerts.selectors";
 import { useAlertsFeed } from "./useAlertsFeed";
 
 /**
- * Desktop BOX 13–14: a master–detail split, and a feed split into two tiers of visual weight. The
- * right pane exists so an alert can be judged without leaving the queue.
+ * Desktop BOX 13–14 in the reference page language: crumb in the Topbar, ui-web PageHeader as the
+ * one visible h1, a labelled FilterBand Card over the feed, then the master–detail split — two
+ * tiers of visual weight beside the preview pane, so an alert can be judged without leaving the
+ * queue. "Mark read" lives on the informational tier's own header (AlertNoticeList), because a
+ * page-level control that only touches one tier misstates its reach.
  */
 export function AlertsFeedDesktop() {
   const { t } = useTranslation("adminAlerts");
@@ -30,25 +34,15 @@ export function AlertsFeedDesktop() {
 
   return (
     <>
-      <Topbar
-        title={t("feedTitle")}
-        actions={
-          <Button
-            variant="textBrand"
-            size="inline"
-            onClick={feed.markRead}
-            isLoading={feed.isMarkingRead}
-          >
-            {t("markRead")}
-          </Button>
-        }
-      />
+      <Topbar crumbs={[{ label: t("feedTitle") }]} pageRendersHeading />
       <AlertsOfflineBanner
         isOnline={acknowledgement.isOnline}
         queuedCount={acknowledgement.queuedIds.length}
       />
 
       <PageMain>
+        <PageHeader title={t("feedTitle")} />
+
         <QueryBoundary
           query={feed.query}
           skeleton={<AlertsFeedSkeleton />}
@@ -62,11 +56,17 @@ export function AlertsFeedDesktop() {
             const tiers = splitTiers(alerts, feed.severityFilter);
             return (
               <>
-                <FilterBar
-                  label={t("filters.label")}
-                  chips={severityChips(alerts, feed.severityFilter, t)}
-                  onToggle={(id) => feed.setSeverityFilter(toSeverityFilter(id))}
-                />
+                <Card>
+                  <FilterBand className="sm:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
+                    <FilterField label={t("filters.severityLabel")}>
+                      <FilterBar
+                        label={t("filters.label")}
+                        chips={severityChips(alerts, feed.severityFilter, t)}
+                        onToggle={(chipId) => feed.setSeverityFilter(toSeverityFilter(chipId))}
+                      />
+                    </FilterField>
+                  </FilterBand>
+                </Card>
 
                 <div className="mt-s3 flex flex-col items-start gap-s6 shell:flex-row">
                   <div
@@ -91,6 +91,8 @@ export function AlertsFeedDesktop() {
                       today={tiers.noticesToday}
                       earlier={tiers.noticesEarlier}
                       showTierLabel
+                      onMarkRead={feed.markRead}
+                      isMarkingRead={feed.isMarkingRead}
                     />
                   </div>
 

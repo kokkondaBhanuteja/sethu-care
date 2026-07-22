@@ -7,7 +7,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { TextArea } from "../../components/ui/form/TextArea";
 import { useAppForm } from "../../lib/forms/useAppForm";
-import { formatTime } from "../../lib/format";
+import { formatAlertTime } from "./alerts.time";
 import type { AlertNote } from "./alerts.types";
 
 const MAX_NOTE_LENGTH = 280;
@@ -54,7 +54,10 @@ export function AlertNotes({ notes, onAdd, isAdding, collapsible = false }: Aler
             <Card key={note.id} tone="surface" density="tight">
               <p className="m-0 text-label text-text-1">{note.body}</p>
               <p className="mt-s1 mb-0 text-caption text-text-3">
-                {t("notes.byline", { name: note.authorName, time: formatTime(note.createdAt) })}
+                {t("notes.byline", {
+                  name: note.authorName,
+                  time: formatAlertTime(note.createdAt),
+                })}
               </p>
             </Card>
           ))}

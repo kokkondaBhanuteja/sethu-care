@@ -4,9 +4,9 @@ import { useTranslation } from "@sethu/i18n";
 
 import { Icon } from "../../components/ui/Icon";
 import { StatusDot } from "../../components/ui/StatusDot";
-import { formatTime } from "../../lib/format";
 import { ROUTES } from "../../routes/routes.constants";
 import { SEVERITY_LABEL_KEYS } from "./alerts.constants";
+import { formatAlertTime } from "./alerts.time";
 import type { RelatedAlertLink } from "./alerts.types";
 import { useAlertTitle } from "./useAlertTitle";
 
@@ -34,7 +34,7 @@ export function AlertRelatedAlerts({ alerts }: AlertRelatedAlertsProps) {
         <Link
           key={alert.id}
           to={ROUTES.alertDetail(alert.id)}
-          className="flex min-h-row-48 items-center gap-s3 border-b border-border-subtle no-underline"
+          className="flex min-h-row-48 items-center gap-s3 border-b border-border-subtle no-underline transition-colors hover:bg-inset"
         >
           {/* The dot carries an sr-only severity word — colour never signals alone (spec §4.8). */}
           <StatusDot
@@ -42,7 +42,9 @@ export function AlertRelatedAlerts({ alerts }: AlertRelatedAlertsProps) {
             label={t(SEVERITY_LABEL_KEYS[alert.severity])}
           />
           <span className="grow truncate text-label text-text-1">{titleOf(alert)}</span>
-          <span className="shrink-0 text-caption text-text-3">{formatTime(alert.createdAt)}</span>
+          <span className="shrink-0 text-caption text-text-3">
+            {formatAlertTime(alert.createdAt)}
+          </span>
           <Icon glyph={ChevronRight} className="shrink-0 text-text-3" />
         </Link>
       ))}

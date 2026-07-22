@@ -2,12 +2,12 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
 
 import { QueryBoundary } from "../../components/states/QueryBoundary";
-import { Button } from "../../components/ui/Button";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
 import { MobileScroll } from "../../layouts/PageMain";
 import { ROUTES } from "../../routes/routes.constants";
 import { AlertNeedsActionSection } from "./AlertNeedsActionSection";
 import { AlertNoticeList } from "./AlertNoticeList";
+import { AlertSeverityChips } from "./AlertSeverityChips";
 import { AllCaughtUpEmpty, AllCaughtUpStrip } from "./AlertsAllCaughtUp";
 import { AlertsFeedSkeleton } from "./AlertsFeedSkeleton";
 import { AlertsOfflineBanner } from "./AlertsOfflineBanner";
@@ -17,7 +17,8 @@ import { useAlertsFeed } from "./useAlertsFeed";
 /**
  * Mobile BOX 21–24. One screen, two tiers, and the gap between them is the entire design: a feed
  * that treats "a provider applied" and "a booking has no technician" as the same object is how the
- * second one gets missed.
+ * second one gets missed. The severity chips mirror the desktop filter (same hook, same counts);
+ * "Mark read" sits on the informational tier's own header, scoped to the only tier it can touch.
  */
 export function AlertsFeedMobile() {
   const { t } = useTranslation("adminAlerts");
@@ -27,19 +28,7 @@ export function AlertsFeedMobile() {
 
   return (
     <>
-      <MobileAppBar
-        title={t("feedTitle")}
-        actions={
-          <Button
-            variant="textBrand"
-            size="section"
-            onClick={feed.markRead}
-            isLoading={feed.isMarkingRead}
-          >
-            {t("markRead")}
-          </Button>
-        }
-      />
+      <MobileAppBar title={t("feedTitle")} />
 
       <AlertsOfflineBanner
         isOnline={acknowledgement.isOnline}
@@ -64,6 +53,13 @@ export function AlertsFeedMobile() {
             const tiers = splitTiers(alerts, feed.severityFilter);
             return (
               <>
+                <AlertSeverityChips
+                  alerts={alerts}
+                  activeFilter={feed.severityFilter}
+                  onFilterChange={feed.setSeverityFilter}
+                  className="mb-s3 px-s4"
+                />
+
                 {tiers.needsAction.length > 0 ? (
                   <AlertNeedsActionSection
                     alerts={tiers.needsAction}
@@ -79,7 +75,13 @@ export function AlertsFeedMobile() {
                   </div>
                 )}
 
-                <AlertNoticeList today={tiers.noticesToday} earlier={tiers.noticesEarlier} inset />
+                <AlertNoticeList
+                  today={tiers.noticesToday}
+                  earlier={tiers.noticesEarlier}
+                  inset
+                  onMarkRead={feed.markRead}
+                  isMarkingRead={feed.isMarkingRead}
+                />
               </>
             );
           }}

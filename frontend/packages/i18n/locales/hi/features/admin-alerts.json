@@ -17,6 +17,7 @@
   "previewRegion": "Selected alert",
   "filters": {
     "label": "Filter alerts by severity",
+    "severityLabel": "Severity",
     "all": "All",
     "critical": "Critical ({{count}})",
     "warning": "High ({{count}})",

@@ -74,8 +74,10 @@ export function Card({
         tone === "surface" && "bg-canvas shadow-none",
         CARD_EDGES[edge],
         CARD_OUTLINES[outline],
-        selected === true && "border-info-border bg-info-bg",
-        selected === "danger" && "border-danger-border bg-danger-bg",
+        // Selection is a ring, never a repaint: a selected critical card must stay red. The ring
+        // composes over any tone fill, and is visible on plain white cards too.
+        selected === true && "ring-2 ring-ring",
+        selected === "danger" && "ring-2 ring-danger-fg",
         className,
       )}
     >

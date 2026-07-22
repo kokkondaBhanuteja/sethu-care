@@ -1,6 +1,7 @@
 import { useTranslation } from "@sethu/i18n";
 import { CardContent, CardHeader } from "@sethu/ui-web";
 
+import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { cx } from "../../lib/cx";
 import { AlertNoticeRow } from "./AlertNoticeRow";
@@ -12,6 +13,12 @@ export interface AlertNoticeListProps {
   inset?: boolean;
   /** Kept for the two call sites' layout contract; the tier heading now always renders. */
   showTierLabel?: boolean;
+  /**
+   * "Mark read" lives HERE, beside the heading of the only tier it can touch — parked in the
+   * topbar it read as page-wide, which is exactly the promise it must not make (spec §6.20).
+   */
+  onMarkRead?: () => void;
+  isMarkingRead?: boolean;
 }
 
 /**
@@ -21,7 +28,13 @@ export interface AlertNoticeListProps {
  * alert is waiting on a decision — not that the day had no events, so this list stays even when
  * the needs-action tier is gone.
  */
-export function AlertNoticeList({ today, earlier, inset = false }: AlertNoticeListProps) {
+export function AlertNoticeList({
+  today,
+  earlier,
+  inset = false,
+  onMarkRead,
+  isMarkingRead = false,
+}: AlertNoticeListProps) {
   const { t } = useTranslation("adminAlerts");
 
   // No events at all (or all filtered away): no empty shell — absence of noise is the design.
@@ -30,7 +43,21 @@ export function AlertNoticeList({ today, earlier, inset = false }: AlertNoticeLi
   return (
     <section aria-label={t("informational")} className={cx("mt-6", inset && "px-s4")}>
       <Card density="flush">
-        <CardHeader className="pb-2 sm:pb-2">
+        <CardHeader
+          className="pb-2 sm:pb-2"
+          actions={
+            onMarkRead ? (
+              <Button
+                variant="textBrand"
+                size="inline"
+                onClick={onMarkRead}
+                isLoading={isMarkingRead}
+              >
+                {t("markRead")}
+              </Button>
+            ) : undefined
+          }
+        >
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
             {t("informational")}
           </h2>

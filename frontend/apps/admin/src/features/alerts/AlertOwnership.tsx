@@ -1,6 +1,6 @@
 import { useTranslation } from "@sethu/i18n";
 
-import { formatTime } from "../../lib/format";
+import { formatAlertTime } from "./alerts.time";
 import type { Alert } from "./alerts.types";
 
 export interface AlertOwnershipProps {
@@ -39,7 +39,7 @@ export function AlertOwnership({ alert }: AlertOwnershipProps) {
       <p className="m-0 text-emph text-success">
         {t("ownership.owned", {
           name: owner.adminName,
-          time: formatTime(owner.acknowledgedAt),
+          time: formatAlertTime(owner.acknowledgedAt),
         })}
       </p>
       <p className="mt-s1 mb-0 text-caption text-text-3">{t("ownership.ownedNote")}</p>

@@ -9,19 +9,21 @@ invisible badge is a missed escalation (spec §3.1).
 
 ## Contents
 
-| File                            | Role                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| `AlertsFeed.desktop/.mobile`    | The two feed shells (BOX 13–14 / 21–24). Layout only — logic is in the hook.     |
-| `AlertDetail.desktop/.mobile`   | The two detail shells (BOX 22–23 / 38–40).                                       |
-| `useAlertsFeed`                 | Feed query, severity filter, mark-read. Shared by both shells (anti-drift, §2.1).|
-| `useAlertDetail`                | Detail query, not-found detection, add-note.                                     |
-| `useAcknowledgeAlert`           | The one write: policy, mutation, badge invalidation, offline queue, replay.      |
-| `useAlertTitle`                 | Alert headline = client sentence + server nouns.                                 |
-| `useOnlineStatus`               | Connectivity, with a dev-only `?offline=1` override.                             |
-| `ackQueue.store`                | Zustand queue of acknowledgements taken offline.                                 |
-| `alerts.selectors` / `.filters` | Pure tier splitting, counting and chip building.                                 |
-| `alerts.api`                    | The only data boundary. Everything under it is a mock today.                     |
-| `alerts.mock` / `alertDetail.*` | Fixtures that mirror the approved designs row for row.                           |
+| File                            | Role                                                                                                                                                                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AlertsFeed.desktop/.mobile`    | The two feed shells (BOX 13–14 / 21–24). Layout only — logic is in the hook. Desktop is in the reference page language: crumb Topbar (`pageRendersHeading`), ui-web `PageHeader`, a labelled `FilterBand`/`FilterField` Card over the severity chips. |
+| `AlertDetail.desktop/.mobile`   | The two detail shells (BOX 22–23 / 38–40).                                                                                                                                                                                                            |
+| `AlertSeverityChips`            | The mobile severity filter: the shared `filterChipClassName` look at the 44px tap-target floor.                                                                                                                                                       |
+| `useAlertsFeed`                 | Feed query, severity filter, mark-read. Shared by both shells (anti-drift, §2.1).                                                                                                                                                                     |
+| `alerts.time`                   | `formatAlertTime` — the shared `lib/format` en-IN time helper, casing-fixed to the artifacts' uppercase meridiem ("3:12 PM"). Every alert surface uses it; none calls Intl.                                                                           |
+| `useAlertDetail`                | Detail query, not-found detection, add-note.                                                                                                                                                                                                          |
+| `useAcknowledgeAlert`           | The one write: policy, mutation, badge invalidation, offline queue, replay.                                                                                                                                                                           |
+| `useAlertTitle`                 | Alert headline = client sentence + server nouns.                                                                                                                                                                                                      |
+| `useOnlineStatus`               | Connectivity, with a dev-only `?offline=1` override.                                                                                                                                                                                                  |
+| `ackQueue.store`                | Zustand queue of acknowledgements taken offline.                                                                                                                                                                                                      |
+| `alerts.selectors` / `.filters` | Pure tier splitting, counting and chip building.                                                                                                                                                                                                      |
+| `alerts.api`                    | The only data boundary. Everything under it is a mock today.                                                                                                                                                                                          |
+| `alerts.mock` / `alertDetail.*` | Fixtures that mirror the approved designs row for row.                                                                                                                                                                                                |
 
 ## The rules this folder exists to keep
 
@@ -36,12 +38,21 @@ invisible badge is a missed escalation (spec §3.1).
 3. **All caught up is relief, not absence** — green, via `EmptyState positive` when the feed is
    entirely empty, and a green `Banner` strip when only the needs-action tier is clear.
 4. **Acknowledging ≠ resolving.** Every screen that shows acknowledgement also says so in words
-   (`AlertOwnership`).
+   (`AlertOwnership`). On the action card, acknowledging swaps only the Acknowledge slot for an
+   inline "Acknowledged by …" line — the tint stays, the text keeps ≥70% opacity, and **Open stays
+   live**, because opening the record is exactly what acknowledging commits the operator to. No
+   overlay, ever.
 5. **Severity tones live only in `alerts.constants.ts`**, and every tone ships its word: pills carry
-   their label, dots carry an `sr-only` one.
-6. **Detail navigates, it never acts.** Assign/cancel/re-dispatch belong to the booking features; this
-   feature links to their `ROUTES` and stops.
-7. **The trigger audit is an info-tinted Card.** `AlertTriggerCard` draws "why this alert fired" as a
+   their label, dots carry an `sr-only` one. Selection never repaints: the shared Card's `selected`
+   is a `ring-ring` ring over whatever fill the card already has, so a selected critical card stays
+   red.
+6. **"Mark read" lives on the informational tier's own header** (`AlertNoticeList`), never in the
+   page chrome — parked in a topbar it promises page-wide reach it does not have. It disappears
+   with the tier, which is correct.
+7. **Detail navigates, it never acts.** Assign/cancel/re-dispatch belong to the booking features; this
+   feature links to their `ROUTES` and stops. Everything that navigates says so: informational rows
+   and the preview title carry the app's link language — hover treatment plus the trailing chevron.
+8. **The trigger audit is an info-tinted Card.** `AlertTriggerCard` draws "why this alert fired" as a
    blue-tinted Card (solid Gauge chip header) whose rule / threshold / actual sit in a definition
    list; the actual reading inks red only when a line was actually crossed.
 
@@ -68,22 +79,24 @@ genuinely durable; nothing else in this folder would change.
 
 ## Mock triggers (dev)
 
-| Trigger                              | Shows                                                        |
-| ------------------------------------ | ------------------------------------------------------------ |
-| `/alerts`                            | 2 unacknowledged criticals + 1 High + 5 informational (BOX 13/21). |
-| Acknowledge on **`AL-8823`**         | Success → acknowledged detail/row (BOX 23 desktop, M39).     |
-| Acknowledge on **`AL-8830`**         | **Loses the race to Priya Sharma** → "Acknowledged by …" (M23). |
-| `/alerts/AL-8790`                    | Informational detail, no ownership, no Acknowledge (M40).    |
-| `/alerts/AL-0000` (any unknown id)   | `NotFoundState` (spec §3.4 rule 3).                          |
-| `?offline=1` on `/alerts`            | Offline banner; Acknowledge becomes "Queued" (M24).          |
-| `VITE_MOCK_MODE=empty`               | "You're all caught up" empty state (BOX 14/22).              |
-| `VITE_MOCK_MODE=error` / `slow`      | Error + retry / skeletons.                                   |
+| Trigger                            | Shows                                                              |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `/alerts`                          | 2 unacknowledged criticals + 1 High + 5 informational (BOX 13/21). |
+| Acknowledge on **`AL-8823`**       | Success → acknowledged detail/row (BOX 23 desktop, M39).           |
+| Acknowledge on **`AL-8830`**       | **Loses the race to Priya Sharma** → "Acknowledged by …" (M23).    |
+| `/alerts/AL-8790`                  | Informational detail, no ownership, no Acknowledge (M40).          |
+| `/alerts/AL-0000` (any unknown id) | `NotFoundState` (spec §3.4 rule 3).                                |
+| `?offline=1` on `/alerts`          | Offline banner; Acknowledge becomes "Queued" (M24).                |
+| `VITE_MOCK_MODE=empty`             | "You're all caught up" empty state (BOX 14/22).                    |
+| `VITE_MOCK_MODE=error` / `slow`    | Error + retry / skeletons.                                         |
 
 ## Dependencies
 
-`components/ui/*`, `components/states/QueryBoundary`, `layouts/{Topbar,MobileAppBar}`,
-`lib/{format,http,permissions,toast,forms,cx}`, `queries/useShellCounters` (badge invalidation),
-`routes/routes.constants`, `@tanstack/react-query`, zustand, `@sethu/i18n` (`adminAlerts`).
+`components/ui/*` (incl. `FilterBar`'s exported `filterChipClassName`), `components/states/QueryBoundary`,
+`layouts/{Topbar,MobileAppBar}`, `lib/{format,http,permissions,toast,forms,cx}`,
+`queries/useShellCounters` (badge invalidation), `routes/routes.constants`,
+`@sethu/ui-web` (`PageHeader`, `FilterBand`/`FilterField`, plus the card anatomy noted below),
+`@tanstack/react-query`, zustand, `@sethu/i18n` (`adminAlerts`).
 
 ## Boundaries
 
