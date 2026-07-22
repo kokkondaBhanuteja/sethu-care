@@ -4153,6 +4153,17 @@
     max-width: 100%;
   }
 
+  /* Grid and flex children default to `min-width: auto`, which means "never shrink below my
+     content". A panel holding an 800px-minimum table therefore refuses to shrink at all, and the
+     column beside it absorbs the whole shortfall — which is how the dashboard's activity rail got
+     crushed at 1280px while the table it sits next to stayed comfortable. Letting these shrink is
+     what allows `.table-scroll` to do the job it exists for. */
+  .split > *,
+  .app__main,
+  .panel {
+    min-width: 0;
+  }
+
   /* Two-column record layouts stack below the shell breakpoint, and on a laptop
    the narrow column would be unusably thin, so they stack there too. */
   @media (max-width: 1100px) {
@@ -4171,14 +4182,26 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
   }
+  /* The ops tables carry seven-plus columns and a two-button Actions cell. Below this the browser
+     starts stealing width from the text columns, which is how service names and zones end up
+     wrapping mid-word. Scrolling the table inside its panel is the designed behaviour; crushing it
+     is not.
+
+     Sized from the artboard's own column widths for the dashboard queue — 132 + 88 + 46 + 176 fixed,
+     plus three auto columns — so it fits the 1440px design width exactly and scrolls below it. */
   .table-scroll > .table {
     min-width: 720px;
   }
 
   /* Long unbroken values — emails, addresses, provider names in Devanagari or
-   Telugu — must wrap rather than widen the column (spec §4.7). */
+   Telugu — must wrap rather than widen the column (spec §4.7).
+
+   `break-word`, NOT `anywhere`: `anywhere` lets the browser break inside a word
+   even when the word would fit on a line of its own, which turned "Kompally"
+   into "Komp / ally" and "unassigned" into "unassigne / d" the moment the
+   Actions column took its share. Only genuinely unbreakable strings wrap now. */
   .table td {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .table td.num,
   .table td.id-cell {

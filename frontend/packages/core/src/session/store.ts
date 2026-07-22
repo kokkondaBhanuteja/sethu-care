@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { deleteToken, loadToken, saveToken } from "./storage";
+import { deleteToken, loadPreference, loadToken, savePreference, saveToken } from "./storage";
 
 export type Role = "CUSTOMER" | "TECHNICIAN" | "ADMIN";
 
@@ -29,20 +29,45 @@ interface SessionState {
   signOut: () => Promise<void>;
 }
 
+const USER_KEY = "sethu.user";
+
+/** Narrow a persisted blob back to a SessionUser, discarding anything that no longer fits. */
+function parseUser(raw: string | null): SessionUser | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const candidate = parsed as Partial<SessionUser>;
+    if (typeof candidate.role !== "string" || typeof candidate.name !== "string") return null;
+    return candidate as SessionUser;
+  } catch {
+    return null;
+  }
+}
+
 export const useSession = create<SessionState>((set) => ({
   token: null,
   user: null,
   status: "loading",
   hydrate: async () => {
-    const token = await loadToken();
-    set({ token, status: token ? "authenticated" : "unauthenticated" });
+    // The user is restored alongside the token, not just the token. A session with a valid token but
+    // no identity is authenticated-but-anonymous: the admin console's `can()` sees a null user and
+    // refuses every permission-gated route, so a page refresh would lock an operator out of every
+    // destructive action until they signed in again.
+    const [token, user] = await Promise.all([loadToken(), loadPreference(USER_KEY)]);
+    set({
+      token,
+      user: token ? parseUser(user) : null,
+      status: token ? "authenticated" : "unauthenticated",
+    });
   },
   signIn: async (token, user) => {
-    await saveToken(token);
+    await Promise.all([saveToken(token), savePreference(USER_KEY, JSON.stringify(user))]);
     set({ token, user, status: "authenticated" });
   },
   signOut: async () => {
-    await deleteToken();
+    // A revoked device must retain nothing of operational value (spec §5.6).
+    await Promise.all([deleteToken(), savePreference(USER_KEY, "")]);
     set({ token: null, user: null, status: "unauthenticated" });
   },
 }));

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import type { ChangeEvent, ClipboardEvent, KeyboardEvent } from "react";
 
-import { cx } from "../../lib/cx";
+import { cx } from "../../../lib/cx";
 
 /** Cell geometry. The two-factor code and the device passcode must not look alike (design BOX 94). */
 export const CODE_INPUT_SIZES = {
@@ -39,10 +39,6 @@ const NON_DIGITS = /\D/g;
 /**
  * Single-character inputs behind the design's cells: auto-advance, backspace retreat, paste
  * distributed across the row, and SMS one-time-code autofill.
- *
- * PROMOTION CANDIDATE: this is a design-system control, not auth logic, and it is the only file
- * outside `components/ui` and `layouts` that touches the `.otp` classes. It belongs in
- * `components/ui/form/CodeInput.tsx` — moved as-is, with no call-site change.
  */
 export function CodeInput({
   value,
@@ -60,6 +56,17 @@ export function CodeInput({
   const groupId = useId();
   const cellRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // The committed code, updated synchronously by `commit`.
+  //
+  // This has to exist because auto-advance moves focus in the same tick as the keystroke, before
+  // React has re-rendered with the new `value`. The onFocus guard below therefore cannot read the
+  // `value` prop: it would still hold the pre-keystroke string, decide the newly focused cell is
+  // "past the end", and bounce focus back one cell — which silently swallowed every second digit.
+  const committedRef = useRef(value);
+  useEffect(() => {
+    committedRef.current = value;
+  }, [value]);
+
   useEffect(() => {
     if (focusToken === undefined) return;
     cellRefs.current[0]?.focus();
@@ -71,6 +78,7 @@ export function CodeInput({
 
   function commit(next: string): void {
     const trimmed = next.slice(0, length);
+    committedRef.current = trimmed;
     onChange(trimmed);
     if (trimmed.length === length) onComplete?.(trimmed);
   }
@@ -132,9 +140,10 @@ export function CodeInput({
           disabled={disabled}
           aria-label={`${label} ${index + 1}`}
           aria-invalid={invalid || undefined}
-          // Typing into a cell past the end would leave a hole; send it to the first empty one.
+          // Clicking a cell past the filled region would leave a hole; send it to the first empty
+          // one. Reads the ref, not the prop — see the note on committedRef above.
           onFocus={(event) => {
-            if (index > value.length) focusCell(value.length);
+            if (index > committedRef.current.length) focusCell(committedRef.current.length);
             else event.target.select();
           }}
           onChange={(event) => handleChange(index, event)}

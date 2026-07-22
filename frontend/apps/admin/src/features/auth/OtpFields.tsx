@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { Checkbox } from "../../components/ui/form/Checkbox";
 import { OTP_LENGTH } from "./auth.constants";
-import { CodeInput, type CodeInputSize } from "./CodeInput";
+import { CodeInput, type CodeInputSize } from "../../components/ui/form/CodeInput";
 import type { UseOtpVerifyResult } from "./useOtpVerify";
 
 export interface OtpFieldsProps {

@@ -41,6 +41,9 @@ export function MobileActionScreen({
         compact
         bordered
         showBack
+        // These are modal tasks, not pushed screens: the X says "abandon this", where a chevron
+        // says "go up a level". On a form about to cancel a booking the difference matters.
+        backIcon="close"
         onBack={onClose}
         actions={
           reference ? <span className="text-label text-text-2">{reference}</span> : undefined

@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Icon } from "../../components/ui/Icon";
 import { AuthLayout, AUTH_FRAMES } from "../../layouts/AuthLayout";
 import { PASSCODE_LENGTH } from "./auth.constants";
-import { CodeInput } from "./CodeInput";
+import { CodeInput } from "../../components/ui/form/CodeInput";
 import type { UseUnlockResult } from "./useUnlock";
 
 export interface BiometricUnlockMobileProps {

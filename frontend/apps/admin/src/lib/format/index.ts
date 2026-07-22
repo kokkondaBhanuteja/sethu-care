@@ -116,9 +116,22 @@ export function formatDuration(milliseconds: number): string {
   return `${seconds}s`;
 }
 
-/** Age of a timestamp, in the compact form the queue tables use. */
+/**
+ * Age of a record, in the single-unit form the queue tables use: `12m`, `2h 04m`, `45s`.
+ *
+ * Coarser than `formatDuration` on purpose. An age is scanned down a column to find the worst
+ * problem, and "34m 15s" makes that column a paragraph — the seconds are noise, and they change
+ * under the operator's eyes while they read. Durations that are themselves the measurement (average
+ * assignment time) keep their seconds; ages do not.
+ */
 export function formatAge(iso: string | Date, now: Date = new Date()): string {
-  return formatDuration(now.getTime() - toDate(iso).getTime());
+  const elapsed = Math.max(0, now.getTime() - toDate(iso).getTime());
+  if (elapsed < MINUTE_MS) return `${Math.floor(elapsed / 1000)}s`;
+  if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m`;
+
+  const hours = Math.floor(elapsed / HOUR_MS);
+  const minutes = Math.floor((elapsed % HOUR_MS) / MINUTE_MS);
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
 /** `+91 98765 43210` from an E.164 number; anything unexpected is returned untouched. */
