@@ -21,9 +21,9 @@ export function NotFoundState({ subject, grow = true }: NotFoundStateProps) {
   return (
     <EmptyState
       icon={SearchX}
-      title={
-        subject ? `${subject} ${t("state.notFoundTitle").toLowerCase()}` : t("state.notFoundTitle")
-      }
+      // The subject IS the sentence's subject, so it replaces the generic noun rather than
+      // prefixing it — "This provider this record no longer exists" was the old result.
+      title={subject ? t("state.notFoundSubject", { subject }) : t("state.notFoundTitle")}
       body={t("state.notFoundBody")}
       grow={grow}
       actions={

@@ -34,7 +34,7 @@ export function ProviderRecordHead({ profile, screen }: ProviderRecordHeadProps)
 
       <div className="grow">
         <div className="flex items-center gap-s2">
-          <h1 className="text-title text-text-1">{profile.name}</h1>
+          <h2 className="text-title text-text-1">{profile.name}</h2>
           {profile.isVerified ? (
             <Pill tone="success" icon={ShieldCheck}>
               {t("profile.verified")}

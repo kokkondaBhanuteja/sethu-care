@@ -118,7 +118,9 @@ export function AuthLayout({
 function AuthPanel({ wordmark, headline, tagline }: NonNullable<AuthLayoutProps["panel"]>) {
   return (
     <div className="auth-split__panel">
-      <div className="t-kpi c-onbrand">{wordmark}</div>
+      {/* The desktop split renders this panel and not AuthBrand, which owns the h1 on mobile — so
+          without this the sign-in screen reached the operator with no page heading at all. */}
+      <h1 className="t-kpi c-onbrand">{wordmark}</h1>
       <div>
         <div className="t-section c-onbrand w-medium">{headline}</div>
         <div className="t-body auth-split__tagline mt-s1">{tagline}</div>
