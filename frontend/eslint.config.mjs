@@ -15,7 +15,7 @@ export default tseslint.config(
       "**/android/**",
       "**/.turbo/**",
       "**/dist/**",
-      "**/dist-e2e-*/**",
+      "**/dist-e2e*/**",
       "**/playwright-report/**",
       "**/test-results/**",
       "**/web-build/**",

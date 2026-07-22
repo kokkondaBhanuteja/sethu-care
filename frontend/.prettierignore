@@ -17,4 +17,4 @@ web-build
 pnpm-lock.yaml
 *.md
 storybook-static
-dist-e2e-*
+dist-e2e*
