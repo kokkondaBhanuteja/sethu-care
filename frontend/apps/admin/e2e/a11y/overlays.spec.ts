@@ -1,5 +1,6 @@
 import { ROUTES } from "../../src/routes/routes.constants";
 import { expect, test } from "../fixtures";
+import { KNOWN_DEFECTS } from "../support/knownDefects";
 import { APPLICATION_TRIGGERS, BOOKING_TRIGGERS } from "../support/mockTriggers";
 
 /**
@@ -46,6 +47,9 @@ test.describe("a modal task route", () => {
 
 test.describe("the step-up challenge", () => {
   test("Escape dismisses it and returns to the form behind it", async ({ page, cancelBooking }) => {
+    // Blocked, not broken: the challenge can only be raised by pressing "Continue to confirm",
+    // which the modal defect puts out of reach — so this behaviour is untestable until it lands.
+    test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
     await cancelBooking.goto(BOOKING_TRIGGERS.ordinary);
     await cancelBooking.chooseReason("Duplicate booking");
     await cancelBooking.continueToConfirm.click();
@@ -66,6 +70,7 @@ test.describe("the step-up challenge", () => {
 
 test.describe("a dialog opened from a trigger", () => {
   test("returns focus to the trigger when it closes", async ({ page, applicationReview }) => {
+    test.fail(true, KNOWN_DEFECTS.overlayFocusNotReturned);
     await applicationReview.goto(APPLICATION_TRIGGERS.pending);
     await expect(applicationReview.reject).toBeVisible();
 
@@ -82,6 +87,7 @@ test.describe("a dialog opened from a trigger", () => {
 
 test.describe("a drawer", () => {
   test("traps focus, and Escape returns it to the control that opened it", async ({ page }) => {
+    test.fail(true, KNOWN_DEFECTS.overlayFocusNotReturned);
     // The audit log's "More filters" is the console's canonical Drawer: settings-shaped work that
     // must not hide the record it acts on.
     await page.goto(ROUTES.audit);

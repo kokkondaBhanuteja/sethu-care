@@ -19,7 +19,7 @@ export function FilteredEmptyState({ onClearFilters, grow = false }: FilteredEmp
 
   return (
     <EmptyState
-      illustration
+      illustration="filtered"
       icon={FilterX}
       title={t("state.filteredEmptyTitle")}
       body={t("state.filteredEmptyBody")}

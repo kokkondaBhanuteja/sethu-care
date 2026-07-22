@@ -3,12 +3,23 @@ import type { LucideIcon } from "lucide-react";
 import { EmptyState as UiEmptyState, IconChip, cn } from "@sethu/ui-web";
 
 import tableEmptyArtwork from "../../assets/table-empty.png";
+import filteredEmptyArtwork from "../../assets/filtered-empty.png";
+import emptyBoxArtwork from "../../assets/empty-box.png";
+
+// The illustration system (assets/CLAUDE.md is the provenance registry): distinct artwork for
+// distinct states, so "empty because filtered" never looks like "genuinely empty".
+const ARTWORK = {
+  table: tableEmptyArtwork,
+  filtered: filteredEmptyArtwork,
+  box: emptyBoxArtwork,
+} as const;
+export type EmptyStateArtwork = keyof typeof ARTWORK;
 
 export interface EmptyStateProps {
   icon: LucideIcon;
-  /** Replace the icon chip with the brand empty illustration — the default face of every empty
-      table (product decision: the clipboard artwork). */
-  illustration?: boolean;
+  /** Replace the icon chip with brand artwork — the default face of every empty table
+      (product decision). `true` = the table clipboard; named keys pick the state-specific art. */
+  illustration?: boolean | EmptyStateArtwork;
   title: string;
   /** One line explaining why there is nothing here — never just "No data". */
   body?: string;
@@ -44,7 +55,12 @@ export function EmptyState({
     <UiEmptyState
       icon={
         illustration ? (
-          <img src={tableEmptyArtwork} alt="" aria-hidden className="h-20 w-20" />
+          <img
+            src={ARTWORK[illustration === true ? "table" : illustration]}
+            alt=""
+            aria-hidden
+            className="h-20 w-20"
+          />
         ) : (
           <IconChip look="soft" accent={positive ? "green" : "brand"} size="lg">
             <IconGlyph aria-hidden />

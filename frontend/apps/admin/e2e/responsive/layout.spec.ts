@@ -68,7 +68,10 @@ test("a full-screen modal task hides the tab bar on a phone and keeps the sideba
   ).toBeVisible();
 
   if (width(page) >= SHELL_BREAKPOINT_PX) {
-    await expect(shell.sidebarNav).toBeVisible();
+    // Radix modality `aria-hidden`s everything outside the open dialog, so the rail cannot be
+    // found by role here — but it must still be VISUALLY present behind the scrim, which the
+    // brand wordmark (a text match, blind to aria-hidden) proves.
+    await expect(shell.sidebarBrand).toBeVisible();
   } else {
     await expect(shell.moreTab).toHaveCount(0);
   }

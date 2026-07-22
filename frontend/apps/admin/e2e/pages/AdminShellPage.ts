@@ -17,6 +17,13 @@ export class AdminShellPage {
   /** The five-tab bottom bar: the "Primary" navigation that carries the More tab. */
   readonly tabBar: Locator;
   readonly moreTab: Locator;
+  /**
+   * The sidebar's brand wordmark, matched by TEXT rather than role on purpose: while a Radix modal
+   * is open, everything outside the dialog is `aria-hidden` (modality), so no role query can see
+   * the rail even though it is fully visible behind the scrim. The text engine ignores
+   * `aria-hidden`, so this is the one honest way to assert the rail is still on screen.
+   */
+  readonly sidebarBrand: Locator;
   readonly fatalError: Locator;
 
   constructor(page: Page) {
@@ -25,6 +32,7 @@ export class AdminShellPage {
     const primaryNav = page.getByRole("navigation", { name: "Primary" });
     this.sidebarNav = primaryNav.filter({ hasNot: this.moreTab });
     this.tabBar = primaryNav.filter({ has: this.moreTab });
+    this.sidebarBrand = page.getByText("SetuCare", { exact: true });
     this.fatalError = page.getByRole("heading", { name: "This screen failed to load" });
   }
 

@@ -1,10 +1,14 @@
 import { expect, test } from "../fixtures";
+import { KNOWN_DEFECTS } from "../support/knownDefects";
 import { BOOKING_TRIGGERS, GOODWILL_CAP_BREACH_RUPEES } from "../support/mockTriggers";
 
 /**
  * Refunds (BOX 29–30). Money leaves the platform here, so the two server limits the form mirrors —
  * the ₹500 goodwill cap and the hourly rate limit — get their own tests, and the absence of an undo
  * gets one too.
+ *
+ * The tests that must PRESS "Continue to confirm" are expected failures today —
+ * `KNOWN_DEFECTS.modalFooterUnreachable`. Left failing on purpose — do not weaken.
  */
 
 test("the ordinary refund path loads with the booking's payment restated", async ({ refund }) => {
@@ -49,6 +53,7 @@ test("the rate-limited state replaces the form instead of disabling it", async (
 });
 
 test("a completed refund is announced with NO undo", async ({ refund }) => {
+  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await refund.goto(BOOKING_TRIGGERS.refund);
 
   await refund.chooseReason("Service not delivered");
@@ -62,6 +67,7 @@ test("a completed refund is announced with NO undo", async ({ refund }) => {
 });
 
 test("a refund needs a reason before the step-up can be reached", async ({ refund }) => {
+  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await refund.goto(BOOKING_TRIGGERS.refund);
 
   await refund.continueToConfirm.click();

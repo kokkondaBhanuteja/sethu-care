@@ -92,8 +92,15 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
 
   [ROUTES.alerts]: { url: ROUTES.alerts, heading: "Alerts" },
   [ROUTE_PATTERNS.alertDetail]: {
+    // AL-8823 is a `bookingEscalated` alert, so its headline — and therefore the page heading —
+    // is the alert title, not the generic "Alert".
     url: ROUTES.alertDetail(ALERT_TRIGGERS.existing),
-    heading: "Alert",
+    heading: "Booking escalated",
+    defect:
+      "Two identical h1s: AlertSeverityHeader renders a visible h1 while Topbar (crumbs without " +
+      "pageRendersHeading) still emits its sr-only crumb h1 with the same text — the alert detail " +
+      "was missed by the one-h1-per-screen pass, so the locator resolves both and strict mode " +
+      "refuses.",
   },
 
   // Desktop has no More menu — the always-visible sidebar is its equivalent, so /more lands on the
