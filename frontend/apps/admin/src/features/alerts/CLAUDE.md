@@ -25,9 +25,12 @@ invisible badge is a missed escalation (spec §3.1).
 
 ## The rules this folder exists to keep
 
-1. **Two tiers, not one list.** `needs action` is everything with `requiresAcknowledgement`; it gets
-   cards, tints, a 3px rail and buttons. `notices` is everything else and gets bare 48px rows. The
-   contrast is the design — five harmless alerts must not dilute two urgent ones.
+1. **Two tiers, not one list — drawn as two separated Cards.** `needs action` is everything with
+   `requiresAcknowledgement`; it is a danger-edged Card with an icon header (soft red TriangleAlert
+   chip + the badge) holding the tinted action cards and acknowledge buttons. `notices` is
+   everything else: a plain Card with a muted "Informational" header over bare 48px rows, removed
+   entirely when it has no rows. The contrast is the design — five harmless alerts must not dilute
+   two urgent ones.
 2. **The tier-one section is removed when empty, never shown holding a zero.** A permanent container
    that is usually empty teaches the eye to skip the region that must never be skipped.
 3. **All caught up is relief, not absence** — green, via `EmptyState positive` when the feed is
@@ -38,6 +41,9 @@ invisible badge is a missed escalation (spec §3.1).
    their label, dots carry an `sr-only` one.
 6. **Detail navigates, it never acts.** Assign/cancel/re-dispatch belong to the booking features; this
    feature links to their `ROUTES` and stops.
+7. **The trigger audit is an info-tinted Card.** `AlertTriggerCard` draws "why this alert fired" as a
+   blue-tinted Card (solid Gauge chip header) whose rule / threshold / actual sit in a definition
+   list; the actual reading inks red only when a line was actually crossed.
 
 ## Business logic
 
@@ -83,7 +89,8 @@ genuinely durable; nothing else in this folder would change.
 
 No sibling-feature imports: the booking and provider destinations are reached through `ROUTES` only.
 No BEM class from `styles/components.css` is used here — layout is Tailwind token utilities, looks are
-primitives. Server state is TanStack Query; the offline queue is the only zustand store, and it holds
+primitives (the `components/ui` adapters, plus `@sethu/ui-web` directly for the global card anatomy:
+`CardHeader`/`CardContent`, `IconChip`). Server state is TanStack Query; the offline queue is the only zustand store, and it holds
 intent, not server data.
 
 ## Impacted modules

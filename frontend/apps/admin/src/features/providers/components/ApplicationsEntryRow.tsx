@@ -1,8 +1,8 @@
 import { ChevronRight, FileText } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { StatusPill } from "@sethu/ui-web";
 
-import { Badge } from "../../../components/ui/Badge";
 import { Icon } from "../../../components/ui/Icon";
 import { ROUTES } from "../../../routes/routes.constants";
 
@@ -30,8 +30,15 @@ export function ApplicationsEntryRow({ pendingCount, oldestDays }: ApplicationsE
           {t("roster.applicationsOldest", { count: oldestDays })}
         </span>
       </span>
-      <Badge count={pendingCount} tone="brand" label={t("roster.applicationsCountLabel")} />
-      <Icon glyph={ChevronRight} className="text-text-3" />
+      <StatusPill tone="brand">
+        <span aria-hidden className="tabular-nums">
+          {pendingCount}
+        </span>
+        <span className="sr-only">
+          {pendingCount} {t("roster.applicationsCountLabel")}
+        </span>
+      </StatusPill>
+      <Icon glyph={ChevronRight} className="text-faint" />
     </Link>
   );
 }

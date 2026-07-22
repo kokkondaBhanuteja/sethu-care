@@ -1,8 +1,10 @@
 import { AlertTriangle, Ban, CheckCircle2, Clock } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { AvatarLabel } from "@sethu/ui-web";
 
 import { Avatar } from "../../../components/ui/Avatar";
+import { Card } from "../../../components/ui/Card";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { Icon } from "../../../components/ui/Icon";
 import { Pill } from "../../../components/ui/Pill";
@@ -29,21 +31,15 @@ export function ApplicationsTable({ rows }: ApplicationsTableProps) {
       id: "applicant",
       header: t("applications.columnApplicant"),
       render: (row) => (
-        <span className="flex items-center gap-s2">
+        <AvatarLabel name={row.applicantName} description={row.categories.join(", ")}>
           <Avatar name={row.applicantName} size="sm" />
-          <span className="text-emph text-text-1">{row.applicantName}</span>
-        </span>
+        </AvatarLabel>
       ),
-    },
-    {
-      id: "categories",
-      header: t("applications.columnCategories"),
-      render: (row) => <span className="text-text-2">{row.categories.join(", ")}</span>,
     },
     {
       id: "zone",
       header: t("applications.columnZone"),
-      render: (row) => <span className="text-text-2">{row.zone}</span>,
+      render: (row) => <span className="text-sm text-muted">{row.zone}</span>,
     },
     {
       id: "applied",
@@ -81,21 +77,26 @@ export function ApplicationsTable({ rows }: ApplicationsTableProps) {
   ];
 
   return (
-    <DataTable
-      caption={t("applications.tableCaption")}
-      columns={columns}
-      rows={rows}
-      rowKey={(row) => row.id}
-      rowTone={(row) => rowTone(row)}
-      onRowClick={(row) => void navigate(ROUTES.applicationReview(row.id))}
-    />
+    <Card density="flush" className="overflow-hidden">
+      <DataTable
+        caption={t("applications.tableCaption")}
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.id}
+        rowTone={(row) => rowTone(row)}
+        onRowClick={(row) => void navigate(ROUTES.applicationReview(row.id))}
+      />
+    </Card>
   );
 }
 
-/** Overdue against the 48-hour SLA is red; approaching it is amber; decided rows are plain. */
+/**
+ * The row tint restates the ageing pill's verdict on the same thresholds (amber past 2 days,
+ * red past 5 — spec §6.17), so the table never shows two different severities for one age.
+ */
 function rowTone(row: ApplicationRow): "default" | "danger" | "warning" {
   if (row.daysWaiting === null) return "default";
-  if (row.daysWaiting > 3) return "danger";
+  if (row.daysWaiting > 5) return "danger";
   if (row.daysWaiting > 2) return "warning";
   return "default";
 }

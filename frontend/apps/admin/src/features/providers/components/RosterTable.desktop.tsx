@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { AvatarLabel } from "@sethu/ui-web";
 
 import { Avatar } from "../../../components/ui/Avatar";
+import { Card } from "../../../components/ui/Card";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { cx } from "../../../lib/cx";
 import { formatMoney, formatPercent, formatRelative } from "../../../lib/format";
@@ -22,9 +24,10 @@ export interface RosterTableProps {
 }
 
 /**
- * The desktop roster. An ops manager scans the STATUS and COMPLETION columns down the page to find
- * who can take a job and who should not be given one — which stacked cards make impossible, and
- * which is the whole argument for the wider canvas (spec §2.1).
+ * The desktop roster, in a white Card per the approved table language: AvatarLabel identity cells
+ * (photo/initials, name, skills sub-line), live-status pills, and one coloured number. An ops
+ * manager scans the STATUS and COMPLETION columns down the page to find who can take a job and
+ * who should not be given one (spec §2.1).
  *
  * COMPLETION is the only coloured number in the table: it is the figure that decides whether a
  * provider gets more work, so it carries its own verdict rather than being compared to a
@@ -39,10 +42,13 @@ export function RosterTable({ rows }: RosterTableProps) {
       id: "provider",
       header: t("roster.columnProvider"),
       render: (row) => (
-        <span className={cx("flex items-center gap-s2", isDimmed(row) && "opacity-70")}>
-          <Avatar name={row.name} size="sm" />
-          <span className="text-emph text-text-1">{row.name}</span>
-        </span>
+        <AvatarLabel
+          name={row.name}
+          description={row.skills.join(", ")}
+          className={cx(isDimmed(row) && "opacity-70")}
+        >
+          <Avatar name={row.name} size="md" />
+        </AvatarLabel>
       ),
     },
     {
@@ -51,14 +57,9 @@ export function RosterTable({ rows }: RosterTableProps) {
       render: (row) => <ProviderStatusIndicator status={row.status} />,
     },
     {
-      id: "skills",
-      header: t("roster.columnSkills"),
-      render: (row) => <span className="text-label text-text-2">{row.skills.join(", ")}</span>,
-    },
-    {
       id: "zone",
       header: t("roster.columnZone"),
-      render: (row) => <span className="text-body text-text-2">{row.zone}</span>,
+      render: (row) => <span className="text-sm text-muted">{row.zone}</span>,
     },
     {
       id: "jobsToday",
@@ -87,7 +88,10 @@ export function RosterTable({ rows }: RosterTableProps) {
       header: t("roster.columnCompletion"),
       render: (row) => (
         <span
-          className={cx("text-emph tabular-nums", BAND_TEXT[completionBand(row.completionRate)])}
+          className={cx(
+            "text-sm font-medium tabular-nums",
+            BAND_TEXT[completionBand(row.completionRate)],
+          )}
         >
           {formatPercent(row.completionRate)}
         </span>
@@ -97,7 +101,7 @@ export function RosterTable({ rows }: RosterTableProps) {
       id: "lastSeen",
       header: t("roster.columnLastSeen"),
       render: (row) => (
-        <span className="text-label text-text-2">
+        <span className="text-sm text-muted">
           {row.lastSeenAt === null ? t("roster.lastSeenNow") : formatRelative(row.lastSeenAt)}
         </span>
       ),
@@ -105,14 +109,15 @@ export function RosterTable({ rows }: RosterTableProps) {
   ];
 
   return (
-    <DataTable
-      caption={t("roster.tableCaption")}
-      columns={columns}
-      rows={rows}
-      rowKey={(row) => row.id}
-      density="roomy"
-      onRowClick={(row) => void navigate(ROUTES.providerDetail(row.id))}
-    />
+    <Card density="flush" className="overflow-hidden">
+      <DataTable
+        caption={t("roster.tableCaption")}
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.id}
+        onRowClick={(row) => void navigate(ROUTES.providerDetail(row.id))}
+      />
+    </Card>
   );
 }
 

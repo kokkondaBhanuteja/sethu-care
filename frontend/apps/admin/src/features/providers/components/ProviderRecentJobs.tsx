@@ -1,10 +1,11 @@
-import { Ban, CheckCircle2, ChevronRight } from "lucide-react";
+import { Ban, Briefcase, CheckCircle2, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { CardHeader, IconChip } from "@sethu/ui-web";
 
+import { Card } from "../../../components/ui/Card";
 import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
 import { Icon } from "../../../components/ui/Icon";
-import { Panel } from "../../../components/ui/Panel";
 import { Pill } from "../../../components/ui/Pill";
 import { formatDate, formatMoney } from "../../../lib/format";
 import { ROUTES } from "../../../routes/routes.constants";
@@ -48,7 +49,16 @@ export function ProviderRecentJobsTable({ jobs }: ProviderRecentJobsProps) {
   ];
 
   return (
-    <Panel title={t("profile.recentJobs")}>
+    <Card density="flush" className="overflow-hidden">
+      <CardHeader
+        icon={
+          <IconChip accent="blue" look="soft">
+            <Briefcase aria-hidden />
+          </IconChip>
+        }
+      >
+        {t("profile.recentJobs")}
+      </CardHeader>
       <DataTable
         caption={t("profile.recentJobsCaption")}
         columns={columns}
@@ -56,7 +66,7 @@ export function ProviderRecentJobsTable({ jobs }: ProviderRecentJobsProps) {
         rowKey={(job) => job.bookingId}
         density="dense"
       />
-    </Panel>
+    </Card>
   );
 }
 

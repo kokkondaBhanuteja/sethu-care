@@ -1,8 +1,8 @@
 import { AlertTriangle } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { CardContent, CardHeader, IconChip } from "@sethu/ui-web";
 
-import { Banner } from "../../../components/ui/Banner";
 import { Card } from "../../../components/ui/Card";
 import { Icon } from "../../../components/ui/Icon";
 import { ROUTES } from "../../../routes/routes.constants";
@@ -13,8 +13,8 @@ export interface SupplyBannerProps {
 }
 
 /**
- * Supply is the constraint this product lives or dies by, so the shortfall is a full-bleed strip
- * above everything else rather than a chip in the toolbar.
+ * Supply is the constraint this product lives or dies by, so the shortfall is a tinted warning
+ * Card above the roster rather than a chip in the toolbar.
  *
  * There is deliberately no healthy counterpart: a permanent "supply is fine" band would train the
  * eye to skip exactly the place the warning appears (BOX 21 / M35). Callers render nothing when
@@ -24,20 +24,31 @@ export function SupplyBannerDesktop({ shortfall }: SupplyBannerProps) {
   const { t } = useTranslation("adminProviders");
 
   return (
-    <Banner
-      tone="warning"
-      icon={AlertTriangle}
-      title={t("roster.supplyLow", {
-        zone: shortfall.zone,
-        online: shortfall.onlineCount,
-        threshold: shortfall.threshold,
-      })}
-      actions={
-        <Link className="text-body text-brand underline" to={ROUTES.liveMap}>
-          {t("roster.supplyViewZone")}
-        </Link>
-      }
-    />
+    <Card tone="warning" edge="warning" density="flush" role="status">
+      <CardHeader
+        icon={
+          <IconChip accent="amber" look="soft">
+            <AlertTriangle aria-hidden />
+          </IconChip>
+        }
+        actions={
+          <Link className="text-sm font-medium text-link underline" to={ROUTES.liveMap}>
+            {t("roster.supplyViewZone")}
+          </Link>
+        }
+        className="pb-1 sm:pb-1"
+      >
+        <span className="text-warning-fg">
+          {t("roster.supplyLowTitle", { zone: shortfall.zone })}
+        </span>
+      </CardHeader>
+      <CardContent className="text-sm text-ink">
+        {t("roster.supplyLowDetail", {
+          online: shortfall.onlineCount,
+          threshold: shortfall.threshold,
+        })}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -18,12 +18,26 @@ leads with a zone shortfall rather than a list.
 | `SuspendProvider.{desktop,mobile}.tsx` | BOX 36–38, M60–M62 — the four-step destructive flow |
 | `ApplicationsQueue.{desktop,mobile}.tsx` | BOX 43/44, M69/M70 |
 | `ApplicationReview.{desktop,mobile}.tsx` | BOX 45–47, M71–M74 |
+| `rosterFilters.ts` (+ test) | Pure client-side roster refinements: skill/zone/status filtering, option derivation |
 | `providers.api.ts` | THE data boundary. Every endpoint this feature needs, in one file |
 | `providers.types.ts` · `suspend.types.ts` · `applications.types.ts` | The normative shapes |
 | `providers.constants.ts` | Query keys, segment/reason vocabularies, copy-key lookups, §6.16 bands |
 | `providerFixtures.ts` · `providerProfileData.ts` · `applicationFixtures.ts` | Fixture data |
 | `providers.mock.ts` · `providerProfiles.mock.ts` · `suspend.mock.ts` · `applications.mock.ts` | Mock services |
 | `components/` · `hooks/` · `queries/` · `mutations/` | Each with its own `CLAUDE.md` |
+
+## The desktop page language (digestibility redesign)
+
+Desktop screens follow the approved ui-web Figma language: `PageHeader` in the content column
+(the shell `Topbar` takes a crumb, so the visible page title lives with the content), a labelled
+`FilterBand` Card on the roster (search + skill Combobox + zone/status selects — state in
+`useProviderRoster`, filtering in `rosterFilters.ts`), `Segmented` segment switches, and every
+table in a flush white Card. Record/queue cards use the icon-headed `CardHeader` + soft `IconChip`
+anatomy (Live = blue Activity, Performance = green ChartColumn, Skills = purple Wrench,
+Documents = amber FileText, Recent jobs = blue Briefcase, Auto-validation = teal ScanSearch).
+The supply shortfall renders as a tinted warning Card above the roster, expiring/expired documents
+as warning/danger pills, and application ageing keeps one severity encoding everywhere: amber past
+2 days, red past 5 (§6.17).
 
 ## Business logic
 

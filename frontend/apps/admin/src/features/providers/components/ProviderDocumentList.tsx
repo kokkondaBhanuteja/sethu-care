@@ -2,15 +2,10 @@ import { AlertTriangle, CheckCircle2, ChevronRight, FileText } from "lucide-reac
 import { useTranslation } from "@sethu/i18n";
 
 import { Icon } from "../../../components/ui/Icon";
+import { Pill } from "../../../components/ui/Pill";
 import { cx } from "../../../lib/cx";
 import { formatDate } from "../../../lib/format";
 import { DOCUMENT_STATES, type ProviderDocument } from "../providers.types";
-
-const STATE_TEXT = {
-  [DOCUMENT_STATES.verified]: "text-success",
-  [DOCUMENT_STATES.expiring]: "text-warning",
-  [DOCUMENT_STATES.expired]: "text-danger",
-} as const;
 
 export interface ProviderDocumentListProps {
   documents: readonly ProviderDocument[];
@@ -52,15 +47,21 @@ export function ProviderDocumentList({ documents, onOpen }: ProviderDocumentList
           </span>
           <span className="grow min-w-0">
             <span className="block truncate text-emph text-text-1">{t(document.typeKey)}</span>
-            <span
-              className={cx("flex items-center gap-s1 text-caption", STATE_TEXT[document.state])}
-            >
-              <Icon
-                glyph={document.state === DOCUMENT_STATES.verified ? CheckCircle2 : AlertTriangle}
-                size="sm"
-              />
-              {statusLine(document)}
-            </span>
+            {document.state === DOCUMENT_STATES.verified ? (
+              <span className="flex items-center gap-s1 text-caption text-success">
+                <Icon glyph={CheckCircle2} size="sm" />
+                {statusLine(document)}
+              </span>
+            ) : (
+              /* Expiry is a warning the eye must not skim past — it gets the pill treatment. */
+              <Pill
+                tone={document.state === DOCUMENT_STATES.expired ? "danger" : "warning"}
+                icon={AlertTriangle}
+                className="mt-s1"
+              >
+                {statusLine(document)}
+              </Pill>
+            )}
           </span>
           {onOpen ? (
             <button

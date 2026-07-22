@@ -90,7 +90,8 @@ export function ApplicationReviewDesktop() {
       {review && !screen.isDecided ? (
         <>
           {blocker ? <ApproveBlockedBanner blocker={blocker} /> : null}
-          <div className="flex flex-none items-center justify-end gap-s2 border-t border-border-subtle bg-canvas px-s6 py-s3">
+          {/* The Figma action bar: secondary text actions lead, the decisive pair sits last. */}
+          <div className="flex flex-none flex-wrap items-center justify-end gap-2 border-t border-border bg-surface px-6 py-3">
             <Button variant="text">{t("review.putOnHold")}</Button>
             <Button
               variant="outline"

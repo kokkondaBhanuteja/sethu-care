@@ -15,7 +15,7 @@ export function RosterCountTags({ counts }: RosterCountTagsProps) {
   const { t } = useTranslation("adminProviders");
 
   return (
-    <div className="flex flex-wrap items-center gap-s2 px-s2 py-s4">
+    <div className="flex flex-wrap items-center gap-2">
       <Pill tone="neutral">
         <span className="tabular-nums">{counts.total}</span> {t("roster.tagTotal")}
       </Pill>

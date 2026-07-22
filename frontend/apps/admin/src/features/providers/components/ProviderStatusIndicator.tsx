@@ -1,5 +1,6 @@
 import { Ban } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { StatusPill, type StatusPillProps } from "@sethu/ui-web";
 
 import { Pill } from "../../../components/ui/Pill";
 import { StatusDot } from "../../../components/ui/StatusDot";
@@ -31,6 +32,15 @@ const DOT_FILL: Readonly<Record<ProviderStatus, "solid" | "half" | "hollow">> = 
   [PROVIDER_STATUSES.offboarded]: "hollow",
 };
 
+/** Live-status pill tones — the tint restates the dot, the word carries the meaning. */
+const LIVE_PILL_TONES: Readonly<Record<ProviderStatus, NonNullable<StatusPillProps["tone"]>>> = {
+  [PROVIDER_STATUSES.free]: "success",
+  [PROVIDER_STATUSES.onJob]: "warning",
+  [PROVIDER_STATUSES.offline]: "neutral",
+  [PROVIDER_STATUSES.suspended]: "danger",
+  [PROVIDER_STATUSES.offboarded]: "neutral",
+};
+
 export const AVATAR_STATUS_FOR_PROVIDER: Readonly<Record<ProviderStatus, AvatarStatus>> = {
   [PROVIDER_STATUSES.free]: "online",
   [PROVIDER_STATUSES.onJob]: "busy",
@@ -49,9 +59,10 @@ export interface ProviderStatusIndicatorProps {
 }
 
 /**
- * Dot plus word, always. A suspension is a standing decision rather than a live signal, so it
- * swaps the dot for a labelled pill: the one provider who cannot be dispatched has to be
- * unmistakable, and colour alone would not say it (spec §4.8).
+ * Live statuses are a tinted StatusPill carrying the live dot AND its word; suspended and
+ * offboarded swap the dot for a Ban-marked pill. A suspension is a standing decision rather than
+ * a live signal, so the one provider who cannot be dispatched has to read as blocked, not merely
+ * absent — and colour alone would not say it (spec §4.8).
  */
 export function ProviderStatusIndicator({ status }: ProviderStatusIndicatorProps) {
   const label = useProviderStatusLabel()(status);
@@ -64,5 +75,21 @@ export function ProviderStatusIndicator({ status }: ProviderStatusIndicatorProps
     );
   }
 
-  return <StatusDot tone={DOT_TONE[status]} fill={DOT_FILL[status]} label={label} visualLabel />;
+  return (
+    <StatusPill
+      tone={LIVE_PILL_TONES[status]}
+      size="sm"
+      icon={
+        <StatusDot
+          tone={DOT_TONE[status]}
+          fill={DOT_FILL[status]}
+          size="sm"
+          label={label}
+          labelledByParent
+        />
+      }
+    >
+      {label}
+    </StatusPill>
+  );
 }

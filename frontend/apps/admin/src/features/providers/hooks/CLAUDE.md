@@ -6,7 +6,7 @@ Purpose: The anti-drift rule (spec §2.1). Desktop and mobile are separate compo
 
 Contents:
 
-- `useProviderRoster.ts` — segment, debounced search, the roster query, the filtered-empty verdict, and the staleness verdict (a live status older than five minutes is a wrong answer, not stale detail). Reads the `?state=healthy|stale` variant switch documented in the feature `CLAUDE.md`.
+- `useProviderRoster.ts` — segment, debounced search, the roster query, the skill/zone/status refinements (client-side, via `../rosterFilters.ts`: `visibleRows`, `filterOptions`, `refinements`), the filtered-empty verdict, and the staleness verdict (a live status older than five minutes is a wrong answer, not stale detail). Reads the `?state=healthy|stale` variant switch documented in the feature `CLAUDE.md`.
 - `useRosterSegmentItems.ts` — the three segment labels and their counts.
 - `useProviderProfile.ts` — the profile query plus the derived action set: an offboarded provider has nobody left to call or suspend, and an already-suspended one is offered Restore rather than a second suspension.
 - `useSuspendProviderFlow.ts` — the four-step state machine. Panes are 0 (action type + reason), 1 (active jobs) and 2 (confirm); `RAIL_INDEX_FOR_PANE` maps them onto the four rail stops. Step 1 skips straight to confirm when the provider has no live work.

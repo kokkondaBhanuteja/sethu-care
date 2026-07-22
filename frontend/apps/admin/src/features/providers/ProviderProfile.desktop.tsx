@@ -1,4 +1,6 @@
+import { FileText } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { CardContent, CardHeader, IconChip } from "@sethu/ui-web";
 
 import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Card } from "../../components/ui/Card";
@@ -23,7 +25,6 @@ import {
   ProviderPayoutsCard,
 } from "./components/ProviderSideCards";
 import { ProviderSkillsCard } from "./components/ProviderSkillsCard";
-import { SectionLabel } from "./components/SectionLabel";
 import { useProviderProfile } from "./hooks/useProviderProfile";
 
 /**
@@ -72,12 +73,20 @@ export function ProviderProfileDesktop() {
                 <div className="flex flex-col gap-s5 lg:col-span-5">
                   <ProviderLiveCard profile={loaded} variant="desktop" />
                   <ProviderSkillsCard skills={loaded.skills} />
-                  <Card>
-                    <SectionLabel className="mb-s2">{t("profile.documents")}</SectionLabel>
-                    <ProviderDocumentList documents={loaded.documents} />
-                    <p className="mt-s3 text-caption text-text-3">
-                      {t("profile.documentsFootDesktop")}
-                    </p>
+                  <Card density="flush">
+                    <CardHeader
+                      icon={
+                        <IconChip accent="amber" look="soft">
+                          <FileText aria-hidden />
+                        </IconChip>
+                      }
+                    >
+                      {t("profile.documents")}
+                    </CardHeader>
+                    <CardContent>
+                      <ProviderDocumentList documents={loaded.documents} />
+                      <p className="mt-3 text-sm text-faint">{t("profile.documentsFootDesktop")}</p>
+                    </CardContent>
                   </Card>
                 </div>
 

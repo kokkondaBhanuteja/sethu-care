@@ -1,4 +1,5 @@
 import { useTranslation } from "@sethu/i18n";
+import { ProgressBar } from "@sethu/ui-web";
 
 import { cx } from "../../../lib/cx";
 import { formatPercent } from "../../../lib/format";
@@ -19,32 +20,51 @@ const BAND_STROKE = {
   [METRIC_BANDS.poor]: "text-danger",
 } as const;
 
+/** ProgressBar tones per §6.16 band — the bar restates the number's verdict, never replaces it. */
+const BAND_BAR_TONE = {
+  [METRIC_BANDS.good]: "success",
+  [METRIC_BANDS.watch]: "warning",
+  [METRIC_BANDS.poor]: "danger",
+} as const;
+
 const SPARK_WIDTH = 56;
 const SPARK_HEIGHT = 20;
 
 export interface MetricTileProps {
   metric: ProviderMetric;
-  /** Desktop draws the 90-day trend under the value; the mobile grid does not have the room. */
+  /** Desktop draws the 90-day trend (bar or sparkline) under the value; mobile has no room. */
   showTrend?: boolean;
 }
 
 /**
- * One performance figure against its §6.16 target. The label and the sparkline stay whatever the
- * band is — colour is an addition to the reading, never the only carrier of it (spec §4.8).
+ * One performance figure against its §6.16 target, on the inset tile fill the KPI language uses.
+ * Rates additionally read as a ProgressBar; counts and ratings keep the sparkline. The label
+ * stays neutral whatever the band is — colour is an addition to the reading, never the only
+ * carrier of it (spec §4.8).
  *
  * Built here rather than on `KpiTile` because that primitive has no semantic tone for its value,
  * which is the entire point of this tile. See the feature CLAUDE.md.
  */
 export function MetricTile({ metric, showTrend = false }: MetricTileProps) {
   const { t } = useTranslation("adminProviders");
+  const isRate = metric.unit === METRIC_UNITS.percent;
+  const label = t(metricLabelKey(metric.id));
 
   return (
-    <div className="flex flex-col gap-s1 rounded-card bg-surface p-s3">
-      <SectionLabel className="min-h-s8">{t(metricLabelKey(metric.id))}</SectionLabel>
-      <span className={cx("text-section tabular-nums", BAND_TEXT[metric.band])}>
+    <div className="flex flex-col gap-1 rounded-lg bg-inset p-3">
+      <SectionLabel className="min-h-s8">{label}</SectionLabel>
+      <span className={cx("text-kpi-sm font-semibold tabular-nums", BAND_TEXT[metric.band])}>
         {formatMetric(metric)}
       </span>
-      {showTrend && metric.trend.length > 1 ? (
+      {showTrend && isRate ? (
+        <ProgressBar
+          value={metric.value * 100}
+          label={label}
+          tone={BAND_BAR_TONE[metric.band]}
+          trackClassName="bg-surface"
+        />
+      ) : null}
+      {showTrend && !isRate && metric.trend.length > 1 ? (
         <Sparkline points={metric.trend} band={metric.band} />
       ) : null}
     </div>
@@ -78,9 +98,9 @@ function sparkPath(points: readonly number[]): string {
 
   return points
     .map((point, index) => {
-      const x = Math.round(index * step);
-      const y = Math.round(SPARK_HEIGHT - ((point - lowest) / span) * SPARK_HEIGHT);
-      return `${index === 0 ? "M" : "L"}${x} ${y}`;
+      const xCoordinate = Math.round(index * step);
+      const yCoordinate = Math.round(SPARK_HEIGHT - ((point - lowest) / span) * SPARK_HEIGHT);
+      return `${index === 0 ? "M" : "L"}${xCoordinate} ${yCoordinate}`;
     })
     .join(" ");
 }

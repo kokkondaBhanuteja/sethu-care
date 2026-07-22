@@ -96,7 +96,7 @@ export function ProviderRosterMobile() {
           query={roster.query}
           isFiltered={roster.isFiltered}
           onClearFilters={roster.clearFilters}
-          isEmpty={(rosterData) => rosterData.rows.length === 0}
+          isEmpty={() => roster.visibleRows.length === 0}
           empty={
             <EmptyState icon={Users} title={t("roster.emptyTitle")} body={t("roster.emptyBody")} />
           }
@@ -104,8 +104,8 @@ export function ProviderRosterMobile() {
             <SkeletonList rows={5} rowClassName="h-row-72" label={t("roster.loadingLabel")} />
           }
         >
-          {(loadedRoster) =>
-            loadedRoster.rows.map((row) => (
+          {() =>
+            roster.visibleRows.map((row) => (
               <RosterCard
                 key={row.id}
                 row={row}

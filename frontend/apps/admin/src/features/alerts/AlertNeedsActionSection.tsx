@@ -1,7 +1,9 @@
+import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { CardContent, CardHeader, IconChip } from "@sethu/ui-web";
 
 import { Badge } from "../../components/ui/Badge";
-import { CardList } from "../../components/ui/Card";
+import { Card, CardList } from "../../components/ui/Card";
 import { cx } from "../../lib/cx";
 import { AlertActionCard } from "./AlertActionCard";
 import { recordRouteFor } from "./alerts.links";
@@ -20,7 +22,8 @@ export interface AlertNeedsActionSectionProps {
 }
 
 /**
- * Tier one. The section is removed outright when it is empty rather than shown holding a zero: a
+ * Tier one, as a danger-edged Card with an icon header — the loud half of the feed's two-card
+ * structure. The section is removed outright when it is empty rather than shown holding a zero: a
  * permanent container that is usually empty teaches the eye to skip the one region of the screen
  * that must never be skipped on the day it is not empty (mobile BOX 22).
  */
@@ -37,32 +40,44 @@ export function AlertNeedsActionSection({
 
   return (
     <section aria-label={t("needsAction")} className={cx(inset && "px-s4")}>
-      <div className="flex items-center gap-s2">
-        <h2 className="text-pill tracking-wide text-danger uppercase">{t("needsAction")}</h2>
-        <Badge count={unacknowledgedCount} label={t("needsAction")} />
-      </div>
+      <Card edge="danger" density="flush">
+        <CardHeader
+          icon={
+            <IconChip accent="red" look="soft">
+              <TriangleAlert aria-hidden />
+            </IconChip>
+          }
+        >
+          <span className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-danger-fg">{t("needsAction")}</h2>
+            <Badge count={unacknowledgedCount} label={t("needsAction")} />
+          </span>
+        </CardHeader>
 
-      <CardList className="mt-s2">
-        {alerts.map((alert) => {
-          const route = recordRouteFor(alert.subject);
-          return (
-            <AlertActionCard
-              key={alert.id}
-              alert={alert}
-              selected={selectedId === alert.id}
-              canAcknowledge={acknowledgement.canAcknowledge}
-              isQueued={acknowledgement.isQueued(alert.id)}
-              isSending={acknowledgement.isSending(alert.id)}
-              onSelect={() => onSelect(alert)}
-              onAcknowledge={() => acknowledgement.acknowledge(alert.id)}
-              {...(route ? { onOpenRecord: () => onOpenRecord(route) } : {})}
-            />
-          );
-        })}
-      </CardList>
+        <CardContent>
+          <CardList>
+            {alerts.map((alert) => {
+              const route = recordRouteFor(alert.subject);
+              return (
+                <AlertActionCard
+                  key={alert.id}
+                  alert={alert}
+                  selected={selectedId === alert.id}
+                  canAcknowledge={acknowledgement.canAcknowledge}
+                  isQueued={acknowledgement.isQueued(alert.id)}
+                  isSending={acknowledgement.isSending(alert.id)}
+                  onSelect={() => onSelect(alert)}
+                  onAcknowledge={() => acknowledgement.acknowledge(alert.id)}
+                  {...(route ? { onOpenRecord: () => onOpenRecord(route) } : {})}
+                />
+              );
+            })}
+          </CardList>
 
-      {/* The contract that makes "Mark read" safe: it can only ever touch tier two. */}
-      <p className="mt-s3 text-caption text-text-3">{t("criticalStay")}</p>
+          {/* The contract that makes "Mark read" safe: it can only ever touch tier two. */}
+          <p className="mt-3 text-sm text-faint">{t("criticalStay")}</p>
+        </CardContent>
+      </Card>
     </section>
   );
 }

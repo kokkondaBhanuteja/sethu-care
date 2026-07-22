@@ -1,5 +1,6 @@
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, Wrench } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { CardContent, CardHeader, IconChip } from "@sethu/ui-web";
 
 import { Card } from "../../../components/ui/Card";
 import { Pill } from "../../../components/ui/Pill";
@@ -17,27 +18,46 @@ export interface ProviderSkillsCardProps {
 export function ProviderSkillsCard({ skills, bare = false }: ProviderSkillsCardProps) {
   const { t } = useTranslation("adminProviders");
 
-  const body = (
-    <>
-      <SectionLabel className="mb-s3">{t("profile.skills")}</SectionLabel>
-      <div className="flex flex-wrap gap-s2">
-        {skills.map((skill) => (
-          <Pill
-            key={skill.name}
-            tone={skill.isPending ? "warning" : "success"}
-            icon={skill.isPending ? Clock : Check}
-          >
-            {skill.isPending || !skill.certifiedTo
-              ? t("profile.skillPending", { name: skill.name })
-              : t("profile.skillCertified", {
-                  name: skill.name,
-                  date: formatDate(skill.certifiedTo),
-                })}
-          </Pill>
-        ))}
-      </div>
-    </>
+  const pills = (
+    <div className="flex flex-wrap gap-2">
+      {skills.map((skill) => (
+        <Pill
+          key={skill.name}
+          tone={skill.isPending ? "warning" : "success"}
+          icon={skill.isPending ? Clock : Check}
+        >
+          {skill.isPending || !skill.certifiedTo
+            ? t("profile.skillPending", { name: skill.name })
+            : t("profile.skillCertified", {
+                name: skill.name,
+                date: formatDate(skill.certifiedTo),
+              })}
+        </Pill>
+      ))}
+    </div>
   );
 
-  return bare ? <div className="px-s4 py-s4">{body}</div> : <Card>{body}</Card>;
+  if (bare) {
+    return (
+      <div className="px-s4 py-s4">
+        <SectionLabel className="mb-s3">{t("profile.skills")}</SectionLabel>
+        {pills}
+      </div>
+    );
+  }
+
+  return (
+    <Card density="flush">
+      <CardHeader
+        icon={
+          <IconChip accent="purple" look="soft">
+            <Wrench aria-hidden />
+          </IconChip>
+        }
+      >
+        {t("profile.skills")}
+      </CardHeader>
+      <CardContent>{pills}</CardContent>
+    </Card>
+  );
 }
