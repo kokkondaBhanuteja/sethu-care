@@ -41,7 +41,11 @@ const cancelSchema = z
     }
     // An override and its justification are one record in the audit log, so they are one gate here.
     if (values.useCustomRefund && values.overrideJustification.trim().length === 0) {
-      ctx.addIssue({ code: "custom", path: ["overrideJustification"], message: "override-required" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["overrideJustification"],
+        message: "override-required",
+      });
     }
   });
 

@@ -81,9 +81,7 @@ export function AssignCandidateCard({
       </p>
 
       <div className="mt-s3 flex items-center justify-between gap-s2">
-        <span className={statusLineClass(candidate.availability)}>
-          {statusLine(candidate, t)}
-        </span>
+        <span className={statusLineClass(candidate.availability)}>{statusLine(candidate, t)}</span>
         <Button
           variant={BUTTON_VARIANTS[candidate.availability]}
           size="inline"

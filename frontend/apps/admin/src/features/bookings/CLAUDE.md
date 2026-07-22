@@ -19,7 +19,7 @@ Purpose: find any booking fast, and answer "why is this one stuck?" without leav
 | `useBookingDetail.ts`                         | One record, plus the optimistic-concurrency and deep-link-intent rules                |
 | `useBookingActions.ts`                        | State legality (§4.3, as amended) × `useCan` → the routes this record permits          |
 | `useBookingCopy.ts`                           | Structured fragments → sentences, all inside `t()`                                    |
-| `useBookingPreview.ts` · `useIsOffline.ts`    | Desktop preview record; connectivity for the offline states                           |
+| `useBookingPreview.ts`                        | The record behind the desktop preview pane (shares the detail query key)              |
 | `BookingsList.desktop.tsx` / `.mobile.tsx`    | Table + preview panel · stacked cards                                                 |
 | `BookingDetailScreen.tsx` → `.desktop/.mobile`| Not-found / error / loading switch, then the three-column or stacked record           |
 | `RecordText.tsx`                              | `MonoText`, `RecordSection`, `MatchHighlight` — feature-local text treatments         |
@@ -45,9 +45,19 @@ Purpose: find any booking fast, and answer "why is this one stuck?" without leav
 
 ## Dependencies
 
-`components/ui/*`, `components/states/QueryBoundary`, `layouts/{Topbar,MobileAppBar}`,
-`lib/{format,http,permissions}`, `hooks/useDebouncedValue`, `routes/routes.constants`,
-`mocks/mockTransport`, `@sethu/i18n` (namespace `adminBookings`).
+`components/ui/*`, `components/states/QueryBoundary`,
+`layouts/{Topbar,MobileAppBar,PageMain,Layout}`, `lib/{format,http,permissions}`,
+`hooks/{useDebouncedValue,useConnectionStatus}`, `routes/routes.constants`, `mocks/mockTransport`,
+`@sethu/i18n` (namespace `adminBookings`).
+
+## Known primitive gaps (flagged to the orchestrator, not worked around)
+
+- `DataTable` has no `selectedRowKey`, so the desktop list's selected-row brand tint is absent —
+  selection is still functional and drives the preview pane.
+- `Tabs` cannot carry the pulsing danger dot the design puts on Active when it holds an escalation
+  (`counts.activeHasEscalation` is already in the payload, waiting for it).
+- `Banner` has no `wide` (full-bleed) variant, and there is no `ActionBar` layout primitive for the
+  mobile sticky footer.
 
 ## Boundaries
 

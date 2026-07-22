@@ -2,7 +2,9 @@ import { MoreVertical, Phone } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
+import { Gutter, SectionGap } from "../../layouts/Layout";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
+import { MobileScroll } from "../../layouts/PageMain";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { BookingDetailBannerStack } from "./BookingDetailBannerStack";
 import { BookingStatePill } from "./BookingStatePill";
@@ -15,11 +17,6 @@ export interface BookingDetailMobileProps {
   controller: BookingDetailController;
   detail: BookingDetail;
   isOffline: boolean;
-}
-
-/** An 8px recessed band between sections — what gives the detail screens their document rhythm. */
-function SectionGap() {
-  return <div className="h-s2 bg-surface border-y border-border-subtle" aria-hidden />;
 }
 
 /**
@@ -49,26 +46,29 @@ export function BookingDetailMobile({ controller, detail, isOffline }: BookingDe
         }
       />
 
+      {/* At 26 characters "Completed (admin verified)" does not fit beside a mono booking number
+          and an overflow button, and truncating a legal-record label is not an option — so the
+          pill sits on its own row beneath the app bar (design M10). */}
       {detail.escalation ? null : (
-        <div className="px-s4 pt-s3">
+        <Gutter className="pt-s3">
           <BookingStatePill state={detail.state} isAdminVerified={detail.isAdminVerified} />
-        </div>
+        </Gutter>
       )}
 
       <BookingDetailBannerStack controller={controller} detail={detail} isOffline={isOffline} />
 
-      <div className="flex-1 overflow-y-auto overscroll-contain">
-        <div className="px-s4 py-s4">
+      <MobileScroll padFor="action">
+        <Gutter className="py-s4">
           <ServiceSummaryBlock detail={detail} />
-        </div>
+        </Gutter>
         <SectionGap />
 
-        <div className="px-s4 py-s4">
+        <Gutter className="py-s4">
           <CustomerBlock customer={detail.customer} isDisabled={isLocked} />
-        </div>
+        </Gutter>
         <SectionGap />
 
-        <div className="px-s4 py-s4">
+        <Gutter className="py-s4">
           <ProviderBlock
             provider={detail.provider}
             roundCount={detail.dispatchRounds.length}
@@ -86,20 +86,21 @@ export function BookingDetailMobile({ controller, detail, isOffline }: BookingDe
               ) : undefined
             }
           />
-        </div>
+        </Gutter>
         <SectionGap />
 
-        <div className="px-s4 py-s4">
+        <Gutter className="py-s4">
           <TimelineBlock detail={detail} />
-        </div>
+        </Gutter>
         <SectionGap />
 
-        <div className="px-s4 py-s4">
+        <Gutter className="py-s4">
           <PaymentBlock payment={detail.payment} />
-        </div>
+        </Gutter>
         <div className="h-s4" />
-      </div>
+      </MobileScroll>
 
+      {/* The sticky action bar. `.actionbar` has no layout primitive yet — flagged for one. */}
       <div className="flex-none bg-canvas border-t border-border-subtle px-s4 py-s3">
         {primary ? (
           <BookingActionButtons

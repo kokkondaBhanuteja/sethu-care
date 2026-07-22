@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Pagination } from "../../components/ui/Pagination";
 import { SearchInput } from "../../components/ui/SearchInput";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
+import { PageMain } from "../../layouts/PageMain";
 import { Topbar } from "../../layouts/Topbar";
 import { SEGMENT_SUBJECT_KEYS } from "./bookings.constants";
 import { BookingActionButtons } from "./BookingActionButtons";
@@ -48,7 +49,7 @@ export function BookingsListDesktop() {
         }
       />
 
-      <main className="flex-1 overflow-y-auto bg-canvas p-s6">
+      <PageMain>
         <div className="grid grid-cols-1 gap-s5 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">
             <BookingsToolbar list={list} />
@@ -116,7 +117,7 @@ export function BookingsListDesktop() {
             }
           />
         </div>
-      </main>
+      </PageMain>
 
       <BookingsFilterSheet
         isOpen={list.isFilterOpen}

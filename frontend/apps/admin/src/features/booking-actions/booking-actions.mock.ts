@@ -1,18 +1,15 @@
-// Mock services for the five booking actions. None of these endpoints exists on the backend yet
-// (docs/admin-api-contract.md), so every designed state — including the failures — is produced here.
+// Mock READS for the five booking actions. None of these endpoints exists on the backend yet
+// (docs/admin-api-contract.md), so every designed state is produced here, selected by booking id.
+// The triggers are listed in this feature's CLAUDE.md.
 //
-// The write rules matter more than the read fixtures: the goodwill cap, the refund rate limit, the
-// 30-minute lock and the evidence gates are SERVER-enforced, so the mock enforces them too and the
-// screens only mirror the result. A client that decided these itself would be lying about who is
-// in charge.
+// Mutations — and the server-enforced limits that make them fail — live in
+// `booking-actions.writes.mock.ts`.
 
-import { API_ERROR_CODES, apiError } from "../../lib/http/apiError";
-import { mockRead, mockWrite } from "../../mocks/mockTransport";
+import { mockRead } from "../../mocks/mockTransport";
 import {
   EXHAUSTED_DISPATCH_CYCLES,
-  REFUND_PAYOUT_IMPACTS,
-  REFUND_TYPES,
   REDISPATCH_RADII,
+  REFUND_PAYOUT_IMPACTS,
 } from "./booking-actions.constants";
 import {
   CALL_ATTEMPTS,
@@ -28,26 +25,16 @@ import {
   subjectFor,
 } from "./booking-actions.fixtures";
 import type {
-  ActionReceipt,
   AssignContext,
-  AssignInput,
   CancelContext,
-  CancelInput,
   ManualCompletionContext,
-  ManualCompletionInput,
   RedispatchContext,
-  RedispatchInput,
   RefundContext,
-  RefundInput,
-  RefundReceipt,
 } from "./booking-actions.types";
 
-type Signal = { signal?: AbortSignal };
-
-function options(signal?: AbortSignal): Signal {
+function options(signal?: AbortSignal): { signal?: AbortSignal } {
   return signal ? { signal } : {};
 }
-
 export function fetchAssignContextMock(
   bookingId: string,
   signal?: AbortSignal,
@@ -155,71 +142,4 @@ export function fetchRefundContextMock(
     }),
     options(signal),
   );
-}
-
-function receipt(input: { bookingId: string; version: number }): ActionReceipt {
-  return { bookingId: input.bookingId, version: input.version + 1 };
-}
-
-export function submitAssignMock(input: AssignInput, signal?: AbortSignal): Promise<ActionReceipt> {
-  return mockWrite(() => receipt(input), options(signal));
-}
-
-export function submitCancelMock(input: CancelInput, signal?: AbortSignal): Promise<ActionReceipt> {
-  return mockWrite(() => receipt(input), options(signal));
-}
-
-export function submitRedispatchMock(
-  input: RedispatchInput,
-  signal?: AbortSignal,
-): Promise<ActionReceipt> {
-  return mockWrite(() => {
-    if (input.incentivePaise > FIXTURE_AMOUNTS.incentiveCapPaise) {
-      throw apiError(API_ERROR_CODES.validation, "The incentive exceeds the cap.", {
-        status: 422,
-        fieldErrors: { incentiveRupees: "Above the 50% cap for this booking." },
-      });
-    }
-    return receipt(input);
-  }, options(signal));
-}
-
-export function submitManualCompletionMock(
-  input: ManualCompletionInput,
-  signal?: AbortSignal,
-): Promise<ActionReceipt> {
-  return mockWrite(() => {
-    if (input.bookingId === MOCK_BOOKINGS.tooEarly) {
-      throw apiError(API_ERROR_CODES.conflict, "Manual completion is not available yet.", {
-        status: 409,
-      });
-    }
-    if (input.evidence.callAttemptIds.length === 0) {
-      throw apiError(API_ERROR_CODES.validation, "Log a call attempt to continue.", { status: 422 });
-    }
-    return receipt(input);
-  }, options(signal));
-}
-
-export function submitRefundMock(input: RefundInput, signal?: AbortSignal): Promise<RefundReceipt> {
-  return mockWrite(() => {
-    if (input.bookingId === MOCK_BOOKINGS.refundRateLimited) {
-      throw apiError(API_ERROR_CODES.rateLimited, "Refund limit reached.", { status: 429 });
-    }
-    if (
-      input.refundType === REFUND_TYPES.goodwillCredit &&
-      input.amountPaise > FIXTURE_AMOUNTS.goodwillCapPaise
-    ) {
-      throw apiError(API_ERROR_CODES.validation, "Amount exceeds the goodwill cap.", {
-        status: 422,
-        fieldErrors: { amountRupees: "Above the goodwill cap." },
-      });
-    }
-    return {
-      ...receipt(input),
-      refundId: `rfd_${input.idempotencyKey.slice(0, 8)}`,
-      isPending: input.bookingId === MOCK_BOOKINGS.goodwillCapExceeded,
-      estimatedCompletionIso: "2026-07-27T09:42:00.000Z",
-    };
-  }, options(signal));
 }

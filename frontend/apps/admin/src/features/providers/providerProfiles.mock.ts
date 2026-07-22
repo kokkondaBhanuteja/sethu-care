@@ -73,16 +73,63 @@ const EXPIRED_CERTIFICATE: ProviderDocument = {
 };
 
 const SURESH_JOBS: ProviderProfile["recentJobs"] = [
-  { bookingId: "#B-8801", service: "AC Repair", at: "2026-07-20T09:10:00Z", isCancelled: false, rating: 5, amountPaise: 1499 * RUPEE },
-  { bookingId: "#B-8776", service: "Refrigerator", at: "2026-07-19T11:30:00Z", isCancelled: false, rating: 5, amountPaise: 1200 * RUPEE },
-  { bookingId: "#B-8752", service: "AC Repair", at: "2026-07-18T07:45:00Z", isCancelled: false, rating: 4, amountPaise: 1499 * RUPEE },
-  { bookingId: "#B-8731", service: "AC Repair", at: "2026-07-17T13:05:00Z", isCancelled: true, rating: null, amountPaise: 0 },
-  { bookingId: "#B-8710", service: "Refrigerator", at: "2026-07-16T06:20:00Z", isCancelled: false, rating: 2, amountPaise: 2400 * RUPEE },
+  {
+    bookingId: "#B-8801",
+    service: "AC Repair",
+    at: "2026-07-20T09:10:00Z",
+    isCancelled: false,
+    rating: 5,
+    amountPaise: 1499 * RUPEE,
+  },
+  {
+    bookingId: "#B-8776",
+    service: "Refrigerator",
+    at: "2026-07-19T11:30:00Z",
+    isCancelled: false,
+    rating: 5,
+    amountPaise: 1200 * RUPEE,
+  },
+  {
+    bookingId: "#B-8752",
+    service: "AC Repair",
+    at: "2026-07-18T07:45:00Z",
+    isCancelled: false,
+    rating: 4,
+    amountPaise: 1499 * RUPEE,
+  },
+  {
+    bookingId: "#B-8731",
+    service: "AC Repair",
+    at: "2026-07-17T13:05:00Z",
+    isCancelled: true,
+    rating: null,
+    amountPaise: 0,
+  },
+  {
+    bookingId: "#B-8710",
+    service: "Refrigerator",
+    at: "2026-07-16T06:20:00Z",
+    isCancelled: false,
+    rating: 2,
+    amountPaise: 2400 * RUPEE,
+  },
 ];
 
 const SURESH_FEEDBACK: ProviderProfile["feedback"] = [
-  { id: "fb-1", rating: 2, comment: "Arrived 40 minutes late.", author: "Meena R.", at: "2026-07-18T15:00:00Z" },
-  { id: "fb-2", rating: 2, comment: "Did not reassemble the outdoor unit properly.", author: "Anita Sharma", at: "2026-07-11T10:00:00Z" },
+  {
+    id: "fb-1",
+    rating: 2,
+    comment: "Arrived 40 minutes late.",
+    author: "Meena R.",
+    at: "2026-07-18T15:00:00Z",
+  },
+  {
+    id: "fb-2",
+    rating: 2,
+    comment: "Did not reassemble the outdoor unit properly.",
+    author: "Anita Sharma",
+    at: "2026-07-11T10:00:00Z",
+  },
 ];
 
 const SURESH_BASE: ProviderProfile = {
@@ -159,8 +206,20 @@ const PROFILES: readonly ProviderProfile[] = [
     }),
     metrics: WEAK_METRICS,
     feedback: [
-      { id: "fb-3", rating: 2, comment: "Left without finishing the job.", author: "Ravi K.", at: "2026-07-19T12:00:00Z" },
-      { id: "fb-4", rating: 2, comment: "Cancelled on me at the door.", author: "Lakshmi R.", at: "2026-07-14T09:00:00Z" },
+      {
+        id: "fb-3",
+        rating: 2,
+        comment: "Left without finishing the job.",
+        author: "Ravi K.",
+        at: "2026-07-19T12:00:00Z",
+      },
+      {
+        id: "fb-4",
+        rating: 2,
+        comment: "Cancelled on me at the door.",
+        author: "Lakshmi R.",
+        at: "2026-07-14T09:00:00Z",
+      },
     ],
     flags: ["9 cancellations in 30 days", "3 customer complaints (2 open)"],
     payoutCyclePaise: 9150 * RUPEE,

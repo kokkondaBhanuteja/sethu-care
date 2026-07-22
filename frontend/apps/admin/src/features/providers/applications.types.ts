@@ -8,8 +8,7 @@ export const APPLICATION_SEGMENTS = {
   decided: "decided",
 } as const;
 
-export type ApplicationSegment =
-  (typeof APPLICATION_SEGMENTS)[keyof typeof APPLICATION_SEGMENTS];
+export type ApplicationSegment = (typeof APPLICATION_SEGMENTS)[keyof typeof APPLICATION_SEGMENTS];
 
 export const APPLICATION_STATUSES = {
   pending: "pending",
@@ -18,8 +17,7 @@ export const APPLICATION_STATUSES = {
   rejected: "rejected",
 } as const;
 
-export type ApplicationStatus =
-  (typeof APPLICATION_STATUSES)[keyof typeof APPLICATION_STATUSES];
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[keyof typeof APPLICATION_STATUSES];
 
 export interface ApplicationRow {
   readonly id: string;
@@ -56,8 +54,7 @@ export const DOCUMENT_VALIDATIONS = {
   missing: "missing",
 } as const;
 
-export type DocumentValidation =
-  (typeof DOCUMENT_VALIDATIONS)[keyof typeof DOCUMENT_VALIDATIONS];
+export type DocumentValidation = (typeof DOCUMENT_VALIDATIONS)[keyof typeof DOCUMENT_VALIDATIONS];
 
 export interface ApplicationDocument {
   readonly id: string;
@@ -83,8 +80,7 @@ export const AUTO_CHECK_LABEL_KEYS = {
   ocr: "review.checkOcr",
 } as const;
 
-export type AutoCheckLabelKey =
-  (typeof AUTO_CHECK_LABEL_KEYS)[keyof typeof AUTO_CHECK_LABEL_KEYS];
+export type AutoCheckLabelKey = (typeof AUTO_CHECK_LABEL_KEYS)[keyof typeof AUTO_CHECK_LABEL_KEYS];
 
 export interface AutoValidationCheck {
   readonly id: string;
@@ -114,8 +110,7 @@ export const BLOCKER_MESSAGE_KEYS = {
   expiredDocument: "review.blockerExpiredDocument",
 } as const;
 
-export type BlockerMessageKey =
-  (typeof BLOCKER_MESSAGE_KEYS)[keyof typeof BLOCKER_MESSAGE_KEYS];
+export type BlockerMessageKey = (typeof BLOCKER_MESSAGE_KEYS)[keyof typeof BLOCKER_MESSAGE_KEYS];
 
 export interface ApprovalBlocker {
   readonly id: string;

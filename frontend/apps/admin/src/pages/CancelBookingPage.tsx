@@ -1,9 +1,12 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { CancelBookingDesktop } from "../features/booking-actions/CancelBooking.desktop";
+import { CancelBookingMobile } from "../features/booking-actions/CancelBooking.mobile";
+import { useCancelBooking } from "../features/booking-actions/useCancelBooking";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Emergency-only cancellation (Booking-Workflow-Decisions §4.3). */
 export default function CancelBookingPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  const isDesktop = useIsDesktop();
+  const state = useCancelBooking();
+
+  return isDesktop ? <CancelBookingDesktop state={state} /> : <CancelBookingMobile state={state} />;
 }

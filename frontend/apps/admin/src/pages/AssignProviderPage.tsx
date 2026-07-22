@@ -1,9 +1,16 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { AssignProviderDesktop } from "../features/booking-actions/AssignProvider.desktop";
+import { AssignProviderMobile } from "../features/booking-actions/AssignProvider.mobile";
+import { useAssignProvider } from "../features/booking-actions/useAssignProvider";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Rescue-only assignment (Booking-Workflow-Decisions D3): reached from an escalation, never a queue. */
 export default function AssignProviderPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  const isDesktop = useIsDesktop();
+  const state = useAssignProvider();
+
+  return isDesktop ? (
+    <AssignProviderDesktop state={state} />
+  ) : (
+    <AssignProviderMobile state={state} />
+  );
 }

@@ -1,9 +1,12 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { RefundDesktop } from "../features/booking-actions/Refund.desktop";
+import { RefundMobile } from "../features/booking-actions/Refund.mobile";
+import { useRefund } from "../features/booking-actions/useRefund";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** The one finance action permitted on mobile (spec §1.5's money boundary). */
 export default function RefundPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  const isDesktop = useIsDesktop();
+  const state = useRefund();
+
+  return isDesktop ? <RefundDesktop state={state} /> : <RefundMobile state={state} />;
 }

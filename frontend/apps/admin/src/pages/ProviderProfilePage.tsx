@@ -1,9 +1,8 @@
-import { useTranslation } from "@sethu/i18n";
+import { ProviderProfileDesktop } from "../features/providers/ProviderProfile.desktop";
+import { ProviderProfileMobile } from "../features/providers/ProviderProfile.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Route target for `/providers/:providerId`. The feature reads the param and owns the record. */
 export default function ProviderProfilePage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.providers")} />;
+  return useIsDesktop() ? <ProviderProfileDesktop /> : <ProviderProfileMobile />;
 }

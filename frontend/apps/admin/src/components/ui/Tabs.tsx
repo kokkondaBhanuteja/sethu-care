@@ -1,12 +1,18 @@
 import { useId, type KeyboardEvent } from "react";
 
 import { cx } from "../../lib/cx";
+import { StatusDot, type DotTone } from "./StatusDot";
 
 export interface TabItem<TValue extends string> {
   readonly value: TValue;
   readonly label: string;
   /** Trailing count, e.g. the 4 open tickets on a customer record. */
   readonly count?: number;
+  /**
+   * A leading status dot: the Active tab pulses red when the segment behind it holds an escalation,
+   * so a problem is visible from a tab you are not currently on.
+   */
+  readonly dot?: { readonly tone: DotTone; readonly pulse?: boolean; readonly label: string };
 }
 
 export interface TabsProps<TValue extends string> {
@@ -69,6 +75,14 @@ export function Tabs<TValue extends string>({
             className={cx("tabs__tab", isSelected && "is-selected")}
             onClick={() => onValueChange(item.value)}
           >
+            {item.dot ? (
+              <StatusDot
+                tone={item.dot.tone}
+                size="sm"
+                pulse={item.dot.pulse ?? false}
+                label={item.dot.label}
+              />
+            ) : null}
             {item.label}
             {item.count !== undefined ? <span className="c-3"> {item.count}</span> : null}
           </button>

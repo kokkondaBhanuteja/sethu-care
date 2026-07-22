@@ -37,7 +37,9 @@ export function AssignRankingPanel({ weights, rounds, declinedCount }: AssignRan
                 style={{ width: formatPercent(weight.weight) }}
               />
             </span>
-            <span className="shrink-0 text-caption text-text-2">{formatPercent(weight.weight)}</span>
+            <span className="shrink-0 text-caption text-text-2">
+              {formatPercent(weight.weight)}
+            </span>
           </div>
         ))}
       </div>

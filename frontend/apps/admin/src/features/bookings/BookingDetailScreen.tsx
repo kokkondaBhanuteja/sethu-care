@@ -1,3 +1,4 @@
+import { CONNECTION_STATES, useConnectionStatus } from "../../hooks/useConnectionStatus";
 import { normalizeError } from "../../lib/http/apiError";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { BookingDetailDesktop } from "./BookingDetail.desktop";
@@ -5,7 +6,6 @@ import { BookingDetailMobile } from "./BookingDetail.mobile";
 import { BookingDetailSkeleton } from "./BookingDetailSkeleton";
 import { BookingNotFound } from "./BookingNotFound";
 import { useBookingDetail } from "./useBookingDetail";
-import { useIsOffline } from "./useIsOffline";
 
 export interface BookingDetailScreenProps {
   bookingId: string;
@@ -19,7 +19,7 @@ export interface BookingDetailScreenProps {
  */
 export function BookingDetailScreen({ bookingId, isDesktop }: BookingDetailScreenProps) {
   const controller = useBookingDetail(bookingId);
-  const isOffline = useIsOffline();
+  const isOffline = useConnectionStatus().state === CONNECTION_STATES.offline;
   const { query, detail } = controller;
 
   if (controller.isNotFound) return <BookingNotFound />;

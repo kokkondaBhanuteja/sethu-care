@@ -14,12 +14,14 @@ import {
   fetchManualCompletionContextMock,
   fetchRedispatchContextMock,
   fetchRefundContextMock,
+} from "./booking-actions.mock";
+import {
   submitAssignMock,
   submitCancelMock,
   submitManualCompletionMock,
   submitRedispatchMock,
   submitRefundMock,
-} from "./booking-actions.mock";
+} from "./booking-actions.writes.mock";
 import type {
   ActionReceipt,
   AssignContext,
@@ -57,10 +59,7 @@ export function fetchCancelContext(
   bookingId: string,
   signal?: AbortSignal,
 ): Promise<CancelContext> {
-  return read(
-    () => fetchCancelContextMock(bookingId, signal),
-    "This booking could not be loaded.",
-  );
+  return read(() => fetchCancelContextMock(bookingId, signal), "This booking could not be loaded.");
 }
 
 export function fetchRedispatchContext(

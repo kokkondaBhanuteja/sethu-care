@@ -1,9 +1,16 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { ManualCompletionDesktop } from "../features/booking-actions/ManualCompletion.desktop";
+import { ManualCompletionMobile } from "../features/booking-actions/ManualCompletion.mobile";
+import { useManualCompletion } from "../features/booking-actions/useManualCompletion";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Admin-verified manual completion — the effortful alternative to an OTP override (spec §1.6). */
 export default function ManualCompletionPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  const isDesktop = useIsDesktop();
+  const state = useManualCompletion();
+
+  return isDesktop ? (
+    <ManualCompletionDesktop state={state} />
+  ) : (
+    <ManualCompletionMobile state={state} />
+  );
 }

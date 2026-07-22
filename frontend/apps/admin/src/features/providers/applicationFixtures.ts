@@ -112,9 +112,7 @@ const RAHUL_REVIEW: ApplicationReview = {
     { id: "check-blur", labelKey: "review.checkBlur", passed: true },
   ],
   // Server-enforced: approval is refused while a mandatory document is missing (spec §6.18).
-  approvalBlockers: [
-    { id: "blocker-police", messageKey: "review.blockerPoliceVerification" },
-  ],
+  approvalBlockers: [{ id: "blocker-police", messageKey: "review.blockerPoliceVerification" }],
   version: 1,
 };
 

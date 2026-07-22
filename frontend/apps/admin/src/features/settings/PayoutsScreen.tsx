@@ -43,19 +43,13 @@ export function PayoutsScreen() {
         >
           {(cycle) => (
             <>
-              <div className="kpi-row mb-s5">
+              <div className="mb-s5 grid grid-cols-4 gap-s3">
                 <KpiTile
                   label={t("payouts.kpiPending")}
                   value={formatMoneyCompact(cycle.pendingPaise)}
                 />
-                <KpiTile
-                  label={t("payouts.kpiAwaiting")}
-                  value={String(cycle.providersAwaiting)}
-                />
-                <KpiTile
-                  label={t("payouts.kpiNextRun")}
-                  value={formatDate(cycle.nextRunIso)}
-                />
+                <KpiTile label={t("payouts.kpiAwaiting")} value={String(cycle.providersAwaiting)} />
+                <KpiTile label={t("payouts.kpiNextRun")} value={formatDate(cycle.nextRunIso)} />
                 <KpiTile
                   label={t("payouts.kpiLastRun")}
                   value={formatMoneyCompact(cycle.lastRunPaise)}

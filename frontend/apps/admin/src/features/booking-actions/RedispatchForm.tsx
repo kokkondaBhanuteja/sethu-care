@@ -9,7 +9,7 @@ import { formatMoney } from "../../lib/format";
 import { RedispatchIncentiveField } from "./RedispatchIncentiveField";
 import { REDISPATCH_RADII, REDISPATCH_RADIUS_ORDER } from "./booking-actions.constants";
 import type { RedispatchContext } from "./booking-actions.types";
-import type { RedispatchState } from "./useRedispatch";
+import type { RedispatchState, RedispatchValues } from "./useRedispatch";
 
 export interface RedispatchFormProps {
   context: RedispatchContext;
@@ -26,8 +26,21 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
   const values = form.watch();
   const baseRadiusKm = context.rounds[0]?.radiusKm ?? 3;
 
-  function set<TField extends keyof typeof values>(field: TField, value: (typeof values)[TField]) {
-    form.setValue(field, value);
+  function setRadius(radiusId: RedispatchValues["radiusId"]) {
+    form.setValue("radiusId", radiusId);
+    state.markDirty();
+  }
+
+  function setToggle(
+    field: "relaxSkillMatch" | "includeDecliners" | "priorityBoost",
+    next: boolean,
+  ) {
+    form.setValue(field, next);
+    state.markDirty();
+  }
+
+  function setIncentive(rupees: number) {
+    form.setValue("incentiveRupees", rupees);
     state.markDirty();
   }
 
@@ -56,7 +69,7 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
           tall
           label={t("redispatch.radiusLabel")}
           value={values.radiusId}
-          onValueChange={(next) => set("radiusId", next)}
+          onValueChange={setRadius}
           options={REDISPATCH_RADIUS_ORDER.map((radiusId) => ({
             value: radiusId,
             label: t(`redispatch.radius.${radiusId}`, {
@@ -70,7 +83,7 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
       <div className="flex flex-col">
         <Switch
           checked={values.relaxSkillMatch}
-          onCheckedChange={(next) => set("relaxSkillMatch", next)}
+          onCheckedChange={(next) => setToggle("relaxSkillMatch", next)}
           label={t("redispatch.relaxSkill")}
           description={t("redispatch.relaxSkillHint")}
         />
@@ -84,13 +97,13 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
 
         <Switch
           checked={values.includeDecliners}
-          onCheckedChange={(next) => set("includeDecliners", next)}
+          onCheckedChange={(next) => setToggle("includeDecliners", next)}
           label={t("redispatch.includeDecliners")}
           description={t("redispatch.includeDeclinersHint", { count: context.declinedCount })}
         />
         <Switch
           checked={values.priorityBoost}
-          onCheckedChange={(next) => set("priorityBoost", next)}
+          onCheckedChange={(next) => setToggle("priorityBoost", next)}
           label={t("redispatch.priorityBoost")}
           description={t("redispatch.priorityBoostHint")}
         />
@@ -99,7 +112,7 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
       <RedispatchIncentiveField
         value={values.incentiveRupees}
         capPaise={context.incentiveCapPaise}
-        onValueChange={(next) => set("incentiveRupees", next)}
+        onValueChange={setIncentive}
         capLabel={t("redispatch.incentiveCap", { cap: formatMoney(context.incentiveCapPaise) })}
       />
     </div>

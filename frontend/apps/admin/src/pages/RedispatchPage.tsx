@@ -1,9 +1,12 @@
-import { useTranslation } from "@sethu/i18n";
+import { useIsDesktop } from "../hooks/useBreakpoint";
+import { RedispatchDesktop } from "../features/booking-actions/Redispatch.desktop";
+import { RedispatchMobile } from "../features/booking-actions/Redispatch.mobile";
+import { useRedispatch } from "../features/booking-actions/useRedispatch";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/** Re-runs the automation with widened parameters — not a candidate browser. */
 export default function RedispatchPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.bookings")} />;
+  const isDesktop = useIsDesktop();
+  const state = useRedispatch();
+
+  return isDesktop ? <RedispatchDesktop state={state} /> : <RedispatchMobile state={state} />;
 }

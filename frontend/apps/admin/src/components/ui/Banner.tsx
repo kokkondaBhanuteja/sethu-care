@@ -9,9 +9,29 @@ export const BANNER_TONES = {
   warning: "banner--warning",
   success: "banner--success",
   info: "banner--info",
+  /** The plain grey strip — a standing fact rather than a condition. The audit log's
+   *  "this ledger cannot be edited" notice is the canonical use. */
+  neutral: "",
 } as const;
 
 export type BannerTone = keyof typeof BANNER_TONES;
+
+/** The banner's own text colour. Not derivable from the tone key — `neutral` has no `c-neutral`. */
+const BANNER_TEXT_TONES: Readonly<Record<BannerTone, string>> = {
+  danger: "c-danger",
+  warning: "c-warning",
+  success: "c-success",
+  info: "c-info",
+  neutral: "c-2",
+};
+
+const BANNER_ROLES: Readonly<Record<BannerTone, "alert" | "status" | undefined>> = {
+  danger: "alert",
+  warning: "status",
+  success: "status",
+  info: "status",
+  neutral: undefined,
+};
 
 export interface BannerProps {
   tone: BannerTone;
@@ -49,7 +69,9 @@ export function Banner({
 }: BannerProps) {
   return (
     <div
-      role={tone === "danger" ? "alert" : "status"}
+      // A neutral banner states a standing fact ("this ledger cannot be edited") and is present on
+      // first paint, so it is not a live region — announcing it would interrupt for no news.
+      role={BANNER_ROLES[tone]}
       className={cx(
         "banner",
         BANNER_TONES[tone],
@@ -58,9 +80,9 @@ export function Banner({
         className,
       )}
     >
-      {icon ? <Icon glyph={icon} className={`c-${tone}`} /> : null}
+      {icon ? <Icon glyph={icon} className={BANNER_TEXT_TONES[tone]} /> : null}
       <div className="banner__body">
-        <span className={cx("t-body w-semi", `c-${tone}`)}>{title}</span>
+        <span className={cx("t-body w-semi", BANNER_TEXT_TONES[tone])}>{title}</span>
         {detail ? <span className="t-body c-1">{detail}</span> : null}
       </div>
       {actions ? <div className="banner__actions">{actions}</div> : null}

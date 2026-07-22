@@ -63,11 +63,7 @@ export function ProviderRosterDesktop() {
           onClearFilters={roster.clearFilters}
           isEmpty={(data) => data.rows.length === 0}
           empty={
-            <EmptyState
-              icon={Users}
-              title={t("roster.emptyTitle")}
-              body={t("roster.emptyBody")}
-            />
+            <EmptyState icon={Users} title={t("roster.emptyTitle")} body={t("roster.emptyBody")} />
           }
           skeleton={
             <SkeletonList rows={8} rowClassName="h-row-56" label={t("roster.loadingLabel")} />

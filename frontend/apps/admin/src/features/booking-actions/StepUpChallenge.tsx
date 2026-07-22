@@ -87,12 +87,7 @@ export function StepUpChallenge({
             <Button variant="text" size="section" onClick={onCancel}>
               {tShell("actions.cancel")}
             </Button>
-            <Button
-              variant={commitVariant}
-              size="section"
-              disabled={isBlocked}
-              onClick={onConfirm}
-            >
+            <Button variant={commitVariant} size="section" disabled={isBlocked} onClick={onConfirm}>
               {confirmLabel}
             </Button>
           </>

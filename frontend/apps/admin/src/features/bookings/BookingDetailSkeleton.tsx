@@ -2,6 +2,8 @@ import { useTranslation } from "@sethu/i18n";
 
 import { Card } from "../../components/ui/Card";
 import { Skeleton } from "../../components/ui/Skeleton";
+import { Gutter, Stack } from "../../layouts/Layout";
+import { PageMain } from "../../layouts/PageMain";
 
 export interface BookingDetailSkeletonProps {
   /** Desktop draws the three record columns; mobile draws the stack. */
@@ -24,48 +26,47 @@ export function BookingDetailSkeleton({ isDesktop }: BookingDetailSkeletonProps)
 
   if (!isDesktop) {
     return (
-      <div
-        className="flex flex-col gap-s5 px-s4 py-s4"
-        role="status"
-        aria-busy
-        aria-label={t("loading.detail")}
-      >
-        <Lines count={3} />
-        <Lines count={4} />
-        <Lines count={3} />
-        <Lines count={6} />
-      </div>
+      <Gutter className="py-s4">
+        <div role="status" aria-busy aria-label={t("loading.detail")}>
+          <Stack>
+            <Lines count={3} />
+            <Lines count={4} />
+            <Lines count={3} />
+            <Lines count={6} />
+          </Stack>
+        </div>
+      </Gutter>
     );
   }
 
   return (
-    <main
-      className="flex-1 overflow-y-auto bg-canvas p-s6"
-      role="status"
-      aria-busy
-      aria-label={t("loading.detail")}
-    >
-      <div className="grid grid-cols-1 gap-s5 lg:grid-cols-3">
-        <div className="flex flex-col gap-s5">
+    <PageMain>
+      <div
+        className="grid grid-cols-1 gap-s5 lg:grid-cols-3"
+        role="status"
+        aria-busy
+        aria-label={t("loading.detail")}
+      >
+        <Stack>
           <Card>
             <Lines count={3} />
           </Card>
           <Card>
             <Lines count={5} />
           </Card>
-        </div>
+        </Stack>
         <Card>
           <Lines count={8} />
         </Card>
-        <div className="flex flex-col gap-s5">
+        <Stack>
           <Card>
             <Lines count={3} />
           </Card>
           <Card>
             <Lines count={3} />
           </Card>
-        </div>
+        </Stack>
       </div>
-    </main>
+    </PageMain>
   );
 }

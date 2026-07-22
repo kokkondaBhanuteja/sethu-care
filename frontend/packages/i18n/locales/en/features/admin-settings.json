@@ -80,7 +80,6 @@
     "criticalChannelOffBody": "This is the most dangerous state the app can be in — escalations will be silent.",
     "criticalChannelOffAction": "Open channel settings",
     "quietHoursActive": "Quiet hours are active until {{until}} · {{count}} alerts queued",
-    "saveFailed": "That change could not be saved. It has been put back.",
     "loading": "Loading notification settings"
   },
   "security": {
@@ -97,7 +96,6 @@
     "devicesCaption": "Devices trusted by this account",
     "current": "Current",
     "revoke": "Revoke",
-    "revokeNamed": "Revoke {{device}}",
     "columnDevice": "Device",
     "columnLastUsed": "Last used",
     "columnLocation": "Location",
@@ -136,13 +134,10 @@
     "revokeOtherTitle": "Revoke this device?",
     "revokeOtherBody": "{{device}} is signed out immediately and its cached data is wiped on next contact.",
     "revoked": "{{device}} revoked.",
-    "revokeFailed": "That device could not be revoked.",
-    "biometricFailed": "That setting could not be saved. It has been put back.",
     "loading": "Loading security settings"
   },
   "profile": {
     "title": "Profile",
-    "changePhoto": "Change photo",
     "identityLine": "{{role}} · {{adminId}}",
     "email": "Email",
     "phone": "Phone",
@@ -168,7 +163,6 @@
     "soundEffects": "Sound effects",
     "defaultTab": "Default tab on open",
     "defaultLanding": "Default landing page",
-    "saveFailed": "That preference could not be saved. It has been put back.",
     "loading": "Loading profile"
   },
   "support": {
@@ -209,8 +203,7 @@
     "groupLegal": "Legal",
     "terms": "Terms of use",
     "privacy": "Privacy policy",
-    "licences": "Open-source licences",
-    "loading": "Loading help"
+    "licences": "Open-source licences"
   },
   "payouts": {
     "title": "Payouts & settlements",

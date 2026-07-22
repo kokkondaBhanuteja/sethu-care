@@ -138,8 +138,7 @@ export const REFUND_PAYOUT_IMPACTS = {
   payAnyway: "pay_anyway",
 } as const;
 
-export type RefundPayoutImpact =
-  (typeof REFUND_PAYOUT_IMPACTS)[keyof typeof REFUND_PAYOUT_IMPACTS];
+export type RefundPayoutImpact = (typeof REFUND_PAYOUT_IMPACTS)[keyof typeof REFUND_PAYOUT_IMPACTS];
 
 export const REDISPATCH_RADII = {
   base: "base",

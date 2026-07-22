@@ -108,6 +108,36 @@ Biometric and device-passcode verification happen on the device and have **no en
 
 There is deliberately **no reschedule endpoint** — D1 removed rescheduling from the product.
 
+The candidate/assign pair that already exists (`GET /ops/bookings/{id}/candidates`,
+`POST /ops/bookings/{id}/assign`) is the **rescue** path only, reached from an escalation
+(Booking-Workflow-Decisions D3). The candidate response must also carry the ranking weights and the
+dispatch-round history: the console shows what the ranking weighted, because an override is only
+safe if the operator can see what they are overriding (spec §6.10).
+
+### Idempotency on these six endpoints is not optional
+
+Every mutation above **must** honour an `Idempotency-Key` request header. The console mints one key
+per *intent* — not per network attempt — and only rotates it after a submission has succeeded, so a
+retry after a timeout carries the same key and must return the first result rather than acting
+again. Without server-side honouring, a flaky connection during a refund is a duplicate refund and a
+flaky connection during a manual completion is a second customer notification. The client-side
+in-flight guard (`useAppForm`) only protects one browser tab.
+
+Normative client-side shapes: `frontend/apps/admin/src/features/booking-actions/booking-actions.types.ts`.
+
+The high- and critical-risk mutations here also expect:
+
+| Endpoint | Designed failures the UI already renders |
+| --- | --- |
+| `/cancel` | `409` booking already terminal · refund-override justification is a separate audited field |
+| `/manual-complete` | `409 TOO_EARLY` with `availableAt` · `422 EVIDENCE_INSUFFICIENT` naming the missing item |
+| `/refund` | `422 EXCEEDS_CAP` with a field error on the amount · `429` rate limited with the reset time · `202` + `isPending` when the gateway does not confirm (never reported as done) |
+
+**Reason codes** for these flows are declared in
+`frontend/apps/admin/src/features/booking-actions/booking-actions.constants.ts` because neither
+`@sethu/domain` nor the generated client carries a vocabulary yet. When the backend enum lands it
+must be mirrored into `@sethu/domain` and the local `as const` deleted.
+
 ## MISSING — providers
 
 | Method | Path                             | Notes                                                                    |
@@ -143,6 +173,8 @@ Notes the console assumes:
 
 ## MISSING — alerts, audit, settings
 
+Normative alert shapes: `frontend/apps/admin/src/features/alerts/alerts.types.ts`.
+
 | Method  | Path                            | Notes                                                                                                                  |
 | ------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | GET     | `/ops/alerts`                   | Feed with severity (`critical`/`warning`/`informational`), `requiresAcknowledgement`, the acknowledgement (admin id, name, time) and the subject record. |
@@ -153,8 +185,19 @@ Notes the console assumes:
 | GET     | `/ops/audit`                    | Append-only. Query: `cursor`, `limit`, `adminId`, `action`, `targetType`, `targetId`, `from`, `to`. Response `{ items, total, nextCursor }` where each item is the §10.4 schema **plus** `compensatesEntryId` and `compensatedByEntryId` (both nullable). `action` is the SCREAMING_SNAKE audit vocabulary, not the dotted registry id. `before`/`after` are `Record<string, string>` of display-ready values. |
 | GET     | `/ops/audit/{id}`               | Entry detail, including `before`/`after` and the compensating-entry link. Unknown id must be a **404** — the entry screen is a deep-link target and renders NotFoundState. |
 | GET     | `/ops/audit/admins`             | The distinct admins that appear in the log, for the Admin filter: `[{ id, name, email }]`. Derived server-side; the console must not page the whole ledger to build a filter. |
-| GET/PUT | `/admin/settings/notifications` | Channels and quiet hours.                                                                                              |
-| GET/PUT | `/admin/profile`                | Profile. Phone is Super-Admin-only, per spec.                                                                          |
+| GET/PUT | `/admin/settings/notifications` | Channels and quiet hours. Normative shape: `frontend/apps/admin/src/features/settings/settings.types.ts`. Only the CONFIGURABLE tier is stored — the four critical channels are not preferences and must not be accepted in a PATCH (spec §6.30). `quietHours.from`/`to` and `digestTime` are `HH:mm` IST wall-clock, not instants. PATCH returns the whole updated object so the console's optimistic update can settle on the server's copy. |
+| GET     | `/admin/settings/security`      | Biometric-unlock flag, trusted devices (`{ id, name, kind, lastUsedAt, location, isCurrent }`), `deviceLimit`, active-session count, `passwordChangedAt`, and the recent security events (`signedIn`/`failedSignIn`/`deviceTrusted`/`passwordChanged`). A failed sign-in from an unrecognised device must return `device: null`, not a placeholder string — the console renders "unknown" itself. |
+| PATCH   | `/admin/settings/security`      | Biometric unlock only. Disabling it tightens the idle lock to 10 minutes (spec §6.31), which is server-enforced policy, not a client default. |
+| GET/PUT | `/admin/profile`                | Profile. Phone is Super-Admin-only, per spec, and must arrive **already masked** — the console never receives a full number (§5.6). Preferences (appearance, haptics, default landing tab) round-trip on the same object. |
+| GET     | `/admin/version`                | App / build / environment / OTA bundle, for the support version block (§6.33). |
+| POST    | `/admin/diagnostics`            | Uploads logs, device model, OS version and the last 200 network events. Must reject any payload carrying customer PII (§5.6); the consent notice in the UI states exactly this. |
+| GET     | `/admin/queued-actions/count`   | Unsynced offline actions, so the sign-out confirm can name how many will be discarded (§6.22). |
+| GET     | `/ops/payouts/current`          | The open settlement cycle: totals, cycle-close and next-run timestamps, and the per-provider rows (`jobs`, `grossPaise`, `commissionPaise`, `adjustmentsPaise`, `netPaise`, `status`). Amounts are paise, int64. The totals cover the whole cycle, not the returned page. Desktop-only surface (§1.5) but the mobile "Best on desktop" notice reads the three headline numbers from the same response. |
+
+`DELETE /admin/auth/devices/{id}` (already listed under auth) is the revoke this console calls. It is
+`device.revoke` in the action registry: high risk, step-up required, no reason code, no undo. When the
+id is the caller's own device the response must also invalidate the calling session, because the
+console signs out and destroys every cache immediately afterwards (§5.6).
 
 The audit log must reject writes and deletes at the API level, not merely omit the UI for them.
 

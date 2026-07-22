@@ -6,6 +6,7 @@
 // The store is mutable on purpose: acknowledging has to change what the next read returns, or the
 // badge-discipline rule (§3.1) cannot be demonstrated at all.
 
+import { adjustCounter } from "../../mocks/counterStore";
 import { mockRead, mockWrite } from "../../mocks/mockTransport";
 import {
   ALERT_SEVERITIES,
@@ -166,6 +167,11 @@ export function acknowledgeAlertMock(
         },
       };
       store = store.map((alert) => (alert.id === alertId ? acknowledged : alert));
+
+      // Keep the shell's badge honest: it reads the same mock counter store, so owning the last
+      // critical alert actually drops the badge to zero instead of re-answering the old number.
+      if (existing.severity === ALERT_SEVERITIES.critical) adjustCounter("criticalAlerts", -1);
+
       return { alert: acknowledged, wonRace: winner.id === CURRENT_ADMIN.id };
     },
     signal ? { signal } : {},

@@ -87,10 +87,7 @@ export function RosterTable({ rows }: RosterTableProps) {
       header: t("roster.columnCompletion"),
       render: (row) => (
         <span
-          className={cx(
-            "text-emph tabular-nums",
-            BAND_TEXT[completionBand(row.completionRate)],
-          )}
+          className={cx("text-emph tabular-nums", BAND_TEXT[completionBand(row.completionRate)])}
         >
           {formatPercent(row.completionRate)}
         </span>

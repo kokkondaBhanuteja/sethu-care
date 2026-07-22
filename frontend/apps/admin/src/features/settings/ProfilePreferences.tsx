@@ -18,7 +18,11 @@ export interface ProfilePreferencesProps {
 }
 
 /** BOX 103 / 64 — appearance, haptics and the tab the app opens on (spec §6.32). */
-export function ProfilePreferences({ preferences, onChange, wide = false }: ProfilePreferencesProps) {
+export function ProfilePreferences({
+  preferences,
+  onChange,
+  wide = false,
+}: ProfilePreferencesProps) {
   const { t } = useTranslation("adminSettings");
   const shellT = useTranslation("adminShell").t;
   const [isLandingOpen, setIsLandingOpen] = useState(false);

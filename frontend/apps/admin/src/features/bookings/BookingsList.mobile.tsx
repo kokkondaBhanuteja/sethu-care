@@ -9,14 +9,16 @@ import { Pagination } from "../../components/ui/Pagination";
 import { SearchInput } from "../../components/ui/SearchInput";
 import { SkeletonList } from "../../components/ui/Skeleton";
 import { QueryBoundary } from "../../components/states/QueryBoundary";
+import { CONNECTION_STATES, useConnectionStatus } from "../../hooks/useConnectionStatus";
+import { Gutter } from "../../layouts/Layout";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
+import { MobileScroll } from "../../layouts/PageMain";
 import { SEGMENT_SUBJECT_KEYS } from "./bookings.constants";
 import { BookingCard } from "./BookingCard";
 import { BookingsEmptyState, BookingsSearchEmptyState } from "./BookingsEmptyState";
 import { BookingsFilterSheet } from "./BookingsFilterSheet";
 import { BookingsTabs } from "./BookingsTabs";
 import { useBookingsList } from "./useBookingsList";
-import { useIsOffline } from "./useIsOffline";
 
 /**
  * The phone list: stacked cards, never the desktop table squeezed. The search field, the tabs and
@@ -26,7 +28,7 @@ import { useIsOffline } from "./useIsOffline";
 export function BookingsListMobile() {
   const { t } = useTranslation("adminBookings");
   const list = useBookingsList();
-  const isOffline = useIsOffline();
+  const isOffline = useConnectionStatus().state === CONNECTION_STATES.offline;
 
   return (
     <>
@@ -54,14 +56,14 @@ export function BookingsListMobile() {
         />
       ) : null}
 
-      <div className="px-s4 pt-s2 pb-s3">
+      <Gutter className="pt-s2 pb-s3">
         <SearchInput
           value={list.searchTerm}
           onValueChange={list.updateSearch}
           placeholder={t("search.placeholder")}
           label={t("search.label")}
         />
-      </div>
+      </Gutter>
 
       <BookingsTabs
         segment={list.segment}
@@ -70,7 +72,7 @@ export function BookingsListMobile() {
         variant="fill"
       />
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-s4 pt-s3 pb-s4">
+      <MobileScroll padFor="tabbar" className="px-s4 pt-s3">
         <QueryBoundary
           query={list.query}
           skeleton={<SkeletonList rows={8} rowClassName="h-row-72" label={t("loading.list")} />}
@@ -113,7 +115,7 @@ export function BookingsListMobile() {
             </>
           )}
         </QueryBoundary>
-      </div>
+      </MobileScroll>
 
       <BookingsFilterSheet
         isOpen={list.isFilterOpen}

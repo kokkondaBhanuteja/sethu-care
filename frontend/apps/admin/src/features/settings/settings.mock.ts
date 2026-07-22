@@ -27,12 +27,14 @@ export function saveNotificationSettingsMock(
   patch: Partial<NotificationSettings>,
   signal?: AbortSignal,
 ): Promise<NotificationSettings> {
-  return mockWrite(() => {
-    settingsStore.notifications = { ...settingsStore.notifications, ...patch };
-    return settingsStore.notifications;
-  }, { signal });
+  return mockWrite(
+    () => {
+      settingsStore.notifications = { ...settingsStore.notifications, ...patch };
+      return settingsStore.notifications;
+    },
+    { signal },
+  );
 }
-
 
 export function fetchSecuritySettingsMock(signal?: AbortSignal): Promise<SecuritySettings> {
   return mockRead(() => settingsStore.security, { signal });
@@ -42,21 +44,30 @@ export function saveBiometricUnlockMock(
   enabled: boolean,
   signal?: AbortSignal,
 ): Promise<SecuritySettings> {
-  return mockWrite(() => {
-    settingsStore.security = { ...settingsStore.security, biometricUnlock: enabled };
-    return settingsStore.security;
-  }, { signal });
+  return mockWrite(
+    () => {
+      settingsStore.security = { ...settingsStore.security, biometricUnlock: enabled };
+      return settingsStore.security;
+    },
+    { signal },
+  );
 }
 
-export function revokeDeviceMock(deviceId: string, signal?: AbortSignal): Promise<SecuritySettings> {
-  return mockWrite(() => {
-    settingsStore.security = {
-      ...settingsStore.security,
-      devices: settingsStore.security.devices.filter((device) => device.id !== deviceId),
-      activeSessions: Math.max(0, settingsStore.security.activeSessions - 1),
-    };
-    return settingsStore.security;
-  }, { signal });
+export function revokeDeviceMock(
+  deviceId: string,
+  signal?: AbortSignal,
+): Promise<SecuritySettings> {
+  return mockWrite(
+    () => {
+      settingsStore.security = {
+        ...settingsStore.security,
+        devices: settingsStore.security.devices.filter((device) => device.id !== deviceId),
+        activeSessions: Math.max(0, settingsStore.security.activeSessions - 1),
+      };
+      return settingsStore.security;
+    },
+    { signal },
+  );
 }
 
 export function fetchAdminProfileMock(signal?: AbortSignal): Promise<AdminProfile> {
@@ -67,10 +78,13 @@ export function saveAdminPreferencesMock(
   preferences: AdminPreferences,
   signal?: AbortSignal,
 ): Promise<AdminProfile> {
-  return mockWrite(() => {
-    settingsStore.profile = { ...settingsStore.profile, preferences };
-    return settingsStore.profile;
-  }, { signal });
+  return mockWrite(
+    () => {
+      settingsStore.profile = { ...settingsStore.profile, preferences };
+      return settingsStore.profile;
+    },
+    { signal },
+  );
 }
 
 export function fetchAppVersionMock(signal?: AbortSignal): Promise<AppVersion> {

@@ -47,6 +47,13 @@ export function useAcknowledgeAlert(): AcknowledgeController {
   const queuedIds = useAckQueueStore((state) => state.queued);
   const enqueue = useAckQueueStore((state) => state.enqueue);
   const dequeue = useAckQueueStore((state) => state.dequeue);
+  const hydrate = useAckQueueStore((state) => state.hydrate);
+
+  // Read the persisted queue before anything can replay it, so an acknowledgement taken offline
+  // and then interrupted by a reload or an app kill is still delivered.
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
 
   const mutation = useMutation({
     mutationFn: (alertId: string) => acknowledgeAlert(alertId),

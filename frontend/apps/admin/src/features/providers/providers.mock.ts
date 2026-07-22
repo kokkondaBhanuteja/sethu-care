@@ -51,9 +51,7 @@ export function fetchProviderRosterMock(
 ): Promise<ProviderRoster> {
   return mockRead<ProviderRoster>(
     () => ({
-      rows: ROSTER_ROWS.filter(
-        (row) => matchesSegment(row, segment) && matchesSearch(row, search),
-      ),
+      rows: ROSTER_ROWS.filter((row) => matchesSegment(row, segment) && matchesSearch(row, search)),
       counts: {
         total: 84,
         online: variant === ROSTER_VARIANTS.healthy ? 22 : 18,

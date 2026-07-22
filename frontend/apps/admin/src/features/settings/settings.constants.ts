@@ -54,7 +54,11 @@ export const OPERATIONAL_CHANNELS = [
   "paymentFailure",
 ] as const;
 
-export const PROVIDER_CHANNELS = ["newApplications", "autoSuspensions", "documentExpiring"] as const;
+export const PROVIDER_CHANNELS = [
+  "newApplications",
+  "autoSuspensions",
+  "documentExpiring",
+] as const;
 
 /**
  * The channels whose name does not explain itself. Desktop has the width to print the explanation

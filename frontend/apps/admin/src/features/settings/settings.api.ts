@@ -36,7 +36,6 @@ export async function fetchNotificationSettings(
   }
 }
 
-
 export async function saveNotificationSettings(
   patch: Partial<NotificationSettings>,
   signal?: AbortSignal,

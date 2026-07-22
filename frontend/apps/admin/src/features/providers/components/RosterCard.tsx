@@ -8,10 +8,7 @@ import { cx } from "../../../lib/cx";
 import { formatDate, formatDuration, formatMoney, formatRelative } from "../../../lib/format";
 import { ROUTES } from "../../../routes/routes.constants";
 import { PROVIDER_STATUSES, type ProviderRosterRow } from "../providers.types";
-import {
-  AVATAR_STATUS_FOR_PROVIDER,
-  ProviderStatusIndicator,
-} from "./ProviderStatusIndicator";
+import { AVATAR_STATUS_FOR_PROVIDER, ProviderStatusIndicator } from "./ProviderStatusIndicator";
 import { RatingValue } from "./Rating";
 
 export interface RosterCardProps {

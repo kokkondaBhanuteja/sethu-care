@@ -1,4 +1,13 @@
-import { CircleCheckBig, Clock, IndianRupee, Lock, MessageSquare, ShieldCheck, TriangleAlert, Waves } from "lucide-react";
+import {
+  CircleCheckBig,
+  Clock,
+  IndianRupee,
+  Lock,
+  MessageSquare,
+  ShieldCheck,
+  TriangleAlert,
+  Waves,
+} from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Card } from "../../components/ui/Card";

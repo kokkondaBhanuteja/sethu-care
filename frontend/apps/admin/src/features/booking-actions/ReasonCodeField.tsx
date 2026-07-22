@@ -63,7 +63,9 @@ export function ReasonCodeField<TCode extends string>({
       />
 
       {/* The dot's own label is the legend text, so assistive tech hears it exactly once. */}
-      {flaggedLegend ? <StatusDot tone="danger" size="sm" label={flaggedLegend} visualLabel /> : null}
+      {flaggedLegend ? (
+        <StatusDot tone="danger" size="sm" label={flaggedLegend} visualLabel />
+      ) : null}
     </div>
   );
 }

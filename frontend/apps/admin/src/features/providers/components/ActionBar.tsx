@@ -15,9 +15,7 @@ export interface ActionBarProps {
  */
 export function ActionBar({ children, note, className }: ActionBarProps) {
   return (
-    <div
-      className={cx("flex-none border-t border-border-subtle bg-canvas px-s4 py-s3", className)}
-    >
+    <div className={cx("flex-none border-t border-border-subtle bg-canvas px-s4 py-s3", className)}>
       {note ? <div className="mb-s2 text-center text-caption text-danger">{note}</div> : null}
       {children}
     </div>

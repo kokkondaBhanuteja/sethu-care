@@ -42,7 +42,9 @@ export function MobileActionScreen({
         bordered
         showBack
         onBack={onClose}
-        actions={reference ? <span className="text-label text-text-2">{reference}</span> : undefined}
+        actions={
+          reference ? <span className="text-label text-text-2">{reference}</span> : undefined
+        }
       />
 
       {aboveScroll}

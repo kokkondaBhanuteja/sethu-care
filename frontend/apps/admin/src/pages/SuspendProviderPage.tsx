@@ -1,9 +1,11 @@
-import { useTranslation } from "@sethu/i18n";
+import { SuspendProviderDesktop } from "../features/providers/SuspendProvider.desktop";
+import { SuspendProviderMobile } from "../features/providers/SuspendProvider.mobile";
+import { useIsDesktop } from "../hooks/useBreakpoint";
 
-import { ComingSoonState } from "../components/ui/states/ComingSoonState";
-
-/** Route target. Replaced by the feature implementation — see the feature folder's CLAUDE.md. */
+/**
+ * Route target for `/providers/:providerId/suspend`. Desktop draws the flow as a modal over the
+ * record; mobile takes the whole screen.
+ */
 export default function SuspendProviderPage() {
-  const { t } = useTranslation("adminShell");
-  return <ComingSoonState section={t("nav.providers")} />;
+  return useIsDesktop() ? <SuspendProviderDesktop /> : <SuspendProviderMobile />;
 }

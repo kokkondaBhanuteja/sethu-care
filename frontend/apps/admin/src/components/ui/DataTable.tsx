@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { cx } from "../../lib/cx";
 
 export interface DataTableColumn<TRow> {
   readonly id: string;
   readonly header: string;
-  /** Token-backed width utility, e.g. "w-[132px]" is NOT allowed — use a th className with a token. */
+  /** A th className, e.g. "w-s8" — token-backed utilities only, never an arbitrary px value. */
   readonly headerClassName?: string;
   readonly cellClassName?: string;
   /** Right-aligned tabular figures — ages, amounts, counts. */
@@ -22,6 +22,16 @@ export interface DataTableProps<TRow> {
   /** Severity tint for a row — the queue tables mark escalated rows red. */
   rowTone?: (row: TRow) => "default" | "danger" | "warning";
   onRowClick?: (row: TRow) => void;
+  /**
+   * The key of the row currently open in a detail pane. Tints it and marks it `aria-selected`, so
+   * a master–detail screen shows which row the pane belongs to.
+   */
+  selectedRowKey?: string | null;
+  /**
+   * A group heading to draw ABOVE this row, e.g. "Today · 20 Jul 2026". Return null for rows that
+   * continue the current group. Rendered as a full-width row, which is why it cannot be a column.
+   */
+  rowGroupLabel?: (row: TRow, index: number) => string | null;
   /** Row height: the design uses 56px by default, 48 for dense queues, 64 for rows with an avatar. */
   density?: "dense" | "default" | "roomy";
   /** Tighter horizontal padding, for the nine-column table inside a 900px modal. */
@@ -45,6 +55,8 @@ export function DataTable<TRow>({
   rowKey,
   rowTone,
   onRowClick,
+  selectedRowKey = null,
+  rowGroupLabel,
   density = "default",
   tight = false,
   className,
@@ -67,24 +79,40 @@ export function DataTable<TRow>({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {rows.map((row, index) => {
+            const key = rowKey(row);
             const tone = rowTone?.(row) ?? "default";
+            const groupLabel = rowGroupLabel?.(row, index) ?? null;
+
             return (
-              <tr
-                key={rowKey(row)}
-                className={cx(
-                  tone === "danger" && "row-danger",
-                  tone === "warning" && "row-warning",
-                  onRowClick && "cursor-pointer",
-                )}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-              >
-                {columns.map((column) => (
-                  <td key={column.id} className={cx(column.numeric && "num", column.cellClassName)}>
-                    {column.render(row)}
-                  </td>
-                ))}
-              </tr>
+              <Fragment key={key}>
+                {groupLabel ? (
+                  <tr className="table__group">
+                    <th scope="colgroup" colSpan={columns.length}>
+                      {groupLabel}
+                    </th>
+                  </tr>
+                ) : null}
+                <tr
+                  aria-selected={selectedRowKey === null ? undefined : selectedRowKey === key}
+                  className={cx(
+                    tone === "danger" && "row-danger",
+                    tone === "warning" && "row-warning",
+                    selectedRowKey === key && "is-selected",
+                    onRowClick && "cursor-pointer",
+                  )}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.id}
+                      className={cx(column.numeric && "num", column.cellClassName)}
+                    >
+                      {column.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              </Fragment>
             );
           })}
         </tbody>

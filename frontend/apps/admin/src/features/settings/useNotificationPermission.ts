@@ -39,7 +39,8 @@ function readBrowserPermission(): NotificationDelivery {
 export function useNotificationPermission() {
   const [searchParams] = useSearchParams();
   const override = searchParams.get(NOTIFICATION_STATE_PARAM);
-  const [browserDelivery, setBrowserDelivery] = useState<NotificationDelivery>(readBrowserPermission);
+  const [browserDelivery, setBrowserDelivery] =
+    useState<NotificationDelivery>(readBrowserPermission);
 
   const refresh = useCallback(() => setBrowserDelivery(readBrowserPermission()), []);
 

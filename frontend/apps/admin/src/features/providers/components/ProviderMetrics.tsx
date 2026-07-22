@@ -26,12 +26,7 @@ export function ProviderMetrics({ metrics, variant }: ProviderMetricsProps) {
       <SectionLabel className="mb-s3">
         {isDesktop ? t("profile.performance") : t("profile.performanceShort")}
       </SectionLabel>
-      <div
-        className={cx(
-          "grid gap-s2",
-          isDesktop ? "grid-cols-5" : "grid-cols-2",
-        )}
-      >
+      <div className={cx("grid gap-s2", isDesktop ? "grid-cols-5" : "grid-cols-2")}>
         {metrics.map((metric) => (
           <MetricTile key={metric.id} metric={metric} showTrend={isDesktop} />
         ))}
