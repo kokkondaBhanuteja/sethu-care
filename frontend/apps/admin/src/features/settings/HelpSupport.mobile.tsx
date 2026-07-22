@@ -66,6 +66,9 @@ export function HelpSupportMobile() {
             <SettingsRow height="compact" label={t("support.terms")} />
             <SettingsRow height="compact" label={t("support.privacy")} />
             <SettingsRow height="compact" label={t("support.licences")} />
+            {/* Flaticon free-tier attribution — required by the artwork licence
+                (ENGINEERING-STANDARDS Part 6; assets/CLAUDE.md is the per-asset registry). */}
+            <SettingsRow height="compact" label={t("support.artworkCredit")} />
           </SettingsCard>
         </SettingsGroup>
       </div>

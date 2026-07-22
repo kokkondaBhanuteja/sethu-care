@@ -58,10 +58,13 @@ test("a full-screen modal task hides the tab bar on a phone and keeps the sideba
   // Leaving the tab bar visible mid-cancellation is a one-tap exit from a half-filled irreversible
   // form that bypasses the "Discard changes?" guard — a safety property, not a stylistic one.
   await page.goto(ROUTES.bookingCancel(BOOKING_TRIGGERS.ordinary));
+  // Desktop renders a Radix dialog whose own title satisfies BOTH sides of the `or` (the dialog
+  // and a heading named "Cancel booking"), so take the first match rather than requiring one.
   await expect(
     page
       .getByRole("dialog", { name: "Cancel booking" })
-      .or(page.getByRole("heading", { name: "Cancel booking" })),
+      .or(page.getByRole("heading", { name: "Cancel booking" }))
+      .first(),
   ).toBeVisible();
 
   if (width(page) >= SHELL_BREAKPOINT_PX) {

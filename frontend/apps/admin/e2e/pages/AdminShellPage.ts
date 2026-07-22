@@ -2,26 +2,29 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * The chrome around every authenticated screen. `AdminShell` mounts exactly one of `DesktopShell`
- * (>=768px: a 240px sidebar, no tab bar) or `MobileShell` (<768px: five tabs, no sidebar), so the
- * two are told apart by which one is in the DOM at all — never by a CSS breakpoint check.
+ * (>=768px: the @sethu/ui-web sidebar rail, no tab bar) or `MobileShell` (<768px: five tabs, no
+ * sidebar), so the two are told apart by which one is in the DOM at all — never by a CSS
+ * breakpoint check.
+ *
+ * Both shells render a `<nav>` labelled "Primary" — the ui-web Sidebar emits the landmark itself,
+ * with no `<aside>` around it — so the two navs are told apart by the one link only the tab bar
+ * carries: "More". Desktop has no More menu.
  */
 export class AdminShellPage {
   readonly page: Page;
-  /** `<aside class="sidebar">` — desktop only. */
-  readonly sidebar: Locator;
-  /** Both shells label their nav "Primary"; only the sidebar's sits inside the complementary. */
+  /** The desktop rail: the "Primary" navigation without the mobile-only More tab. */
   readonly sidebarNav: Locator;
-  /** The five-tab bottom bar. "More" exists only there — desktop has no More menu. */
+  /** The five-tab bottom bar: the "Primary" navigation that carries the More tab. */
   readonly tabBar: Locator;
   readonly moreTab: Locator;
   readonly fatalError: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.sidebar = page.getByRole("complementary");
-    this.sidebarNav = this.sidebar.getByRole("navigation", { name: "Primary" });
-    this.tabBar = page.getByRole("navigation", { name: "Primary" });
     this.moreTab = page.getByRole("link", { name: "More", exact: true });
+    const primaryNav = page.getByRole("navigation", { name: "Primary" });
+    this.sidebarNav = primaryNav.filter({ hasNot: this.moreTab });
+    this.tabBar = primaryNav.filter({ has: this.moreTab });
     this.fatalError = page.getByRole("heading", { name: "This screen failed to load" });
   }
 
@@ -36,7 +39,7 @@ export class AdminShellPage {
   }
 
   async expectMobileShell(): Promise<void> {
-    await expect(this.sidebar).toBeHidden();
+    await expect(this.sidebarNav).toBeHidden();
     await expect(this.moreTab).toBeVisible();
   }
 

@@ -86,6 +86,8 @@ export function HelpSupportDesktop() {
                 <span>{t("support.terms")}</span>
                 <span>{t("support.privacy")}</span>
                 <span>{t("support.licences")}</span>
+                {/* Flaticon free-tier attribution — required by the artwork licence. */}
+                <span>{t("support.artworkCredit")}</span>
               </div>
             </div>
           </div>

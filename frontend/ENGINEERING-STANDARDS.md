@@ -315,6 +315,13 @@ utilities:
   provenance) — do not inline.
 - Never set a raw `font-family`/`font-weight`/`font-size` — the type scale is Inter via
   the theme; weights 400/500/600/700 only.
+- **Icons vs illustrations are separate systems.** Interface icons are **lucide-react
+  only** (typed, tree-shakeable, shadcn-native). Decorative **illustrations/artwork**
+  (empty states, feature art, onboarding) may come from Flaticon's free tier — one
+  consistent author pack per surface, every asset recorded in its folder's `CLAUDE.md`
+  (author, source URL, license), and the **required attribution** visible in the app's
+  credits surface (admin: Help & support). Never use artwork as an interface icon or
+  vice versa.
 - **Components of the same type look identical everywhere.** One configurable shared
   component per type (Part 7); a new look is a new variant prop on the shared component,
   never a bespoke restyle.

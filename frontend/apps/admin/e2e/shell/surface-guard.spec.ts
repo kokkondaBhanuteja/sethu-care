@@ -30,7 +30,7 @@ test("the notice names the destination rather than saying 'this page'", async ({
   await page.goto(ROUTES.payouts);
 
   await expect(
-    page.getByText(/Payouts & settlements — This is finance and configuration work/),
+    page.getByText(/Payouts & settlements — Finance and configuration work needs a full screen/),
   ).toBeVisible();
 });
 

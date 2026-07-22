@@ -30,15 +30,19 @@ for (const route of ALL_ROUTES) {
 
     // Exact, because several routes carry both a topbar title and a state heading that begins with
     // it ("Pricing rules" above "Pricing rules — Coming in v1.1"), and a substring match would be
-    // satisfied by either.
+    // satisfied by either. A RegExp expectation matches on its own terms (`exact` is meaningless
+    // for a RegExp name).
+    const name =
+      typeof expectation.heading === "string"
+        ? { name: expectation.heading, exact: true }
+        : { name: expectation.heading };
     const heading = expectation.asDialog
-      ? page.getByRole("dialog", { name: expectation.heading, exact: true })
-      : page.getByRole("heading", { name: expectation.heading, exact: true });
+      ? page.getByRole("dialog", name)
+      : page.getByRole("heading", name);
 
-    // `.first()` for one route only: the provider profile renders its own <h1> as well as the
-    // shell's, so that page has two identical headings. See the report — the page-level one should
-    // become an <h2>.
-    await expect(heading.first()).toBeVisible();
+    // No `.first()`: every screen renders exactly ONE h1 now (the sr-only crumb h1 gives way to a
+    // visible PageHeader h1 where one exists), so a duplicate heading here is a regression.
+    await expect(heading).toBeVisible();
     await shell.expectNoErrorBoundary();
   });
 }

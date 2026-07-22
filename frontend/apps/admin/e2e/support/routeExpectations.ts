@@ -20,8 +20,12 @@ import {
 export interface RouteExpectation {
   /** A concrete URL for the pattern — `:param` filled from the feature's documented mock trigger. */
   readonly url: string;
-  /** The accessible name of the page heading, or of the dialog for the modal task routes. */
-  readonly heading: string;
+  /**
+   * The accessible name of the page heading, or of the dialog for the modal task routes.
+   * A RegExp where the heading carries trailing content beyond the title (the booking record's
+   * `PageHeader` puts the state pill inside its h1, so the name is "#B-8823 Escalated").
+   */
+  readonly heading: string | RegExp;
   /** Destructive and financial flows render as a modal over the record they act on. */
   readonly asDialog?: boolean;
   /** Set where the route deliberately redirects (desktop has no More menu). */
@@ -41,7 +45,8 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
   [ROUTES.bookings]: { url: ROUTES.bookings, heading: "Bookings" },
   [ROUTE_PATTERNS.bookingDetail]: {
     url: ROUTES.bookingDetail(BOOKING_TRIGGERS.ordinary),
-    heading: `#${BOOKING_TRIGGERS.ordinary}`,
+    // The record header's h1 carries the state pill after the reference, so match the start.
+    heading: new RegExp(`^#${BOOKING_TRIGGERS.ordinary}\\b`),
   },
   [ROUTE_PATTERNS.bookingAssign]: {
     url: ROUTES.bookingAssign(BOOKING_TRIGGERS.ordinary),
@@ -55,7 +60,7 @@ export const ROUTE_EXPECTATIONS: Readonly<Record<string, RouteExpectation>> = {
   },
   [ROUTE_PATTERNS.bookingRedispatch]: {
     url: ROUTES.bookingRedispatch(BOOKING_TRIGGERS.ordinary),
-    heading: "Re-run auto-dispatch",
+    heading: "Search for a provider again",
     asDialog: true,
   },
   [ROUTE_PATTERNS.bookingManualComplete]: {
