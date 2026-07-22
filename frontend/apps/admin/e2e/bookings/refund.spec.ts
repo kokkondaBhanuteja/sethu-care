@@ -46,7 +46,10 @@ test("the rate-limited state replaces the form instead of disabling it", async (
   // A disabled form invites hunting for the disabled control; the form AND its commit are gone.
   await expect(refund.typeGroup).toHaveCount(0);
   await expect(refund.continueToConfirm).toHaveCount(0);
-  await expect(refund.dialog.getByRole("button", { name: "Close" })).toBeVisible();
+  // hasText distinguishes the footer's labelled Close from the corner icon (aria-label "Close").
+  await expect(
+    refund.dialog.getByRole("button", { name: "Close" }).filter({ hasText: "Close" }),
+  ).toBeVisible();
 });
 
 test("a completed refund is announced with NO undo", async ({ refund }) => {

@@ -81,9 +81,6 @@ Select, SearchInput, cn), `components/ui/*` (incl. Drawer and `filterChipClassNa
 
 - `Tabs` cannot carry the pulsing danger dot the design puts on Active when it holds an escalation
   (`counts.activeHasEscalation` is already in the payload, waiting for it).
-- `booking-actions`' write mocks do not yet call `recordBookingTransition` on success, so a cancel
-  driven through the UI projects only after that one-line wiring lands (owned by that feature).
-  The read side, the store and the `?mockWrite` trigger are done.
 - `FilterBar` has no touch-size chip variant; the sheet overrides `h-11` locally. Promote a `size`
   prop when a second touch consumer appears.
 - Date/area band filters need API support before they can be real controls.

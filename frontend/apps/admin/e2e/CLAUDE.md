@@ -83,9 +83,14 @@ naming the defect. It is never weakened to go green. Playwright counts an expect
 pass, so the run is green while the defect is open — the `✘` markers in the output are the list of
 open defects, and each one carries its explanation in the spec.
 
-None are open today. The former registry (`support/knownDefects.ts`) died with its last two
-entries — the modal pinned-footer regression and the overlay focus-return regression — when both
-fixes landed; the specs that carried their marks run unmarked.
+One is open today: **`a11y/overlays.spec.ts` — "a drawer … returns focus"**. Route-mounted
+drawers (redispatch) live on a sibling route of the record they act on, so opening one unmounts
+the opener and Escape drops focus on `<body>` (WCAG 2.4.3). The fix is structural — nest the
+action routes under the detail, or hand focus back explicitly on return navigation.
+
+The former registry (`support/knownDefects.ts`) died with its last two entries — the modal
+pinned-footer regression and the overlay focus-return regression — when both fixes landed; the
+specs that carried their marks run unmarked.
 
 ## Running it
 

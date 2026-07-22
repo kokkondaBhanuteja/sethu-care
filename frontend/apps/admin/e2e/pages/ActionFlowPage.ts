@@ -44,7 +44,13 @@ export class ActionFlowPage {
   async passStepUp(confirmLabel: string, passcode = "1234"): Promise<void> {
     await expect(this.stepUpPasscode).toBeVisible();
     await this.stepUpPasscode.fill(passcode);
-    await this.button(confirmLabel).click();
+    // Scoped to the challenge dialog: since every commit label unified on "Confirm", the flow's
+    // own (aria-busy) commit button underneath answers to the same accessible name.
+    await this.page
+      .getByRole("dialog")
+      .filter({ has: this.stepUpPasscode })
+      .getByRole("button", { name: confirmLabel, exact: true })
+      .click();
   }
 
   async expectToast(message: string | RegExp): Promise<void> {

@@ -5,11 +5,6 @@ import { BOOKING_TRIGGERS } from "../support/mockTriggers";
 /**
  * Emergency cancellation (BOX 26–28). High risk in the §10.3 register: reason code required,
  * step-up required, 10-second undo window.
- *
- * Every test that must PRESS "Continue to confirm" is fixme'd today: the ui-web Modal migration
- * left the commit button below a viewport nothing can scroll
- * (`KNOWN_DEFECTS.modalFooterUnreachable`), so those tests can only time out. Do not weaken them
- * to go green — unmark them when the Modal regains its pinned footer.
  */
 
 test.beforeEach(async ({ cancelBooking }) => {

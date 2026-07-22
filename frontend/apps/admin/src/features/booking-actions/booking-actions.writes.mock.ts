@@ -6,6 +6,11 @@
 // charge — and every one of them has a designed failure state that has to be reachable.
 
 import { API_ERROR_CODES, apiError } from "../../lib/http/apiError";
+import {
+  BOOKING_WRITE_KINDS,
+  clearBookingTransition,
+  recordBookingTransition,
+} from "../../mocks/bookingStateStore";
 import { mockWrite } from "../../mocks/mockTransport";
 import { REFUND_TYPES } from "./booking-actions.constants";
 import { FIXTURE_AMOUNTS, MOCK_BOOKINGS } from "./booking-actions.fixtures";
@@ -29,11 +34,24 @@ function receipt(input: { bookingId: string; version: number }): ActionReceipt {
 }
 
 export function submitAssignMock(input: AssignInput, signal?: AbortSignal): Promise<ActionReceipt> {
-  return mockWrite(() => receipt(input), options(signal));
+  return mockWrite(() => {
+    // The bookings read mocks project this transition, so the record shows the assignment.
+    recordBookingTransition(input.bookingId, {
+      kind: BOOKING_WRITE_KINDS.assign,
+      at: new Date().toISOString(),
+    });
+    return receipt(input);
+  }, options(signal));
 }
 
 export function submitCancelMock(input: CancelInput, signal?: AbortSignal): Promise<ActionReceipt> {
-  return mockWrite(() => receipt(input), options(signal));
+  return mockWrite(() => {
+    recordBookingTransition(input.bookingId, {
+      kind: BOOKING_WRITE_KINDS.cancel,
+      at: new Date().toISOString(),
+    });
+    return receipt(input);
+  }, options(signal));
 }
 
 /**
@@ -42,7 +60,10 @@ export function submitCancelMock(input: CancelInput, signal?: AbortSignal): Prom
  * needs its own endpoint rather than a "cancel the previous request" flag.
  */
 export function undoActionMock(input: UndoInput, signal?: AbortSignal): Promise<ActionReceipt> {
-  return mockWrite(() => receipt(input), options(signal));
+  return mockWrite(() => {
+    clearBookingTransition(input.bookingId);
+    return receipt(input);
+  }, options(signal));
 }
 
 export function submitRedispatchMock(
@@ -56,6 +77,10 @@ export function submitRedispatchMock(
         fieldErrors: { incentiveRupees: "Above the 50% cap for this booking." },
       });
     }
+    recordBookingTransition(input.bookingId, {
+      kind: BOOKING_WRITE_KINDS.redispatch,
+      at: new Date().toISOString(),
+    });
     return receipt(input);
   }, options(signal));
 }
@@ -76,6 +101,10 @@ export function submitManualCompletionMock(
         status: 422,
       });
     }
+    recordBookingTransition(input.bookingId, {
+      kind: BOOKING_WRITE_KINDS.manualComplete,
+      at: new Date().toISOString(),
+    });
     return receipt(input);
   }, options(signal));
 }
