@@ -1,15 +1,27 @@
+import { useNavigate } from "react-router";
 import { MoreVertical, Phone } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import {
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@sethu/ui-web";
 
 import { Button } from "../../components/ui/Button";
-import { Gutter, SectionGap } from "../../layouts/Layout";
+import { Gutter } from "../../layouts/Layout";
 import { MobileAppBar } from "../../layouts/MobileAppBar";
 import { MobileScroll } from "../../layouts/PageMain";
+import { DETAIL_SECTION_CHIPS } from "./bookings.constants";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { BookingDetailBannerStack } from "./BookingDetailBannerStack";
+import { BookingSectionCard } from "./BookingSectionCard";
 import { BookingStatePill } from "./BookingStatePill";
 import { CustomerBlock, PaymentBlock, ProviderBlock } from "./BookingRecordBlocks";
 import { ServiceSummaryBlock, TimelineBlock } from "./BookingSummaryBlocks";
+import { BOOKING_ACTION_IDS } from "./useBookingActions";
 import type { BookingDetailController } from "./useBookingDetail";
 import type { BookingDetail } from "./bookings.types";
 
@@ -20,14 +32,15 @@ export interface BookingDetailMobileProps {
 }
 
 /**
- * The stacked phone record. The timeline is the most important thing on it, and the sticky action
- * bar carries exactly one decision: filled and primary when something is wrong, outlined and
- * low-stakes when nothing is. Nothing is asking to be decided on a healthy job, so nothing shouts.
+ * The stacked phone record: the same icon-headed section cards as desktop, in one column. The
+ * timeline is the most important thing on it, and the sticky action bar carries exactly one
+ * decision; the app bar's overflow menu holds the secondary actions so nothing shouts.
  */
 export function BookingDetailMobile({ controller, detail, isOffline }: BookingDetailMobileProps) {
   const { t } = useTranslation("adminBookings");
+  const navigate = useNavigate();
   const isLocked = controller.isSuperseded || isOffline;
-  const { primary } = controller.actions;
+  const { primary, secondary } = controller.actions;
 
   return (
     <>
@@ -37,70 +50,69 @@ export function BookingDetailMobile({ controller, detail, isOffline }: BookingDe
         compact
         bordered
         actions={
-          <Button
-            variant="text"
-            size="inline"
-            iconStart={MoreVertical}
-            aria-label={t("detail.moreActions")}
-          />
+          secondary.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="text"
+                  size="inline"
+                  iconStart={MoreVertical}
+                  aria-label={t("detail.moreActions")}
+                  disabled={isLocked}
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {secondary.map((action) => (
+                  <DropdownMenuItem
+                    key={action.id}
+                    tone={action.id === BOOKING_ACTION_IDS.cancel ? "destructive" : "default"}
+                    onSelect={() => void navigate(action.to)}
+                  >
+                    {t(`actions.${action.id}`)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : undefined
         }
       />
 
       {/* At 26 characters "Completed (admin verified)" does not fit beside a mono booking number
           and an overflow button, and truncating a legal-record label is not an option — so the
           pill sits on its own row beneath the app bar (design M10). */}
-      {detail.escalation ? null : (
-        <Gutter className="pt-s3">
-          <BookingStatePill state={detail.state} isAdminVerified={detail.isAdminVerified} />
-        </Gutter>
-      )}
+      <Gutter className="pt-s3">
+        <BookingStatePill state={detail.state} isAdminVerified={detail.isAdminVerified} />
+      </Gutter>
 
       <BookingDetailBannerStack controller={controller} detail={detail} isOffline={isOffline} />
 
-      <MobileScroll padFor="action">
-        <Gutter className="py-s4">
-          <ServiceSummaryBlock detail={detail} />
-        </Gutter>
-        <SectionGap />
-
-        <Gutter className="py-s4">
-          <CustomerBlock customer={detail.customer} isDisabled={isLocked} />
-        </Gutter>
-        <SectionGap />
-
-        <Gutter className="py-s4">
-          <ProviderBlock
-            provider={detail.provider}
-            roundCount={detail.dispatchRounds.length}
-            declinedTotal={detail.declinedTotal}
-            action={
-              controller.actions.secondary.length > 0 ? (
-                <div className="flex flex-col gap-s2">
-                  <BookingActionButtons
-                    actions={controller.actions.secondary}
-                    size="section"
-                    block
-                    isDisabled={isLocked}
-                  />
-                </div>
-              ) : undefined
-            }
-          />
-        </Gutter>
-        <SectionGap />
-
-        <Gutter className="py-s4">
-          <TimelineBlock detail={detail} />
-        </Gutter>
-        <SectionGap />
-
-        <Gutter className="py-s4">
-          <PaymentBlock payment={detail.payment} />
-        </Gutter>
-        <div className="h-s4" />
+      <MobileScroll padFor="action" className="px-s4 py-s4">
+        <div className="flex flex-col gap-s4">
+          <Card>
+            <CardContent className="pt-4">
+              <ServiceSummaryBlock detail={detail} />
+            </CardContent>
+          </Card>
+          <BookingSectionCard title={t("section.customer")} chip={DETAIL_SECTION_CHIPS.customer}>
+            <CustomerBlock customer={detail.customer} isDisabled={isLocked} />
+          </BookingSectionCard>
+          <BookingSectionCard title={t("section.provider")} chip={DETAIL_SECTION_CHIPS.provider}>
+            <ProviderBlock
+              provider={detail.provider}
+              roundCount={detail.dispatchRounds.length}
+              declinedTotal={detail.declinedTotal}
+            />
+          </BookingSectionCard>
+          <BookingSectionCard title={t("section.timeline")} chip={DETAIL_SECTION_CHIPS.timeline}>
+            <TimelineBlock detail={detail} />
+          </BookingSectionCard>
+          <BookingSectionCard title={t("section.payment")} chip={DETAIL_SECTION_CHIPS.payment}>
+            <PaymentBlock payment={detail.payment} />
+          </BookingSectionCard>
+        </div>
       </MobileScroll>
 
-      {/* The sticky action bar. `.actionbar` has no layout primitive yet — flagged for one. */}
+      {/* The sticky action bar: one decision, ≥44px tall (size="primary" is the 48px commit). */}
       <div className="flex-none bg-canvas border-t border-border-subtle px-s4 py-s3">
         {primary ? (
           <BookingActionButtons

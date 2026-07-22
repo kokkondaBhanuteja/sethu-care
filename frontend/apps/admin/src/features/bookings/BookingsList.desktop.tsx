@@ -1,29 +1,24 @@
 import { useState } from "react";
 import { useTranslation } from "@sethu/i18n";
+import { PageHeader } from "@sethu/ui-web";
 
 import { Button } from "../../components/ui/Button";
-import { Pagination } from "../../components/ui/Pagination";
-import { SearchInput } from "../../components/ui/SearchInput";
-import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { PageMain } from "../../layouts/PageMain";
 import { Topbar } from "../../layouts/Topbar";
-import { SEGMENT_SUBJECT_KEYS } from "./bookings.constants";
 import { BookingActionButtons } from "./BookingActionButtons";
 import { BookingPreviewPanel } from "./BookingPreviewPanel";
-import { BookingsEmptyState, BookingsSearchEmptyState } from "./BookingsEmptyState";
-import { BookingsFilterSheet } from "./BookingsFilterSheet";
-import { BookingsResultSummary } from "./BookingsResultSummary";
-import { BookingsTable } from "./BookingsTable";
-import { BookingsTableSkeleton } from "./BookingsTableSkeleton";
-import { BookingsToolbar } from "./BookingsToolbar";
+import { BookingsFilterBand } from "./BookingsFilterBand";
+import { BookingsSummaryStrip } from "./BookingsSummaryStrip";
+import { BookingsTableCard } from "./BookingsTableCard";
 import { useBookingActions } from "./useBookingActions";
 import { useBookingPreview } from "./useBookingPreview";
 import { useBookingsList } from "./useBookingsList";
 
 /**
- * Master–detail: the table keeps its place while the preview answers "what is wrong with this
- * one?". Deliberately not the mobile card list widened — the wider canvas exists so a queue can be
- * a table an operator scans down a column, which stacked cards make impossible (spec §2.1).
+ * The reference table-screen anatomy, top to bottom: page header, labelled filter band, segment
+ * stat strip, then the master–detail row — the queue as one card beside the preview panel. The
+ * table keeps its place while the preview answers "what is wrong with this one?"; deliberately not
+ * the mobile card list widened (spec §2.1).
  */
 export function BookingsListDesktop() {
   const { t } = useTranslation("adminBookings");
@@ -37,64 +32,30 @@ export function BookingsListDesktop() {
 
   return (
     <>
-      <Topbar
-        title={t("title")}
-        actions={
-          <SearchInput
-            value={list.searchTerm}
-            onValueChange={list.updateSearch}
-            placeholder={t("search.placeholder")}
-            label={t("search.label")}
-          />
-        }
-      />
+      <Topbar crumbs={[{ label: t("title") }]} />
 
       <PageMain>
-        <div className="grid grid-cols-1 gap-s5 lg:grid-cols-3">
-          <div className="min-w-0 lg:col-span-2">
-            <BookingsToolbar list={list} />
+        <PageHeader title={t("title")} />
 
-            <BookingsResultSummary
-              search={list.activeSearch}
-              total={list.query.data?.total ?? 0}
-              isAcrossSegments={list.query.data?.isAcrossSegments ?? false}
-              onClearSearch={() => list.updateSearch("")}
-            />
+        <BookingsFilterBand
+          searchTerm={list.searchTerm}
+          onSearchChange={list.updateSearch}
+          availableStates={list.availableStates}
+          selectedStates={list.selectedStates}
+          onReplaceStates={list.replaceStates}
+          isFiltered={list.isFiltered}
+          onClear={list.clearFilters}
+        />
 
-            <QueryBoundary
-              query={list.query}
-              skeleton={<BookingsTableSkeleton />}
-              isEmpty={(page) => page.items.length === 0}
-              empty={
-                list.activeSearch ? (
-                  <BookingsSearchEmptyState query={list.activeSearch} />
-                ) : (
-                  <BookingsEmptyState segment={list.segment} />
-                )
-              }
-              isFiltered={list.appliedFilterCount > 0}
-              onClearFilters={list.clearFilters}
-            >
-              {(page) => (
-                <>
-                  <BookingsTable
-                    rows={page.items}
-                    search={list.activeSearch}
-                    onSelect={(booking) => setSelectedId(booking.id)}
-                  />
-                  <Pagination
-                    shown={page.items.length}
-                    total={page.total}
-                    subject={
-                      page.isAcrossSegments ? undefined : t(SEGMENT_SUBJECT_KEYS[list.segment])
-                    }
-                    onLoadMore={list.canLoadMore ? list.loadMore : undefined}
-                    isLoadingMore={list.query.isFetching}
-                  />
-                </>
-              )}
-            </QueryBoundary>
-          </div>
+        <BookingsSummaryStrip counts={list.query.data?.counts} />
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+          <BookingsTableCard
+            className="min-w-0 lg:col-span-2"
+            list={list}
+            selectedId={previewId}
+            onSelect={(booking) => setSelectedId(booking.id)}
+          />
 
           <BookingPreviewPanel
             detail={preview.detail}
@@ -118,15 +79,6 @@ export function BookingsListDesktop() {
           />
         </div>
       </PageMain>
-
-      <BookingsFilterSheet
-        isOpen={list.isFilterOpen}
-        onDismiss={() => list.setFilterOpen(false)}
-        availableStates={list.availableStates}
-        selectedStates={list.selectedStates}
-        onToggleState={list.toggleState}
-        onClear={list.clearFilters}
-      />
     </>
   );
 }

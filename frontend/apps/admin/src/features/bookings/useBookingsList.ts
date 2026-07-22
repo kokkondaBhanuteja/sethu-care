@@ -24,6 +24,8 @@ export interface BookingsListController {
   readonly activeSearch: string;
   readonly selectedStates: readonly BookingState[];
   readonly toggleState: (state: BookingState) => void;
+  /** Wholesale replacement — the desktop filter band's Select and the column filter both use it. */
+  readonly replaceStates: (states: readonly BookingState[]) => void;
   readonly availableStates: readonly BookingState[];
   readonly isFilterOpen: boolean;
   readonly setFilterOpen: (isOpen: boolean) => void;
@@ -82,6 +84,11 @@ export function useBookingsList(): BookingsListController {
     setPageCount(1);
   }, []);
 
+  const replaceStates = useCallback((states: readonly BookingState[]) => {
+    setSelectedStates(states);
+    setPageCount(1);
+  }, []);
+
   const clearFilters = useCallback(() => {
     setSearchTerm("");
     setSelectedStates([]);
@@ -103,6 +110,7 @@ export function useBookingsList(): BookingsListController {
     activeSearch,
     selectedStates,
     toggleState,
+    replaceStates,
     availableStates,
     isFilterOpen,
     setFilterOpen,

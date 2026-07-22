@@ -1,18 +1,32 @@
+import type { MouseEvent } from "react";
+import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { TableActionLink, TableColumnFilter } from "@sethu/ui-web";
 
 import { DataTable, type DataTableColumn } from "../../components/ui/DataTable";
 import { formatMoney, formatPhone, formatTime } from "../../lib/format";
-import { BOOKING_STATE_PRESENTATION } from "./bookings.constants";
+import { ROUTES } from "../../routes/routes.constants";
+import { BOOKING_STATE_PRESENTATION, type BookingState } from "./bookings.constants";
 import { BookingStatePill } from "./BookingStatePill";
 import { MatchHighlight, MonoText } from "./RecordText";
 import { useBookingCopy } from "./useBookingCopy";
 import type { BookingListItem } from "./bookings.types";
+
+export interface BookingsTableStateFilter {
+  readonly available: readonly BookingState[];
+  readonly selected: readonly BookingState[];
+  readonly onChange: (states: readonly BookingState[]) => void;
+}
 
 export interface BookingsTableProps {
   rows: readonly BookingListItem[];
   /** The active search term. A PHONE column appears only while one is running — see below. */
   search: string;
   onSelect: (booking: BookingListItem) => void;
+  /** The row currently open in the preview pane — tinted and `aria-selected`. */
+  selectedId?: string | null;
+  /** The caret filter on the STATE column (the reference's in-header filtering). */
+  stateFilter?: BookingsTableStateFilter;
 }
 
 /**
@@ -22,10 +36,31 @@ export interface BookingsTableProps {
  * The PHONE column is added only while a search is running: without it a phone-number search would
  * highlight nothing, and the matched digits have to be visible for the result set to explain itself
  * (design BOX 16). It is the search key, so it earns a column exactly as long as it is one.
+ *
+ * A row click selects the preview; the trailing chevron link is the committed "open the record"
+ * affordance, so walking the queue and leaving it stay two different gestures.
  */
-export function BookingsTable({ rows, search, onSelect }: BookingsTableProps) {
+export function BookingsTable({
+  rows,
+  search,
+  onSelect,
+  selectedId,
+  stateFilter,
+}: BookingsTableProps) {
   const { t } = useTranslation("adminBookings");
   const { shortName } = useBookingCopy();
+
+  const stateFilterControl = stateFilter ? (
+    <TableColumnFilter
+      label={t("filters.stateGroup")}
+      options={stateFilter.available.map((state) => ({ value: state, label: t(`state.${state}`) }))}
+      selected={stateFilter.selected}
+      onChange={(nextSelection) =>
+        stateFilter.onChange(stateFilter.available.filter((state) => nextSelection.includes(state)))
+      }
+      clearLabel={t("filters.clear")}
+    />
+  ) : undefined;
 
   const columns: readonly DataTableColumn<BookingListItem>[] = [
     {
@@ -40,6 +75,7 @@ export function BookingsTable({ rows, search, onSelect }: BookingsTableProps) {
     {
       id: "state",
       header: t("columns.state"),
+      ...(stateFilterControl ? { filter: stateFilterControl } : {}),
       render: (row) => <BookingStatePill state={row.state} isAdminVerified={row.isAdminVerified} />,
     },
     { id: "service", header: t("columns.service"), render: (row) => row.serviceName },
@@ -80,6 +116,19 @@ export function BookingsTable({ rows, search, onSelect }: BookingsTableProps) {
           <span className="text-label font-semibold text-danger">{t("provider.unassigned")}</span>
         ),
     },
+    {
+      id: "open",
+      header: "",
+      cellClassName: "text-right",
+      render: (row) => (
+        <TableActionLink
+          as={Link}
+          to={ROUTES.bookingDetail(row.id)}
+          aria-label={t("detail.openFull")}
+          onClick={(event: MouseEvent) => event.stopPropagation()}
+        />
+      ),
+    },
   ];
 
   return (
@@ -90,6 +139,7 @@ export function BookingsTable({ rows, search, onSelect }: BookingsTableProps) {
       rowKey={(row) => row.id}
       rowTone={(row) => BOOKING_STATE_PRESENTATION[row.state].rowTone}
       onRowClick={onSelect}
+      selectedRowKey={selectedId ?? null}
       density="dense"
     />
   );

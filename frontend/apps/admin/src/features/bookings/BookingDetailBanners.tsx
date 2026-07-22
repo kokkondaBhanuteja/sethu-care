@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { Info, ShieldCheck, Siren, WifiOff } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
+import { Card, IconChip, cn } from "@sethu/ui-web";
 
 import { Banner } from "../../components/ui/Banner";
 import { Button } from "../../components/ui/Button";
+import { Icon } from "../../components/ui/Icon";
 import { formatDate, formatDateTime, formatTime } from "../../lib/format";
 import { useBookingCopy } from "./useBookingCopy";
 import type {
@@ -57,22 +59,38 @@ export interface EscalationBannerProps {
   isWide?: boolean;
 }
 
+/**
+ * The exception, styled as the design's tinted danger card with a soft icon chip rather than a
+ * full-bleed strip — it sits INSIDE the record's card column now, first, above everything it
+ * explains. Still `role="alert"`: it is the one condition the operator must not miss.
+ */
 export function EscalationBanner({ escalation, actions, isWide = false }: EscalationBannerProps) {
   const { t } = useTranslation("adminBookings");
   const { escalationTitle, escalationWide } = useBookingCopy();
 
   return (
-    <Banner
+    <Card
       tone="danger"
-      icon={Siren}
-      title={
-        isWide
-          ? escalationWide(escalation.minutesUnresolved, escalation.rounds)
-          : escalationTitle(escalation.minutesUnresolved)
-      }
-      detail={isWide ? undefined : t("banner.escalatedDetail", { rounds: escalation.rounds })}
-      actions={actions}
-    />
+      role="alert"
+      className={cn("flex flex-wrap items-start gap-3 p-4", !isWide && "mx-s4 my-s2")}
+    >
+      <IconChip size="sm" look="soft" className="bg-danger-bg text-danger-fg">
+        <Icon glyph={Siren} />
+      </IconChip>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="font-semibold text-danger-fg">
+          {isWide
+            ? escalationWide(escalation.minutesUnresolved, escalation.rounds)
+            : escalationTitle(escalation.minutesUnresolved)}
+        </span>
+        {isWide ? null : (
+          <span className="text-label text-text-2">
+            {t("banner.escalatedDetail", { rounds: escalation.rounds })}
+          </span>
+        )}
+      </div>
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+    </Card>
   );
 }
 

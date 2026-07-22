@@ -3,9 +3,11 @@ import { useTranslation } from "@sethu/i18n";
 import { Button } from "../../components/ui/Button";
 import { Timeline } from "../../components/ui/Timeline";
 import { formatDateTime, formatMoney, formatTime } from "../../lib/format";
-import { RecordSection } from "./RecordText";
 import { useBookingCopy } from "./useBookingCopy";
 import type { BookingAdminActivity, BookingDetail } from "./bookings.types";
+
+// Content-only blocks: each renders INSIDE a BookingSectionCard (or a plain Card for the lede),
+// whose header carries the section title — so no block repeats a heading of its own.
 
 export interface ServiceSummaryBlockProps {
   detail: BookingDetail;
@@ -48,11 +50,7 @@ export function TimelineBlock({ detail }: TimelineBlockProps) {
   const { t } = useTranslation("adminBookings");
   const { timelineEntries } = useBookingCopy();
 
-  return (
-    <RecordSection label={t("section.timeline")}>
-      <Timeline label={t("timeline.label")} entries={timelineEntries(detail.timeline)} />
-    </RecordSection>
-  );
+  return <Timeline label={t("timeline.label")} entries={timelineEntries(detail.timeline)} />;
 }
 
 export interface AdminActivityBlockProps {
@@ -63,23 +61,21 @@ export interface AdminActivityBlockProps {
 export function AdminActivityBlock({ activity }: AdminActivityBlockProps) {
   const { t } = useTranslation("adminBookings");
 
+  if (activity.length === 0) {
+    return <p className="text-label text-text-3">{t("detail.noAdminIntervention")}</p>;
+  }
+
   return (
-    <RecordSection label={t("section.adminActions")}>
-      {activity.length === 0 ? (
-        <p className="text-label text-text-3">{t("detail.noAdminIntervention")}</p>
-      ) : (
-        <ul className="flex flex-col gap-s2">
-          {activity.map((entry) => (
-            <li key={entry.id} className="text-label text-text-2">
-              {t(`activity.${entry.kind}`, {
-                name: entry.actorName ?? "",
-                time: formatTime(entry.at),
-              })}
-            </li>
-          ))}
-        </ul>
-      )}
-    </RecordSection>
+    <ul className="flex flex-col gap-s2">
+      {activity.map((entry) => (
+        <li key={entry.id} className="text-label text-text-2">
+          {t(`activity.${entry.kind}`, {
+            name: entry.actorName ?? "",
+            time: formatTime(entry.at),
+          })}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -92,7 +88,7 @@ export function NotesBlock({ notes, isDisabled = false }: NotesBlockProps) {
   const { t } = useTranslation("adminBookings");
 
   return (
-    <RecordSection label={t("section.notes")}>
+    <div>
       {notes.length === 0 ? (
         <p className="text-label text-text-3">{t("detail.noNotes")}</p>
       ) : (
@@ -109,6 +105,6 @@ export function NotesBlock({ notes, isDisabled = false }: NotesBlockProps) {
           {t("detail.addNote")}
         </Button>
       </div>
-    </RecordSection>
+    </div>
   );
 }

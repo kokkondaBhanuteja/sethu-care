@@ -4,8 +4,11 @@ import { useTranslation } from "@sethu/i18n";
 import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
 import { formatDateShort, formatMoney, formatPhone, formatTime } from "../../lib/format";
-import { MonoText, RecordSection } from "./RecordText";
+import { MonoText } from "./RecordText";
 import type { BookingCustomer, BookingPayment, BookingProvider } from "./bookings.types";
+
+// Content-only blocks: each renders INSIDE a BookingSectionCard, whose icon-chip header carries
+// the section title — so no block repeats a heading of its own.
 
 export interface CustomerBlockProps {
   customer: BookingCustomer;
@@ -17,7 +20,7 @@ export function CustomerBlock({ customer, isDisabled = false }: CustomerBlockPro
   const { t } = useTranslation("adminBookings");
 
   return (
-    <RecordSection label={t("section.customer")}>
+    <div>
       <div className="flex items-start justify-between gap-s2">
         <p className="text-emph text-text-1 break-words">{customer.name}</p>
         <div className="flex items-center gap-s1">
@@ -57,7 +60,7 @@ export function CustomerBlock({ customer, isDisabled = false }: CustomerBlockPro
           joined: formatDateShort(customer.joinedAt),
         })}
       </p>
-    </RecordSection>
+    </div>
   );
 }
 
@@ -74,7 +77,7 @@ export function ProviderBlock({ provider, roundCount, declinedTotal, action }: P
   const { t } = useTranslation("adminBookings");
 
   return (
-    <RecordSection label={t("section.provider")}>
+    <div>
       {provider ? (
         <div className="flex items-start gap-s3">
           <Avatar name={provider.name} size="lg" />
@@ -104,7 +107,7 @@ export function ProviderBlock({ provider, roundCount, declinedTotal, action }: P
         </>
       )}
       {action ? <div className="mt-s3">{action}</div> : null}
-    </RecordSection>
+    </div>
   );
 }
 
@@ -116,7 +119,7 @@ export function PaymentBlock({ payment }: PaymentBlockProps) {
   const { t } = useTranslation("adminBookings");
 
   return (
-    <RecordSection label={t("section.payment")}>
+    <div>
       <p className="text-body text-text-1 break-words">
         {t("detail.paymentLine", {
           amount: formatMoney(payment.amountPaise),
@@ -130,6 +133,6 @@ export function PaymentBlock({ payment }: PaymentBlockProps) {
           transactionId: payment.transactionId,
         })}
       </MonoText>
-    </RecordSection>
+    </div>
   );
 }

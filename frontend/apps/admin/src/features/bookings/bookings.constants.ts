@@ -11,14 +11,19 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock,
+  History,
   Lock,
   KeyRound,
   Navigation,
+  NotebookPen,
   Play,
   Radar,
   ShieldCheck,
   Siren,
+  User,
   UserCheck,
+  Wallet,
+  Wrench,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -132,6 +137,29 @@ export const BOOKING_STATE_PRESENTATION: Readonly<Record<BookingState, BookingSt
 
 /** The admin-verified completion keeps the green of a success but swaps the glyph (spec §4.3). */
 export const ADMIN_VERIFIED_ICON: LucideIcon = ShieldCheck;
+
+/** Soft chip accents the record view's section cards may use (Figma #7's icon-headed cards). */
+export type DetailSectionAccent = "blue" | "green" | "purple" | "neutral";
+
+export interface DetailSectionChip {
+  readonly icon: LucideIcon;
+  readonly accent: DetailSectionAccent;
+}
+
+/**
+ * The approved record-view language: every section card opens with a soft icon chip, and the
+ * accents are fixed per section so the same section reads the same on every booking — customer is
+ * always the blue person, provider (and its search diagnostics) the green wrench, the timeline the
+ * neutral history glyph, payment the purple wallet.
+ */
+export const DETAIL_SECTION_CHIPS = {
+  customer: { icon: User, accent: "blue" },
+  provider: { icon: Wrench, accent: "green" },
+  timeline: { icon: History, accent: "neutral" },
+  payment: { icon: Wallet, accent: "purple" },
+  adminActions: { icon: ShieldCheck, accent: "neutral" },
+  notes: { icon: NotebookPen, accent: "neutral" },
+} as const satisfies Record<string, DetailSectionChip>;
 
 /** Assign is a rescue tool now that dispatch is automated (Booking-Workflow-Decisions §7). */
 export const RESCUE_STATES: readonly BookingState[] = [
