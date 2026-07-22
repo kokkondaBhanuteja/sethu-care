@@ -36,7 +36,7 @@ const SEED: readonly Alert[] = [
     type: ALERT_TYPES.bookingEscalated,
     severity: ALERT_SEVERITIES.critical,
     titleParams: {},
-    summary: "#B-8823 · No provider after 3 dispatch rounds",
+    summary: "#B-8823 · No provider after 3 search attempts",
     createdAt: ago(2 * MINUTE),
     requiresAcknowledgement: true,
     acknowledgement: null,

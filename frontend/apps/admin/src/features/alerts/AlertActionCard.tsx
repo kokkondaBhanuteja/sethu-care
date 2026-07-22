@@ -2,16 +2,12 @@ import { Clock, UserCheck } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
+import { IconChip } from "@sethu/ui-web";
 import { Card } from "../../components/ui/Card";
 import { Icon } from "../../components/ui/Icon";
 import { Pill } from "../../components/ui/Pill";
 import { formatRelative } from "../../lib/format";
-import {
-  ALERT_TYPE_ICONS,
-  SEVERITY_CARD_EDGES,
-  SEVERITY_CARD_TINTS,
-  SEVERITY_INK,
-} from "./alerts.constants";
+import { ALERT_TYPE_ICONS, SEVERITY_CARD_TINTS, SEVERITY_INK } from "./alerts.constants";
 import type { Alert } from "./alerts.types";
 import { useAlertTitle } from "./useAlertTitle";
 
@@ -54,7 +50,6 @@ export function AlertActionCard({
     <div className="relative">
       <Card
         tone={SEVERITY_CARD_TINTS[alert.severity]}
-        edge={SEVERITY_CARD_EDGES[alert.severity]}
         selected={selected}
         className={owner ? "opacity-40" : undefined}
       >
@@ -65,7 +60,14 @@ export function AlertActionCard({
           aria-current={selected ? "true" : undefined}
         >
           <span className="flex items-center gap-s3">
-            <Icon glyph={ALERT_TYPE_ICONS[alert.type]} className={SEVERITY_INK[alert.severity]} />
+            <IconChip
+              look="soft"
+              size="sm"
+              accent={alert.severity === "critical" ? "red" : "amber"}
+              className="bg-surface"
+            >
+              <Icon glyph={ALERT_TYPE_ICONS[alert.type]} className={SEVERITY_INK[alert.severity]} />
+            </IconChip>
             <span className="grow text-emph text-text-1">{titleOf(alert)}</span>
             <span className="shrink-0 text-caption text-text-3">
               {formatRelative(alert.createdAt)}

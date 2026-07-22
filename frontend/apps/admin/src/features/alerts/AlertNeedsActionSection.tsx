@@ -22,7 +22,8 @@ export interface AlertNeedsActionSectionProps {
 }
 
 /**
- * Tier one, as a danger-edged Card with an icon header — the loud half of the feed's two-card
+ * Tier one: a plain Card whose severity lives in the icon chip, the red title and the tinted
+ * rows — no edge stripes (modern treatment; the stacked bars read as chrome, not signal). The loud half of the feed's two-card
  * structure. The section is removed outright when it is empty rather than shown holding a zero: a
  * permanent container that is usually empty teaches the eye to skip the one region of the screen
  * that must never be skipped on the day it is not empty (mobile BOX 22).
@@ -40,7 +41,7 @@ export function AlertNeedsActionSection({
 
   return (
     <section aria-label={t("needsAction")} className={cx(inset && "px-s4")}>
-      <Card edge="danger" density="flush">
+      <Card density="flush">
         <CardHeader
           icon={
             <IconChip accent="red" look="soft">

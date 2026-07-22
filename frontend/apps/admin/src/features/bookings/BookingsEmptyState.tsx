@@ -20,7 +20,15 @@ export function BookingsEmptyState({ segment, grow = false }: BookingsEmptyState
   const { t } = useTranslation("adminBookings");
   const copy = COPY_BY_SEGMENT[segment];
 
-  return <EmptyState icon={CalendarX2} title={t(copy.title)} body={t(copy.body)} grow={grow} />;
+  return (
+    <EmptyState
+      illustration
+      icon={CalendarX2}
+      title={t(copy.title)}
+      body={t(copy.body)}
+      grow={grow}
+    />
+  );
 }
 
 export interface BookingsSearchEmptyStateProps {

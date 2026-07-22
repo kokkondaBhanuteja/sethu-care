@@ -2,8 +2,13 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { EmptyState as UiEmptyState, IconChip, cn } from "@sethu/ui-web";
 
+import tableEmptyArtwork from "../../assets/table-empty.png";
+
 export interface EmptyStateProps {
   icon: LucideIcon;
+  /** Replace the icon chip with the brand empty illustration — the default face of every empty
+      table (product decision: the clipboard artwork). */
+  illustration?: boolean;
   title: string;
   /** One line explaining why there is nothing here — never just "No data". */
   body?: string;
@@ -27,6 +32,7 @@ export interface EmptyStateProps {
  */
 export function EmptyState({
   icon: IconGlyph,
+  illustration = false,
   title,
   body,
   actions,
@@ -37,9 +43,13 @@ export function EmptyState({
   return (
     <UiEmptyState
       icon={
-        <IconChip look="soft" accent={positive ? "green" : "brand"} size="lg">
-          <IconGlyph aria-hidden />
-        </IconChip>
+        illustration ? (
+          <img src={tableEmptyArtwork} alt="" aria-hidden className="h-20 w-20" />
+        ) : (
+          <IconChip look="soft" accent={positive ? "green" : "brand"} size="lg">
+            <IconGlyph aria-hidden />
+          </IconChip>
+        )
       }
       title={title}
       titleClassName={cn(positive && "text-success-fg")}

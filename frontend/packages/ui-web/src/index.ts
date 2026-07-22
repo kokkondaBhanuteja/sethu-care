@@ -198,3 +198,5 @@ export {
   type DataTableViewOptionsProps,
 } from "./components/DataTableViewOptions";
 export { ProgressBar, progressFillVariants, type ProgressBarProps } from "./components/ProgressBar";
+
+export { Kbd, KbdGroup } from "./components/Kbd";
