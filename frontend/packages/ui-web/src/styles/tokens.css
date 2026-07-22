@@ -6,9 +6,9 @@
 
 @theme {
   /* Colour — canvas, ink, brand */
-  --color-canvas: #f6f7f9;
+  --color-canvas: #eff1f4;
   --color-surface: #ffffff;
-  --color-inset: #f1f3f5;
+  --color-inset: #f3f4f6;
   --color-inset-hover: #eceef0;
   --color-ink: #0f172a;
   --color-ink-inverse: #f4f6f7;
