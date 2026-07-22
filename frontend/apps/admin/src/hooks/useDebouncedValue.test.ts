@@ -58,10 +58,9 @@ describe("useDebouncedValue", () => {
   });
 
   it("honours a caller's own delay", () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value, 1_000),
-      { initialProps: { value: "a" } },
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 1_000), {
+      initialProps: { value: "a" },
+    });
 
     rerender({ value: "b" });
     act(() => {

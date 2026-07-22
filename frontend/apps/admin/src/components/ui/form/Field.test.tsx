@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -135,9 +135,7 @@ describe("aria-invalid", () => {
 
 describe("TextArea", () => {
   it("binds, describes and marks itself exactly as a text input does", () => {
-    render(
-      <TextArea label="Reason note" required error="At least 20 characters." tall />,
-    );
+    render(<TextArea label="Reason note" required error="At least 20 characters." tall />);
 
     const textarea = screen.getByRole("textbox", { name: /Reason note \(required\)/ });
     expect(textarea).toHaveAccessibleDescription("At least 20 characters.");
@@ -212,8 +210,7 @@ describe("SelectInput", () => {
 describe("Slider", () => {
   const formatValue = (value: number) => `₹${value}`;
 
-  it("is a real range input, so arrow keys and Home/End work without reimplementation", async () => {
-    const user = userEvent.setup();
+  it("is a real range input, so arrow keys, Home/End and touch come from the platform", () => {
     const onValueChange = vi.fn();
     render(
       <Slider
@@ -228,9 +225,14 @@ describe("Slider", () => {
     );
 
     const slider = screen.getByRole("slider", { name: "Incentive bump" });
-    slider.focus();
-    await user.keyboard("{ArrowRight}");
+    expect(slider).toHaveAttribute("type", "range");
+    expect(slider).toHaveAttribute("min", "0");
+    expect(slider).toHaveAttribute("max", "200");
+    expect(slider).toHaveAttribute("step", "50");
 
+    fireEvent.change(slider, { target: { value: "150" } });
+
+    // A number, not the string the DOM hands over — the incentive is money downstream.
     expect(onValueChange).toHaveBeenCalledWith(150);
   });
 

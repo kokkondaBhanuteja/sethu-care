@@ -11,7 +11,7 @@ describe("cx", () => {
     expect(cx("btn", "btn--primary", "btn--48")).toBe("btn btn--primary btn--48");
   });
 
-  it.each([
+  it.each<[string, string | false | null | undefined]>([
     ["false", false],
     ["null", null],
     ["undefined", undefined],

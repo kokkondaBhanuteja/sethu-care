@@ -1,0 +1,1 @@
+import{j as t}from"./react-CWaHNKk2.js";import{u as r}from"./index-EWhZw2aW.js";import{C as m}from"./ComingSoonState-DlW7qlWN.js";import"./router-DO3XoLHw.js";import"./query-f_4RErPS.js";import"./clock-spAwG42s.js";function u(){const{t:o}=r("adminShell");return t.jsx(m,{section:o("nav.customers")})}export{u as default};

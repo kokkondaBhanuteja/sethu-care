@@ -28,29 +28,39 @@ export function Topbar({ title, crumbs, actions }: TopbarProps) {
   return (
     <header className="topbar">
       {crumbs ? (
-        <nav className="crumbs" aria-label={t("nav.sections")}>
-          {crumbs.map((crumb, index) => {
-            const isLast = index === crumbs.length - 1;
-            return (
-              <span key={crumb.label} className="row-start">
-                {index > 0 ? (
-                  <span className="crumbs__sep" aria-hidden>
-                    /
-                  </span>
-                ) : null}
-                {crumb.to && !isLast ? (
-                  <Link className="crumbs__link" to={crumb.to}>
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="crumbs__here" aria-current={isLast ? "page" : undefined}>
-                    {crumb.label}
-                  </span>
-                )}
-              </span>
-            );
-          })}
-        </nav>
+        <>
+          {/*
+            A crumbed page still needs exactly one h1. The trail carries the location visually, but
+            it is a <nav> of links — nothing in it is a heading, so record screens (a booking, a
+            provider, an application, every settings page) reached the operator with no page
+            heading at all. The trailing crumb IS the page title, announced here and nowhere else,
+            because repeating it visually would duplicate the trail.
+          */}
+          <h1 className="sr-only">{crumbs[crumbs.length - 1]?.label}</h1>
+          <nav className="crumbs" aria-label={t("nav.sections")}>
+            {crumbs.map((crumb, index) => {
+              const isLast = index === crumbs.length - 1;
+              return (
+                <span key={crumb.label} className="row-start">
+                  {index > 0 ? (
+                    <span className="crumbs__sep" aria-hidden>
+                      /
+                    </span>
+                  ) : null}
+                  {crumb.to && !isLast ? (
+                    <Link className="crumbs__link" to={crumb.to}>
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span className="crumbs__here" aria-current={isLast ? "page" : undefined}>
+                      {crumb.label}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
+        </>
       ) : (
         <h1 className="topbar__title">{title}</h1>
       )}

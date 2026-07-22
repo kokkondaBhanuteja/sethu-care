@@ -100,10 +100,12 @@ export function CodeInput({
   function handleKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>): void {
     if (event.key === "Backspace") {
       event.preventDefault();
-      const next = cells();
-      const target = next[index] ? index : Math.max(index - 1, 0);
-      next[target] = "";
-      commit(next.join(""));
+      // Deletes to the end, not just this cell: the row only ever holds a gapless prefix (the
+      // onFocus guard below keeps the same invariant), so blanking one cell and re-joining would
+      // shift every later digit up one and the next keystroke would overwrite a neighbour.
+      const committed = committedRef.current;
+      const target = committed[index] ? index : Math.max(index - 1, 0);
+      commit(committed.slice(0, target));
       focusCell(target);
       return;
     }

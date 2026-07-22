@@ -37,7 +37,14 @@ export function EmptyState({
   return (
     <div className={cx("empty", grow && "empty--grow", positive && "empty--positive", className)}>
       <Icon glyph={icon} size="empty" className="empty__icon" />
-      <p className="empty__title">{title}</p>
+      {/*
+        A heading, not a paragraph. Every §4.10 state renders through here — empty, filtered-empty,
+        error + retry, not-found, permission-denied, coming-soon and the fatal boundary — and each
+        one is the only thing on its region. A screen reader user landing on "Something went wrong"
+        needs it in the heading list to find it; as a <p> the whole state was unaddressable.
+        Styling is class-driven, so the tag change is purely semantic.
+      */}
+      <h2 className="empty__title">{title}</h2>
       {body ? <p className="empty__body">{body}</p> : null}
       {actions ? <div className="empty__actions">{actions}</div> : null}
     </div>

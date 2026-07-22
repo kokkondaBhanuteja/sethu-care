@@ -1,0 +1,1 @@
+import{e as o}from"./index-BCptUTI2.js";const a=[["polygon",{points:"3 11 22 2 13 21 11 13 3 11",key:"1ltx0t"}]],i=o("navigation",a);const t=[["path",{d:"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z",key:"10ikf1"}]],c=o("play",t);export{i as N,c as P};

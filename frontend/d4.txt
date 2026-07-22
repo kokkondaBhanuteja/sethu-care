@@ -1,0 +1,70 @@
+
+### /customers -> http://localhost:4175/customers @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /tickets -> http://localhost:4175/tickets @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /analytics -> http://localhost:4175/analytics @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /profile -> http://localhost:4175/profile @1440
+  H: ["H2:Preferences"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /support -> http://localhost:4175/support @1440
+  H: ["H2:Common questions","H2:Get help"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /settings/notifications -> http://localhost:4175/settings/notifications @1440
+  H: ["H2:Critical — always on","H2:Operational","H2:Provider","H2:Digest","H2:Quiet hours","H2:Sound"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /settings/security -> http://localhost:4175/settings/security @1440
+  H: ["H2:Unlock","H2:Trusted devices (3 of 3)","H2:Sessions","H2:Password","H2:Recent security events","H2:Lost device"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /bookings/B-8823 -> http://localhost:4175/bookings/B-8823 @1440
+  H: ["H2:AC Repair — Deep Clean","H2:Customer","H2:Payment","H2:Timeline","H2:Provider","H2:Admin actions","H2:Notes"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /bookings/B-8823/assign -> http://localhost:4175/bookings/B-8823/assign @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: ["Assign provider"]
+
+### /bookings/B-8823/redispatch -> http://localhost:4175/bookings/B-8823/redispatch @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: ["Re-run auto-dispatch"]
+
+### /alerts/ALT-2 -> http://localhost:4175/alerts/ALT-2 @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /customers/CUS-1 -> http://localhost:4175/customers/CUS-1 @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /tickets/TCK-1 -> http://localhost:4175/tickets/TCK-1 @1440
+  H: []
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []
+
+### /live/attention -> http://localhost:4175/live/attention @1440
+  H: ["H1:Needs attention"]
+  C: ["Live","Needs attention","7Needs attention","7","Needs attention","Map","Bookings","Providers"]
+  D: []

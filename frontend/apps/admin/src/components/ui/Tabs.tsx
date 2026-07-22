@@ -1,4 +1,4 @@
-import { useId, type KeyboardEvent } from "react";
+import { useId, useRef, type KeyboardEvent } from "react";
 
 import { cx } from "../../lib/cx";
 import { StatusDot, type DotTone } from "./StatusDot";
@@ -39,6 +39,7 @@ export function Tabs<TValue extends string>({
   className,
 }: TabsProps<TValue>) {
   const baseId = useId();
+  const tabRefs = useRef(new Map<TValue, HTMLButtonElement | null>());
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const offset = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
@@ -47,7 +48,13 @@ export function Tabs<TValue extends string>({
     event.preventDefault();
     const currentIndex = items.findIndex((item) => item.value === value);
     const next = items[(currentIndex + offset + items.length) % items.length];
-    if (next) onValueChange(next.value);
+    if (!next) return;
+
+    onValueChange(next.value);
+    // Focus follows the selection, as the tab pattern requires. Without this the roving tabindex
+    // strands focus on the tab it just took out of the tab order: the next Tab press leaves the
+    // strip from an unexpected place, and assistive tech announces nothing about the new slice.
+    tabRefs.current.get(next.value)?.focus();
   }
 
   return (
@@ -68,6 +75,9 @@ export function Tabs<TValue extends string>({
           <button
             key={item.value}
             id={`${baseId}-${item.value}`}
+            ref={(element) => {
+              tabRefs.current.set(item.value, element);
+            }}
             type="button"
             role="tab"
             aria-selected={isSelected}

@@ -1,0 +1,1 @@
+import{j as r}from"./react-CWaHNKk2.js";import{c as a}from"./index-EWhZw2aW.js";const s={muted:"text-text-2",warning:"text-warning",danger:"text-danger"};function x({children:t,tone:e="muted",className:n}){return r.jsx("span",{className:a("block text-pill uppercase tracking-wide",s[e],n),children:t})}export{x as S};

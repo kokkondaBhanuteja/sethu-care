@@ -1,0 +1,1 @@
+import{j as s}from"./react-CWaHNKk2.js";import{c as i}from"./index-EWhZw2aW.js";function m({count:r,label:e,tone:n="danger",max:a=9,className:d}){return r<=0?null:s.jsxs("span",{className:i("badge",n==="brand"&&"badge--brand",d),children:[s.jsx("span",{"aria-hidden":!0,children:r>a?`${a}+`:r}),s.jsxs("span",{className:"sr-only",children:[r," ",e]})]})}export{m as B};

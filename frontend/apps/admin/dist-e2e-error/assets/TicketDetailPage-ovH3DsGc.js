@@ -1,0 +1,1 @@
+import{j as o}from"./react-CWaHNKk2.js";import{u as i}from"./index-EWhZw2aW.js";import{C as r}from"./ComingSoonState-DlW7qlWN.js";import"./router-DO3XoLHw.js";import"./query-f_4RErPS.js";import"./clock-spAwG42s.js";function u(){const{t}=i("adminShell");return o.jsx(r,{section:t("nav.tickets")})}export{u as default};

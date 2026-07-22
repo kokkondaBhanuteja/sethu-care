@@ -1,0 +1,84 @@
+
+### /live -> http://localhost:4175/live @1440
+  {"crumbs":null,"title":"Live","appbar":null,"emptyTitles":[]}
+
+### /live/attention -> http://localhost:4175/live/attention @1440
+  {"crumbs":null,"title":"Needs attention","appbar":null,"emptyTitles":[]}
+
+### /live/map -> http://localhost:4175/live/map @1440
+  {"crumbs":null,"title":"Map","appbar":null,"emptyTitles":[]}
+
+### /bookings -> http://localhost:4175/bookings @1440
+  {"crumbs":null,"title":"Bookings","appbar":null,"emptyTitles":[]}
+
+### /bookings/B-8823 -> http://localhost:4175/bookings/B-8823 @1440
+  {"crumbs":"Bookings/#B-8823","title":null,"appbar":null,"emptyTitles":[]}
+
+### /providers -> http://localhost:4175/providers @1440
+  {"crumbs":null,"title":"Providers","appbar":null,"emptyTitles":[]}
+
+### /providers/PRV-882 -> http://localhost:4175/providers/PRV-882 @1440
+  {"crumbs":"Providers/Suresh Mehta","title":null,"appbar":null,"emptyTitles":[]}
+
+### /providers/applications -> http://localhost:4175/providers/applications @1440
+  {"crumbs":"Providers/Applications","title":null,"appbar":null,"emptyTitles":[]}
+
+### /providers/applications/APP-4471 -> http://localhost:4175/providers/applications/APP-4471 @1440
+  {"crumbs":"Providers/Applications/Ajay Verma","title":null,"appbar":null,"emptyTitles":[]}
+
+### /alerts -> http://localhost:4175/alerts @1440
+  {"crumbs":null,"title":"Alerts","appbar":null,"emptyTitles":["Select an alert to see details"]}
+
+### /alerts/ALT-2 -> http://localhost:4175/alerts/ALT-2 @1440
+  {"crumbs":"Alerts/Alert","title":null,"appbar":null,"emptyTitles":["This alert this record no longer exists"]}
+
+### /more -> http://localhost:4175/profile @1440
+  {"crumbs":"Settings/Profile","title":null,"appbar":null,"emptyTitles":[]}
+
+### /customers -> http://localhost:4175/customers @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":["Customers — Coming in v1.1"]}
+
+### /customers/CUS-1 -> http://localhost:4175/customers/CUS-1 @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":["Customers — Coming in v1.1"]}
+
+### /tickets -> http://localhost:4175/tickets @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":["Support tickets — Coming in v1.1"]}
+
+### /tickets/TCK-1 -> http://localhost:4175/tickets/TCK-1 @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":["Support tickets — Coming in v1.1"]}
+
+### /analytics -> http://localhost:4175/analytics @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":["Analytics — Coming in v1.1"]}
+
+### /audit -> http://localhost:4175/audit @1440
+  {"crumbs":null,"title":"Audit log","appbar":null,"emptyTitles":["No entry selected"]}
+
+### /settings/notifications -> http://localhost:4175/settings/notifications @1440
+  {"crumbs":"Settings/Notifications","title":null,"appbar":null,"emptyTitles":[]}
+
+### /settings/security -> http://localhost:4175/settings/security @1440
+  {"crumbs":"Settings/Security & devices","title":null,"appbar":null,"emptyTitles":[]}
+
+### /profile -> http://localhost:4175/profile @1440
+  {"crumbs":"Settings/Profile","title":null,"appbar":null,"emptyTitles":[]}
+
+### /support -> http://localhost:4175/support @1440
+  {"crumbs":"Settings/Help & support","title":null,"appbar":null,"emptyTitles":[]}
+
+### /services -> http://localhost:4175/services @1440
+  {"crumbs":null,"title":"Services & pricing","appbar":null,"emptyTitles":["Services & pricing — Coming in v1.1"]}
+
+### /pricing -> http://localhost:4175/pricing @1440
+  {"crumbs":null,"title":"Pricing rules","appbar":null,"emptyTitles":["Pricing rules — Coming in v1.1"]}
+
+### /payouts -> http://localhost:4175/payouts @1440
+  {"crumbs":null,"title":"Payouts & settlements","appbar":null,"emptyTitles":[]}
+
+### /reports -> http://localhost:4175/reports @1440
+  {"crumbs":null,"title":"Reports & exports","appbar":null,"emptyTitles":["Reports & exports — Coming in v1.1"]}
+
+### /settings/platform -> http://localhost:4175/settings/platform @1440
+  {"crumbs":null,"title":"Platform settings","appbar":null,"emptyTitles":["Platform settings — Coming in v1.1"]}
+
+### /unlock -> http://localhost:4175/unlock @1440
+  {"crumbs":null,"title":null,"appbar":null,"emptyTitles":[]}

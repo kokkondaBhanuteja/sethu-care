@@ -1,0 +1,1 @@
+import{j as o}from"./react-CWaHNKk2.js";import{u as a}from"./index-EWhZw2aW.js";import{C as i}from"./ComingSoonState-DlW7qlWN.js";import"./router-DO3XoLHw.js";import"./query-f_4RErPS.js";import"./clock-spAwG42s.js";function l(){const{t}=a("adminShell");return o.jsx(i,{section:t("nav.analytics")})}export{l as default};

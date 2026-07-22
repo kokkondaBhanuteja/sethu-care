@@ -1,0 +1,1 @@
+import{j as r}from"./react-CWaHNKk2.js";import{S as a}from"./Switch-DZuZAKya.js";function f({label:t,detail:s,checked:e,onCheckedChange:o,disabled:i=!1,tone:d="default"}){return r.jsx("div",{className:"border-t border-border-subtle px-s4 first:border-t-0",children:r.jsx(a,{label:t,description:s,checked:e,onCheckedChange:o,disabled:i,tone:d})})}export{f as S};

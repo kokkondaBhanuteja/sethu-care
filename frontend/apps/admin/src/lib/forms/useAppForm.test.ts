@@ -120,7 +120,10 @@ describe("validation", () => {
   });
 
   it("exposes the schema's own message per field, so the control can print it verbatim", async () => {
-    const { result } = setup(vi.fn(async () => undefined), { amount: "", reason: "no" });
+    const { result } = setup(
+      vi.fn(async () => undefined),
+      { amount: "", reason: "no" },
+    );
 
     await act(async () => {
       await result.current.handleSubmit();
@@ -133,7 +136,10 @@ describe("validation", () => {
   });
 
   it("reports no error for a field that passed", async () => {
-    const { result } = setup(vi.fn(async () => undefined), { amount: "", reason: "Long enough" });
+    const { result } = setup(
+      vi.fn(async () => undefined),
+      { amount: "", reason: "Long enough" },
+    );
 
     await act(async () => {
       await result.current.handleSubmit();

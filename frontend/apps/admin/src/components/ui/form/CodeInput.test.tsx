@@ -188,15 +188,28 @@ describe("paste", () => {
 });
 
 describe("backspace", () => {
-  it("clears the cell it is in when that cell has a digit", async () => {
+  it("clears from the cell it is in to the end, never collapsing the tail leftward", async () => {
     const user = userEvent.setup();
     render(<Harness initialValue="123456" />);
 
     cells()[3]?.focus();
     await user.keyboard("{Backspace}");
 
-    expect(cells()[3]).toHaveValue("");
+    // Shifting 5 and 6 up into cells 4 and 5 would leave a row that looks half-corrected: the next
+    // digit typed lands on a neighbour, and the operator submits a code they never entered.
+    expect(cells().map((cell) => cell.value)).toEqual(["1", "2", "3", "", "", ""]);
     expect(cells()[3]).toHaveFocus();
+  });
+
+  it("clears the whole code from the first cell, the state a rejected code returns focus to", async () => {
+    const user = userEvent.setup();
+    render(<Harness initialValue="123456" />);
+
+    cells()[0]?.focus();
+    await user.keyboard("{Backspace}");
+
+    expect(digits()).toBe("");
+    expect(cells()[0]).toHaveFocus();
   });
 
   it("retreats to the previous cell and clears that one when the current cell is empty", async () => {
@@ -304,13 +317,7 @@ describe("the group", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(
-      <CodeInput
-        value=""
-        onChange={onChange}
-        length={LENGTH}
-        label="Verification code"
-        disabled
-      />,
+      <CodeInput value="" onChange={onChange} length={LENGTH} label="Verification code" disabled />,
     );
 
     await user.click(cells()[0] as HTMLInputElement);

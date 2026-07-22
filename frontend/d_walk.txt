@@ -1,0 +1,707 @@
+
+
+===== cancel: pick reason + continue (http://localhost:4175/bookings/B-8823/cancel)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- dialog "Cancel booking":
+  - text: "Cancel booking #B-8823"
+  - paragraph: This cannot be undone
+  - list:
+    - listitem: Ravi Kumar will be notified by SMS
+    - listitem: ₹1,499.00 refund will be initiated
+  - group "Reason (required)":
+    - text: Reason (required)
+    - radio "Customer unreachable"
+    - text: Customer unreachable
+    - radio "Duplicate booking" [checked]
+    - text: Duplicate booking
+    - radio "No provider available"
+    - text: No provider available
+    - radio "Pricing dispute"
+    - text: Pricing dispute
+    - radio "Safety concern Triggers a safety review"
+    - text: Safety concern Triggers a safety review
+    - radio "Test / internal"
+    - text: Test / internal
+    - radio "Fraud suspected Triggers a safety review"
+    - text: Fraud suspected Triggers a safety review
+    - radio "Other — note required"
+    - text: Other — note required
+    - radio "Out of service area"
+    - text: Out of service area
+  - text: Marked reasons trigger a safety review. Note
+  - textbox "Note":
+    - /placeholder: What happened?
+  - paragraph: 0/500
+  - paragraph: Refund
+  - text: Policy refund ₹1,499.00 (full)
+  - paragraph: Computed from the cancellation policy.
+  - button "Override amount"
+  - button "Cancel"
+  - button "Continue to confirm" [disabled]:
+    - status
+    - text: Continue to confirm
+- dialog "Confirm cancellation":
+  - text: Confirm cancellation
+  - button "Close"
+  - text: "#B-8823 · AC Repair — Deep Clean · ₹1,499.00 refund · Reason: Duplicate booking"
+  - paragraph: This action is high risk, so it needs fresh verification.
+  - text: Passcode
+  - textbox "Passcode"
+  - paragraph: Biometrics aren't available on this device — enter your passcode.
+  - button "Cancel"
+  - button "Confirm" [disabled]
+
+===== cancel: step-up passcode + confirm (http://localhost:4175/bookings/B-8823)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- banner:
+  - navigation "Sections":
+    - link "Bookings":
+      - /url: /bookings
+    - text: "#B-8823"
+  - link "Alerts":
+    - /url: /alerts
+- alert:
+  - text: Escalated · 12m unresolved — no provider found after 3 dispatch rounds
+  - button "Acknowledge"
+  - button "Assign provider"
+- main:
+  - heading "AC Repair — Deep Clean" [level=2]
+  - paragraph: ₹1,499.00 · Prepaid (UPI)
+  - paragraph: Created 20 Jul, 3:12 pm
+  - heading "Customer" [level=2]
+  - paragraph: Ravi Kumar
+  - button "Call Ravi Kumar"
+  - button "Message Ravi Kumar"
+  - text: +91 98765 43210
+  - paragraph: 401, Aparna Cyber, Kompally, Hyderabad 500014
+  - button "View on map"
+  - paragraph: 14 bookings · joined 11 Mar
+  - heading "Payment" [level=2]
+  - paragraph: ₹1,499.00 prepaid · UPI ····4242
+  - text: Paid 3:12 pm · TXN8891023
+  - heading "Timeline" [level=2]
+  - list "Booking timeline":
+    - listitem: 3:12 pm Created
+    - listitem: 3:12 pm Searching for provider
+    - listitem: 3:13 pm Round 1 · 3 km · 5 contacted · 5 declined
+    - listitem: 3:16 pm Round 2 · 4.5 km · 8 contacted · 8 declined
+    - listitem: 3:21 pm Round 3 · 6 km · 12 contacted · 12 declined
+    - listitem: 3:26 pm Assignment failed
+    - listitem: 3:26 pm Escalated to ops
+  - heading "Provider" [level=2]
+  - paragraph: Not assigned
+  - paragraph: 3 dispatch rounds · 8 declined
+  - button "Assign provider"
+  - button "Re-dispatch"
+  - button "Cancel booking"
+  - heading "Admin actions" [level=2]
+  - list:
+    - listitem: Priya S. viewed · 3:24 pm
+    - listitem: System escalated · 3:26 pm
+  - heading "Notes" [level=2]
+  - paragraph: No notes on this booking yet.
+  - button "Add note"
+- status:
+  - text: Booking cancelled · refund initiated
+  - button "Undo"
+
+===== cancel: toast (http://localhost:4175/bookings/B-8823)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- banner:
+  - navigation "Sections":
+    - link "Bookings":
+      - /url: /bookings
+    - text: "#B-8823"
+  - link "Alerts":
+    - /url: /alerts
+- alert:
+  - text: Escalated · 12m unresolved — no provider found after 3 dispatch rounds
+  - button "Acknowledge"
+  - button "Assign provider"
+- main:
+  - heading "AC Repair — Deep Clean" [level=2]
+  - paragraph: ₹1,499.00 · Prepaid (UPI)
+  - paragraph: Created 20 Jul, 3:12 pm
+  - heading "Customer" [level=2]
+  - paragraph: Ravi Kumar
+  - button "Call Ravi Kumar"
+  - button "Message Ravi Kumar"
+  - text: +91 98765 43210
+  - paragraph: 401, Aparna Cyber, Kompally, Hyderabad 500014
+  - button "View on map"
+  - paragraph: 14 bookings · joined 11 Mar
+  - heading "Payment" [level=2]
+  - paragraph: ₹1,499.00 prepaid · UPI ····4242
+  - text: Paid 3:12 pm · TXN8891023
+  - heading "Timeline" [level=2]
+  - list "Booking timeline":
+    - listitem: 3:12 pm Created
+    - listitem: 3:12 pm Searching for provider
+    - listitem: 3:13 pm Round 1 · 3 km · 5 contacted · 5 declined
+    - listitem: 3:16 pm Round 2 · 4.5 km · 8 contacted · 8 declined
+    - listitem: 3:21 pm Round 3 · 6 km · 12 contacted · 12 declined
+    - listitem: 3:26 pm Assignment failed
+    - listitem: 3:26 pm Escalated to ops
+  - heading "Provider" [level=2]
+  - paragraph: Not assigned
+  - paragraph: 3 dispatch rounds · 8 declined
+  - button "Assign provider"
+  - button "Re-dispatch"
+  - button "Cancel booking"
+  - heading "Admin actions" [level=2]
+  - list:
+    - listitem: Priya S. viewed · 3:24 pm
+    - listitem: System escalated · 3:26 pm
+  - heading "Notes" [level=2]
+  - paragraph: No notes on this booking yet.
+  - button "Add note"
+- status:
+  - text: Booking cancelled · refund initiated
+  - button "Undo"
+
+!!!!! refund: goodwill above cap FAILED: Error: locator.check: Clicking the checkbox did not change its state
+Call log:
+[2m  - waiting for getByRole('radio', { name: 'Goodwill / retention' })[22m
+[2m    - locator resolved to <input type="radio" class="sr-only" name="refund-reason" value="goodwill_retention"/>[22m
+[2m  - attempting cli
+
+
+===== refund: goodwill above cap (state at failure) (http://localhost:4175/bookings/B-8790/refund)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- dialog "Issue refund":
+  - text: "Issue refund #B-8790 · AC Repair — Deep Clean · Ravi Kumar · ₹1,499.00 paid by UPI ····4242 on 18/07/2026"
+  - button "Close"
+  - group "Refund type":
+    - text: Refund type
+    - radio "Full refund 5–7 days Entire amount to the original method"
+    - text: Full refund 5–7 days Entire amount to the original method
+    - radio "Partial refund 5–7 days A specified amount to the original method"
+    - text: Partial refund 5–7 days A specified amount to the original method
+    - radio "Wallet credit Instant SetuCare credit, usable immediately"
+    - text: Wallet credit Instant SetuCare credit, usable immediately
+    - radio "Goodwill credit Instant Credit beyond the booking value" [checked]
+    - text: Goodwill credit Instant Credit beyond the booking value
+    - radio "Waive cancellation fee Instant Removes an applied fee"
+    - text: Waive cancellation fee Instant Removes an applied fee
+  - text: Amount (₹) (required)
+  - spinbutton "Amount (₹) (required)" [invalid]: "900"
+  - alert: Exceeds the ₹500.00 goodwill cap. Amounts above the cap need Super Admin approval on desktop.
+  - paragraph: Exceeds the ₹500.00 goodwill cap. Amounts above the cap need Super Admin approval on desktop.
+  - paragraph: Booking value ₹1,499.00 · already refunded ₹0.00 · refundable ₹1,499.00
+  - group "Reason (required)":
+    - text: Reason (required)
+    - radio "Service not delivered"
+    - text: Service not delivered
+    - radio "Duplicate payment"
+    - text: Duplicate payment
+    - radio "Poor service quality"
+    - text: Poor service quality
+    - radio "Cancellation policy exception"
+    - text: Cancellation policy exception
+    - radio "Provider no-show"
+    - text: Provider no-show
+    - radio "Goodwill / retention"
+    - text: Goodwill / retention
+    - radio "Overcharged"
+    - text: Overcharged
+    - radio "Safety incident"
+    - text: Safety incident
+    - radio "Other"
+    - text: Other
+  - text: Note
+  - textbox "Note":
+    - /placeholder: Note — recorded on the booking and in the audit log
+  - paragraph: 0/500
+  - paragraph: Summary
+  - term: Booking
+  - definition: "#B-8790"
+  - term: Customer
+  - definition: Ravi Kumar
+  - term: Original
+  - definition: UPI ····4242
+  - term: Refund
+  - definition: ₹900.00
+  - paragraph: Credited to the SetuCare wallet immediately
+  - group "Provider payout":
+    - text: Provider payout
+    - radio "Withhold Suresh Mehta's ₹1,049.00 payout Default for provider-at-fault reasons" [checked]
+    - text: Withhold Suresh Mehta's ₹1,049.00 payout Default for provider-at-fault reasons
+    - radio "Pay the provider anyway Requires a note"
+    - text: Pay the provider anyway Requires a note
+  - paragraph: The provider is notified either way.
+  - paragraph: 3 of 10 refunds this hour.
+  - button "Cancel"
+  - button "Continue to confirm" [disabled]
+
+===== refund: full refund confirm (http://localhost:4175/bookings/B-8790)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- paragraph: This booking no longer exists
+- paragraph: It may have been merged or removed.
+- button "Back to bookings"
+- status: Refund initiated
+
+===== suspend: step 1 -> 2 (http://localhost:4175/providers/PRV-882/suspend)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- dialog "Suspend provider":
+  - navigation "Suspend provider steps":
+    - list:
+      - listitem: Action type
+      - listitem: Reason
+      - listitem: Active jobs
+      - listitem: 4 Confirm
+    - text: "Suresh Mehta Suresh Mehta PRV-882 · Avg rating: 4.8"
+  - text: Suspend provider 4 of 4
+  - button "Close"
+  - alert: This stops their income
+  - heading "Confirm" [level=2]
+  - text: "Suspend Suresh Mehta for 7 days Reason: Customer safety complaint Payouts for completed work are unaffected"
+  - group "When to notify":
+    - text: When to notify
+    - radio "Notify immediately"
+    - text: Notify immediately
+    - radio "Notify after current job" [checked]
+    - text: Notify after current job
+  - paragraph: Message to Suresh Mehta
+  - paragraph: Your SetuCare account is suspended for 7 days following a customer safety complaint. Contact support for details.
+  - button "Back"
+  - button "Confirm with biometrics"
+
+!!!!! suspend: step 2 -> 3 FAILED: TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Continue' })[22m
+
+
+
+===== suspend: step 2 -> 3 (state at failure) (http://localhost:4175/providers/PRV-882/suspend)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- dialog "Suspend provider":
+  - navigation "Suspend provider steps":
+    - list:
+      - listitem: Action type
+      - listitem: Reason
+      - listitem: Active jobs
+      - listitem: 4 Confirm
+    - text: "Suresh Mehta Suresh Mehta PRV-882 · Avg rating: 4.8"
+  - text: Suspend provider 4 of 4
+  - button "Close"
+  - alert: This stops their income
+  - heading "Confirm" [level=2]
+  - text: "Suspend Suresh Mehta for 7 days Reason: Customer safety complaint Payouts for completed work are unaffected"
+  - group "When to notify":
+    - text: When to notify
+    - radio "Notify immediately"
+    - text: Notify immediately
+    - radio "Notify after current job" [checked]
+    - text: Notify after current job
+  - paragraph: Message to Suresh Mehta
+  - paragraph: Your SetuCare account is suspended for 7 days following a customer safety complaint. Contact support for details.
+  - button "Back"
+  - button "Confirm with biometrics"
+
+!!!!! suspend: step 3 -> 4 FAILED: TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Continue' })[22m
+
+
+
+===== suspend: step 3 -> 4 (state at failure) (http://localhost:4175/providers/PRV-882/suspend)
+- link "Skip to main content":
+  - /url: "#admin-main"
+- complementary:
+  - text: SetuCare
+  - navigation "Primary":
+    - text: Live
+    - link "Live":
+      - /url: /live
+    - link "Needs attention Needs attention":
+      - /url: /live/attention
+    - link "Map":
+      - /url: /live/map
+    - text: Operations
+    - link "Bookings":
+      - /url: /bookings
+    - link "Providers":
+      - /url: /providers
+    - link "Alerts Alerts":
+      - /url: /alerts
+    - link "Customers":
+      - /url: /customers
+    - link "Support tickets Support tickets":
+      - /url: /tickets
+    - text: Records
+    - link "Analytics":
+      - /url: /analytics
+    - link "Audit log":
+      - /url: /audit
+    - text: Desktop only
+    - link "Services & pricing":
+      - /url: /services
+    - link "Payouts & settlements":
+      - /url: /payouts
+    - link "Reports & exports":
+      - /url: /reports
+    - link "Platform settings":
+      - /url: /settings/platform
+    - text: Account
+    - link "Notifications":
+      - /url: /settings/notifications
+    - link "Security & devices":
+      - /url: /settings/security
+    - link "Help & support":
+      - /url: /support
+  - button "Ravi Kumar Ravi Kumar Operations Open menu":
+    - text: Ravi Kumar Ravi Kumar Operations
+    - img "Open menu"
+  - text: v0.0.0 · Production
+- dialog "Suspend provider":
+  - navigation "Suspend provider steps":
+    - list:
+      - listitem: Action type
+      - listitem: Reason
+      - listitem: Active jobs
+      - listitem: 4 Confirm
+    - text: "Suresh Mehta Suresh Mehta PRV-882 · Avg rating: 4.8"
+  - text: Suspend provider 4 of 4
+  - button "Close"
+  - alert: This stops their income
+  - heading "Confirm" [level=2]
+  - text: "Suspend Suresh Mehta for 7 days Reason: Customer safety complaint Payouts for completed work are unaffected"
+  - group "When to notify":
+    - text: When to notify
+    - radio "Notify immediately"
+    - text: Notify immediately
+    - radio "Notify after current job" [checked]
+    - text: Notify after current job
+  - paragraph: Message to Suresh Mehta
+  - paragraph: Your SetuCare account is suspended for 7 days following a customer safety complaint. Contact support for details.
+  - button "Back"
+  - button "Confirm with biometrics"

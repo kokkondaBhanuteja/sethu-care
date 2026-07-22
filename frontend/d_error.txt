@@ -1,0 +1,118 @@
+
+
+===== /bookings -> http://localhost:4176/bookings
+- main:
+  - tablist "Booking segments":
+    - tab "Active" [selected]
+    - tab "Completed"
+    - tab "Cancelled"
+  - button "Filter"
+  - button "Clear" [disabled]
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+  - text: Preview
+
+
+===== /providers -> http://localhost:4176/providers
+- main:
+  - tablist "Roster segment":
+    - tab "Online 0" [selected]
+    - tab "On job 0"
+    - tab "All 0"
+  - button "Filter"
+  - button "0 applications waiting"
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+
+
+===== /alerts -> http://localhost:4176/alerts
+- main:
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+
+
+===== /providers/applications -> http://localhost:4176/providers/applications
+- main:
+  - tablist "Application segment":
+    - tab "Pending 0" [selected]
+    - tab "Awaiting docs 0"
+    - tab "Decided 0"
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+
+
+===== /audit -> http://localhost:4176/audit
+- main:
+  - group "Filter audit entries":
+    - text: Search audit entries by target ID
+    - searchbox "Search audit entries by target ID"
+    - text: Admin
+    - combobox "Admin":
+      - option "All admins" [selected]
+    - text: Action type
+    - combobox "Action type":
+      - option "All actions" [selected]
+      - option "Assignment"
+      - option "Re-dispatch"
+      - option "Cancellation"
+      - option "Manual completion"
+      - option "Refund"
+      - option "Refund reversal"
+      - option "Goodwill credit"
+      - option "Suspension"
+      - option "Provider blocked"
+      - option "Forced offline"
+      - option "Application approved"
+      - option "Application rejected"
+      - option "Customer blocked"
+      - option "Device revoked"
+      - option "Alert acknowledged"
+      - option "Note added"
+    - text: Target type
+    - combobox "Target type":
+      - option "All target types" [selected]
+      - option "Booking"
+      - option "Provider"
+      - option "Customer"
+      - option "Application"
+      - option "Payment"
+      - option "Device"
+      - option "Alert"
+    - text: Date range
+    - combobox "Date range":
+      - option "Today"
+      - option "Last 7 days" [selected]
+      - option "Last 30 days"
+      - option "Last 90 days"
+      - option "Custom range"
+    - button "More filters"
+    - button "Clear"
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+  - paragraph: No entry selected
+  - paragraph: Select a row to see the full record.
+
+
+===== /live -> http://localhost:4176/live
+- main:
+  - radiogroup "Time window":
+    - radio "Today" [checked]
+    - radio "Live now"
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+  - text: Needs attention
+  - link "See all":
+    - /url: /live/attention
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"
+  - text: Activity
+  - paragraph: Something went wrong
+  - paragraph: The mock service was told to fail (VITE_MOCK_MODE=error).
+  - button "Retry"

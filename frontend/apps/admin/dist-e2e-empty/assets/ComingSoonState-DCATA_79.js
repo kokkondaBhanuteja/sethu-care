@@ -1,0 +1,1 @@
+import{j as n}from"./react-CWaHNKk2.js";import{u as i,E as r}from"./index-BCptUTI2.js";import{C as s}from"./clock-CC51a6hC.js";function c({section:t}){const{t:o}=i("adminShell");return n.jsx(r,{icon:s,title:`${t} — ${o("state.comingSoonTitle")}`,body:o("state.comingSoonBody"),grow:!0})}export{c as C};

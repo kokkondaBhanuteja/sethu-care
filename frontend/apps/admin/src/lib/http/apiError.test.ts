@@ -39,9 +39,9 @@ describe("status to code", () => {
   });
 
   it("prefers the server's statusText over the caller's fallback sentence", () => {
-    expect(normalizeError({ status: 409, statusText: "Booking already cancelled" }, FALLBACK)).toMatchObject(
-      { message: "Booking already cancelled" },
-    );
+    expect(
+      normalizeError({ status: 409, statusText: "Booking already cancelled" }, FALLBACK),
+    ).toMatchObject({ message: "Booking already cancelled" });
     // An empty statusText is what most JSON APIs send; it must not become the operator's message.
     expect(normalizeError({ status: 409, statusText: "" }, FALLBACK).message).toBe(FALLBACK);
   });

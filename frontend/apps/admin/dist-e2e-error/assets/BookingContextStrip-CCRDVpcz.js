@@ -1,0 +1,1 @@
+import{j as e}from"./react-CWaHNKk2.js";function s({text:t}){return e.jsx("div",{className:"flex-none border-b border-border-subtle bg-canvas px-s4 py-s2",children:e.jsx("span",{className:"text-label text-text-2",children:t})})}export{s as B};

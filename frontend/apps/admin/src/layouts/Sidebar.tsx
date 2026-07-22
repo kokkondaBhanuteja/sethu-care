@@ -7,6 +7,11 @@ import { useTranslation } from "@sethu/i18n";
 import { cx } from "../lib/cx";
 import { Avatar } from "../components/ui/Avatar";
 import { Icon } from "../components/ui/Icon";
+import { APP_BUILD } from "../lib/env";
+import { useShellCounters } from "../queries/useShellCounters";
+import { SIDEBAR_GROUPS, type NavItem } from "./navigation.constants";
+import type { ShellCounters } from "../queries/shell.types";
+
 // Lazy on purpose: the shell is on the critical path and this dialog is not. Importing it eagerly
 // pulled the whole settings feature — its api, mocks and fixtures — into the entry chunk.
 const SignOutConfirm = lazy(() =>
@@ -14,10 +19,6 @@ const SignOutConfirm = lazy(() =>
     default: module.SignOutConfirm,
   })),
 );
-import { APP_BUILD } from "../lib/env";
-import { useShellCounters } from "../queries/useShellCounters";
-import { SIDEBAR_GROUPS, type NavItem } from "./navigation.constants";
-import type { ShellCounters } from "../queries/shell.types";
 
 /**
  * The 240px persistent rail. Desktop has no tab bar and no More menu, so all eighteen destinations
@@ -107,7 +108,11 @@ function SidebarItem({ item, counters }: { item: NavItem; counters: ShellCounter
           )}
         >
           <span aria-hidden>{count}</span>
-          <span className="sr-only">{label}</span>
+          {/* The count, not just the destination: an sr-only label alone repeats the item's own
+              text and leaves the number — the only thing the badge adds — to sighted operators. */}
+          <span className="sr-only">
+            {count} {label}
+          </span>
         </span>
       ) : null}
     </NavLink>

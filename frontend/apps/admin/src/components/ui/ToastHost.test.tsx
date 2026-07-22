@@ -63,7 +63,11 @@ describe("ToastHost", () => {
     try {
       render(<ToastHost />);
       act(() => {
-        showToast({ message: "Booking cancelled", durationMs: 10_000, action: { label: "Undo", onAction: vi.fn() } });
+        showToast({
+          message: "Booking cancelled",
+          durationMs: 10_000,
+          action: { label: "Undo", onAction: vi.fn() },
+        });
       });
 
       act(() => {
