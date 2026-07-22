@@ -23,6 +23,7 @@ export const webColor = {
 
   // Ink
   ink: brand.onSurface, // #0f172a — headings, table values
+  inkInverse: "#f4f6f7", // light-on-dark body text (the landing's dark canvas)
   muted: "#5a646e", // labels, secondary copy
   faint: "#8b959f", // hints, disabled, timestamps
 
@@ -34,6 +35,8 @@ export const webColor = {
   primary: brand.primary,
   primaryHover: "#1741b8",
   onPrimary: brand.onPrimary,
+  secondary: brand.secondary, // brand teal — sparing accents, never competes with primary
+  onSecondary: brand.onSecondary,
   link: brand.primary, // the table's "View / View & Edit" action colour
 
   // Focus ring

@@ -1,11 +1,8 @@
 @import "tailwindcss";
+@import "@sethu/ui-web/tokens.css";
 
-@theme {
-  --color-primary: #1d4ed8;
-  --color-primary-dark: #1e40af;
-  --color-secondary: #0d9488;
-  --color-ink: #0b0d0e;
-}
+/* Global tokens from @sethu/ui-web (generated). The landing deliberately runs a DARK canvas —
+   its only local decision; every colour still resolves to a token. */
 
 html {
   scroll-behavior: initial; /* Lenis owns scrolling */
@@ -13,10 +10,6 @@ html {
 body {
   margin: 0;
   background: var(--color-ink);
-  color: #f4f6f7;
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    sans-serif;
+  color: var(--color-ink-inverse);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
 }

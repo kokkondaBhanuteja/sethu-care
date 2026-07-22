@@ -1,18 +1,9 @@
 @import "tailwindcss";
+@import "@sethu/ui-web/tokens.css";
+@source "../../../packages/ui-web/src";
 
-/* Brand theme — values mirror @sethu/tokens (primitives/semantic). Generating this file from the
-   tokens package is a follow-up; keep the two in sync manually until then. */
-@theme {
-  --color-primary: #1d4ed8;
-  --color-primary-dark: #1e40af;
-  --color-secondary: #0d9488;
-  --color-surface: #ffffff;
-  --color-background: #f7f8f9;
-  --color-on-surface: #0f172a;
-  --color-muted: #5a646e;
-  --color-error: #c4291c;
-  --color-success: #0e8a4a;
-}
+/* Global tokens come from @sethu/ui-web/tokens.css (generated from @sethu/tokens).
+   Nothing visual is defined here — only app-shell plumbing. */
 
 html,
 body,
@@ -28,11 +19,7 @@ nav {
 }
 body {
   margin: 0;
-  background: var(--color-background);
-  color: var(--color-on-surface);
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
 }
