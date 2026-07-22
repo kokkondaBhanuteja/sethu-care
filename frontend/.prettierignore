@@ -18,3 +18,8 @@ pnpm-lock.yaml
 *.md
 storybook-static
 dist-e2e*
+
+# Playwright artifacts (gitignored)
+**/e2e/.auth
+**/test-results
+**/playwright-report

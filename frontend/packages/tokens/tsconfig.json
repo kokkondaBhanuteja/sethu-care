@@ -1,4 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The generator runs on plain node via --experimental-strip-types, so imports carry real
+    // .ts extensions and the node API (console, import.meta.url) must typecheck.
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
   "include": ["src"]
 }
