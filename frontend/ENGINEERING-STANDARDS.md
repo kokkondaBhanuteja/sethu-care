@@ -7,11 +7,11 @@
 
 **Applies to:** `frontend/` — a pnpm + Turborepo workspace:
 
-| Surface | Stack |
-|---|---|
-| `apps/customer` · `apps/provider` · `apps/admin` | Vite 7 + React 19 + React Router 7 + TanStack Query + zustand + **Tailwind CSS 4** + Capacitor 7 (iOS/Android) |
-| `apps/landing` | Next.js (static export) + GSAP/ScrollTrigger + Lenis + react-three-fiber — same token/i18n/type rules, different framework (noted per-rule) |
-| `packages/` | `@sethu/tokens` (design tokens) · `@sethu/api-client` (**GENERATED** from `backend/api/openapi.yaml`) · `@sethu/i18n` (i18next, en/hi/te) · `@sethu/domain` (framework-free enums/IDs) · `@sethu/core` (session/preferences stores + storage adapter) |
+| Surface                                          | Stack                                                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/customer` · `apps/provider` · `apps/admin` | Vite 7 + React 19 + React Router 7 + TanStack Query + zustand + **Tailwind CSS 4** + Capacitor 7 (iOS/Android)                                                                                                                                        |
+| `apps/landing`                                   | Next.js (static export) + GSAP/ScrollTrigger + Lenis + react-three-fiber — same token/i18n/type rules, different framework (noted per-rule)                                                                                                           |
+| `packages/`                                      | `@sethu/tokens` (design tokens) · `@sethu/api-client` (**GENERATED** from `backend/api/openapi.yaml`) · `@sethu/i18n` (i18next, en/hi/te) · `@sethu/domain` (framework-free enums/IDs) · `@sethu/core` (session/preferences stores + storage adapter) |
 
 It does **not** cover `backend/`, which has its own conventions (`AGENTS.md`, `.ai/`).
 
@@ -138,22 +138,22 @@ only for genuinely un-utility-able CSS (keyframes, complex selectors) and stays 
 
 ### 1.4 Where does this go? (quick reference)
 
-| Adding…                                    | Put it in…                                              |
-| ------------------------------------------ | ------------------------------------------------------- |
-| A screen tied to a URL                     | `pages/` (+ its mapping in `routes/`)                   |
-| Logic or UI for one business area          | that feature under `features/`                          |
-| A UI component used by 2+ features         | the app's `components/`                                 |
-| A UI component used by 2+ **apps**         | a shared package (future `@sethu/ui-web`) — deliberate review first |
-| A route definition / guard                 | `routes/`                                               |
-| A page shell (header, tab bar, sidebar)    | `layouts/`                                              |
-| An HTTP/API call                           | `<feature>.api.ts`, wrapping `@sethu/api-client`        |
-| A TanStack Query read / write hook         | feature `queries/`/`mutations/`, or app-level when cross-feature |
-| A reusable hook                            | `hooks/` (app) or the feature's folder                  |
-| A constant / enum / type                   | the matching `.constants.ts` / `.types.ts`              |
-| A backend-mirrored enum / branded ID       | `@sethu/domain` (never redeclared locally)              |
-| A design token (color, spacing, size)      | `@sethu/tokens` + the app's `@theme` block (Part 6)     |
-| Any user-facing text                       | `packages/i18n/locales/{en,hi,te}/…` (Part 8)           |
-| Session/token/preference persistence       | `@sethu/core` (storage adapter — never raw localStorage in app code) |
+| Adding…                                 | Put it in…                                                           |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| A screen tied to a URL                  | `pages/` (+ its mapping in `routes/`)                                |
+| Logic or UI for one business area       | that feature under `features/`                                       |
+| A UI component used by 2+ features      | the app's `components/`                                              |
+| A UI component used by 2+ **apps**      | a shared package (future `@sethu/ui-web`) — deliberate review first  |
+| A route definition / guard              | `routes/`                                                            |
+| A page shell (header, tab bar, sidebar) | `layouts/`                                                           |
+| An HTTP/API call                        | `<feature>.api.ts`, wrapping `@sethu/api-client`                     |
+| A TanStack Query read / write hook      | feature `queries/`/`mutations/`, or app-level when cross-feature     |
+| A reusable hook                         | `hooks/` (app) or the feature's folder                               |
+| A constant / enum / type                | the matching `.constants.ts` / `.types.ts`                           |
+| A backend-mirrored enum / branded ID    | `@sethu/domain` (never redeclared locally)                           |
+| A design token (color, spacing, size)   | `@sethu/tokens` + the app's `@theme` block (Part 6)                  |
+| Any user-facing text                    | `packages/i18n/locales/{en,hi,te}/…` (Part 8)                        |
+| Session/token/preference persistence    | `@sethu/core` (storage adapter — never raw localStorage in app code) |
 
 ---
 
@@ -257,22 +257,22 @@ export const ROUTES = { bookingDetail: (id: string) => `/bookings/${id}` } as co
 export const QUERY_KEYS = { myBookings: ["bookings", "me"] as const };
 ```
 
-  API *paths* are already owned by the generated client — never rebuild an endpoint
-  string in app code.
+API _paths_ are already owned by the generated client — never rebuild an endpoint
+string in app code.
 
 ---
 
 ## Part 5 — Naming & Readability
 
-| Item             | Convention                 | Example                             |
-| ---------------- | -------------------------- | ----------------------------------- |
-| Component files  | PascalCase `.tsx`          | `BookingStatusCard.tsx`             |
-| Hook files       | camelCase, `use` prefix    | `useBookingCountdown.ts`            |
-| Supporting files | kebab-case + dotted suffix | `booking.api.ts`, `*.types.ts`      |
-| Components       | PascalCase                 | `BookingStatusCard`                 |
-| Hooks            | camelCase `use*`           | `useBookingCountdown`               |
-| Constants        | UPPER_SNAKE_CASE           | `QUERY_KEYS`, `BOOKING_TABS`        |
-| Types            | PascalCase                 | `BookingTab`                        |
+| Item             | Convention                 | Example                        |
+| ---------------- | -------------------------- | ------------------------------ |
+| Component files  | PascalCase `.tsx`          | `BookingStatusCard.tsx`        |
+| Hook files       | camelCase, `use` prefix    | `useBookingCountdown.ts`       |
+| Supporting files | kebab-case + dotted suffix | `booking.api.ts`, `*.types.ts` |
+| Components       | PascalCase                 | `BookingStatusCard`            |
+| Hooks            | camelCase `use*`           | `useBookingCountdown`          |
+| Constants        | UPPER_SNAKE_CASE           | `QUERY_KEYS`, `BOOKING_TABS`   |
+| Types            | PascalCase                 | `BookingTab`                   |
 
 - **No single-letter identifiers — anywhere.** This repo is stricter than the usual
   "loop indexes excepted": descriptive names for every variable, parameter, and
@@ -428,7 +428,7 @@ Localization is built in from the start — the pipeline already exists.
   render); never read `ref.current` during render (effects/handlers only);
   `exhaustive-deps` is satisfied by fixing the logic, never by muting the rule.
 - **Lint adherence:** run `pnpm lint` before considering a change complete; zero
-  errors *and* zero warnings. `eslint-disable` only when genuinely unavoidable, always
+  errors _and_ zero warnings. `eslint-disable` only when genuinely unavoidable, always
   with a one-line justification on the same line — a silent disable fails review.
 - **Logging:** `console.log` fine in dev; must not ship to production paths.
 
@@ -513,6 +513,29 @@ Before creating anything:
   Part 6.2.)
 - **Review cadence:** revisit quarterly — remove rules that no longer help, add ones the
   team has learned it needs.
+
+### Recorded exceptions — `apps/admin` design system
+
+The admin console is built from two fully-designed artifacts (desktop 1440×900, mobile 390×844)
+that ship their own token-driven CSS. Reproducing them by re-deriving every value as a Tailwind
+utility string would guarantee drift from an approved design, so three exceptions are recorded:
+
+1. **A component CSS layer** (`src/styles/components.css`, Part 6.1). The artifacts' BEM component
+   classes are ported verbatim into `@layer components`, and are consumed **only** by the typed
+   primitives in `components/ui/*` and the shells in `layouts/*`. Feature and page code composes
+   those primitives plus Tailwind's token-backed utilities and never touches a BEM class, so
+   Part 6.2's "one configurable component per type" still holds — enforced by review and by the
+   folder's `CLAUDE.md`.
+2. **px token values** (Part 6.3). Ops Mode is a fixed 4pt density grid with exact row and control
+   heights (56px list rows, 44px tap targets) specified to the pixel. The values live in `@theme`,
+   so no component writes a raw px; expressing them in rem would move the design.
+   _Known cost:_ browser font scaling has less effect in this console than elsewhere. Revisit if
+   an operator reports it.
+3. **`hi`/`te` are English placeholders** for the `admin*` namespaces (Part 8). Keys are complete in
+   all three locales — `pnpm i18n:check` passes and no component hardcodes a string — but the values
+   await a translator. Shipping machine-guessed Hindi or Telugu on the confirmation copy for a
+   refund or a suspension would be worse than shipping English. `pnpm i18n:sync-admin` keeps the key
+   sets aligned; replacing a placeholder with a real translation is a data change only.
 
 The aim is a standard the team respects because it stays useful — not one it works
 around because it has gone stale.

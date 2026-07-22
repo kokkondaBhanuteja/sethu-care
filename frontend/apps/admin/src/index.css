@@ -1,38 +1,327 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+@import "./styles/components.css";
 
-/* Brand theme — values mirror @sethu/tokens (primitives/semantic). Generating this file from the
-   tokens package is a follow-up; keep the two in sync manually until then. */
+/* ==========================================================================
+   SetuCare Admin Console — design tokens ("Ops Mode", Admin spec §4)
+
+   Every value below is transcribed verbatim from the approved design
+   artifacts. They are the single source of truth: no component, page or
+   feature file contains a raw colour, size, radius or spacing value.
+
+   Tokens are declared in Tailwind's @theme namespaces so the whole utility
+   layer is token-backed (`bg-canvas`, `p-s4`, `text-kpi`, `rounded-card`), and
+   aliased below into the artifact's own variable names so the ported component
+   layer (styles/components.css) resolves against exactly the same values.
+   Change a value here and both layers move together.
+
+   Units: px, not rem. Ops Mode is a fixed 4pt density grid with exact row and
+   control heights (56px list rows, 44px tap targets) that the artifacts
+   specify to the pixel; expressing them in rem would drift from the approved
+   design. Recorded as an exception in ENGINEERING-STANDARDS.md Part 15.
+   ========================================================================== */
+
 @theme {
-  --color-primary: #1d4ed8;
-  --color-primary-dark: #1e40af;
-  --color-secondary: #0d9488;
-  --color-surface: #ffffff;
-  --color-background: #f7f8f9;
-  --color-on-surface: #0f172a;
-  --color-muted: #5a646e;
-  --color-error: #c4291c;
+  /* -- Surfaces, back to front ------------------------------------------- */
+  --color-canvas: #ffffff; /* the page itself */
+  --color-surface: #f7f8f9; /* recessed grouping background */
+  --color-raised: #ffffff; /* cards sitting on canvas or surface */
+  --color-inset: #edeff1; /* inputs, segmented-control tracks */
+
+  /* -- Lines -------------------------------------------------------------- */
+  --color-border-subtle: #e4e7ea; /* card outlines, row dividers */
+  --color-border-strong: #c9cfd5; /* input outlines, secondary buttons */
+
+  /* -- Text ramp ---------------------------------------------------------- */
+  --color-text-1: #0b0d0e; /* primary — values, names, titles */
+  --color-text-2: #5a646e; /* secondary — supporting detail */
+  --color-text-3: #8b959f; /* tertiary — timestamps, meta, hints */
+  --color-text-on-brand: #ffffff;
+  --color-text-on-dark: #ffffff;
+
+  /* -- Brand -------------------------------------------------------------- */
+  --color-brand: #0f6fff; /* primary action, links, selection */
+  --color-brand-hover: #0b59cc;
+  --color-tint-selected: #e8f1ff; /* selected row / selected card tint */
+
+  /* -- Status ------------------------------------------------------------- */
   --color-success: #0e8a4a;
+  --color-warning: #b76a00;
+  --color-danger: #c4291c;
+  --color-info: #0f6fff;
+  --color-neutral: #5a646e;
+
+  /* -- Status backgrounds ------------------------------------------------- */
+  --color-bg-success: #e9f6ef;
+  --color-bg-warning: #fdf3e3;
+  --color-bg-danger: #fdecea;
+  --color-bg-info: #e8f1ff;
+  --color-bg-neutral: #f7f8f9;
+
+  /* -- The only dark surfaces in the product ------------------------------ */
+  --color-toast-bg: #1c2023;
+  --color-toast-link: #4d94ff;
+
+  /* -- Type families ------------------------------------------------------ */
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* -- Type ramp: size / line-height / weight as a matched set.
+        Body is 14px, not 16 — a deliberate density choice (spec §4.4). ----- */
+  --text-kpi: 28px;
+  --text-kpi--line-height: 34px;
+  --text-kpi--font-weight: 700;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--font-weight: 700;
+  --text-section: 18px;
+  --text-section--line-height: 24px;
+  --text-section--font-weight: 600;
+  --text-card: 16px;
+  --text-card--line-height: 22px;
+  --text-card--font-weight: 600;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-body--font-weight: 400;
+  --text-emph: 14px;
+  --text-emph--line-height: 20px;
+  --text-emph--font-weight: 600;
+  --text-label: 13px;
+  --text-label--line-height: 18px;
+  --text-label--font-weight: 500;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 400;
+  --text-pill: 11px;
+  --text-pill--line-height: 14px;
+  --text-pill--font-weight: 600;
+  --text-mono: 13px;
+  --text-mono--line-height: 18px;
+
+  /* -- Density: 4pt base, not 8pt.
+        "Whitespace is a cost here: the user sees this screen 200 times a
+        week." (spec §4.5) ------------------------------------------------- */
+  --spacing-s1: 4px;
+  --spacing-s2: 8px;
+  --spacing-s3: 12px;
+  --spacing-s4: 16px; /* card padding and screen gutter */
+  --spacing-s5: 20px; /* between cards */
+  --spacing-s6: 24px;
+  --spacing-s8: 32px;
+
+  /* -- Row heights. List rows are 56px, not 72px. ------------------------- */
+  --spacing-row-40: 40px;
+  --spacing-row-48: 48px;
+  --spacing-row-52: 52px;
+  --spacing-row-56: 56px; /* the default list row */
+  --spacing-row-60: 60px;
+  --spacing-row-72: 72px;
+
+  /* -- Control heights. Tap targets stay >= 44px whatever the row height. -- */
+  --spacing-tap-min: 44px;
+  --spacing-btn-36: 36px; /* inline, in-card actions */
+  --spacing-btn-40: 40px; /* section-level actions */
+  --spacing-btn-44: 44px; /* secondary full-width */
+  --spacing-btn-48: 48px; /* primary full-width, sticky footers */
+  --spacing-field: 48px;
+  --spacing-search: 44px;
+  --spacing-segmented: 36px;
+  --spacing-chip: 32px;
+
+  /* -- Shell metrics ------------------------------------------------------ */
+  --spacing-sidebar: 240px;
+  --spacing-topbar: 56px;
+  --spacing-tabbar: 56px;
+
+  /* -- Shape -------------------------------------------------------------- */
+  --radius-pill: 6px; /* pills, chips, inputs, buttons */
+  --radius-card: 10px; /* cards and rows */
+  --radius-sheet: 14px; /* bottom sheets and modals */
+  --radius-full: 999px; /* avatars, count badges, status dots */
+
+  /* -- Elevation is minimal. No heavy shadows anywhere. ------------------- */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-sheet: 0 -2px 16px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.16);
+
+  /* -- Icons: Lucide geometry, stroke 1.5, currentColor. ------------------ */
+  --spacing-icon-sm: 14px;
+  --spacing-icon-md: 16px; /* in rows */
+  --spacing-icon-lg: 20px; /* in headers */
+  --spacing-icon-xl: 24px;
+  --spacing-icon-2xl: 32px; /* empty states */
+  --spacing-icon-3xl: 48px; /* biometric, forced update */
+
+  /* -- The 768px shell split (spec §2.1). A physical device width, so px. - */
+  --breakpoint-shell: 768px;
 }
 
-html,
-body,
-#root {
-  height: 100%;
+/* --------------------------------------------------------------------------
+   Artifact variable aliases.
+
+   styles/components.css is ported from the design artifacts unchanged and
+   references these names. Aliasing rather than duplicating keeps @theme the
+   only place a value is ever written.
+   -------------------------------------------------------------------------- */
+:root {
+  --canvas: var(--color-canvas);
+  --surface: var(--color-surface);
+  --raised: var(--color-raised);
+  --inset: var(--color-inset);
+  --border-subtle: var(--color-border-subtle);
+  --border-strong: var(--color-border-strong);
+  --text-1: var(--color-text-1);
+  --text-2: var(--color-text-2);
+  --text-3: var(--color-text-3);
+  --text-on-brand: var(--color-text-on-brand);
+  --text-on-dark: var(--color-text-on-dark);
+  --brand: var(--color-brand);
+  --brand-hover: var(--color-brand-hover);
+  --tint-selected: var(--color-tint-selected);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --danger: var(--color-danger);
+  --info: var(--color-info);
+  --neutral: var(--color-neutral);
+  --bg-success: var(--color-bg-success);
+  --bg-warning: var(--color-bg-warning);
+  --bg-danger: var(--color-bg-danger);
+  --bg-info: var(--color-bg-info);
+  --bg-neutral: var(--color-bg-neutral);
+  --toast-bg: var(--color-toast-bg);
+  --toast-link: var(--color-toast-link);
+  --scrim: rgb(11 13 14 / 0.5);
+
+  --t-kpi-size: var(--text-kpi);
+  --t-kpi-line: var(--text-kpi--line-height);
+  --t-kpi-weight: var(--text-kpi--font-weight);
+  --t-title-size: var(--text-title);
+  --t-title-line: var(--text-title--line-height);
+  --t-title-weight: var(--text-title--font-weight);
+  --t-section-size: var(--text-section);
+  --t-section-line: var(--text-section--line-height);
+  --t-section-weight: var(--text-section--font-weight);
+  --t-card-size: var(--text-card);
+  --t-card-line: var(--text-card--line-height);
+  --t-card-weight: var(--text-card--font-weight);
+  --t-body-size: var(--text-body);
+  --t-body-line: var(--text-body--line-height);
+  --t-body-weight: var(--text-body--font-weight);
+  --t-emph-size: var(--text-emph);
+  --t-emph-line: var(--text-emph--line-height);
+  --t-emph-weight: var(--text-emph--font-weight);
+  --t-label-size: var(--text-label);
+  --t-label-line: var(--text-label--line-height);
+  --t-label-weight: var(--text-label--font-weight);
+  --t-caption-size: var(--text-caption);
+  --t-caption-line: var(--text-caption--line-height);
+  --t-caption-weight: var(--text-caption--font-weight);
+  --t-pill-size: var(--text-pill);
+  --t-pill-line: var(--text-pill--line-height);
+  --t-pill-weight: var(--text-pill--font-weight);
+  --t-mono-size: var(--text-mono);
+  --t-mono-line: var(--text-mono--line-height);
+
+  /* Tabular figures so money and ages align down a column. */
+  --mono-features: "tnum" 1, "zero" 1;
+
+  --s1: var(--spacing-s1);
+  --s2: var(--spacing-s2);
+  --s3: var(--spacing-s3);
+  --s4: var(--spacing-s4);
+  --s5: var(--spacing-s5);
+  --s6: var(--spacing-s6);
+  --s8: var(--spacing-s8);
+  --gutter: var(--spacing-s4);
+  --card-pad: var(--spacing-s4);
+  --card-gap: var(--spacing-s5);
+
+  --row-40: var(--spacing-row-40);
+  --row-48: var(--spacing-row-48);
+  --row-52: var(--spacing-row-52);
+  --row-56: var(--spacing-row-56);
+  --row-60: var(--spacing-row-60);
+  --row-72: var(--spacing-row-72);
+
+  --tap-min: var(--spacing-tap-min);
+  --btn-36: var(--spacing-btn-36);
+  --btn-40: var(--spacing-btn-40);
+  --btn-44: var(--spacing-btn-44);
+  --btn-48: var(--spacing-btn-48);
+  --field-h: var(--spacing-field);
+  --search-h: var(--spacing-search);
+  --segmented-h: var(--spacing-segmented);
+  --chip-h: var(--spacing-chip);
+  --tabbar-h: var(--spacing-tabbar);
+
+  --r-pill: var(--radius-pill);
+  --r-card: var(--radius-card);
+  --r-sheet: var(--radius-sheet);
+  --r-full: var(--radius-full);
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-sheet: 0 -2px 16px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.16);
+
+  /* The 3px left edge that marks severity on a card. */
+  --edge-w: 3px;
+
+  --icon-sm: var(--spacing-icon-sm);
+  --icon-md: var(--spacing-icon-md);
+  --icon-lg: var(--spacing-icon-lg);
+  --icon-xl: var(--spacing-icon-xl);
+  --icon-2xl: var(--spacing-icon-2xl);
+  --icon-3xl: var(--spacing-icon-3xl);
+  --icon-stroke: 1.5;
+
+  /* WCAG 2.2 AA — a visible 2px ring with 2px offset, never removed. */
+  --focus-ring: 2px solid var(--brand);
+  --focus-offset: 2px;
+
+  /* Native WebView safe areas (viewport-fit=cover), resolved once here so no
+     shell hardcodes env() and no bare element selector leaks padding. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
-/* Native WebView safe areas (viewport-fit=cover): keep chrome out of the notch / home bar. */
-header {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem) !important;
-}
-nav {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem) !important;
-}
-body {
-  margin: 0;
-  background: var(--color-background);
-  color: var(--color-on-surface);
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    sans-serif;
+
+@layer base {
+  html {
+    background: var(--surface);
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--t-body-size);
+    line-height: var(--t-body-line);
+    font-weight: var(--t-body-weight);
+    color: var(--text-1);
+    background: var(--canvas);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* Focus is always visible. Never remove this without replacing it. */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* Motion is a courtesy, not a requirement (spec §4.6). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "i18n:check": "node scripts/check-i18n.mjs",
+    "i18n:sync-admin": "node scripts/sync-admin-locales.mjs",
     "api:generate": "pnpm --filter @sethu/api-client run generate"
   },
   "devDependencies": {

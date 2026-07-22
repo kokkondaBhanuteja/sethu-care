@@ -7,6 +7,12 @@ export type Role = "CUSTOMER" | "TECHNICIAN" | "ADMIN";
 export interface SessionUser {
   role: Role;
   name: string;
+  /** Server-side account id. Optional so the customer/provider flows that only know a name still fit. */
+  id?: string;
+  email?: string;
+  /** Action ids this account may perform (Admin spec §10.2). Absent means "not scoped" — the admin
+   *  console's can() then grants every action, which is the intended single-role v1 behaviour. */
+  permissions?: readonly string[];
 }
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated";

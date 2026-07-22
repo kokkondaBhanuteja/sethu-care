@@ -1,0 +1,48 @@
+/* Self-hosted webfonts, extracted from the approved design artifacts (see styles/CLAUDE.md).
+   Inter carries the UI type scale; JetBrains Mono carries every tabular figure — booking ids,
+   money, ages, timestamps — where digit alignment down a column is the whole point.
+
+   The second face of each family is the "supplemental" subset covering five characters Google's
+   latin subset omits but this product needs on exactly the values that matter: RUPEE U+20B9,
+   STAR U+2605, UP/DOWN TRIANGLE U+25B2/U+25BC, RIGHT ARROW U+2192. Without it the browser would
+   silently swap typeface mid-string on prices, ratings and KPI trend chips. */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-1.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-2.woff2") format("woff2");
+  unicode-range: U+2192, U+20B9, U+25B2, U+25BC, U+2605;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-3.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-4.woff2") format("woff2");
+  unicode-range: U+2192, U+20B9, U+25B2, U+25BC, U+2605;
+}

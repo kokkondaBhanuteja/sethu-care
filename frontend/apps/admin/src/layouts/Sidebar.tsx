@@ -1,0 +1,79 @@
+import { NavLink } from "react-router";
+import { Zap } from "lucide-react";
+import { useSession } from "@sethu/core";
+import { useTranslation } from "@sethu/i18n";
+
+import { cx } from "../lib/cx";
+import { Avatar } from "../components/ui/Avatar";
+import { Icon } from "../components/ui/Icon";
+import { ROUTES } from "../routes/routes.constants";
+import { useShellCounters } from "../queries/useShellCounters";
+import { SIDEBAR_GROUPS, type NavItem } from "./navigation.constants";
+import type { ShellCounters } from "../queries/shell.types";
+
+/** The 240px persistent sidebar. Desktop has no tab bar — navigation is always visible. */
+export function Sidebar() {
+  const { t } = useTranslation("adminShell");
+  const counters = useShellCounters();
+  const user = useSession((state) => state.user);
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar__brand">
+        <span className="brandmark">
+          <Icon glyph={Zap} size="sm" />
+        </span>
+        <span className="sidebar__wordmark">{t("brand")}</span>
+      </div>
+
+      <nav className="sidebar__nav" aria-label={t("nav.primary")}>
+        {SIDEBAR_GROUPS.map((group) => (
+          <div key={group.titleKey} className="sidebar__group">
+            <div className="sidebar__group-header">{t(group.titleKey)}</div>
+            {group.items.map((item) => (
+              <SidebarItem key={item.to} item={item} counters={counters} />
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {user ? (
+        <NavLink to={ROUTES.profile} className="sidebar__user">
+          <Avatar name={user.name} size="sm" brand />
+          <span className="grow truncate">
+            <span className="t-label w-semi c-1 block truncate">{user.name}</span>
+            <span className="t-caption c-3 block truncate">{user.email}</span>
+          </span>
+        </NavLink>
+      ) : null}
+    </aside>
+  );
+}
+
+function SidebarItem({ item, counters }: { item: NavItem; counters: ShellCounters }) {
+  const { t } = useTranslation("adminShell");
+  const count = item.badge ? counters[item.badge] : 0;
+
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) => cx("sidebar__item", isActive && "is-active")}
+    >
+      <Icon glyph={item.icon} size="nav" />
+      <span className="sidebar__label">{t(item.labelKey)}</span>
+      {count > 0 ? (
+        <span
+          className={cx(
+            "sidebar__badge",
+            item.badgeTone === "danger" && "sidebar__badge--danger",
+            item.badgeTone === "brand" && "sidebar__badge--brand",
+          )}
+        >
+          <span aria-hidden>{count}</span>
+          <span className="sr-only">{t(item.labelKey)}</span>
+        </span>
+      ) : null}
+    </NavLink>
+  );
+}
