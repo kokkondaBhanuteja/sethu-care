@@ -184,3 +184,17 @@ export {
   type PageShellProps,
   type PageHeaderProps,
 } from "./components/PageHeader";
+
+// Data table (generic, sortable, column-configurable)
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableColumn,
+  type DataTableSort,
+  type SortDirection,
+} from "./components/DataTable";
+export {
+  DataTableViewOptions,
+  type DataTableViewOptionsProps,
+} from "./components/DataTableViewOptions";
+export { ProgressBar, progressFillVariants, type ProgressBarProps } from "./components/ProgressBar";
