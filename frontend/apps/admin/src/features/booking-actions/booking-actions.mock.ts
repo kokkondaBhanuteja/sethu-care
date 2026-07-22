@@ -86,7 +86,9 @@ export function fetchRedispatchContextMock(
       failedCycles: bookingId === MOCK_BOOKINGS.escalated ? EXHAUSTED_DISPATCH_CYCLES : 1,
       incentiveCapPaise: FIXTURE_AMOUNTS.incentiveCapPaise,
       defaultIncentivePaise: FIXTURE_AMOUNTS.defaultIncentivePaise,
-      defaultRadiusId: REDISPATCH_RADII.plus100,
+      // One step beyond the last failed round (3.0 → 4.5 → 6.0 km all failed), never the radius
+      // that already failed — the server suggests the next escalation, not a re-run.
+      defaultRadiusId: REDISPATCH_RADII.cityWide,
     }),
     options(signal),
   );

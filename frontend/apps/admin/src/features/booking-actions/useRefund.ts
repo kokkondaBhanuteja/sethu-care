@@ -68,12 +68,14 @@ export function useRefund() {
 
   const form = useAppForm<RefundValues>({
     schema: refundSchema,
+    // payoutImpact starts UNSET: "withhold" before any reason exists would penalise the provider
+    // by default. Choosing a reason applies the recommended impact (selectReason), still editable.
     defaultValues: {
       refundType: REFUND_TYPES.full,
       amountRupees: 0,
       reasonCode: "",
       note: "",
-      payoutImpact: REFUND_PAYOUT_IMPACTS.withhold,
+      payoutImpact: "",
     },
     onSubmit: async (values) => {
       if (!(await stepUp.request())) return;

@@ -25,6 +25,11 @@ const ASSIGN_VARIANTS = {
 /**
  * A table rather than a list of cards: the choice here is comparative — nearest versus fastest
  * versus least loaded — and only columns let the eye run down one factor at a time.
+ *
+ * Seven columns, not nine: jobs-today and completion fold into a second line under the provider
+ * name (as the mobile cards already do), because at the modal's widest the nine-column layout
+ * pushed STATUS and the Assign buttons past an invisible horizontal scroll — a table an operator
+ * cannot see how to act on.
  */
 export function AssignCandidateTable({
   candidates,
@@ -41,12 +46,16 @@ export function AssignCandidateTable({
         <span className="flex items-center gap-s2">
           <Avatar name={row.name} size="sm" />
           <span className="flex min-w-0 flex-col">
-            <span className="text-caption font-semibold text-text-1">{row.name}</span>
-            {row.isBestMatch ? (
-              <Pill tone="info" className="mt-s1 self-start">
-                {t("assign.bestMatch")}
-              </Pill>
-            ) : null}
+            <span className="flex items-center gap-s2">
+              <span className="truncate text-caption font-semibold text-text-1">{row.name}</span>
+              {row.isBestMatch ? <Pill tone="info">{t("assign.bestMatch")}</Pill> : null}
+            </span>
+            <span className="text-caption text-text-3">
+              {t("assign.cardLoad", {
+                jobs: row.jobsToday,
+                completion: formatPercent(row.completionRate),
+              })}
+            </span>
           </span>
         </span>
       ),
@@ -75,18 +84,6 @@ export function AssignCandidateTable({
         ) : (
           <span className="text-caption text-text-3">{t("shared.none")}</span>
         ),
-    },
-    {
-      id: "jobs",
-      header: t("assign.column.jobsToday"),
-      numeric: true,
-      render: (row) => row.jobsToday,
-    },
-    {
-      id: "completion",
-      header: t("assign.column.completion"),
-      numeric: true,
-      render: (row) => formatPercent(row.completionRate),
     },
     {
       id: "rating",

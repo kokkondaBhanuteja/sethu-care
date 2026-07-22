@@ -13,9 +13,9 @@ export interface AssignFilters {
 }
 
 /**
- * The two filters the design puts in the modal footer (spec §6.10). "Skill match only" defaults on:
- * sending an uncertified technician to a certified job is the expensive mistake, so relaxing it has
- * to be a deliberate act.
+ * The two candidate-list filters (spec §6.10), rendered with the list they govern. "Skill match
+ * only" defaults on: sending an uncertified technician to a certified job is the expensive mistake,
+ * so relaxing it has to be a deliberate act.
  */
 export function useAssignFilters(): AssignFilters {
   const [skillMatchOnly, setSkillMatchOnly] = useState(true);

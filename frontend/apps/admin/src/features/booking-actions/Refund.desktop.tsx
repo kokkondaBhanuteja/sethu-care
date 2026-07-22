@@ -17,10 +17,11 @@ import { refundCustomerMessage, refundSummaryLine } from "./refundSummary";
 import type { RefundState } from "./useRefund";
 
 /**
- * BOX 78–81. Split 60/40: everything the operator CHOOSES on the left, everything the choice
- * PRODUCES on the right, in a summary that never scrolls away. The booking stays legible behind the
- * scrim because a refund is an irreversible money movement and the record that justifies it should
- * not disappear the moment the form opens.
+ * BOX 78–81. A wide modal split 60/40: everything the operator CHOOSES on the left — including the
+ * provider-payout decision, which is a money choice and belongs in the form column, exactly where
+ * mobile puts it — and a READ-ONLY summary of what the choices produce on the right. The booking
+ * stays legible behind the scrim because a refund is an irreversible money movement and the record
+ * that justifies it should not disappear the moment the form opens.
  */
 export function RefundDesktop({ state }: { state: RefundState }) {
   const { t } = useTranslation("adminBookingActions");
@@ -33,6 +34,7 @@ export function RefundDesktop({ state }: { state: RefundState }) {
     <>
       <Modal
         isOpen
+        width="wide"
         title={t("refund.title")}
         {...(context
           ? {
@@ -49,20 +51,28 @@ export function RefundDesktop({ state }: { state: RefundState }) {
         isDismissable={!state.form.isSubmitting && !state.discard.isPrompting}
         onDismiss={state.requestExit}
         footer={
-          <>
-            <Button variant="text" size="section" onClick={state.requestExit}>
-              {tShell("actions.cancel")}
+          limits.isRateLimited ? (
+            // The rate-limited state has already replaced the form; a dead disabled commit next to
+            // it would invite hunting for the control that re-enables it. One way out: Close.
+            <Button variant="outline" size="section" onClick={state.requestExit}>
+              {tShell("actions.close")}
             </Button>
-            <Button
-              variant="primary"
-              size="section"
-              disabled={limits.isBlocked}
-              isLoading={state.form.isSubmitting}
-              onClick={() => void state.form.handleSubmit()}
-            >
-              {t("refund.continueToConfirm")}
-            </Button>
-          </>
+          ) : (
+            <>
+              <Button variant="text" size="section" onClick={state.requestExit}>
+                {tShell("actions.cancel")}
+              </Button>
+              <Button
+                variant="primary"
+                size="section"
+                disabled={limits.isBlocked}
+                isLoading={state.form.isSubmitting}
+                onClick={() => void state.form.handleSubmit()}
+              >
+                {t("refund.continueToConfirm")}
+              </Button>
+            </>
+          )
         }
       >
         <QueryBoundary
@@ -77,25 +87,24 @@ export function RefundDesktop({ state }: { state: RefundState }) {
               />
             ) : (
               <div className="grid gap-s5 lg:grid-cols-5">
-                <div className="min-w-0 lg:col-span-3">
+                <div className="flex min-w-0 flex-col gap-s4 lg:col-span-3">
                   <RefundForm context={data} state={state} />
+                  <RefundPayoutChoice
+                    providerName={data.booking.providerName ?? ""}
+                    providerPayoutPaise={data.providerPayoutPaise}
+                    value={values.payoutImpact ? (values.payoutImpact as RefundPayoutImpact) : null}
+                    onValueChange={(next) => {
+                      state.form.form.setValue("payoutImpact", next);
+                      state.markDirty();
+                    }}
+                  />
                 </div>
                 <div className="lg:col-span-2">
                   <RefundSummaryPanel
                     context={data}
                     refundType={values.refundType as RefundTypeId}
                     amountRupees={values.amountRupees}
-                  >
-                    <RefundPayoutChoice
-                      providerName={data.booking.providerName ?? ""}
-                      providerPayoutPaise={data.providerPayoutPaise}
-                      value={values.payoutImpact as RefundPayoutImpact}
-                      onValueChange={(next) => {
-                        state.form.form.setValue("payoutImpact", next);
-                        state.markDirty();
-                      }}
-                    />
-                  </RefundSummaryPanel>
+                  />
                 </div>
               </div>
             )

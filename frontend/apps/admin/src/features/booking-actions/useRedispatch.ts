@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -65,12 +65,14 @@ export function useRedispatch() {
 
   const form = useAppForm<RedispatchValues>({
     schema: redispatchSchema,
+    // Spending is opt-in: boost off and ₹0 incentive until the operator applies a cost (or the
+    // recommended preset) themselves — a default that spends is a default nobody decided.
     defaultValues: {
-      radiusId: REDISPATCH_RADII.plus100,
+      radiusId: REDISPATCH_RADII.base,
       relaxSkillMatch: false,
       includeDecliners: false,
-      priorityBoost: true,
-      incentiveRupees: 150,
+      priorityBoost: false,
+      incentiveRupees: 0,
     },
     onSubmit: async (values) => {
       await mutation.mutateAsync({
@@ -90,6 +92,16 @@ export function useRedispatch() {
       exit();
     },
   });
+
+  const { form: redispatchForm } = form;
+  const suggestedRadiusId = query.data?.defaultRadiusId;
+
+  // The radius pre-selection comes from the context — one step beyond the last failed round.
+  // Re-offering the radius that just failed would make the primary button re-run a known failure.
+  useEffect(() => {
+    if (suggestedRadiusId === undefined) return;
+    redispatchForm.setValue("radiusId", suggestedRadiusId);
+  }, [suggestedRadiusId, redispatchForm]);
 
   return {
     bookingId,

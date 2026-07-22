@@ -10,20 +10,14 @@ export interface RefundSummaryPanelProps {
   context: RefundContext;
   refundType: RefundTypeId;
   amountRupees: number;
-  children?: React.ReactNode;
 }
 
 /**
- * Everything the choice PRODUCES, pinned while the form is being filled: the amount, the
- * destination, the provider-payout consequence and the rate-limit budget are the four facts that
- * get a refund wrong, so none of them is allowed to scroll away.
+ * Everything the choice PRODUCES, pinned while the form is being filled. READ-ONLY on purpose: the
+ * provider-payout decision is a money choice and lives in the form column with the other choices —
+ * a sidebar narrow enough to wrap a label over four lines is no place to decide someone's payout.
  */
-export function RefundSummaryPanel({
-  context,
-  refundType,
-  amountRupees,
-  children,
-}: RefundSummaryPanelProps) {
+export function RefundSummaryPanel({ context, refundType, amountRupees }: RefundSummaryPanelProps) {
   const { t } = useTranslation("adminBookingActions");
   const rows = [
     { id: "booking", label: t("refund.summaryBooking"), value: context.booking.reference },
@@ -55,8 +49,6 @@ export function RefundSummaryPanel({
           ? t("refund.timingInstant")
           : t("refund.timingBankingDays")}
       </p>
-
-      {children ? <div className="mt-s3">{children}</div> : null}
 
       <p className="mt-s3 border-t border-border-subtle pt-s3 text-caption text-text-3">
         {t("refund.rateBudget", {

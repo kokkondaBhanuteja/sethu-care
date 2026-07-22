@@ -4,10 +4,12 @@ import { QueryBoundary } from "../../components/states/QueryBoundary";
 import { Button } from "../../components/ui/Button";
 import { Sheet } from "../../components/ui/Sheet";
 import { SkeletonList } from "../../components/ui/Skeleton";
+import { formatMoney } from "../../lib/format";
 import { DiscardChangesPrompt } from "./DiscardChangesPrompt";
 import { RedispatchExhaustedBanner } from "./RedispatchExhaustedBanner";
 import { RedispatchForm } from "./RedispatchForm";
 import { EXHAUSTED_DISPATCH_CYCLES } from "./booking-actions.constants";
+import { rupeesToPaise } from "./booking-actions.money";
 import type { RedispatchState } from "./useRedispatch";
 
 /**
@@ -18,6 +20,12 @@ export function RedispatchMobile({ state }: { state: RedispatchState }) {
   const { t } = useTranslation("adminBookingActions");
   const context = state.query.data;
   const isExhausted = (context?.failedCycles ?? 0) >= EXHAUSTED_DISPATCH_CYCLES;
+  const incentiveRupees = state.form.form.watch("incentiveRupees");
+  // The commit button carries the cost the operator has set — money never leaves silently.
+  const rerunLabel =
+    incentiveRupees > 0
+      ? t("redispatch.rerunWithCost", { amount: formatMoney(rupeesToPaise(incentiveRupees)) })
+      : t("redispatch.rerun");
 
   return (
     <>
@@ -33,7 +41,7 @@ export function RedispatchMobile({ state }: { state: RedispatchState }) {
             isLoading={state.form.isSubmitting}
             onClick={() => void state.form.handleSubmit()}
           >
-            {t("redispatch.rerun")}
+            {rerunLabel}
           </Button>
         }
       >

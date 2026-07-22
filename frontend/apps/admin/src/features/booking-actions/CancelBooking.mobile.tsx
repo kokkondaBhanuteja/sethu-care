@@ -17,6 +17,7 @@ import type { CancelBookingState } from "./useCancelBooking";
  */
 export function CancelBookingMobile({ state }: { state: CancelBookingState }) {
   const { t } = useTranslation("adminBookingActions");
+  const { t: tShell } = useTranslation("adminShell");
   const context = state.query.data;
 
   return (
@@ -52,7 +53,9 @@ export function CancelBookingMobile({ state }: { state: CancelBookingState }) {
         tone="danger"
         title={t("cancel.confirmTitle")}
         summary={cancelSummaryLine(context ?? null, state.form.form.watch(), t)}
-        confirmLabel={t("shared.confirmWithBiometrics")}
+        // "Confirm", not "Confirm with biometrics": the challenge collects a passcode and no
+        // biometric plugin is installed — the label must not promise what the field is not.
+        confirmLabel={tShell("actions.confirm")}
       />
 
       <DiscardChangesPrompt

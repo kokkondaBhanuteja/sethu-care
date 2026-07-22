@@ -3,8 +3,7 @@
     "km": "{{value}} km",
     "etaMinutes": "~{{value}} min",
     "none": "—",
-    "roundSummary": "Attempt {{round}} · {{radius}} km · {{declined}} declined",
-    "confirmWithBiometrics": "Confirm with biometrics"
+    "roundSummary": "Attempt {{round}} · {{radius}} km · {{declined}} declined"
   },
   "stepUp": {
     "body": "Verify your identity to continue.",
@@ -79,6 +78,7 @@
     "title": "Cancel booking",
     "loading": "Loading booking",
     "continueToConfirm": "Continue to confirm",
+    "keepBooking": "Keep booking",
     "impactTitle": "This cannot be undone",
     "impactCustomer": "{{name}} will be notified by SMS",
     "impactProvider": "{{name}} will be released and notified",
@@ -132,7 +132,7 @@
       "base": "Default {{km}}km",
       "plus_50": "+50% {{km}}km",
       "plus_100": "+100% {{km}}km",
-      "city_wide": "City-wide"
+      "city_wide": "Citywide"
     },
     "cityWideWarning": "City-wide searches may produce long ETAs.",
     "relaxSkill": "Relax skill match",
@@ -142,10 +142,12 @@
     "includeDeclinersHint": "{{count}} providers declined this job",
     "priorityBoost": "Priority boost",
     "priorityBoostHint": "Shows this job at the top of providers' job lists",
+    "recommendedPreset": "Apply recommended: priority boost + {{amount}}",
     "incentiveLabel": "Incentive bump",
     "incentiveCap": "Added to the provider payout. Cap {{cap}} (50% of booking value).",
     "platformCost": "Platform cost: {{amount}}",
     "rerun": "Search again",
+    "rerunWithCost": "Search again · {{amount}}",
     "exhaustedTitle": "Three searches have already failed. Another attempt is unlikely to help.",
     "assignManuallyInstead": "Assign manually instead",
     "startedToast": "New search started"
@@ -156,10 +158,10 @@
     "stepsLabel": "Manual completion steps",
     "stepCounter": "{{index}} of {{count}}",
     "step": {
-      "reason": "{{index}} Reason",
-      "evidence": "{{index}} Evidence",
-      "verify": "{{index}} Verify",
-      "confirm": "{{index}} Confirm"
+      "reason": "Reason",
+      "evidence": "Evidence",
+      "verify": "Verify",
+      "confirm": "Confirm"
     },
     "railContext": "{{reference}} · {{service}} · {{provider}} · {{minutes}} min since work reported",
     "contextStrip": "{{reference}} · {{service}} · {{provider}} · work reported done {{minutes}} min ago",

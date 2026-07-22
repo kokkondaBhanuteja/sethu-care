@@ -25,15 +25,17 @@ export function CancelBookingDesktop({ state }: { state: CancelBookingState }) {
     <>
       <Modal
         isOpen
-        width="large"
+        width="wide"
         title={t("cancel.title")}
         {...(context ? { subtitle: context.booking.reference } : {})}
         isDismissable={!state.form.isSubmitting && !state.discard.isPrompting}
         onDismiss={state.requestExit}
         footer={
           <>
+            {/* "Keep booking", never "Cancel": under the title "Cancel booking", a footer that
+                pairs "Cancel" with a red commit makes the safe exit read like the destructive act. */}
             <Button variant="text" size="section" onClick={state.requestExit}>
-              {tShell("actions.cancel")}
+              {t("cancel.keepBooking")}
             </Button>
             {/* Red, not brand blue: brand blue is the "proceed" colour everywhere else, and
                 borrowing it here would let this screen be dismissed with save-muscle-memory. */}

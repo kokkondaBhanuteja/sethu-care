@@ -1,4 +1,3 @@
-import { Fingerprint } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
@@ -71,15 +70,16 @@ export function ManualCompletionMobile({ state }: { state: ManualCompletionState
         }
         footer={
           state.isLastStep ? (
+            // "Confirm", not "Confirm with biometrics": the step-up collects a passcode and no
+            // biometric plugin is installed — the label must not promise what the field is not.
             <Button
               variant="primary"
               size="primary"
               block
-              iconStart={Fingerprint}
               isLoading={state.form.isSubmitting}
               onClick={() => void state.form.handleSubmit()}
             >
-              {t("shared.confirmWithBiometrics")}
+              {tShell("actions.confirm")}
             </Button>
           ) : (
             <Button
@@ -98,7 +98,6 @@ export function ManualCompletionMobile({ state }: { state: ManualCompletionState
           <ManualCompletionBypassNotice />
           <ManualCompletionBody
             state={state}
-            isDesktop={false}
             onLogCallAttempt={() => {
               void state.query.refetch();
             }}

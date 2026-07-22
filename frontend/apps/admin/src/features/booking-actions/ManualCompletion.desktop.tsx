@@ -1,4 +1,3 @@
-import { Fingerprint } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
 import { Button } from "../../components/ui/Button";
@@ -41,6 +40,7 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
     <>
       <Modal
         isOpen
+        width="wide"
         title={t("manual.title")}
         isDismissable={!state.form.isSubmitting && !state.discard.isPrompting && !hasOtpArrived}
         onDismiss={state.requestExit}
@@ -48,9 +48,10 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
           <StepRail
             label={t("manual.stepsLabel")}
             activeIndex={state.stepIndex}
-            steps={MANUAL_COMPLETION_STEP_IDS.map((stepId, index) => ({
+            // The rail renders its own step numbers — a numbered label would print them twice.
+            steps={MANUAL_COMPLETION_STEP_IDS.map((stepId) => ({
               id: stepId,
-              label: t(`manual.step.${stepId}`, { index: index + 1 }),
+              label: t(`manual.step.${stepId}`),
             }))}
             footer={
               context ? (
@@ -75,20 +76,16 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
             >
               {state.stepIndex === 0 ? tShell("actions.cancel") : tShell("actions.back")}
             </Button>
-            <span className="flex-1 text-center text-caption text-text-3">
-              {state.stepIndex === 1 && !state.gaps.isSatisfied
-                ? t("manual.evidenceBlockedNote")
-                : null}
-            </span>
             {state.isLastStep ? (
+              // "Confirm", not "Confirm with biometrics": the step-up collects a passcode and no
+              // biometric plugin is installed — the label must not promise what the field is not.
               <Button
                 variant="primary"
                 size="section"
-                iconStart={Fingerprint}
                 isLoading={state.form.isSubmitting}
                 onClick={() => void state.form.handleSubmit()}
               >
-                {t("shared.confirmWithBiometrics")}
+                {tShell("actions.confirm")}
               </Button>
             ) : (
               <Button
@@ -106,13 +103,17 @@ export function ManualCompletionDesktop({ state }: { state: ManualCompletionStat
         <ManualCompletionBypassNotice />
         <ManualCompletionBody
           state={state}
-          isDesktop
           onLogCallAttempt={() => {
             // The call itself is placed by the OS dialler; the log arrives from the server, which
             // is the only party that can vouch for it.
             void state.query.refetch();
           }}
         />
+        {/* Above the footer, not squeezed between Back and Continue: it explains why Continue is
+            blocked, and a reason read after the button is not a reason. */}
+        {state.stepIndex === 1 && !state.gaps.isSatisfied ? (
+          <p className="mt-s4 text-caption text-danger">{t("manual.evidenceBlockedNote")}</p>
+        ) : null}
       </Modal>
 
       <OtpArrivedInterrupt

@@ -1,13 +1,14 @@
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
+import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { Icon } from "../../components/ui/Icon";
-import { Segmented } from "../../components/ui/Segmented";
 import { Switch } from "../../components/ui/form/Switch";
 import { formatMoney } from "../../lib/format";
 import { RedispatchIncentiveField } from "./RedispatchIncentiveField";
-import { REDISPATCH_RADII, REDISPATCH_RADIUS_ORDER } from "./booking-actions.constants";
+import { RedispatchRadiusField } from "./RedispatchRadiusField";
+import { paiseToRupeeInput } from "./booking-actions.money";
 import type { RedispatchContext } from "./booking-actions.types";
 import type { RedispatchState, RedispatchValues } from "./useRedispatch";
 
@@ -44,6 +45,16 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
     state.markDirty();
   }
 
+  const recommendedIncentiveRupees = paiseToRupeeInput(context.defaultIncentivePaise);
+  const isRecommendedApplied =
+    values.priorityBoost && values.incentiveRupees >= recommendedIncentiveRupees;
+
+  function applyRecommended() {
+    form.setValue("priorityBoost", true);
+    form.setValue("incentiveRupees", recommendedIncentiveRupees);
+    state.markDirty();
+  }
+
   return (
     <div className="flex flex-col gap-s5">
       <p className="text-label text-text-2">{t("redispatch.explainer")}</p>
@@ -64,21 +75,11 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
         </ul>
       </Card>
 
-      <div className="flex flex-col gap-s2">
-        <Segmented
-          tall
-          label={t("redispatch.radiusLabel")}
-          value={values.radiusId}
-          onValueChange={setRadius}
-          options={REDISPATCH_RADIUS_ORDER.map((radiusId) => ({
-            value: radiusId,
-            label: t(`redispatch.radius.${radiusId}`, {
-              km: radiusKmFor(radiusId, baseRadiusKm),
-            }),
-          }))}
-        />
-        <p className="text-caption text-warning">{t("redispatch.cityWideWarning")}</p>
-      </div>
+      <RedispatchRadiusField
+        value={values.radiusId}
+        baseRadiusKm={baseRadiusKm}
+        onValueChange={setRadius}
+      />
 
       <div className="flex flex-col">
         <Switch
@@ -109,6 +110,21 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
         />
       </div>
 
+      {/* Spending defaults to zero; the recommended spend is one deliberate tap, never a preset
+          the operator has to notice and undo. */}
+      {isRecommendedApplied ? null : (
+        <Button
+          variant="outlineBrand"
+          size="inline"
+          className="self-start"
+          onClick={applyRecommended}
+        >
+          {t("redispatch.recommendedPreset", {
+            amount: formatMoney(context.defaultIncentivePaise),
+          })}
+        </Button>
+      )}
+
       <RedispatchIncentiveField
         value={values.incentiveRupees}
         capPaise={context.incentiveCapPaise}
@@ -117,10 +133,4 @@ export function RedispatchForm({ context, state }: RedispatchFormProps) {
       />
     </div>
   );
-}
-
-function radiusKmFor(radiusId: string, baseRadiusKm: number): string {
-  if (radiusId === REDISPATCH_RADII.plus50) return (baseRadiusKm * 1.5).toFixed(1);
-  if (radiusId === REDISPATCH_RADII.plus100) return (baseRadiusKm * 2).toFixed(1);
-  return baseRadiusKm.toFixed(1);
 }

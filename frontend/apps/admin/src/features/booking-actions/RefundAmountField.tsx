@@ -1,7 +1,5 @@
-import { CircleAlert } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
-import { Icon } from "../../components/ui/Icon";
 import { TextInput } from "../../components/ui/form/TextInput";
 import { formatMoney } from "../../lib/format";
 import type { RefundContext } from "./booking-actions.types";
@@ -46,10 +44,11 @@ export function RefundAmountField({
         {...(capMessage ? { error: capMessage } : {})}
       />
 
+      {/* sr-only, not a second visible copy: the field's own error is the one visual instance,
+          and this live region keeps the announcement for screen readers when the cap trips. */}
       {capMessage ? (
-        <p className="flex items-start gap-s2 text-label text-danger">
-          <Icon glyph={CircleAlert} size="sm" className="text-danger" />
-          <span>{capMessage}</span>
+        <p role="status" className="sr-only">
+          {capMessage}
         </p>
       ) : null}
 

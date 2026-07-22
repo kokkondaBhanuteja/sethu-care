@@ -11,8 +11,6 @@ import type { EvidenceGaps } from "./manualCompletionGates";
 export interface ManualCompletionEvidenceStepProps {
   context: ManualCompletionContext;
   gaps: EvidenceGaps;
-  /** Places the three cards side by side on desktop, stacked on mobile. */
-  isDesktop: boolean;
   onLogCallAttempt: () => void;
 }
 
@@ -20,11 +18,13 @@ export interface ManualCompletionEvidenceStepProps {
  * Step 2. The call-attempt log is machine-written, not typed by the admin: evidence an admin can
  * author is not evidence, which is why the only control here dials the customer rather than
  * recording that someone did.
+ *
+ * The three cards stack on every shell: side by side they compressed to ~260px each inside the
+ * modal, truncating mid-word and pushing the third card past the edge.
  */
 export function ManualCompletionEvidenceStep({
   context,
   gaps,
-  isDesktop,
   onLogCallAttempt,
 }: ManualCompletionEvidenceStepProps) {
   const { t } = useTranslation("adminBookingActions");
@@ -37,7 +37,7 @@ export function ManualCompletionEvidenceStep({
         <p className="text-label text-text-2">{t("manual.evidenceSubtitle")}</p>
       </div>
 
-      <div className={isDesktop ? "grid grid-cols-3 items-start gap-s3" : "flex flex-col gap-s3"}>
+      <div className="flex flex-col gap-s3">
         <EvidenceCard
           title={t("manual.evidencePhotos")}
           detail={

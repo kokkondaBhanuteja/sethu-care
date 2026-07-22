@@ -9,16 +9,11 @@ import type { ManualCompletionState } from "./useManualCompletion";
 
 export interface ManualCompletionBodyProps {
   state: ManualCompletionState;
-  isDesktop: boolean;
   onLogCallAttempt: () => void;
 }
 
 /** Renders whichever of the four steps is active. Both shells drive the same steps. */
-export function ManualCompletionBody({
-  state,
-  isDesktop,
-  onLogCallAttempt,
-}: ManualCompletionBodyProps) {
+export function ManualCompletionBody({ state, onLogCallAttempt }: ManualCompletionBodyProps) {
   const { t } = useTranslation("adminBookingActions");
 
   return (
@@ -33,7 +28,6 @@ export function ManualCompletionBody({
             <ManualCompletionEvidenceStep
               context={data}
               gaps={state.gaps}
-              isDesktop={isDesktop}
               onLogCallAttempt={onLogCallAttempt}
             />
           );

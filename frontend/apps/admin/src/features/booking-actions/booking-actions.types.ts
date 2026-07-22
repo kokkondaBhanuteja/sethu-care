@@ -79,7 +79,9 @@ export interface RedispatchContext {
   /** 3 means automation has exhausted itself and the design demotes the primary button. */
   readonly failedCycles: number;
   readonly incentiveCapPaise: number;
+  /** The recommended (not default) spend — applied only when the operator taps the preset. */
   readonly defaultIncentivePaise: number;
+  /** The suggested pre-selection: one step beyond the last failed round, never a failed radius. */
   readonly defaultRadiusId: RedispatchRadiusId;
 }
 

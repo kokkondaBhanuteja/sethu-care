@@ -1,12 +1,8 @@
-import { ArrowRight, BellRing, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { useTranslation } from "@sethu/i18n";
 
-import { Avatar } from "../../components/ui/Avatar";
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
-import { Icon } from "../../components/ui/Icon";
 import { Sheet } from "../../components/ui/Sheet";
-import { formatTime } from "../../lib/format";
+import { AssignConfirmBody } from "./AssignConfirmBody";
 import type { BookingActionSubject, ProviderCandidate } from "./booking-actions.types";
 
 export interface AssignConfirmSheetProps {
@@ -18,9 +14,8 @@ export interface AssignConfirmSheetProps {
 }
 
 /**
- * The only confirmation in the assign flow, so it earns its interruption by restating the PAIRING —
- * this technician, this customer, this area — rather than asking "Are you sure?", which tests
- * nothing. If the wrong card was tapped, the wrong name is the first thing on the sheet.
+ * The mobile chrome around `AssignConfirmBody` — the only confirmation in the assign flow, so it
+ * earns its interruption by restating the pairing rather than asking "Are you sure?".
  */
 export function AssignConfirmSheet({
   candidate,
@@ -40,38 +35,7 @@ export function AssignConfirmSheet({
       <div className="flex flex-col gap-s3">
         <h2 className="text-section text-text-1">{title}</h2>
 
-        <Card tone="surface" density="tight" className="flex items-center gap-s3">
-          <Avatar name={candidate.name} size="lg" />
-          <span className="flex-1 truncate text-emph text-text-1">{candidate.name}</span>
-          <Icon glyph={ArrowRight} className="text-text-3" />
-          <span className="flex-1 text-right">
-            <span className="block truncate text-emph text-text-1">{booking.customerName}</span>
-            <span className="block text-caption text-text-2">{booking.zone}</span>
-          </span>
-        </Card>
-
-        <ul className="flex flex-col">
-          <ConsequenceRow
-            icon={Clock}
-            label={t("assign.consequenceEta", { value: candidate.etaMinutes })}
-          />
-          <ConsequenceRow icon={MessageCircle} label={t("assign.consequenceCustomer")} />
-          <ConsequenceRow icon={BellRing} label={t("assign.consequenceProvider")} />
-        </ul>
-
-        {/* The warning sits directly above the buttons: a caution read on the way in is a caption;
-            one read with a thumb already travelling toward the button is a decision. */}
-        {candidate.availability === "onJob" && candidate.freeAtIso ? (
-          <Card tone="warning" className="flex items-start gap-s2">
-            <Icon glyph={TriangleAlert} className="text-warning" />
-            <span className="text-label text-warning">
-              {t("assign.busyWarning", {
-                name: candidate.name,
-                time: formatTime(candidate.freeAtIso),
-              })}
-            </span>
-          </Card>
-        ) : null}
+        <AssignConfirmBody candidate={candidate} booking={booking} />
 
         <div className="flex flex-col gap-s1">
           {/* Deliberately NOT recoloured as destructive: this is a legitimate override ops makes
@@ -91,20 +55,5 @@ export function AssignConfirmSheet({
         </div>
       </div>
     </Sheet>
-  );
-}
-
-function ConsequenceRow({
-  icon,
-  label,
-}: {
-  icon: React.ComponentProps<typeof Icon>["glyph"];
-  label: string;
-}) {
-  return (
-    <li className="flex h-row-40 items-center gap-s2">
-      <Icon glyph={icon} className="text-text-2" />
-      <span className="text-label text-text-1">{label}</span>
-    </li>
   );
 }

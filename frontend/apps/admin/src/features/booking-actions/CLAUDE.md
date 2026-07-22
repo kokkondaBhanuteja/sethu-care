@@ -12,8 +12,9 @@ Contents:
 - `booking-actions.constants.ts` — query keys and the four reason-code vocabularies, as `as const` objects with derived union types.
 - `booking-actions.money.ts` — the one rupee ⇄ paise conversion, at the form boundary only.
 - `use<Action>.ts` — one hook per action, shared by both shells (the anti-drift rule, spec §2.1).
-- `<Action>.desktop.tsx` / `<Action>.mobile.tsx` — chrome only. The form bodies (`CancelBookingForm`, `RedispatchForm`, `RefundForm`, `ManualCompletion*Step`) are shared.
-- `StepUpChallenge` · `DiscardChangesPrompt` · `ReasonCodeField` · `MobileActionScreen` · `BookingContextStrip` — the pieces every flow reuses.
+- `<Action>.desktop.tsx` / `<Action>.mobile.tsx` — chrome only. The form bodies (`CancelBookingForm`, `RedispatchForm` + `RedispatchRadiusField`, `RefundForm`, `ManualCompletion*Step`) are shared.
+- `AssignConfirmBody` — the assign confirm step's substance (pairing, ETA, notifications, on-job warning), wrapped by `AssignConfirmSheet` on mobile and `AssignConfirmDialog` on desktop so the two confirms cannot drift.
+- `DiscardChangesPrompt` · `ReasonCodeField` · `MobileActionScreen` · `BookingContextStrip` — the pieces every flow reuses (`StepUpChallenge` lives in `components/ui`).
 
 ## Business logic — the rules that are not negotiable
 
@@ -25,6 +26,10 @@ Contents:
 6. **Reason codes travel as codes.** Labels are i18n; the audit log and the safety-review router key off the code. `@sethu/domain` and the generated client carry no vocabulary today — when the backend enum lands, mirror it into `@sethu/domain` and delete the local `as const`.
 7. **There is no reschedule flow anywhere**, assign is reachable only from an escalation, and re-dispatch re-runs the automation rather than browsing candidates (`docs/Booking-Workflow-Decisions.md` D1/D3, §7). "Customer requested" is not a cancellation reason: after 60 seconds a customer request is a support ticket.
 8. **Back in a dirty flow prompts.** `useDiscardGuard` + `DiscardChangesPrompt`, on every multi-field flow. It stays silent on an untouched form, because a prompt people learn to click through is worse than none (spec §3.3).
+9. **Assign never commits on one click, on either shell.** A row's Assign selects; the commit happens on the shared confirm step (`AssignConfirmBody`) that restates the pairing and the on-job warning. Desktop composing it as a dialog is chrome, not a different flow.
+10. **Spending is opt-in on re-dispatch.** Priority boost defaults off and the incentive to ₹0; the "Apply recommended" chip applies `defaultIncentivePaise` + boost in one tap, and a non-zero cost is carried on the commit button ("Search again · ₹150"). The pre-selected radius is the context's `defaultRadiusId` — one step beyond the last failed round, never a radius that already failed.
+11. **The refund payout impact starts unset.** Choosing a reason applies the recommended impact (`PROVIDER_AT_FAULT_REASONS`), still editable. On desktop the payout radio lives in the form column; the summary rail is read-only.
+12. **Labels tell the truth about the step-up.** Every commit and challenge button says "Confirm" (`adminShell actions.confirm`) — "Confirm with biometrics" is banned until a biometric plugin actually exists (see rule 3). The cancel flow's dismiss reads "Keep booking", never "Cancel" under the title "Cancel booking".
 
 ## Mock triggers — how to reach every designed state
 

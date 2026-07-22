@@ -23,7 +23,12 @@ export interface CancelBookingFormProps {
   state: CancelBookingState;
 }
 
-/** Everything both shells render between the header and the commit button. */
+/**
+ * Everything both shells render between the header and the commit button. Reasons and the money
+ * decision sit side by side from `lg` up (the desktop wide modal): at 900px of viewport the stacked
+ * layout put the refund/override card below the fold with no cue that it existed. Below `lg` (the
+ * mobile shell) the same markup stacks.
+ */
 export function CancelBookingForm({ context, state }: CancelBookingFormProps) {
   const { t } = useTranslation("adminBookingActions");
   const navigate = useNavigate();
@@ -55,44 +60,48 @@ export function CancelBookingForm({ context, state }: CancelBookingFormProps) {
         />
       ) : null}
 
-      <ReasonCodeField<CancelReasonCode>
-        name="cancel-reason"
-        legend={t("cancel.reasonLegend")}
-        tone="danger"
-        value={(values.reasonCode as CancelReasonCode) || null}
-        onValueChange={(code) => {
-          form.setValue("reasonCode", code);
-          markDirty();
-        }}
-        flaggedMeaning={t("cancel.safetyReviewMeaning")}
-        flaggedLegend={t("cancel.safetyReviewLegend")}
-        {...(errorFor("reasonCode") ? { error: t("cancel.reasonRequired") } : {})}
-        options={CANCEL_REASON_ORDER.map((code) => ({
-          value: code,
-          label: t(`cancel.reason.${code}`),
-          isFlagged: SAFETY_REVIEW_REASONS.has(code),
-        }))}
-      />
-
-      <TextArea
-        label={t("cancel.noteLabel")}
-        tall
-        maxLength={NOTE_MAX_LENGTH}
-        valueLength={values.note.length}
-        placeholder={t("cancel.notePlaceholder")}
-        {...(errorFor("note") ? { error: t("cancel.noteRequiredForOther") } : {})}
-        {...form.register("note", { onChange: markDirty })}
-      />
-
-      <div className="flex flex-col gap-s2">
-        <p className="text-pill text-text-2">{t("cancel.refundLegend")}</p>
-        <CancelRefundCard
-          form={form}
-          policyRefundPaise={context.policyRefundPaise}
-          isPolicyRefundFull={context.isPolicyRefundFull}
-          errorFor={errorFor}
-          onChange={markDirty}
+      <div className="grid gap-s5 lg:grid-cols-2">
+        <ReasonCodeField<CancelReasonCode>
+          name="cancel-reason"
+          legend={t("cancel.reasonLegend")}
+          tone="danger"
+          value={(values.reasonCode as CancelReasonCode) || null}
+          onValueChange={(code) => {
+            form.setValue("reasonCode", code);
+            markDirty();
+          }}
+          flaggedMeaning={t("cancel.safetyReviewMeaning")}
+          flaggedLegend={t("cancel.safetyReviewLegend")}
+          {...(errorFor("reasonCode") ? { error: t("cancel.reasonRequired") } : {})}
+          options={CANCEL_REASON_ORDER.map((code) => ({
+            value: code,
+            label: t(`cancel.reason.${code}`),
+            isFlagged: SAFETY_REVIEW_REASONS.has(code),
+          }))}
         />
+
+        <div className="flex flex-col gap-s5">
+          <TextArea
+            label={t("cancel.noteLabel")}
+            tall
+            maxLength={NOTE_MAX_LENGTH}
+            valueLength={values.note.length}
+            placeholder={t("cancel.notePlaceholder")}
+            {...(errorFor("note") ? { error: t("cancel.noteRequiredForOther") } : {})}
+            {...form.register("note", { onChange: markDirty })}
+          />
+
+          <div className="flex flex-col gap-s2">
+            <p className="text-pill text-text-2">{t("cancel.refundLegend")}</p>
+            <CancelRefundCard
+              form={form}
+              policyRefundPaise={context.policyRefundPaise}
+              isPolicyRefundFull={context.isPolicyRefundFull}
+              errorFor={errorFor}
+              onChange={markDirty}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

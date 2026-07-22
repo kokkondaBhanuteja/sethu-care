@@ -23,6 +23,7 @@ import type { RefundState } from "./useRefund";
  */
 export function RefundMobile({ state }: { state: RefundState }) {
   const { t } = useTranslation("adminBookingActions");
+  const { t: tShell } = useTranslation("adminShell");
   const context = state.query.data;
   const values = state.form.form.watch();
   const limits = refundLimits(context ?? null, values.refundType, values.amountRupees);
@@ -47,16 +48,24 @@ export function RefundMobile({ state }: { state: RefundState }) {
           ) : undefined
         }
         footer={
-          <Button
-            variant="primary"
-            size="primary"
-            block
-            disabled={limits.isBlocked}
-            isLoading={state.form.isSubmitting}
-            onClick={() => void state.form.handleSubmit()}
-          >
-            {t("refund.continueToConfirm")}
-          </Button>
+          limits.isRateLimited ? (
+            // The rate-limited state has already replaced the form; a dead disabled commit next to
+            // it would invite hunting for the control that re-enables it. One way out: Close.
+            <Button variant="outline" size="primary" block onClick={state.requestExit}>
+              {tShell("actions.close")}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="primary"
+              block
+              disabled={limits.isBlocked}
+              isLoading={state.form.isSubmitting}
+              onClick={() => void state.form.handleSubmit()}
+            >
+              {t("refund.continueToConfirm")}
+            </Button>
+          )
         }
       >
         <div className="px-s4 pt-s4">
@@ -76,7 +85,7 @@ export function RefundMobile({ state }: { state: RefundState }) {
                   <RefundPayoutChoice
                     providerName={data.booking.providerName ?? ""}
                     providerPayoutPaise={data.providerPayoutPaise}
-                    value={values.payoutImpact as RefundPayoutImpact}
+                    value={values.payoutImpact ? (values.payoutImpact as RefundPayoutImpact) : null}
                     onValueChange={(next) => {
                       state.form.form.setValue("payoutImpact", next);
                       state.markDirty();
@@ -98,7 +107,9 @@ export function RefundMobile({ state }: { state: RefundState }) {
           label: t("refund.customerWillReceive"),
           body: refundCustomerMessage(context ?? null, values, t),
         }}
-        confirmLabel={t("shared.confirmWithBiometrics")}
+        // "Confirm", not "Confirm with biometrics": the challenge collects a passcode and no
+        // biometric plugin is installed — the label must not promise what the field is not.
+        confirmLabel={tShell("actions.confirm")}
       />
 
       <DiscardChangesPrompt

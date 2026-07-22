@@ -8,14 +8,16 @@ import { REFUND_PAYOUT_IMPACTS, type RefundPayoutImpact } from "./booking-action
 export interface RefundPayoutChoiceProps {
   providerName: string;
   providerPayoutPaise: number;
-  value: RefundPayoutImpact;
+  /** Null until a reason is chosen — the recommendation follows the reason, never precedes it. */
+  value: RefundPayoutImpact | null;
   onValueChange: (value: RefundPayoutImpact) => void;
 }
 
 /**
  * Amber, edged and set apart: this is the SECOND person's money. Refunding a customer for a job the
- * provider completed correctly should not silently penalise the provider, so the default follows
- * the reason and "pay anyway" costs a note — it can never be the silent path (spec §6.27).
+ * provider completed correctly should not silently penalise the provider, so nothing is selected
+ * until a reason is chosen — the reason applies the recommended impact (still editable) — and "pay
+ * anyway" costs a note; it can never be the silent path (spec §6.27).
  */
 export function RefundPayoutChoice({
   providerName,
