@@ -147,3 +147,26 @@ export {
   type ToastOptions,
   type ToastViewportProps,
 } from "./components/Toast";
+
+// Sidebar (global app frame)
+export {
+  Sidebar,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  useSidebar,
+  type SidebarProps,
+  type SidebarProviderProps,
+} from "./components/Sidebar";
+export {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarSeparator,
+  sidebarMenuButtonVariants,
+  type SidebarMenuButtonProps,
+} from "./components/SidebarMenu";
