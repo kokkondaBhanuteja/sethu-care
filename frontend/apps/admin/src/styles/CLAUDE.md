@@ -1,17 +1,15 @@
 # apps/admin/src/styles
 
-Scope: The component layer of the design system — CSS only. No TypeScript, no React.
+Scope: The residual component layer of the legacy admin design system — CSS only. No TypeScript, no React.
 
-Purpose: Reproduce the approved SetuCare Admin designs exactly. `components.css` is ported verbatim from the two design artifacts (desktop 1440×900, mobile 390×844); `fonts.css` is generated (Inter + JetBrains Mono, self-hosted in `public/fonts`).
+Purpose: Style the admin-ONLY composites that the P3 migration kept app-owned (form controls, timeline, step rail, banners, toasts, map, viewer, mobile chrome, auth split). Everything with a `@sethu/ui-web` equivalent (buttons, cards, pills, tables, tabs, overlays, avatars, skeletons, empty states, sidebar, topbar…) was migrated to token-utility adapters in `components/ui/*` / `layouts/*`, and those class families were DELETED here — the file went from ~4.3k to ~1.9k lines with zero unconsumed selectors (verified by scanning every class name against the TS/TSX sources; base names that collide with English words were hand-verified with word-boundary greps).
 
-Contents: `components.css` (all BEM component classes, inside `@layer components`), `fonts.css` (GENERATED — do not hand-edit).
+Contents: `components.css` (the remaining BEM component classes, inside `@layer components`), `fonts.css` (GENERATED — do not hand-edit).
 
 Business logic: none.
 
-Dependencies: the tokens in `../index.css`. Every declaration resolves against a token; no raw colour, size, radius or spacing value appears here.
+Dependencies: the tokens in `../index.css` — which since P3 layers the GENERATED global tokens (`@sethu/ui-web/tokens.css`) underneath and keeps only admin-specific names in its own `@theme`. The legacy alias block (`--canvas`, `--surface`, …) now resolves against the global values, so this layer moved to the new palette (gray canvas, white surfaces, 16px card radius) without editing its rules.
 
-Boundaries: **only `components/ui/*` and `layouts/*` may use these class names.** Feature and page code composes those primitives plus Tailwind's token-backed utilities. Do not add a class here to style one screen — add a variant prop to the primitive instead.
+Boundaries: **only `components/ui/*` and `layouts/*` may use these class names.** Feature and page code composes the primitives plus Tailwind's token-backed utilities. Do not add a class here to style one screen — add a variant prop to the primitive instead. Before deleting a selector, prove it dead: grep the class name (word-boundary, not substring) across `src/**/*.{ts,tsx}` excluding this folder — and beware test fixtures and unstyled marker classes (`pill--striped` is real CSS; `modal-scrim`/`scrim`/`avatar`/`is-active`/`sidebar__group-header` are markers).
 
-Four sections carry additions the static artifacts could not express, each banner-commented: MOTION (spinner, skeleton shimmer, undo drain), RESPONSIVE HARDENING (ceilings and reflow points between the two artboard widths), TOOLTIP, and choice-control focus forwarding. Everything else is the artifact source, unchanged apart from two documented edits that turn fixed artboards into a real viewport (`.app`, `.screen`).
-
-Impacted modules: every screen in the console.
+Impacted modules: the admin-only composites and both mobile/desktop shells' legacy chrome.

@@ -80,6 +80,7 @@ describe("Segmented", () => {
       />,
     );
 
-    expect(container.querySelector(".segmented")).toHaveClass("segmented--40");
+    // P3 restyle: the tall variant is the 40px track (h-10) on the ui-web segmented look.
+    expect(container.querySelector("[role=radiogroup]")).toHaveClass("h-10");
   });
 });

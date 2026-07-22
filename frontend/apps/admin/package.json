@@ -24,6 +24,7 @@
     "@sethu/domain": "workspace:*",
     "@sethu/i18n": "workspace:*",
     "@sethu/tokens": "workspace:*",
+    "@sethu/ui-web": "workspace:*",
     "@tanstack/react-query": "^5.90.0",
     "lucide-react": "^1.25.0",
     "react": "^19.2.0",

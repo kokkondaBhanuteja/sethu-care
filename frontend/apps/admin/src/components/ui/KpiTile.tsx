@@ -1,4 +1,4 @@
-import { cx } from "../../lib/cx";
+import { KpiTile as UiKpiTile, cn } from "@sethu/ui-web";
 
 export interface KpiTrend {
   /** Rendered text, e.g. "12%" or "40s". Direction comes from `direction`. */
@@ -26,43 +26,50 @@ export interface KpiTileProps {
 const SPARK_WIDTH = 56;
 const SPARK_HEIGHT = 20;
 
+/**
+ * Thin adapter over @sethu/ui-web KpiTile (P3 migration): admin's trend + sparkline render into
+ * the ui-web `delta` slot, preserving the accessible "up 12%, better" wording exactly.
+ */
 export function KpiTile({ label, value, trend, sparkline, foot, className }: KpiTileProps) {
-  return (
-    <div className={cx("kpi-tile", className)}>
-      <div className="kpi-tile__label">{label}</div>
-      <div className="kpi-tile__value">{value}</div>
-      {foot ? <div className="kpi-tile__foot t-caption c-3">{foot}</div> : null}
-      {!foot && (trend || sparkline) ? (
-        <div className="kpi-tile__foot">
-          {trend ? (
-            <span className={cx("trend", trend.isGood ? "trend--good" : "trend--bad")}>
-              {/* The glyph alone announces as "black up-pointing triangle"; the direction word
-                  carries the meaning for assistive tech, and "better"/"worse" carries the tone,
-                  because up is not reliably good here (rising assign time is bad news). */}
-              <span aria-hidden>{trend.direction === "up" ? "▲" : "▼"}</span>
-              <span className="sr-only">
-                {trend.direction === "up" ? "up" : "down"} {trend.delta},{" "}
-                {trend.isGood ? "better" : "worse"}
-              </span>
-              <span aria-hidden> {trend.delta}</span>
-            </span>
-          ) : null}
-          {sparkline && sparkline.length > 1 ? (
-            <svg
-              className={cx(
-                "sparkline",
-                trend?.isGood === false ? "sparkline--bad" : "sparkline--good",
-              )}
-              viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`}
-              aria-hidden
-            >
-              <path d={sparklinePath(sparkline)} />
-            </svg>
-          ) : null}
-        </div>
+  const deltaSlot = foot ? (
+    <span className="text-xs text-faint">{foot}</span>
+  ) : trend || sparkline ? (
+    <>
+      {trend ? (
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-xs font-semibold",
+            trend.isGood ? "text-success-fg" : "text-danger-fg",
+          )}
+        >
+          {/* The glyph alone announces as "black up-pointing triangle"; the direction word
+              carries the meaning for assistive tech, and "better"/"worse" carries the tone,
+              because up is not reliably good here (rising assign time is bad news). */}
+          <span aria-hidden>{trend.direction === "up" ? "▲" : "▼"}</span>
+          <span className="sr-only">
+            {trend.direction === "up" ? "up" : "down"} {trend.delta},{" "}
+            {trend.isGood ? "better" : "worse"}
+          </span>
+          <span aria-hidden> {trend.delta}</span>
+        </span>
       ) : null}
-    </div>
-  );
+      {sparkline && sparkline.length > 1 ? (
+        <svg
+          className={cn("h-5 w-14", trend?.isGood === false ? "text-danger-fg" : "text-success-fg")}
+          viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`}
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          // Lucide geometry: the design draws every stroke at 1.5 (spec §4.9).
+          strokeWidth={1.5}
+        >
+          <path d={sparklinePath(sparkline)} />
+        </svg>
+      ) : null}
+    </>
+  ) : undefined;
+
+  return <UiKpiTile label={label} value={value} delta={deltaSlot} className={className} />;
 }
 
 /** Maps values onto the 56x20 viewBox, inverted because SVG y grows downward. */

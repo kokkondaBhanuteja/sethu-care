@@ -114,6 +114,7 @@ describe("Button", () => {
   });
 
   it("carries its variant and size as classes, because a new look is a variant and never a restyle", () => {
+    // P3 restyle: the admin variants now map onto @sethu/ui-web Button token utilities.
     render(
       <Button variant="danger" size="primary" block>
         Cancel booking
@@ -121,7 +122,7 @@ describe("Button", () => {
     );
 
     const button = screen.getByRole("button", { name: "Cancel booking" });
-    expect(button).toHaveClass("btn", "btn--danger", "btn--48", "btn--block");
+    expect(button).toHaveClass("bg-danger-fg", "h-12", "w-full");
   });
 
   it("forwards the accessible name a caller sets explicitly, for icon-only buttons", () => {

@@ -7,8 +7,8 @@ export interface TooltipProps {
 }
 
 /**
- * Supplementary detail on hover or focus. Not in the artifacts (they are static, so no hover state
- * was drawn), so it is built from the same tokens as the toast.
+ * Supplementary detail on hover or focus, restyled on global tokens (P3 migration; ui-web ships
+ * no Tooltip component yet, so the app-owned implementation stays).
  *
  * Never the only carrier of meaning: tooltips are unreachable on touch, which is half this
  * console's surface area. Anything an operator must know is on the screen.
@@ -19,7 +19,7 @@ export function Tooltip({ content, children }: TooltipProps) {
 
   return (
     <span
-      className="tooltip"
+      className="relative inline-flex"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
       onFocus={() => setIsVisible(true)}
@@ -27,7 +27,11 @@ export function Tooltip({ content, children }: TooltipProps) {
     >
       <span aria-describedby={tooltipId}>{children}</span>
       {isVisible ? (
-        <span role="tooltip" id={tooltipId} className="tooltip__bubble">
+        <span
+          role="tooltip"
+          id={tooltipId}
+          className="absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-1.5 text-xs text-ink-inverse shadow-overlay"
+        >
           {content}
         </span>
       ) : null}

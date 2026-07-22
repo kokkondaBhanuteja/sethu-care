@@ -66,7 +66,7 @@ const PlatformSettingsPage = lazy(() => import("../pages/PlatformSettingsPage"))
 
 function RouteFallback() {
   return (
-    <div className="empty empty--grow">
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-8">
       <Spinner />
     </div>
   );

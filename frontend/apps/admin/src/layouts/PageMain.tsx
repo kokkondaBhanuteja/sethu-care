@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PageShell } from "@sethu/ui-web";
 
 import { cx } from "../lib/cx";
 
@@ -32,7 +33,9 @@ export function PageMain({
       id={id}
       className={cx("main", flush && "main--flush", onSurface && "main--surface", className)}
     >
-      {children}
+      {/* P3: content sits in the ui-web PageShell — centred max-width column, canvas padding and
+          the 24px between-section rhythm. Flush screens (the map) keep the whole canvas. */}
+      {flush ? children : <PageShell>{children}</PageShell>}
     </main>
   );
 }

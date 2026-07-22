@@ -62,7 +62,11 @@ describe("Modal", () => {
       </Modal>,
     );
 
-    expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
+    // P3: Radix focuses the first tabbable inside the dialog (the footer action here) rather
+    // than the X. The property under test is unchanged: focus lands INSIDE the dialog on open.
+    expect(screen.getByRole("dialog")).toContainElement(
+      document.activeElement as HTMLElement | null,
+    );
   });
 
   it("dismisses on Escape", async () => {
@@ -94,15 +98,17 @@ describe("Modal", () => {
   });
 
   it("dismisses on the scrim, the design's tap-outside exit", async () => {
-    const user = userEvent.setup();
+    // P3: the overlay renders in a portal (document.body), and Radix intentionally sets
+    // pointer-events:none on the page behind — bypass user-event's pointer guard for the scrim.
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onDismiss = vi.fn();
-    const { container } = render(
+    render(
       <Modal isOpen title="Cancel booking #B-8823" onDismiss={onDismiss}>
         <p>Body</p>
       </Modal>,
     );
 
-    await user.click(container.querySelector(".modal-scrim") as HTMLElement);
+    await user.click(document.querySelector(".modal-scrim") as HTMLElement);
 
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
@@ -148,15 +154,16 @@ describe("Modal", () => {
     });
 
     it("ignores a click on the scrim", async () => {
-      const user = userEvent.setup();
+      // P3: portal + Radix pointer-events guard, as in the dismissable scrim test above.
+      const user = userEvent.setup({ pointerEventsCheck: 0 });
       const onDismiss = vi.fn();
-      const { container } = render(
+      render(
         <Modal isOpen title="Issuing refund" isDismissable={false} onDismiss={onDismiss}>
           <p>Body</p>
         </Modal>,
       );
 
-      await user.click(container.querySelector(".modal-scrim") as HTMLElement);
+      await user.click(document.querySelector(".modal-scrim") as HTMLElement);
 
       expect(onDismiss).not.toHaveBeenCalled();
     });
@@ -295,15 +302,16 @@ describe("Sheet", () => {
   });
 
   it("dismisses on the scrim, the design's tap-outside exit", async () => {
-    const user = userEvent.setup();
+    // P3: portal + Radix pointer-events guard, as in the Modal scrim test.
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onDismiss = vi.fn();
-    const { container } = render(
+    render(
       <Sheet isOpen title="Filter bookings" onDismiss={onDismiss}>
         <p>Body</p>
       </Sheet>,
     );
 
-    await user.click(container.querySelector(".scrim") as HTMLElement);
+    await user.click(document.querySelector(".scrim") as HTMLElement);
 
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });

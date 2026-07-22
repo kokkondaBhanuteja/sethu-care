@@ -1,19 +1,23 @@
-import { useId, useRef, type ReactNode } from "react";
-import { X } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "@sethu/i18n";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  cn,
+} from "@sethu/ui-web";
 
-import { cx } from "../../lib/cx";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
-import { Icon } from "./Icon";
-
-/** Widths from the design: 440 for a confirm, 900 for the candidate table. */
+/** Widths from the design: ~440 for a confirm, ~900 for the candidate table (max-w scale). */
 export const MODAL_WIDTHS = {
-  confirm: "modal--440",
-  compact: "modal--480",
-  medium: "modal--560",
-  large: "modal--640",
-  default: "",
-  wide: "modal--900",
+  confirm: "max-w-md",
+  compact: "max-w-lg",
+  medium: "max-w-xl",
+  large: "max-w-2xl",
+  default: "max-w-lg",
+  wide: "max-w-4xl",
 } as const;
 
 export type ModalWidth = keyof typeof MODAL_WIDTHS;
@@ -29,16 +33,17 @@ export interface ModalProps {
   rail?: ReactNode;
   onDismiss: () => void;
   /**
-   * Blocks scrim-click and the close button — used once a destructive flow has started a request,
-   * so a stray click cannot abandon a half-committed action.
+   * Blocks scrim-click, Escape and the close button — used once a destructive flow has started a
+   * request, so a stray click cannot abandon a half-committed action.
    */
   isDismissable?: boolean;
   children: ReactNode;
 }
 
 /**
- * Blocking, centred, focus-trapped (spec §3.3). Used for confirmations, step-up auth and the
- * multi-step destructive flows. Anything non-blocking is a Drawer or a Sheet instead.
+ * Rebuilt on @sethu/ui-web Dialog (P3 migration): Radix supplies the focus trap, aria wiring and
+ * dismissal; the admin isOpen/onDismiss/isDismissable API is unchanged. Blocking, centred (spec
+ * §3.3) — anything non-blocking is a Drawer or a Sheet instead.
  */
 export function Modal({
   isOpen,
@@ -51,61 +56,37 @@ export function Modal({
   isDismissable = true,
   children,
 }: ModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-  const subtitleId = useId();
   const { t } = useTranslation("adminShell");
-
-  useFocusTrap(dialogRef, isOpen && isDismissable, onDismiss);
-
-  if (!isOpen) return null;
+  const blockDismiss = isDismissable ? undefined : (event: Event) => event.preventDefault();
 
   return (
-    <div
-      className="modal-scrim"
-      onClick={isDismissable ? onDismiss : undefined}
-      role="presentation"
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
+    <Dialog open={isOpen} onOpenChange={(nextOpen) => (nextOpen ? undefined : onDismiss())}>
+      <DialogContent
+        // Radix conveys modality by aria-hiding the rest of the page; the attribute keeps the
+        // dialog announcing as blocking to tech that reads the element alone.
         aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={subtitle ? subtitleId : undefined}
-        tabIndex={-1}
-        className={cx("modal", MODAL_WIDTHS[width], Boolean(rail) && "modal--rail")}
-        onClick={(event) => event.stopPropagation()}
+        closeLabel={t("actions.close")}
+        hideCloseButton={!isDismissable}
+        onEscapeKeyDown={blockDismiss}
+        onPointerDownOutside={blockDismiss}
+        onInteractOutside={blockDismiss}
+        // Radix wires the description id when a subtitle renders; explicitly suppressed otherwise
+        // (spread, so the auto-wired id is only overridden in the no-subtitle case).
+        {...(subtitle ? {} : { "aria-describedby": undefined })}
+        // "modal-scrim" is the stable structural hook for the overlay (tests, debugging).
+        overlayClassName="modal-scrim"
+        className={cn(MODAL_WIDTHS[width], rail && "flex gap-6")}
       >
         {rail}
-        <div className={cx(Boolean(rail) && "modal__pane")}>
-          <div className="modal__head">
-            <div className="grow">
-              <div className="modal__title" id={titleId}>
-                {title}
-              </div>
-              {subtitle ? (
-                <div className="modal__sub" id={subtitleId}>
-                  {subtitle}
-                </div>
-              ) : null}
-            </div>
-            {isDismissable ? (
-              <button
-                type="button"
-                className="appbar__btn"
-                onClick={onDismiss}
-                aria-label={t("actions.close")}
-              >
-                <Icon glyph={X} size="lg" />
-              </button>
-            ) : null}
-          </div>
-
-          <div className="modal__body">{children}</div>
-
-          {footer ? <div className="modal__foot modal__foot--end">{footer}</div> : null}
+        <div className="min-w-0 flex-1">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            {subtitle ? <DialogDescription>{subtitle}</DialogDescription> : null}
+          </DialogHeader>
+          <div className="mt-4">{children}</div>
+          {footer ? <DialogFooter>{footer}</DialogFooter> : null}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

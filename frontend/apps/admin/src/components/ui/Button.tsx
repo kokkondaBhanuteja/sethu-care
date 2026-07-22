@@ -1,33 +1,56 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import { Button as UiButton, cn, type ButtonProps as UiButtonProps } from "@sethu/ui-web";
 
-import { cx } from "../../lib/cx";
 import { Icon } from "./Icon";
 import { Spinner } from "./Spinner";
 
-/** Visual weight, from the design's button set. A new look is a variant here, never a restyle. */
-export const BUTTON_VARIANTS = {
-  primary: "btn--primary",
-  danger: "btn--danger",
-  success: "btn--success",
-  outline: "btn--outline",
-  outlineBrand: "btn--outline-brand",
-  outlineDanger: "btn--outline-danger",
-  outlineWarning: "btn--outline-warning",
-  outlineSuccess: "btn--outline-success",
-  outlineMuted: "btn--outline-muted",
-  text: "btn--text",
-  textBrand: "btn--text-brand",
-  textDanger: "btn--text-danger",
-} as const;
+/**
+ * Thin adapter over @sethu/ui-web Button (P3 migration): the admin-side API is unchanged, each
+ * admin variant maps onto a ui-web variant plus token-utility overrides for the looks the global
+ * set does not carry (the outline-{tone} and text-{tone} families).
+ */
+interface VariantMapping {
+  readonly variant: NonNullable<UiButtonProps["variant"]>;
+  readonly extra?: string;
+}
 
-/** Heights are semantic, not decorative: 36 inline in a card, 48 for a sticky primary footer. */
+interface SizeMapping {
+  readonly size: NonNullable<UiButtonProps["size"]>;
+  readonly extra?: string;
+}
+
+export const BUTTON_VARIANTS = {
+  primary: { variant: "primary" },
+  danger: { variant: "destructive" },
+  success: { variant: "success" },
+  outline: { variant: "outline" },
+  outlineBrand: { variant: "outline", extra: "border-info-border text-primary hover:bg-info-bg" },
+  outlineDanger: {
+    variant: "outline",
+    extra: "border-danger-border text-danger-fg hover:bg-danger-bg",
+  },
+  outlineWarning: {
+    variant: "outline",
+    extra: "border-warning-border text-warning-fg hover:bg-warning-bg",
+  },
+  outlineSuccess: {
+    variant: "outline",
+    extra: "border-success-border text-success-fg hover:bg-success-bg",
+  },
+  outlineMuted: { variant: "outline", extra: "text-muted" },
+  text: { variant: "ghost" },
+  textBrand: { variant: "ghost", extra: "text-link hover:bg-info-bg" },
+  textDanger: { variant: "ghost", extra: "text-danger-fg hover:bg-danger-bg" },
+} as const satisfies Record<string, VariantMapping>;
+
+/** Heights stay semantic: 36 inline in a card, 48 for a sticky primary footer (h-12 = 48px). */
 export const BUTTON_SIZES = {
-  inline: "btn--36",
-  section: "btn--40",
-  secondary: "btn--44",
-  primary: "btn--48",
-} as const;
+  inline: { size: "sm" },
+  section: { size: "md" },
+  secondary: { size: "lg", extra: "h-11" },
+  primary: { size: "lg", extra: "h-12" },
+} as const satisfies Record<string, SizeMapping>;
 
 export type ButtonVariant = keyof typeof BUTTON_VARIANTS;
 export type ButtonSize = keyof typeof BUTTON_SIZES;
@@ -57,21 +80,18 @@ export function Button({
   type = "button",
   ...rest
 }: ButtonProps) {
-  const isInactive = disabled === true || isLoading;
+  const mappedVariant: VariantMapping = BUTTON_VARIANTS[variant];
+  const mappedSize: SizeMapping = BUTTON_SIZES[size];
 
   return (
-    <button
+    <UiButton
       {...rest}
       type={type}
-      disabled={isInactive}
+      variant={mappedVariant.variant}
+      size={mappedSize.size}
+      disabled={disabled === true || isLoading}
       aria-busy={isLoading || undefined}
-      className={cx(
-        "btn",
-        BUTTON_VARIANTS[variant],
-        BUTTON_SIZES[size],
-        block && "btn--block",
-        className,
-      )}
+      className={cn(mappedVariant.extra, mappedSize.extra, block && "w-full", className)}
     >
       {isLoading ? (
         <Spinner onBrand={variant === "primary" || variant === "danger" || variant === "success"} />
@@ -80,6 +100,6 @@ export function Button({
       ) : null}
       {children}
       {iconEnd && !isLoading ? <Icon glyph={iconEnd} /> : null}
-    </button>
+    </UiButton>
   );
 }

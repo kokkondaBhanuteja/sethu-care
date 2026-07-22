@@ -1,6 +1,6 @@
 import { useId, useRef, type KeyboardEvent } from "react";
+import { cn, tabsListVariants, tabsTriggerVariants } from "@sethu/ui-web";
 
-import { cx } from "../../lib/cx";
 import { StatusDot, type DotTone } from "./StatusDot";
 
 export interface TabItem<TValue extends string> {
@@ -26,9 +26,9 @@ export interface TabsProps<TValue extends string> {
 }
 
 /**
- * Switches which slice of one record is shown (Jobs / Documents / History). Arrow keys move between
- * tabs, as the tab pattern requires — the roving tabindex is what makes a tab strip keyboard-usable
- * rather than a row of buttons.
+ * Restyled on the @sethu/ui-web `underline` tab look (P3 migration) — the variant maps are
+ * composed rather than the Radix component because this strip is trigger-only (the record slice
+ * renders elsewhere) and its roving-tabindex behaviour is already exactly what the tests pin.
  */
 export function Tabs<TValue extends string>({
   label,
@@ -62,10 +62,10 @@ export function Tabs<TValue extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={handleKeyDown}
-      className={cx(
-        "tabs",
-        variant === "fill" && "tabs--fill",
-        variant === "flush" && "tabs--flush",
+      className={cn(
+        tabsListVariants({ look: "underline" }),
+        variant === "fill" && "w-full [&>[role=tab]]:flex-1",
+        variant === "flush" && "gap-4",
         className,
       )}
     >
@@ -82,7 +82,12 @@ export function Tabs<TValue extends string>({
             role="tab"
             aria-selected={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            className={cx("tabs__tab", isSelected && "is-selected")}
+            // data-state drives the ui-web trigger variants, exactly as Radix would set it.
+            data-state={isSelected ? "active" : "inactive"}
+            className={cn(
+              tabsTriggerVariants({ look: "underline" }),
+              "inline-flex items-center justify-center gap-1.5",
+            )}
             onClick={() => onValueChange(item.value)}
           >
             {item.dot ? (
@@ -94,7 +99,7 @@ export function Tabs<TValue extends string>({
               />
             ) : null}
             {item.label}
-            {item.count !== undefined ? <span className="c-3"> {item.count}</span> : null}
+            {item.count !== undefined ? <span className="text-faint"> {item.count}</span> : null}
           </button>
         );
       })}

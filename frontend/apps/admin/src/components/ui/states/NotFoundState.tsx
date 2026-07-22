@@ -1,6 +1,7 @@
 import { SearchX } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "@sethu/i18n";
+import { buttonVariants, cn } from "@sethu/ui-web";
 
 import { DEFAULT_ROUTE } from "../../../routes/routes.constants";
 import { EmptyState } from "../EmptyState";
@@ -27,7 +28,11 @@ export function NotFoundState({ subject, grow = true }: NotFoundStateProps) {
       body={t("state.notFoundBody")}
       grow={grow}
       actions={
-        <Link className="btn btn--outline btn--44 btn--block" to={DEFAULT_ROUTE}>
+        // P3: a Link styled through the ui-web button variant map — same look as Button.
+        <Link
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 w-full")}
+          to={DEFAULT_ROUTE}
+        >
           {t("state.notFoundAction")}
         </Link>
       }

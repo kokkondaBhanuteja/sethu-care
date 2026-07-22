@@ -15,9 +15,9 @@ providers and applications; refunds; audit. The admin's job is exceptions, not b
 
 | Folder                   | What lives there                                                                                     |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `src/index.css`          | Every design token, in Tailwind `@theme`. The only place a value is written.                         |
-| `src/styles/`            | The artifacts' component layer. Consumed only by `components/ui` and `layouts`.                      |
-| `src/components/ui/`     | The design-system primitives. One configurable component per type.                                   |
+| `src/index.css`          | Layers the GENERATED global tokens (`@sethu/ui-web/tokens.css`) under the admin-specific `@theme`; the legacy alias block resolves against the global values (P3). |
+| `src/styles/`            | The residual legacy component layer (admin-only composites). Consumed only by `components/ui` and `layouts`. |
+| `src/components/ui/`     | The design-system primitives: thin adapters over `@sethu/ui-web` where a global equivalent exists, admin-only composites otherwise. One configurable component per type. |
 | `src/components/states/` | `QueryBoundary` — the §4.10 states, implemented once.                                                |
 | `src/layouts/`           | `AdminShell` picks `DesktopShell` (sidebar) or `MobileShell` (tabs).                                 |
 | `src/routes/`            | The §3.2 route table and the auth / permission / surface guards.                                     |
@@ -71,8 +71,8 @@ Six `/ops/*` endpoints exist. Everything else is mock-backed —
 **`docs/admin-api-contract.md` is the backend's work list**, and each feature's `*.types.ts` is the
 normative shape. Swapping a mock for a real endpoint is a change inside one `.api.ts` file.
 
-Dependencies: `@sethu/{api-client,core,domain,i18n,tokens}`, react-router, TanStack Query, zustand,
-react-hook-form + zod, lucide-react, `@capacitor/*`.
+Dependencies: `@sethu/{api-client,core,domain,i18n,tokens,ui-web}`, react-router, TanStack Query,
+zustand, react-hook-form + zod, lucide-react, `@capacitor/*`.
 
 Boundaries: never import another app; features never import sibling features; pages never call the
 API client directly.

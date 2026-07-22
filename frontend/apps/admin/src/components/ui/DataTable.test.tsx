@@ -73,11 +73,15 @@ describe("structure", () => {
   });
 
   it("marks the numeric columns so ages and amounts stay right-aligned and comparable", () => {
+    // P3 restyle: numeric columns carry the token utilities directly.
     renderTable();
 
-    expect(screen.getByRole("columnheader", { name: "Age" })).toHaveClass("num");
-    expect(screen.getByRole("cell", { name: "34m" })).toHaveClass("num");
-    expect(screen.getByRole("columnheader", { name: "Booking" })).not.toHaveClass("num");
+    expect(screen.getByRole("columnheader", { name: "Age" })).toHaveClass(
+      "text-right",
+      "tabular-nums",
+    );
+    expect(screen.getByRole("cell", { name: "34m" })).toHaveClass("text-right", "tabular-nums");
+    expect(screen.getByRole("columnheader", { name: "Booking" })).not.toHaveClass("text-right");
   });
 });
 
@@ -88,19 +92,23 @@ describe("row tone", () => {
         row.id === "B-8823" ? "danger" : row.id === "B-8811" ? "warning" : "default",
     });
 
-    expect(screen.getByRole("cell", { name: "#B-8823" }).closest("tr")).toHaveClass("row-danger");
-    expect(screen.getByRole("cell", { name: "#B-8811" }).closest("tr")).toHaveClass("row-warning");
+    // P3 restyle: severity tints are the global tone background tokens.
+    expect(screen.getByRole("cell", { name: "#B-8823" }).closest("tr")).toHaveClass("bg-danger-bg");
+    expect(screen.getByRole("cell", { name: "#B-8811" }).closest("tr")).toHaveClass(
+      "bg-warning-bg",
+    );
     expect(screen.getByRole("cell", { name: "#B-8805" }).closest("tr")).not.toHaveClass(
-      "row-danger",
-      "row-warning",
+      "bg-danger-bg",
+      "bg-warning-bg",
     );
   });
 
   it("greys a settled record and fades a merely stale one — they mean different things", () => {
     renderTable({ rowTone: (row) => (row.id === "B-8823" ? "muted" : "faded") });
 
-    expect(screen.getByRole("cell", { name: "#B-8823" }).closest("tr")).toHaveClass("row-muted");
-    expect(screen.getByRole("cell", { name: "#B-8811" }).closest("tr")).toHaveClass("row-faded");
+    // P3 restyle: muted greys the text; faded drops the row's opacity.
+    expect(screen.getByRole("cell", { name: "#B-8823" }).closest("tr")).toHaveClass("text-muted");
+    expect(screen.getByRole("cell", { name: "#B-8811" }).closest("tr")).toHaveClass("opacity-60");
   });
 });
 
@@ -184,7 +192,7 @@ describe("the totals row", () => {
     const { container } = renderTable({ footer: ["Total", "", "", "₹4,548"] });
 
     const total = within(container.querySelector("tfoot") as HTMLElement).getByText("₹4,548");
-    expect(total).toHaveClass("num");
+    expect(total).toHaveClass("text-right", "tabular-nums");
   });
 
   it("renders no tfoot when the table has no totals", () => {

@@ -1,4 +1,4 @@
-import { cx } from "../../lib/cx";
+import { cn, tabsListVariants, tabsTriggerVariants } from "@sethu/ui-web";
 
 export interface SegmentedOption<TValue extends string> {
   readonly value: TValue;
@@ -17,9 +17,9 @@ export interface SegmentedProps<TValue extends string> {
 }
 
 /**
- * Switches the data window (Today / Live now) — not the page. Tabs switch content within a record;
- * a segmented control re-queries the same content. The design keeps them visually distinct for
- * exactly that reason, so pick by meaning, not by looks.
+ * Switches the data window (Today / Live now) — not the page. Restyled on the @sethu/ui-web
+ * `segmented` tab look (P3 migration), but it stays a radiogroup: a segmented control re-queries
+ * the same content, so it must announce as scope selection, never as a tab strip.
  */
 export function Segmented<TValue extends string>({
   label,
@@ -33,20 +33,25 @@ export function Segmented<TValue extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cx("segmented", tall && "segmented--40", className)}
+      className={cn(tabsListVariants({ look: "segmented" }), tall && "h-10", className)}
     >
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="radio"
-          aria-checked={option.value === value}
-          className={cx("segmented__opt", option.value === value && "is-selected")}
-          onClick={() => onValueChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
+      {options.map((option) => {
+        const isSelected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            // data-state drives the ui-web trigger variants, exactly as Radix would set it.
+            data-state={isSelected ? "active" : "inactive"}
+            className={cn(tabsTriggerVariants({ look: "segmented" }), tall && "py-2")}
+            onClick={() => onValueChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

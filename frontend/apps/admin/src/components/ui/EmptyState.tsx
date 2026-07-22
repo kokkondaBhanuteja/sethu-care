@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-
-import { cx } from "../../lib/cx";
-import { Icon } from "./Icon";
+import { EmptyState as UiEmptyState, IconChip, cn } from "@sethu/ui-web";
 
 export interface EmptyStateProps {
   icon: LucideIcon;
@@ -22,11 +20,13 @@ export interface EmptyStateProps {
 }
 
 /**
- * Nothing to show. Callers must distinguish genuinely empty from filtered-empty (spec §4.10) by
- * choosing different copy and offering "Clear filters" in the filtered case — see FilteredEmptyState.
+ * Thin adapter over @sethu/ui-web EmptyState (P3 migration): the admin state semantics (positive,
+ * grow, the required explain-why body) are preserved, with the icon presented in a soft IconChip
+ * per the global empty-state anatomy. Callers must still distinguish genuinely empty from
+ * filtered-empty (spec §4.10) — see FilteredEmptyState.
  */
 export function EmptyState({
-  icon,
+  icon: IconGlyph,
   title,
   body,
   actions,
@@ -35,18 +35,18 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div className={cx("empty", grow && "empty--grow", positive && "empty--positive", className)}>
-      <Icon glyph={icon} size="empty" className="empty__icon" />
-      {/*
-        A heading, not a paragraph. Every §4.10 state renders through here — empty, filtered-empty,
-        error + retry, not-found, permission-denied, coming-soon and the fatal boundary — and each
-        one is the only thing on its region. A screen reader user landing on "Something went wrong"
-        needs it in the heading list to find it; as a <p> the whole state was unaddressable.
-        Styling is class-driven, so the tag change is purely semantic.
-      */}
-      <h2 className="empty__title">{title}</h2>
-      {body ? <p className="empty__body">{body}</p> : null}
-      {actions ? <div className="empty__actions">{actions}</div> : null}
-    </div>
+    <UiEmptyState
+      icon={
+        <IconChip look="soft" accent={positive ? "green" : "brand"} size="lg">
+          <IconGlyph aria-hidden />
+        </IconChip>
+      }
+      title={title}
+      titleClassName={cn(positive && "text-success-fg")}
+      action={actions}
+      className={cn(grow && "flex-1", className)}
+    >
+      {body}
+    </UiEmptyState>
   );
 }

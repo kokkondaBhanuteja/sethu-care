@@ -37,9 +37,12 @@ describe("EmptyState", () => {
   });
 
   it("reads an all-clear as relief rather than absence", () => {
-    const { container } = render(<EmptyState icon={Inbox} title="All caught up" positive grow />);
+    // P3 restyle: positive turns the title success-green; grow fills the remaining height.
+    render(<EmptyState icon={Inbox} title="All caught up" positive grow />);
 
-    expect(container.querySelector(".empty")).toHaveClass("empty--positive", "empty--grow");
+    const title = screen.getByRole("heading", { name: "All caught up" });
+    expect(title).toHaveClass("text-success-fg");
+    expect(title.closest(".flex-1")).not.toBeNull();
   });
 });
 

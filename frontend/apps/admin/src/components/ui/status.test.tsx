@@ -78,16 +78,18 @@ describe("Pill", () => {
   });
 
   it("carries its tone as a class so the treatment is a variant, never a restyle", () => {
+    // P3 restyle: tones are the @sethu/ui-web StatusPill token classes; on-tint pills sit on a
+    // solid surface fill, and the provisional hatch stays the pill--striped component class.
     const { container } = render(
       <Pill tone="warning" striped onTint>
         Provisional
       </Pill>,
     );
 
-    expect(container.querySelector(".pill")).toHaveClass(
-      "pill--warning",
-      "pill--on-tint",
-      "pill--striped",
+    expect(container.querySelector(".pill--striped")).toHaveClass(
+      "text-warning-fg",
+      "bg-surface",
+      "border-warning-border",
     );
   });
 });

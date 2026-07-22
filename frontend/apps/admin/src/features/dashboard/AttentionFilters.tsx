@@ -1,6 +1,7 @@
 import { useTranslation } from "@sethu/i18n";
 
 import { cx } from "../../lib/cx";
+import { filterChipClassName } from "../../components/ui/FilterBar";
 import { ATTENTION_FILTER_ORDER } from "./dashboard.constants";
 import { ATTENTION_FILTERS, type AttentionFilter, type AttentionQueue } from "./dashboard.types";
 
@@ -39,7 +40,11 @@ export function AttentionFilters({
     <div
       role="group"
       aria-label={t("filters.label")}
-      className={cx("chip-row", flush && "chip-row--flush", "items-center")}
+      className={cx(
+        // P3 restyle: the chip row is token utilities; it scrolls sideways rather than wrapping.
+        "flex items-center gap-2 overflow-x-auto px-4 py-3",
+        flush && "px-0",
+      )}
     >
       {ATTENTION_FILTER_ORDER.map((filter) => {
         const count = counts[filter];
@@ -50,7 +55,7 @@ export function AttentionFilters({
             type="button"
             aria-pressed={filter === value}
             disabled={isEmptyGroup && filter !== value}
-            className={cx("chip", filter === value && "is-selected")}
+            className={filterChipClassName(filter === value)}
             onClick={() => onChange(filter)}
           >
             {t(LABEL_KEYS[filter], { count })}

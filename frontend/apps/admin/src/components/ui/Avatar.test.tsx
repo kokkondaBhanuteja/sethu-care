@@ -68,8 +68,9 @@ describe("Avatar", () => {
   });
 
   it("carries its size and brand fill as classes", () => {
+    // P3 restyle: sizes live on the token spacing ladder; brand is the primary fill.
     const { container } = render(<Avatar name="Ravi Kumar" size="profile" brand />);
 
-    expect(container.querySelector(".avatar")).toHaveClass("avatar--64", "avatar--brand");
+    expect(container.querySelector(".avatar")).toHaveClass("size-16", "bg-primary");
   });
 });

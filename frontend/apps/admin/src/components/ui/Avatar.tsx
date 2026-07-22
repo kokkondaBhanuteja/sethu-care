@@ -1,23 +1,29 @@
-import { cx } from "../../lib/cx";
+import { avatarFallbackVariants, cn } from "@sethu/ui-web";
 
+/**
+ * Restyled on the @sethu/ui-web avatar language (P3 migration): tinted initials on a pale info
+ * fill, brand fill for the signed-in admin. The markup stays app-owned (plain <img>, not Radix)
+ * because initials must render deterministically — the sr-only name is the announcement, always.
+ * Sizes stay the admin roster's 28–72px ladder, expressed on the rem spacing scale.
+ */
 export const AVATAR_SIZES = {
-  xs: "avatar--28",
-  sm: "avatar--32",
-  md: "avatar--36",
-  lg: "avatar--40",
-  xl: "avatar--48",
-  record: "avatar--56",
-  profile: "avatar--64",
-  hero: "avatar--72",
+  xs: "size-7 text-xs",
+  sm: "size-8 text-xs",
+  md: "size-9 text-sm",
+  lg: "size-10 text-sm",
+  xl: "size-12 text-base",
+  record: "size-14 text-base",
+  profile: "size-16 text-lg",
+  hero: "size-18 text-xl",
 } as const;
 
 export type AvatarSize = keyof typeof AVATAR_SIZES;
 
 export const AVATAR_STATUSES = {
-  online: "avatar__status--success",
-  busy: "avatar__status--warning",
-  offline: "avatar__status--offline",
-  suspended: "avatar__status--danger",
+  online: "bg-success-fg",
+  busy: "bg-warning-fg",
+  offline: "bg-faint",
+  suspended: "bg-danger-fg",
 } as const;
 
 export type AvatarStatus = keyof typeof AVATAR_STATUSES;
@@ -43,15 +49,31 @@ export function Avatar({
   className,
 }: AvatarProps) {
   return (
-    <span className={cx("avatar", AVATAR_SIZES[size], brand && "avatar--brand", className)}>
+    <span
+      className={cn(
+        // "avatar" carries no styling — it is the stable structural hook (tests, debugging).
+        "avatar",
+        brand ? "bg-primary text-on-primary" : avatarFallbackVariants({ tone: "blue" }),
+        // After the variant so tailwind-merge lets the ladder win over the variant's size-full.
+        "relative inline-flex shrink-0 items-center justify-center rounded-full font-medium",
+        AVATAR_SIZES[size],
+        className,
+      )}
+    >
       {imageUrl ? (
-        <img src={imageUrl} alt="" className="w-full h-full object-cover rounded-full" />
+        <img src={imageUrl} alt="" className="size-full rounded-full object-cover" />
       ) : (
         <span aria-hidden>{initials(name)}</span>
       )}
       <span className="sr-only">{name}</span>
       {status ? (
-        <span aria-hidden className={cx("avatar__status", AVATAR_STATUSES[status])} />
+        <span
+          aria-hidden
+          className={cn(
+            "avatar__status absolute bottom-0 right-0 block size-2.5 rounded-full ring-2 ring-surface",
+            AVATAR_STATUSES[status],
+          )}
+        />
       ) : null}
     </span>
   );

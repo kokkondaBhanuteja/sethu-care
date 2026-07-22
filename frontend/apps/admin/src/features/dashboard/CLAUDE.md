@@ -10,7 +10,7 @@ Contents:
 - `NeedsAttentionFeed.desktop.tsx` / `NeedsAttentionFeed.mobile.tsx` — the full queue (BOX 18/19, BOX 30–33).
 - `NeedsAttentionTable.desktop.tsx` + `needsAttentionColumns.tsx` — desktop's TABLE rendering.
 - `NeedsAttentionCards.mobile.tsx` + `AttentionCard.tsx` — mobile's stacked-card rendering.
-- `AttentionActions.tsx` — the two inline buttons a row offers; `AttentionFilters.tsx` — the counted chip row.
+- `AttentionActions.tsx` — the two inline buttons a row offers; `AttentionFilters.tsx` — the counted chip row (P3: chips take the shared look via `components/ui/FilterBar`'s `filterChipClassName`, token utilities only).
 - `AlertBand.tsx`, `KpiTiles.tsx`, `ActivityTicker.tsx`, `ConnectionPill.tsx`, `AttentionEmptyStates.tsx`, `DashboardSkeletons.tsx`.
 - `useLiveDashboard.ts`, `useNeedsAttention.ts`, `useAcknowledgeAlert.ts`, `useConnectionStatus.ts`, `usePriorityLabel.ts`.
 - `dashboard.{api,mock,fixtures,types,constants}.ts`, `attention.fixtures.ts`.

@@ -16,7 +16,9 @@ export interface PaginationProps {
 /**
  * The design paginates by count line plus "Load more", not by numbered pages — correct for queues
  * an operator scans top-down looking for the worst problem, where page 3 has no meaning. Numbered
- * paging is deliberately absent rather than omitted.
+ * paging is deliberately absent rather than omitted. NOT swapped for @sethu/ui-web Pagination in
+ * P3: that component is a numbered page-window pager, which is exactly the model this queue
+ * console rejects — recorded as an API gap, restyled on tokens instead.
  */
 export function Pagination({
   shown,
@@ -29,8 +31,8 @@ export function Pagination({
   const hasMore = shown < total;
 
   return (
-    <div className="row-between px-s2 pt-s3">
-      <p className="t-caption c-3" aria-live="polite">
+    <div className="flex items-center justify-between gap-3 px-2 pt-3">
+      <p className="text-xs text-faint" aria-live="polite">
         {t("table.showing", { count: shown, total })}
         {subject ? ` ${subject}` : null}
       </p>

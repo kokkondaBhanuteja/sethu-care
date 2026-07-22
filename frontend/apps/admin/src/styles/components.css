@@ -27,19 +27,18 @@
    Screen files compose these classes. They do not define their own styles
    and they never contain a raw colour value.
 
-   Two rules are enforced structurally here, both straight from the spec:
+   Two rules are enforced structurally here,
+  both straight from the spec:
 
      1. STATUS IS NEVER COLOUR ALONE. Every status pill has a tinted
-        background, a coloured label AND room for a 16px icon. Every status
+        background,
+  a coloured label AND room for a 16px icon. Every status
         dot is paired with a text label. A colourblind ops manager reading
         this at 2am must lose nothing.
 
-     2. TREND COLOUR IS SEMANTIC, NOT DIRECTIONAL. `.trend--bad` is red
-        whether the arrow points up or down. A rising average assignment
-        time is bad news even though the number went up. Hence the
-        modifiers are named good/bad/flat, not up/down.
+     2. TREND COLOUR IS SEMANTIC,
+  not up/down.
    ========================================================================= */
-
 
 /* =========================================================================
    1. TYPE SCALE
@@ -108,9 +107,6 @@
   .c-3 {
     color: var(--text-3);
   }
-  .c-brand {
-    color: var(--brand);
-  }
   .c-success {
     color: var(--success);
   }
@@ -127,17 +123,11 @@
     color: var(--text-on-brand);
   }
 
-  .w-regular {
-    font-weight: 400;
-  }
   .w-medium {
     font-weight: 500;
   }
   .w-semi {
     font-weight: 600;
-  }
-  .w-bold {
-    font-weight: 700;
   }
 
   /* =========================================================================
@@ -176,25 +166,9 @@
     width: var(--icon-2xl);
     height: var(--icon-2xl);
   }
-  .icon--40 {
-    width: 40px;
-    height: 40px;
-  }
   .icon--48 {
     width: var(--icon-3xl);
     height: var(--icon-3xl);
-  }
-  .icon--64 {
-    width: 64px;
-    height: 64px;
-  }
-
-  /* A solid glyph rather than an outline — a filled star for a rating value.
-   Needed as a class because `.icon { fill: none }` is a stylesheet rule and
-   beats a fill="currentColor" presentation attribute on the element. */
-  .icon--filled {
-    fill: currentColor;
-    stroke: none;
   }
 
   /* =========================================================================
@@ -324,64 +298,6 @@
    11px uppercase semibold, tinted background, coloured text, icon slot.
    ========================================================================= */
 
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s1);
-    height: 20px;
-    padding: 0 var(--s2);
-    border-radius: var(--r-pill);
-    font-size: var(--t-pill-size);
-    line-height: 1;
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-    background: var(--bg-neutral);
-    color: var(--neutral);
-  }
-  .pill .icon {
-    width: 12px;
-    height: 12px;
-  }
-
-  .pill--danger {
-    background: var(--bg-danger);
-    color: var(--danger);
-  }
-  .pill--warning {
-    background: var(--bg-warning);
-    color: var(--warning);
-  }
-  .pill--success {
-    background: var(--bg-success);
-    color: var(--success);
-  }
-  .pill--info {
-    background: var(--bg-info);
-    color: var(--info);
-  }
-  .pill--neutral {
-    background: var(--bg-neutral);
-    color: var(--neutral);
-  }
-  .pill--brand {
-    background: var(--brand);
-    color: var(--text-on-brand);
-  }
-  .pill--outline {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--border-strong);
-    color: var(--text-2);
-  }
-
-  /* A pill sitting on a card of its own tint — a danger pill on a #FDECEA
-   impact block — loses all contrast against the fill. This lifts it back onto
-   the canvas colour so the pill still reads as a discrete object. */
-  .pill--on-tint {
-    background: var(--canvas);
-  }
-
   /* "COMPLETED (ADMIN VERIFIED)" — reads as a success, but the diagonal
    hatch marks it as a human override rather than a clean OTP completion. */
   .pill--striped {
@@ -391,12 +307,6 @@
       transparent 0 3px,
       color-mix(in srgb, var(--success) 18%, transparent) 3px 6px
     );
-    color: var(--success);
-  }
-
-  /* The LIVE / OFFLINE / RECONNECTING indicator in the dashboard header. */
-  .pill--live {
-    background: var(--bg-success);
     color: var(--success);
   }
 
@@ -484,134 +394,6 @@
    7. CARDS
    ========================================================================= */
 
-  .card {
-    background: var(--raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-card);
-    padding: var(--card-pad);
-    box-shadow: var(--shadow-card);
-  }
-  .card--flush {
-    padding: 0;
-  }
-  .card--tight {
-    padding: var(--s3);
-  }
-
-  /* The 3px severity edge. Implemented as a left border so it aligns exactly
-   with the card's rounded corner rather than floating inside it. */
-  .card--edge-danger {
-    border-left: var(--edge-w) solid var(--danger);
-  }
-  .card--edge-warning {
-    border-left: var(--edge-w) solid var(--warning);
-  }
-  .card--edge-success {
-    border-left: var(--edge-w) solid var(--success);
-  }
-  .card--edge-brand {
-    border-left: var(--edge-w) solid var(--brand);
-  }
-
-  /* Faint status tints. Deliberately weak — the tint supports the pill and the
-   edge, it does not replace them. */
-  .card--tint-danger {
-    background: color-mix(in srgb, var(--bg-danger) 55%, var(--canvas));
-  }
-  .card--tint-warning {
-    background: color-mix(in srgb, var(--bg-warning) 55%, var(--canvas));
-  }
-  .card--tint-success {
-    background: color-mix(in srgb, var(--bg-success) 55%, var(--canvas));
-  }
-  .card--tint-info {
-    background: color-mix(in srgb, var(--bg-info) 55%, var(--canvas));
-  }
-
-  /* Solid tints for the heavier impact/notice cards. */
-  .card--danger {
-    background: var(--bg-danger);
-    border-color: transparent;
-    box-shadow: none;
-  }
-  .card--warning {
-    background: var(--bg-warning);
-    border-color: transparent;
-    box-shadow: none;
-  }
-  .card--success {
-    background: var(--bg-success);
-    border-color: transparent;
-    box-shadow: none;
-  }
-  .card--info {
-    background: var(--bg-info);
-    border-color: transparent;
-    box-shadow: none;
-  }
-  .card--surface {
-    background: var(--surface);
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  /* The solid tints above clear every border so the card reads as one flat block.
-   That would also erase the severity edge when the two are combined — which is
-   exactly the pairing the heaviest cards need (a tinted impact summary that
-   still carries its 3px rail). These restore it. */
-  .card--danger.card--edge-danger {
-    border-left-color: var(--danger);
-  }
-  .card--warning.card--edge-warning {
-    border-left-color: var(--warning);
-  }
-  .card--success.card--edge-success {
-    border-left-color: var(--success);
-  }
-  .card--info.card--edge-brand {
-    border-left-color: var(--brand);
-  }
-  .card--surface.card--edge-danger {
-    border-left-color: var(--danger);
-  }
-  .card--surface.card--edge-warning {
-    border-left-color: var(--warning);
-  }
-
-  /* Coloured 1px outline plus a faint fill — the evidence-card pattern, where a
-   requirement is either satisfied or blocking and the card border itself has
-   to carry that verdict. Pairs with .card--tint-* for the fill. */
-  .card--outline-success {
-    border-color: var(--success);
-  }
-  .card--outline-danger {
-    border-color: var(--danger);
-  }
-  .card--outline-warning {
-    border-color: var(--warning);
-  }
-
-  /* Selected state for choosable cards (refund type, suspend action type). */
-  .card.is-selected {
-    border: 2px solid var(--brand);
-    background: var(--tint-selected);
-    padding: calc(var(--card-pad) - 1px);
-  }
-  .card.is-selected-danger {
-    border: 2px solid var(--danger);
-    background: var(--bg-danger);
-    padding: calc(var(--card-pad) - 1px);
-  }
-
-  .card-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-  }
-  .card-list--20 {
-    gap: var(--s5);
-  }
-
   /* =========================================================================
    8. BANNERS — full-bleed strips under an app bar
    ========================================================================= */
@@ -680,160 +462,11 @@
    10. BUTTONS
    ========================================================================= */
 
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--s2);
-    height: var(--btn-40);
-    padding: 0 var(--s3);
-    border-radius: var(--r-pill);
-    border: 1px solid transparent;
-    background: transparent;
-    font-family: inherit;
-    font-size: var(--t-body-size);
-    line-height: 1;
-    font-weight: 600;
-    color: var(--text-1);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .btn--36 {
-    height: var(--btn-36);
-    font-size: var(--t-label-size);
-  }
-  .btn--40 {
-    height: var(--btn-40);
-  }
-  .btn--44 {
-    height: var(--btn-44);
-  }
-  .btn--48 {
-    height: var(--btn-48);
-    font-size: var(--t-card-size);
-  }
-  .btn--block {
-    display: flex;
-    width: 100%;
-  }
-
-  .btn--primary {
-    background: var(--brand);
-    color: var(--text-on-brand);
-  }
-  .btn--danger {
-    background: var(--danger);
-    color: var(--text-on-brand);
-  }
-  .btn--success {
-    background: var(--success);
-    color: var(--text-on-brand);
-  }
-
-  .btn--outline {
-    border-color: var(--border-strong);
-    color: var(--text-1);
-    background: var(--canvas);
-  }
-  .btn--outline-brand {
-    border-color: var(--brand);
-    color: var(--brand);
-    background: var(--canvas);
-  }
-  .btn--outline-danger {
-    border-color: var(--danger);
-    color: var(--danger);
-    background: var(--canvas);
-  }
-  .btn--outline-warning {
-    border-color: var(--warning);
-    color: var(--warning);
-    background: var(--canvas);
-  }
-  .btn--outline-success {
-    border-color: var(--success);
-    color: var(--success);
-    background: var(--canvas);
-  }
-  .btn--outline-muted {
-    border-color: var(--border-strong);
-    color: var(--text-3);
-    background: var(--canvas);
-  }
-
-  .btn--text {
-    color: var(--text-2);
-    font-weight: 500;
-    padding: 0;
-  }
-  .btn--text-brand {
-    color: var(--brand);
-    font-weight: 500;
-    padding: 0;
-  }
-  .btn--text-danger {
-    color: var(--danger);
-    font-weight: 500;
-    padding: 0;
-  }
-
-  /* A text button that sits inline with body copy — the "Reveal" beside a masked
-   phone number. The 40px default height would break the line box. */
-  .btn--inline {
-    height: auto;
-    font-size: var(--t-label-size);
-    line-height: var(--t-label-line);
-  }
-
-  /* Two 36px actions sitting side by side inside a card — the standard
-   "Call / Reassign" pair. */
-  .btn-pair {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--s2);
-  }
-  .btn-stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-  }
-  .btn-trio {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--s2);
-  }
-
-  /* Circular outlined icon button — phone / message on contact rows. */
-  .icon-btn {
-    width: var(--btn-36);
-    height: var(--btn-36);
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--r-full);
-    border: 1px solid var(--border-strong);
-    background: var(--canvas);
-    color: var(--text-1);
-    cursor: pointer;
-  }
-  .icon-btn--brand {
-    border-color: var(--brand);
-    color: var(--brand);
-  }
-  .icon-btn--40 {
-    width: 40px;
-    height: 40px;
-  }
-
   /* Text link inline in body copy. */
   .link {
     color: var(--brand);
     font-weight: 500;
     text-decoration: none;
-  }
-  .link--danger {
-    color: var(--danger);
   }
 
   /* =========================================================================
@@ -864,118 +497,9 @@
    (Today / Live now). Tabs = switching a list (Active / Completed).
    ========================================================================= */
 
-  .segmented {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: var(--s1);
-    height: var(--segmented-h);
-    padding: 3px;
-    border-radius: var(--r-pill);
-    background: var(--inset);
-  }
-  .segmented--40 {
-    height: var(--btn-40);
-  }
-  .segmented__opt {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    font-size: var(--t-label-size);
-    line-height: 1;
-    font-weight: 600;
-    color: var(--text-2);
-    background: transparent;
-    border: 0;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 0 var(--s1);
-    white-space: nowrap;
-  }
-  .segmented__opt.is-selected {
-    background: var(--canvas);
-    color: var(--text-1);
-    box-shadow: var(--shadow-card);
-  }
-
-  .tabs {
-    display: flex;
-    gap: var(--s5);
-    padding: 0 var(--gutter);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .tabs--fill {
-    gap: 0;
-  }
-  .tabs--fill .tabs__tab {
-    flex: 1 1 0;
-    justify-content: center;
-  }
-  .tabs__tab {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s1);
-    padding: var(--s3) 0;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    background: none;
-    font-family: inherit;
-    font-size: var(--t-label-size);
-    line-height: 1;
-    font-weight: 600;
-    color: var(--text-2);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .tabs__tab.is-selected {
-    color: var(--text-1);
-    border-bottom-color: var(--brand);
-  }
-
   /* =========================================================================
    13. FILTER CHIPS — horizontally scrollable row
    ========================================================================= */
-
-  .chip-row {
-    display: flex;
-    gap: var(--s2);
-    padding: var(--s3) var(--gutter);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .chip-row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s1);
-    height: var(--chip-h);
-    padding: 0 var(--s3);
-    flex: none;
-    border-radius: var(--r-pill);
-    border: 1px solid transparent;
-    background: var(--surface);
-    color: var(--text-2);
-    font-size: var(--t-label-size);
-    line-height: 1;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .chip.is-selected {
-    background: var(--tint-selected);
-    border-color: var(--brand);
-    color: var(--brand);
-    font-weight: 600;
-  }
-  .chip--removable {
-    padding-right: var(--s2);
-  }
 
   /* Small inline informational chip (ratings, timing, deltas). */
   .tag {
@@ -992,49 +516,10 @@
     font-weight: 600;
     white-space: nowrap;
   }
-  .tag--success {
-    background: var(--bg-success);
-    color: var(--success);
-  }
-  .tag--warning {
-    background: var(--bg-warning);
-    color: var(--warning);
-  }
-  .tag--danger {
-    background: var(--bg-danger);
-    color: var(--danger);
-  }
-  .tag--info {
-    background: var(--bg-info);
-    color: var(--info);
-  }
-  .tag--outline {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--border-subtle);
-  }
 
   /* =========================================================================
    14. TREND CHIPS — semantic, never directional
    ========================================================================= */
-
-  .trend {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    font-size: var(--t-pill-size);
-    line-height: 1;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .trend--good {
-    color: var(--success);
-  }
-  .trend--bad {
-    color: var(--danger);
-  } /* e.g. "up 40s" on assignment time */
-  .trend--flat {
-    color: var(--text-3);
-  }
 
   /* =========================================================================
    15. KPI TILES
@@ -1044,63 +529,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--s3);
-  }
-
-  .kpi-tile {
-    background: var(--raised);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-card);
-    padding: var(--card-pad);
-    box-shadow: var(--shadow-card);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s1);
-  }
-  .kpi-tile__label {
-    font-size: var(--t-label-size);
-    line-height: var(--t-label-line);
-    color: var(--text-2);
-  }
-  .kpi-tile__value {
-    font-size: var(--t-kpi-size);
-    line-height: var(--t-kpi-line);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-  .kpi-tile__foot {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--s2);
-    margin-top: var(--s1);
-  }
-
-  /* Sparkline — an inline SVG polyline, sized by the container. */
-  .sparkline {
-    width: 56px;
-    height: 20px;
-    flex: none;
-    overflow: visible;
-  }
-  .sparkline path {
-    fill: none;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .sparkline--good path {
-    stroke: var(--success);
-  }
-  .sparkline--bad path {
-    stroke: var(--danger);
-  }
-  .sparkline--flat path {
-    stroke: var(--text-3);
-  }
-  .sparkline--wide {
-    width: 100%;
-    height: 48px;
   }
 
   /* =========================================================================
@@ -1115,59 +543,6 @@
     padding: var(--s2) var(--gutter);
     background: var(--canvas);
   }
-  .row--40 {
-    min-height: var(--row-40);
-  }
-  .row--48 {
-    min-height: var(--row-48);
-  }
-  .row--52 {
-    min-height: var(--row-52);
-  }
-  .row--56 {
-    min-height: var(--row-56);
-  }
-  .row--60 {
-    min-height: var(--row-60);
-  }
-  .row--72 {
-    min-height: var(--row-72);
-  }
-  .row--top {
-    align-items: flex-start;
-  }
-  .row--divider {
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  /* A severity edge on a bare row rather than a card — the map sheet's escalated
-   entries, where a full card treatment would be too heavy for a 56px row. */
-  .row--edge-danger {
-    border-left: var(--edge-w) solid var(--danger);
-  }
-  .row--edge-warning {
-    border-left: var(--edge-w) solid var(--warning);
-  }
-  .row--bordered {
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--r-card);
-  }
-  .row--surface {
-    background: var(--surface);
-  }
-  .row__body {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .row__trail {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    flex: none;
-  }
 
   /* A right-aligned timestamp — the standard trailing element on activity and
    alert rows. */
@@ -1178,124 +553,14 @@
     flex: none;
   }
 
-  .chevron {
-    color: var(--text-3);
-    flex: none;
-  }
-
   .divider {
     height: 1px;
     background: var(--border-subtle);
-  }
-  .divider--inset {
-    margin-left: var(--gutter);
   }
 
   /* =========================================================================
    17. AVATARS — initials on a tint. No external images anywhere.
    ========================================================================= */
-
-  .avatar {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    flex: none;
-    border-radius: var(--r-full);
-    background: var(--inset);
-    color: var(--text-2);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--t-label-size);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.02em;
-    overflow: visible;
-  }
-  .avatar--brand {
-    background: var(--tint-selected);
-    color: var(--brand);
-  }
-  .avatar--28 {
-    width: 28px;
-    height: 28px;
-    font-size: var(--t-pill-size);
-  }
-  .avatar--32 {
-    width: 32px;
-    height: 32px;
-    font-size: var(--t-caption-size);
-  }
-  .avatar--36 {
-    width: 36px;
-    height: 36px;
-    font-size: var(--t-caption-size);
-  }
-  .avatar--40 {
-    width: 40px;
-    height: 40px;
-    font-size: var(--t-label-size);
-  }
-  .avatar--48 {
-    width: 48px;
-    height: 48px;
-    font-size: var(--t-card-size);
-  }
-  .avatar--56 {
-    width: 56px;
-    height: 56px;
-    font-size: var(--t-section-size);
-  }
-  .avatar--64 {
-    width: 64px;
-    height: 64px;
-    font-size: var(--t-title-size);
-  }
-  .avatar--72 {
-    width: 72px;
-    height: 72px;
-    font-size: var(--t-title-size);
-  }
-
-  /* Status dot riding the avatar's bottom-right, ringed so it reads on any fill. */
-  .avatar__status {
-    position: absolute;
-    right: -1px;
-    bottom: -1px;
-    width: 12px;
-    height: 12px;
-    border-radius: var(--r-full);
-    border: 2px solid var(--canvas);
-    background: var(--neutral);
-  }
-  .avatar__status--success {
-    background: var(--success);
-  }
-  .avatar__status--warning {
-    background: var(--warning);
-  }
-  .avatar__status--danger {
-    background: var(--danger);
-  }
-  .avatar__status--offline {
-    background: var(--text-3);
-  }
-
-  /* Small camera affordance on the editable profile avatar. */
-  .avatar__edit {
-    position: absolute;
-    right: -2px;
-    bottom: -2px;
-    width: 24px;
-    height: 24px;
-    border-radius: var(--r-full);
-    border: 2px solid var(--canvas);
-    background: var(--surface);
-    color: var(--text-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
 
   /* =========================================================================
    18. DRAWN PLACEHOLDER MEDIA
@@ -1318,67 +583,10 @@
     color: var(--text-3);
     overflow: hidden;
   }
-  .thumb--48 {
-    width: 48px;
-    height: 48px;
-  }
-  .thumb--80 {
-    width: 80px;
-    height: 80px;
-  }
-  .thumb--full {
-    width: 100%;
-  }
 
-  /* Work photo — a suggestion of an appliance behind the image glyph. */
-  .thumb--photo::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--text-3) 12%, transparent) 0 40%,
-        transparent 40% 100%
-      ),
-      linear-gradient(
-        0deg,
-        color-mix(in srgb, var(--text-3) 16%, transparent) 0 28%,
-        transparent 28%
-      );
-  }
-
-  /* Document scan — ruled lines suggesting a form. */
-  .thumb--doc::before {
-    content: "";
-    position: absolute;
-    inset: 8px;
-    background: repeating-linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--text-3) 30%, transparent) 0 1.5px,
-      transparent 1.5px 7px
-    );
-  }
   .thumb .icon {
     position: relative;
     z-index: 1;
-  }
-
-  .thumb-row {
-    display: flex;
-    gap: var(--s2);
-  }
-
-  /* Small map preview on the provider profile. */
-  .map-thumb {
-    position: relative;
-    width: 96px;
-    height: 80px;
-    flex: none;
-    border-radius: var(--r-pill);
-    border: 1px solid var(--border-subtle);
-    overflow: hidden;
-    background: var(--surface);
   }
 
   /* =========================================================================
@@ -1412,28 +620,6 @@
     white-space: nowrap;
   }
 
-  /* The rail column: a dot with a connecting line drawn beneath it. */
-  .timeline__rail {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-self: stretch;
-    padding-top: 5px;
-  }
-  .timeline__rail::before {
-    content: "";
-    position: absolute;
-    top: 5px;
-    bottom: -6px;
-    left: 50%;
-    width: 1.5px;
-    margin-left: -0.75px;
-    background: var(--border-subtle);
-  }
-  .timeline__item:last-child .timeline__rail::before {
-    display: none;
-  }
-
   .timeline__dot {
     position: relative;
     z-index: 1;
@@ -1454,15 +640,6 @@
   }
   .timeline__dot--danger {
     background: var(--danger);
-  }
-
-  /* A failure event replaces the dot with an icon. */
-  .timeline__icon {
-    position: relative;
-    z-index: 1;
-    color: var(--danger);
-    background: var(--canvas);
-    display: flex;
   }
 
   .timeline__body {
@@ -1528,33 +705,6 @@
   .input--error {
     border-color: var(--danger);
   }
-  .input--focus {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
-  .input__placeholder {
-    color: var(--text-3);
-  }
-
-  /* Search fields have no border — fill alone, per the spec. */
-  .search {
-    height: var(--search-h);
-    padding: 0 var(--s3);
-    border-radius: var(--r-pill);
-    background: var(--inset);
-    border: 0;
-    color: var(--text-1);
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    width: 100%;
-  }
-  .search--52 {
-    height: 52px;
-  }
-  .search__icon {
-    color: var(--text-3);
-  }
 
   .textarea {
     min-height: 96px;
@@ -1582,32 +732,8 @@
     color: var(--text-3);
     text-align: right;
   }
-  .counter--ok {
-    color: var(--success);
-  }
   .counter--error {
     color: var(--danger);
-  }
-
-  /* A large currency entry — refunds and overrides. */
-  .amount-input {
-    height: 64px;
-    padding: 0 var(--s4);
-    border-radius: var(--r-pill);
-    background: var(--inset);
-    border: 1px solid transparent;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s3);
-    font-family: var(--font-mono);
-    font-feature-settings: var(--mono-features);
-    font-size: var(--t-kpi-size);
-    font-weight: 600;
-    color: var(--text-1);
-  }
-  .amount-input--error {
-    border-color: var(--danger);
   }
 
   /* -------- radio / checkbox / switch ------------------------------------- */
@@ -1620,24 +746,11 @@
     padding: var(--s2) 0;
     cursor: pointer;
   }
-  .opt-row--52 {
-    min-height: var(--row-52);
-  }
-  .opt-row--56 {
-    min-height: var(--row-56);
-  }
   .opt-row--card {
     padding: var(--s2) var(--s3);
     border: 1px solid var(--border-subtle);
     border-radius: var(--r-card);
     background: var(--raised);
-  }
-  .opt-row__body {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
   }
 
   .radio {
@@ -1672,10 +785,6 @@
     border-color: var(--brand);
     color: var(--text-on-brand);
   }
-  .checkbox--20 {
-    width: 20px;
-    height: 20px;
-  }
 
   .switch {
     position: relative;
@@ -1703,14 +812,6 @@
     left: 21px;
   }
 
-  /* Four notification types show this instead of a switch. That is the point
-   of the screen, not an oversight — critical alerts cannot be silenced. */
-  .lock-slot {
-    color: var(--text-3);
-    flex: none;
-    display: flex;
-  }
-
   /* -------- slider -------------------------------------------------------- */
 
   .slider {
@@ -1732,21 +833,6 @@
     background: var(--brand);
     border-radius: var(--r-full);
   }
-  .slider__knob {
-    position: absolute;
-    top: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border-radius: var(--r-full);
-    background: var(--canvas);
-    border: 2px solid var(--brand);
-    box-shadow: var(--shadow-card);
-  }
-  .slider__scale {
-    display: flex;
-    justify-content: space-between;
-  }
 
   /* -------- progress ------------------------------------------------------ */
 
@@ -1756,21 +842,6 @@
     border-radius: var(--r-full);
     background: var(--inset);
     overflow: hidden;
-  }
-  .progress__fill {
-    display: block;
-    height: 100%;
-    border-radius: var(--r-full);
-    background: var(--success);
-  }
-  .progress__fill--warning {
-    background: var(--warning);
-  }
-  .progress__fill--danger {
-    background: var(--danger);
-  }
-  .progress__fill--brand {
-    background: var(--brand);
   }
 
   /* Multi-step flow indicator (manual completion, suspend). */
@@ -1795,165 +866,17 @@
    21. STAT TILES
    ========================================================================= */
 
-  .stat-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--s2);
-  }
-  .stat-grid--3 {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-
-  .stat-tile {
-    background: var(--surface);
-    border-radius: var(--r-card);
-    padding: var(--s3);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s1);
-  }
-  .stat-tile__label {
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    color: var(--text-2);
-  }
-  .stat-tile__value {
-    font-size: var(--t-section-size);
-    line-height: var(--t-section-line);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Metric values default to primary text, but must stay colour-codable — a
-   completion rate of 82% has to be able to go red. :where() gives this rule
-   zero specificity so a .c-success / .c-warning / .c-danger helper on the
-   same element wins without needing !important or a per-tile modifier. */
-  :where(.stat-tile__value, .kpi-tile__value) {
-    color: var(--text-1);
-  }
-
   /* =========================================================================
    22. SKELETONS — no spinners anywhere in a loading state
    ========================================================================= */
-
-  .skeleton {
-    background: var(--inset);
-    border-radius: var(--r-card);
-  }
-  .skeleton--text {
-    height: 12px;
-    border-radius: var(--r-full);
-  }
-  .skeleton--pill {
-    height: 20px;
-    border-radius: var(--r-pill);
-  }
-  .skeleton-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-  }
 
   /* =========================================================================
    23. EMPTY STATES
    ========================================================================= */
 
-  .empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--s3);
-    text-align: center;
-    padding: var(--s8) var(--gutter);
-  }
-  .empty--grow {
-    flex: 1 1 auto;
-  }
-  .empty__icon {
-    color: var(--text-3);
-  }
-  .empty__title {
-    font-size: var(--t-section-size);
-    line-height: var(--t-section-line);
-    font-weight: 600;
-    color: var(--text-1);
-  }
-  .empty__title--sm {
-    font-size: var(--t-card-size);
-    line-height: var(--t-card-line);
-  }
-  .empty__body {
-    font-size: var(--t-body-size);
-    line-height: var(--t-body-line);
-    color: var(--text-2);
-    max-width: 280px;
-  }
-  /* Tighter empty-state copy. Used where the message is a hint about what to
-   try next rather than an explanation of the state itself. */
-  .empty__body--sm {
-    font-size: var(--t-label-size);
-    line-height: var(--t-label-line);
-  }
-  .empty__actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-    width: 100%;
-    margin-top: var(--s2);
-  }
-
-  /* The "all clear" variant is a positive state — it should read as relief,
-   not as absence. */
-  .empty--positive .empty__icon {
-    color: var(--success);
-  }
-
   /* =========================================================================
    24. SHEETS AND MODALS
    ========================================================================= */
-
-  .sheet {
-    position: relative;
-    width: 100%;
-    background: var(--canvas);
-    border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-    box-shadow: var(--shadow-sheet);
-    padding: var(--s3) var(--gutter) var(--s5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s4);
-    max-height: 100%;
-  }
-  .sheet__grabber {
-    width: 36px;
-    height: 4px;
-    border-radius: var(--r-full);
-    background: var(--border-strong);
-    margin: 0 auto var(--s2);
-    flex: none;
-  }
-  .sheet__body {
-    overflow-y: auto;
-    scrollbar-width: none;
-    display: flex;
-    flex-direction: column;
-    gap: var(--s4);
-  }
-  .sheet__body::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* A sticky footer inside a sheet. Bleeds to the sheet's edges by cancelling
-   its padding, so the divider runs the full width the way the screen-level
-   .actionbar does. */
-  .sheet__foot {
-    flex: none;
-    margin: 0 calc(var(--gutter) * -1) calc(var(--s5) * -1);
-    padding: var(--s3) var(--gutter) var(--s5);
-    border-top: 1px solid var(--border-subtle);
-    background: var(--canvas);
-  }
 
   .modal-card {
     /* Positioned so it stacks above a sibling .scrim without needing a z-index
@@ -1970,13 +893,6 @@
     align-items: center;
     gap: var(--s3);
     text-align: center;
-  }
-  .modal-card--wide {
-    max-width: 100%;
-  }
-  .modal-card--left {
-    align-items: stretch;
-    text-align: left;
   }
 
   /* =========================================================================
@@ -2039,86 +955,6 @@
     padding: 0 var(--gutter);
     margin-bottom: var(--s5);
   }
-  .group__header {
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-    padding: 0 var(--s1);
-  }
-  .group__header--danger {
-    color: var(--danger);
-  }
-
-  .group__card {
-    background: var(--raised);
-    border-radius: var(--r-card);
-    overflow: hidden;
-    box-shadow: var(--shadow-card);
-  }
-  .group__card--tint-danger {
-    background: color-mix(in srgb, var(--bg-danger) 45%, var(--canvas));
-  }
-
-  .group__row {
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    min-height: var(--row-52);
-    padding: var(--s2) var(--s4);
-    color: var(--text-1);
-  }
-  .group__row + .group__row {
-    box-shadow: inset 0 1px 0 var(--border-subtle);
-  }
-  .group__row--72 {
-    min-height: var(--row-72);
-  }
-  .group__row--60 {
-    min-height: var(--row-60);
-  }
-  .group__row--56 {
-    min-height: var(--row-56);
-  }
-  .group__row--48 {
-    min-height: var(--row-48);
-  }
-  .group__value {
-    margin-left: auto;
-    color: var(--text-3);
-    font-size: var(--t-label-size);
-    flex: none;
-  }
-
-  /* Desktop-only entries are visibly lighter and carry an external-link arrow
-   rather than a chevron — they lead off the device, not deeper into it. */
-  .group__card--muted .group__row {
-    color: var(--text-3);
-  }
-  .group__card--muted .icon {
-    color: var(--text-3);
-  }
-
-  .group__note {
-    padding: var(--s2) var(--s4) var(--s3);
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    color: var(--text-2);
-    box-shadow: inset 0 1px 0 var(--border-subtle);
-  }
-  .group__foot {
-    padding: var(--s1) var(--s1) 0;
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    color: var(--text-3);
-  }
-  /* A footnote that carries a warning rather than a hint — "Device limit
-   reached", where the note is the constraint, not an aside. */
-  .group__foot--warning {
-    color: var(--warning);
-  }
 
   /* =========================================================================
    27. OTP / PASSCODE CELLS
@@ -2154,88 +990,11 @@
     height: 48px;
   }
 
-  /* Blinking caret in the active cell. */
-  .caret {
-    width: 2px;
-    height: 24px;
-    background: var(--brand);
-    border-radius: 1px;
-  }
-
-  /* A filled passcode dot. */
-  .passcode-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: var(--r-full);
-    background: var(--text-1);
-  }
-
   /* =========================================================================
    28. CHAT BUBBLES
    The internal note must be impossible to mistake for a customer reply —
    different fill, a DASHED border, a lock icon and an explicit label.
    ========================================================================= */
-
-  .thread {
-    background: var(--surface);
-    padding: var(--s4) var(--gutter);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-    flex: 1 1 auto;
-  }
-
-  .bubble {
-    max-width: 80%;
-    border-radius: var(--r-sheet);
-    padding: var(--s3);
-  }
-  .bubble__meta {
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    margin-top: var(--s1);
-  }
-
-  .bubble--customer {
-    align-self: flex-start;
-    background: var(--canvas);
-    color: var(--text-1);
-  }
-  .bubble--customer .bubble__meta {
-    color: var(--text-3);
-  }
-
-  .bubble--admin {
-    align-self: flex-end;
-    background: var(--brand);
-    color: var(--text-on-brand);
-  }
-  .bubble--admin .bubble__meta {
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .bubble--internal {
-    align-self: center;
-    max-width: 100%;
-    background: var(--bg-warning);
-    border: 1px dashed var(--warning);
-    color: var(--text-1);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s1);
-  }
-  .bubble--internal .bubble__meta {
-    color: var(--warning);
-  }
-
-  /* Centred system event line inside a thread. */
-  .sys-event {
-    align-self: center;
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    color: var(--text-3);
-    text-align: center;
-  }
 
   /* Composer pinned under the thread. */
   .composer {
@@ -2247,115 +1006,14 @@
     flex-direction: column;
     gap: var(--s2);
   }
-  .composer--internal {
-    background: var(--bg-warning);
-    border: 1px dashed var(--warning);
-  }
-  .composer__tabs {
-    display: flex;
-    gap: var(--s2);
-  }
-  .composer__pill {
-    height: 26px;
-    padding: 0 var(--s3);
-    border-radius: var(--r-pill);
-    background: var(--surface);
-    color: var(--text-2);
-    font-size: var(--t-caption-size);
-    line-height: 26px;
-    font-weight: 600;
-  }
-  .composer__pill.is-selected {
-    background: var(--tint-selected);
-    color: var(--brand);
-  }
-  .composer__pill.is-selected-warning {
-    background: var(--bg-warning);
-    color: var(--warning);
-    box-shadow: inset 0 0 0 1px var(--warning);
-  }
-  .composer__send {
-    width: var(--btn-36);
-    height: var(--btn-36);
-    flex: none;
-    border-radius: var(--r-full);
-    background: var(--brand);
-    color: var(--text-on-brand);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    cursor: pointer;
-  }
-  .composer__send--warning {
-    background: var(--warning);
-  }
 
   /* =========================================================================
    29. DEFINITION LIST — the audit entry detail
    ========================================================================= */
 
-  .deflist {
-    display: flex;
-    flex-direction: column;
-  }
-  .deflist__row {
-    padding: var(--s3) 0;
-    border-bottom: 1px solid var(--border-subtle);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .deflist__label {
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    color: var(--text-3);
-  }
-  .deflist__value {
-    font-size: var(--t-label-size);
-    line-height: var(--t-label-line);
-    color: var(--text-1);
-  }
-
   /* =========================================================================
    30. HORIZONTAL BAR ROWS — analytics
    ========================================================================= */
-
-  .bar-row {
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    min-height: var(--row-40);
-  }
-  .bar-row__label {
-    width: 84px;
-    flex: none;
-    font-size: var(--t-label-size);
-    color: var(--text-1);
-  }
-  .bar-row__track {
-    flex: 1 1 auto;
-    height: 8px;
-    border-radius: var(--r-full);
-    background: var(--inset);
-    overflow: hidden;
-  }
-  .bar-row__fill {
-    display: block;
-    height: 100%;
-    border-radius: var(--r-full);
-    background: var(--brand);
-  }
-  .bar-row__value {
-    width: 32px;
-    flex: none;
-    text-align: right;
-    font-family: var(--font-mono);
-    font-feature-settings: var(--mono-features);
-    font-size: var(--t-label-size);
-    font-weight: 600;
-    color: var(--text-1);
-  }
 
   /* =========================================================================
    31. MAP
@@ -2512,21 +1170,6 @@
     padding: 0 2px;
   }
 
-  /* A small inline spinner — used only for in-flight actions, never for
-   initial load (loading states use skeletons). */
-  .spinner {
-    width: 16px;
-    height: 16px;
-    flex: none;
-    border-radius: var(--r-full);
-    border: 2px solid color-mix(in srgb, var(--brand) 25%, transparent);
-    border-top-color: var(--brand);
-  }
-  .spinner--onbrand {
-    border-color: rgba(255, 255, 255, 0.35);
-    border-top-color: var(--text-on-brand);
-  }
-
   /* Reason line on a needs-attention card — rendered in the status colour,
    because the reason is the entire point of that screen. */
   .reason {
@@ -2578,7 +1221,8 @@
   .main {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: var(--s6);
+    /* P3: page padding moved into ui-web PageShell (rendered by PageMain); the scroll
+       container itself stays edge-to-edge so flush screens own the whole canvas. */
     background: var(--canvas);
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -2600,234 +1244,9 @@
    SIDEBAR — 240px, always visible
    ========================================================================= */
 
-  .sidebar {
-    width: 240px;
-    flex: none;
-    background: var(--surface);
-    border-right: 1px solid var(--border-subtle);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .sidebar__brand {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    padding: var(--s4);
-    flex: none;
-  }
-  .sidebar__wordmark {
-    font-size: var(--t-card-size);
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: var(--text-1);
-  }
-
-  .sidebar__nav {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 0 var(--s2) var(--s3);
-    scrollbar-width: none;
-  }
-  .sidebar__nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .sidebar__group {
-    margin-bottom: var(--s3);
-  }
-  .sidebar__group-header {
-    padding: var(--s2) var(--s2) var(--s1);
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-  }
-
-  .sidebar__item {
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    height: 40px;
-    padding: 0 var(--s2);
-    border-radius: var(--r-pill);
-    color: var(--text-1);
-    font-size: var(--t-body-size);
-    text-decoration: none;
-    cursor: pointer;
-  }
-  .sidebar__item .icon {
-    color: var(--text-2);
-  }
-  .sidebar__item:hover {
-    background: color-mix(in srgb, var(--border-subtle) 50%, transparent);
-  }
-
-  .sidebar__item.is-active {
-    background: var(--tint-selected);
-    color: var(--brand);
-    font-weight: 600;
-  }
-  .sidebar__item.is-active .icon {
-    color: var(--brand);
-  }
-
-  /* Desktop-only destinations are visibly lighter — they lead to surfaces the
-   admin can open, but that are not part of the day-to-day exception loop. */
-  .sidebar__item--muted {
-    color: var(--text-3);
-  }
-  .sidebar__item--muted .icon {
-    color: var(--text-3);
-  }
-
-  .sidebar__label {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .sidebar__badge {
-    flex: none;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: var(--r-full);
-    background: var(--border-subtle);
-    color: var(--text-2);
-    font-size: var(--t-pill-size);
-    line-height: 18px;
-    font-weight: 700;
-    text-align: center;
-  }
-  .sidebar__badge--danger {
-    background: var(--danger);
-    color: var(--text-on-brand);
-  }
-  .sidebar__badge--brand {
-    background: var(--brand);
-    color: var(--text-on-brand);
-  }
-
-  .sidebar__divider {
-    height: 1px;
-    background: var(--border-subtle);
-    margin: var(--s2) var(--s2) var(--s3);
-  }
-
-  /* Pinned user row at the bottom. */
-  .sidebar__user {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    height: var(--row-56);
-    padding: 0 var(--s4);
-    border-top: 1px solid var(--border-subtle);
-  }
-  .sidebar__version {
-    flex: none;
-    padding: var(--s2) var(--s4) var(--s3);
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    color: var(--text-3);
-  }
-
   /* =========================================================================
    TOPBAR — 56px
    ========================================================================= */
-
-  .topbar {
-    flex: none;
-    height: var(--row-56);
-    display: flex;
-    align-items: center;
-    gap: var(--s4);
-    padding: 0 var(--s6);
-    background: var(--canvas);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  .topbar__title {
-    font-size: var(--t-section-size);
-    line-height: var(--t-section-line);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text-1);
-  }
-
-  /* Breadcrumb. The trailing segment is the current page and carries the
-   emphasis; ancestors are secondary and read as links. */
-  .crumbs {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    min-width: 0;
-  }
-  .crumbs__link {
-    color: var(--text-2);
-    font-size: var(--t-section-size);
-    font-weight: 500;
-    text-decoration: none;
-  }
-  .crumbs__sep {
-    color: var(--text-3);
-    font-size: var(--t-section-size);
-  }
-  .crumbs__here {
-    color: var(--text-1);
-    font-size: var(--t-section-size);
-    font-weight: 600;
-  }
-
-  .topbar__actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: var(--s4);
-  }
-
-  .topbar__search {
-    width: 320px;
-    height: var(--btn-36);
-    padding: 0 var(--s3);
-    border-radius: var(--r-pill);
-    background: var(--inset);
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    color: var(--text-3);
-    font-size: var(--t-body-size);
-  }
-
-  /* Bell with a count badge. */
-  .topbar__bell {
-    position: relative;
-    display: flex;
-    color: var(--text-2);
-  }
-  .topbar__bell-badge {
-    position: absolute;
-    top: -5px;
-    right: -6px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: var(--r-full);
-    background: var(--danger);
-    color: var(--text-on-brand);
-    font-size: 10px;
-    line-height: 16px;
-    font-weight: 700;
-    text-align: center;
-    border: 1.5px solid var(--canvas);
-  }
 
   /* =========================================================================
    FULL-WIDTH STRIPS under the topbar
@@ -2842,16 +1261,6 @@
     align-items: center;
   }
 
-  /* Only .banner--danger carries a severity rail in the shared component. These
-   give warning and success the same treatment, for strips that are structural
-   rather than incidental — a supply shortfall is a standing condition, not a
-   passing notice. */
-  .banner--edge-warning {
-    border-left: var(--edge-w) solid var(--warning);
-  }
-  .banner--edge-success {
-    border-left: var(--edge-w) solid var(--success);
-  }
   .banner--wide .banner__body {
     flex-direction: row;
     align-items: baseline;
@@ -2894,15 +1303,13 @@
     gap: var(--s6);
     align-items: start;
   }
-  .cols-3--25-45-30 {
-    grid-template-columns: 25fr 45fr 30fr;
-  }
 
-  /* A vertical stack of cards inside a column. */
+  /* A vertical stack of cards inside a column. P3: section rhythm is 24px (the global
+     between-card gap), matching ui-web PageShell. */
   .stack {
     display: flex;
     flex-direction: column;
-    gap: var(--s5);
+    gap: var(--s6);
   }
   .stack--12 {
     gap: var(--s3);
@@ -2917,41 +1324,12 @@
     gap: var(--s3);
   }
 
-  /* Stat tiles in one row (provider performance, admin activity). */
-  .stat-row {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: var(--s2);
-  }
-
   /* -------------------------------------------------------------------------
    RECORD HEAD — the full-bleed identity banner above .main on a record page
    (provider profile, customer profile). Identity and the actions that act on
    it sit on one line at the top, so the record is named before it is read and
    the destructive controls live far from the content they would destroy.
    ------------------------------------------------------------------------- */
-
-  .record-head {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: var(--s5);
-    padding: var(--s6);
-    background: var(--canvas);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .record-head__body {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .record-head__actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    flex: none;
-  }
 
   /* -------------------------------------------------------------------------
    AUTH SPLIT — the pre-auth layout shared by login, two-factor and the
@@ -3055,14 +1433,6 @@
     color: var(--text-3);
   }
 
-  .block-title {
-    font-size: var(--t-section-size);
-    line-height: var(--t-section-line);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text-1);
-  }
-
   /* =========================================================================
    UTILITY (mirrors screen.css so shared markup works in both form factors)
    ========================================================================= */
@@ -3078,11 +1448,6 @@
     align-items: center;
     gap: var(--s2);
   }
-  .row-top {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s2);
-  }
   .col {
     display: flex;
     flex-direction: column;
@@ -3090,9 +1455,6 @@
   .grow {
     flex: 1 1 auto;
     min-width: 0;
-  }
-  .spacer {
-    flex: 1 1 auto;
   }
 
   .mono {
@@ -3110,15 +1472,6 @@
   .is-disabled {
     opacity: 0.4;
     pointer-events: none;
-  }
-  .is-dimmed-70 {
-    opacity: 0.7;
-  }
-  .is-dimmed-60 {
-    opacity: 0.6;
-  }
-  .is-dimmed-55 {
-    opacity: 0.55;
   }
   .is-dimmed-50 {
     opacity: 0.5;
@@ -3157,268 +1510,12 @@
    puts it in a row and lets the eye scan a column.
    ========================================================================= */
 
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: var(--t-body-size);
-  }
-
-  .table th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    text-align: left;
-    padding: var(--s2) var(--s3);
-    background: var(--canvas);
-    border-bottom: 1px solid var(--border-subtle);
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-2);
-    white-space: nowrap;
-  }
-
-  .table td {
-    height: var(--row-56);
-    padding: var(--s2) var(--s3);
-    border-bottom: 1px solid var(--border-subtle);
-    vertical-align: middle;
-  }
-
-  /* Cells default to primary ink, but must stay colour-codable — the REASON
-   column on the needs-attention queue is rendered in its status colour, and
-   "unassigned" has to read as danger. `.table td` is specificity (0,0,1,1)
-   and would otherwise beat a (0,0,1,0) helper like .c-danger, silently
-   flattening every colour-coded cell to black. :where() drops this default to
-   zero specificity so the helper wins. */
-  :where(.table td) {
-    color: var(--text-1);
-  }
-  .table--64 td {
-    height: 64px;
-  }
-  .table--48 td {
-    height: var(--row-48);
-  }
-
-  /* Tighter horizontal padding for tables sharing a screen with something else
-   — the dashboard queue lives in a 65% column and still needs seven columns
-   plus two action buttons. */
-  .table--dense th,
-  .table--dense td {
-    padding-left: var(--s2);
-    padding-right: var(--s2);
-  }
-  .table--dense th:first-child,
-  .table--dense td:first-child {
-    padding-left: var(--s3);
-  }
-  .table--dense th:last-child,
-  .table--dense td:last-child {
-    padding-right: var(--s3);
-  }
-
-  .table tbody tr:hover {
-    background: var(--surface);
-  }
-  .table tbody tr.is-selected {
-    background: var(--tint-selected);
-  }
-  .table tbody tr.is-selected:hover {
-    background: var(--tint-selected);
-  }
-
-  /* Severity edge on a row. Applied as an inset shadow on the first cell so it
-   survives border-collapse, which discards a border-left on <tr>. */
-  .table tbody tr.row-danger td:first-child {
-    box-shadow: inset var(--edge-w) 0 0 0 var(--danger);
-  }
-  .table tbody tr.row-warning td:first-child {
-    box-shadow: inset var(--edge-w) 0 0 0 var(--warning);
-  }
-  .table tbody tr.row-danger {
-    background: color-mix(in srgb, var(--bg-danger) 35%, var(--canvas));
-  }
-  .table tbody tr.row-warning {
-    background: color-mix(in srgb, var(--bg-warning) 35%, var(--canvas));
-  }
-  .table tbody tr.row-muted {
-    background: var(--surface);
-    color: var(--text-2);
-  }
-  .table tbody tr.row-faded {
-    opacity: 0.7;
-  }
-
-  /* Numeric and currency columns. Right-aligned tabular monospace so the
-   digits stack — the whole reason currency lives in a mono face. */
-  .table .num {
-    text-align: right;
-    font-family: var(--font-mono);
-    font-feature-settings: var(--mono-features);
-    font-variant-numeric: tabular-nums;
-    font-size: var(--t-mono-size);
-    white-space: nowrap;
-  }
-  .table .num--danger {
-    color: var(--danger);
-  }
-
-  .table .id-cell {
-    font-family: var(--font-mono);
-    font-feature-settings: var(--mono-features);
-    font-size: var(--t-mono-size);
-    color: var(--brand);
-    white-space: nowrap;
-  }
-
-  /* A date/section divider row inside the ledger. */
-  .table__group td {
-    height: var(--row-40);
-    background: var(--surface);
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-  }
-
-  /* Column-total row (payouts). Heavier top rule so it reads as a sum, not
-   another record. */
-  .table__total td {
-    background: var(--surface);
-    border-top: 2px solid var(--border-strong);
-    border-bottom: 0;
-    font-weight: 700;
-  }
-
-  /* Inline actions inside a table cell. */
-  .table__actions {
-    display: flex;
-    gap: var(--s2);
-  }
-
-  /* Flush variants of shared components, which carry mobile's 16px gutter
-   built in. Inside .main the 24px padding is already applied. */
-  .chip-row--flush {
-    padding-left: 0;
-    padding-right: 0;
-  }
-  .section-header--flush {
-    padding-left: 0;
-    padding-right: 0;
-  }
-  .tabs--flush {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   /* =========================================================================
    2. MODALS
    Centred, over a scrim. Header and footer are fixed; only the body
    scrolls — a destructive action's confirm button must never scroll out
    of reach.
    ========================================================================= */
-
-  .modal-scrim {
-    position: absolute;
-    inset: 0;
-    z-index: 50;
-    background: var(--scrim);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--s8);
-  }
-
-  .modal {
-    width: 720px;
-    max-height: 100%;
-    background: var(--canvas);
-    border-radius: var(--r-sheet);
-    box-shadow: var(--shadow-modal);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .modal--440 {
-    width: 440px;
-  }
-  .modal--480 {
-    width: 480px;
-  }
-  .modal--560 {
-    width: 560px;
-  }
-  .modal--640 {
-    width: 640px;
-  }
-  .modal--900 {
-    width: 900px;
-  }
-
-  .modal__head {
-    flex: none;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s3);
-    padding: var(--s4) var(--s5);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .modal__title {
-    font-size: var(--t-section-size);
-    line-height: var(--t-section-line);
-    font-weight: 600;
-    color: var(--text-1);
-  }
-  .modal__sub {
-    font-size: var(--t-label-size);
-    line-height: var(--t-label-line);
-    color: var(--text-2);
-    margin-top: 2px;
-  }
-
-  .modal__body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: var(--s5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s5);
-    scrollbar-width: none;
-  }
-  .modal__body::-webkit-scrollbar {
-    display: none;
-  }
-
-  .modal__foot {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    padding: var(--s3) var(--s5);
-    border-top: 1px solid var(--border-subtle);
-    background: var(--canvas);
-  }
-  .modal__foot--end {
-    justify-content: flex-end;
-  }
-
-  /* Multi-step modal: a vertical step rail on the left rather than a top
-   progress bar. On a wide canvas the rail can name every step and show
-   which are done, which a 4-segment bar cannot. */
-  .modal--rail {
-    flex-direction: row;
-  }
-  .modal__pane {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-  }
 
   .steprail {
     width: 200px;
@@ -3482,52 +1579,6 @@
    re-dispatch deliberately leaves the booking readable behind it.
    ========================================================================= */
 
-  .drawer {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 45;
-    width: 480px;
-    background: var(--canvas);
-    border-left: 1px solid var(--border-subtle);
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
-    display: flex;
-    flex-direction: column;
-  }
-  .drawer--400 {
-    width: 400px;
-  }
-
-  .drawer__head {
-    flex: none;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s3);
-    padding: var(--s4);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .drawer__body {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: var(--s4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s4);
-    scrollbar-width: none;
-  }
-  .drawer__body::-webkit-scrollbar {
-    display: none;
-  }
-  .drawer__foot {
-    flex: none;
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    padding: var(--s3) var(--s4);
-    border-top: 1px solid var(--border-subtle);
-  }
-
   /* =========================================================================
    4. CHARTS
    Deliberately plain: one series each, no dual axes, no stacked areas, no
@@ -3539,101 +1590,6 @@
    is why the marks are sized for a pointer target rather than for print.
    ========================================================================= */
 
-  .chart {
-    display: block;
-    width: 100%;
-    overflow: visible;
-  }
-
-  .chart__grid line,
-  .chart__axis-line {
-    stroke: var(--border-subtle);
-    stroke-width: 1;
-  }
-
-  .chart__line {
-    fill: none;
-    stroke: var(--brand);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .chart__point {
-    fill: var(--brand);
-  }
-  /* The emphasised endpoint — where the series currently stands. */
-  .chart__point--end {
-    fill: var(--brand);
-    stroke: var(--canvas);
-    stroke-width: 2;
-  }
-
-  .chart__label {
-    font-family: var(--font-sans);
-    font-size: var(--t-pill-size);
-    fill: var(--text-3);
-  }
-
-  /* Horizontal bars. Rounded on the DATA end only — the baseline end stays
-   square so the bar reads as anchored to zero rather than floating. */
-  .hbar {
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    min-height: var(--row-40);
-  }
-  .hbar__label {
-    width: 132px;
-    flex: none;
-    font-size: var(--t-label-size);
-    color: var(--text-1);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .hbar__track {
-    flex: 1 1 auto;
-    height: 10px;
-    background: var(--inset);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .hbar__fill {
-    display: block;
-    height: 100%;
-    background: var(--brand);
-    border-radius: 0 4px 4px 0;
-  }
-  .hbar__fill--neutral {
-    background: var(--neutral);
-  }
-  .hbar__value {
-    width: 36px;
-    flex: none;
-    text-align: right;
-    font-family: var(--font-mono);
-    font-feature-settings: var(--mono-features);
-    font-size: var(--t-label-size);
-    font-weight: 600;
-    color: var(--text-1);
-  }
-  /* Compact variant for the ranking-weights explainer. */
-  .hbar--sm {
-    min-height: 24px;
-  }
-  .hbar--sm .hbar__label {
-    width: 92px;
-    font-size: var(--t-caption-size);
-    color: var(--text-2);
-  }
-  .hbar--sm .hbar__track {
-    height: 6px;
-  }
-  .hbar--sm .hbar__value {
-    width: 30px;
-    font-size: var(--t-caption-size);
-  }
-
   /* =========================================================================
    5. DOCUMENT VIEWER
    Desktop is where documents actually get judged, so this is a real viewer
@@ -3643,37 +1599,6 @@
   .filmstrip {
     display: flex;
     gap: var(--s2);
-  }
-  .filmstrip__item {
-    position: relative;
-    width: 72px;
-    height: 72px;
-    flex: none;
-    border-radius: var(--r-pill);
-    border: 1px solid var(--border-subtle);
-    background: var(--inset);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-3);
-    cursor: pointer;
-  }
-  .filmstrip__item.is-selected {
-    border: 2px solid var(--brand);
-  }
-  .filmstrip__badge {
-    position: absolute;
-    right: 3px;
-    bottom: 3px;
-    width: 16px;
-    height: 16px;
-    border-radius: var(--r-full);
-    background: var(--canvas);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-card);
   }
 
   .viewer {
@@ -3686,48 +1611,6 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-  }
-  .viewer__page {
-    width: 300px;
-    height: 400px;
-    background: var(--canvas);
-    border-radius: 4px;
-    box-shadow: var(--shadow-modal);
-    padding: var(--s5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s3);
-  }
-  /* Ruled lines standing in for scanned document text. */
-  .viewer__rule {
-    height: 8px;
-    border-radius: 2px;
-    background: var(--inset);
-  }
-  .viewer__controls {
-    position: absolute;
-    left: 50%;
-    bottom: var(--s4);
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: var(--s1);
-    padding: var(--s1);
-    border-radius: var(--r-full);
-    background: var(--canvas);
-    box-shadow: var(--shadow-modal);
-  }
-  .viewer__btn {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--r-full);
-    border: 0;
-    background: transparent;
-    color: var(--text-1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
   }
 
   /* =========================================================================
@@ -3805,94 +1688,6 @@
     white-space: nowrap;
     cursor: pointer;
   }
-  .select__value {
-    color: var(--text-1);
-  }
-  .select__caret {
-    color: var(--text-3);
-    margin-left: auto;
-  }
-
-  /* Nine columns inside a 900px modal do not survive .table--dense's 8px. */
-  .table--tight th,
-  .table--tight td {
-    padding-left: var(--s1);
-    padding-right: var(--s1);
-  }
-  .table--tight th:first-child,
-  .table--tight td:first-child {
-    padding-left: var(--s2);
-  }
-  .table--tight th:last-child,
-  .table--tight td:last-child {
-    padding-right: var(--s2);
-  }
-
-  /* A group header inside a non-table list ("TODAY" / "EARLIER"). Distinct from
-   .section-header, which carries mobile's 16px gutter, and from
-   .table__group, which is a table row. */
-  .list-group-header {
-    padding: var(--s4) 0 var(--s2);
-    font-size: var(--t-pill-size);
-    line-height: var(--t-pill-line);
-    font-weight: var(--t-pill-weight);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-  }
-
-  /* A tag that may wrap. .tag is a fixed 20px nowrap pill; inside a 152px
-   selection card, "Reversible immediately" needs two lines. */
-  .tag--wrap {
-    height: auto;
-    white-space: normal;
-    line-height: 16px;
-    padding: 3px var(--s2);
-    align-self: flex-start;
-  }
-
-  /* A sparkline that fills its container rather than the fixed 56x20 — used
-   under a stat-tile value, where .sparkline--wide's 48px is far too tall. */
-  .sparkline--fill {
-    width: 100%;
-    height: 20px;
-  }
-
-  /* Five stat tiles sharing one row: reserve two lines for the label so a
-   wrapping "Escalation rate" does not knock its value off the baseline the
-   other four sit on. */
-  .stat-row .stat-tile__label {
-    min-height: 32px;
-  }
-
-  /* A fluid map thumbnail. .map-thumb is a fixed 96x80; a profile column wants
-   full width. */
-  .map-thumb--fill {
-    width: 100%;
-    height: 140px;
-  }
-
-  /* Fills the gaps at the small end of the shared control scales. */
-  .opt-row--40 {
-    min-height: var(--row-40);
-  }
-  .btn--32 {
-    height: 32px;
-    font-size: var(--t-label-size);
-    padding: 0 var(--s2);
-  }
-
-  /* A two-column definition list. Fourteen single-file rows overflow a 900px
-   frame; paired up they fit without scrolling. Long values (a free-text note,
-   a state transition) opt back out with .deflist__row--wide. */
-  .deflist--2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: var(--s5);
-  }
-  .deflist--2col .deflist__row--wide {
-    grid-column: 1 / -1;
-  }
 
   /* A page-level action bar whose controls sit at the right edge — the desktop
    convention, where the primary action is where the eye finishes rather than
@@ -3918,50 +1713,6 @@
     font-size: var(--t-kpi-size);
   }
 
-  /* Accordion — help topics. */
-  .accordion__item {
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .accordion__head {
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    min-height: var(--row-56);
-    cursor: pointer;
-    font-size: var(--t-body-size);
-    color: var(--text-1);
-  }
-  .accordion__body {
-    padding: 0 0 var(--s4) 30px;
-    font-size: var(--t-label-size);
-    line-height: 20px;
-    color: var(--text-2);
-    max-width: 62ch;
-  }
-
-  /* Filter bar above a table. */
-  .filterbar {
-    display: flex;
-    align-items: center;
-    gap: var(--s2);
-    padding-bottom: var(--s4);
-    flex-wrap: wrap;
-  }
-
-  /* A removable applied-filter pill. */
-  .filter-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s2);
-    height: var(--chip-h);
-    padding: 0 var(--s2) 0 var(--s3);
-    border-radius: var(--r-pill);
-    background: var(--tint-selected);
-    color: var(--brand);
-    font-size: var(--t-label-size);
-    font-weight: 600;
-  }
-
   /* Numbered procedure — the lost-device steps. Numbers here encode real
    sequence, so they are a list, not decoration. */
   .steps {
@@ -3969,29 +1720,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--s3);
-  }
-  .steps__item {
-    display: flex;
-    gap: var(--s3);
-    font-size: var(--t-label-size);
-    color: var(--text-1);
-  }
-  .steps__num {
-    counter-increment: step;
-    flex: none;
-    width: 22px;
-    height: 22px;
-    border-radius: var(--r-full);
-    background: var(--inset);
-    color: var(--text-2);
-    font-size: var(--t-caption-size);
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .steps__num::before {
-    content: counter(step);
   }
 
   /* =========================================================================
@@ -4016,12 +1744,6 @@
     flex-direction: column;
     background: var(--canvas);
     padding-top: var(--safe-top);
-  }
-
-  /* Settings-family screens sit on the recessed grey canvas with white grouped
-   cards floating on top (More, Notifications, Security, Profile). */
-  .screen--surface {
-    background: var(--surface);
   }
 
   .screen__scroll {
@@ -4060,9 +1782,6 @@
     z-index: 40;
     display: flex;
   }
-  .overlay--bottom {
-    align-items: flex-end;
-  }
   .overlay--center {
     align-items: center;
     justify-content: center;
@@ -4079,41 +1798,6 @@
    context — the spec repeatedly says "with the list dimmed behind it". */
   .dimmed {
     opacity: 0.55;
-  }
-
-  /* =========================================================================
-   MOTION
-
-   The design artifacts are static screenshots, so they specify what a spinner
-   and a skeleton LOOK like but not how they move. These are the only rules in
-   this file with no artifact counterpart. Durations follow spec §4.6, and
-   index.css collapses all of them under prefers-reduced-motion.
-   ========================================================================= */
-
-  @keyframes sc-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  .spinner {
-    animation: sc-spin 700ms linear infinite;
-  }
-
-  /* A shimmer, not a pulse: it reads as "arriving" rather than "broken". */
-  @keyframes sc-shimmer {
-    to {
-      background-position-x: -200%;
-    }
-  }
-  .skeleton {
-    background-image: linear-gradient(
-      90deg,
-      var(--inset) 0%,
-      color-mix(in srgb, var(--canvas) 60%, var(--inset)) 50%,
-      var(--inset) 100%
-    );
-    background-size: 200% 100%;
-    animation: sc-shimmer 1.4s ease-in-out infinite;
   }
 
   /* The undo window drains visibly: 10s for cancel/suspend/block, 30s for assign/approve
@@ -4145,19 +1829,11 @@
    exactly where it was specified.
    ========================================================================= */
 
-  /* Modals and drawers may never exceed the viewport. */
-  .modal {
-    max-width: 100%;
-  }
-  .drawer {
-    max-width: 100%;
-  }
-
   /* Grid and flex children default to `min-width: auto`, which means "never shrink below my
      content". A panel holding an 800px-minimum table therefore refuses to shrink at all, and the
      column beside it absorbs the whole shortfall — which is how the dashboard's activity rail got
      crushed at 1280px while the table it sits next to stayed comfortable. Letting these shrink is
-     what allows `.table-scroll` to do the job it exists for. */
+     what allows the table's overflow-x scroll wrapper to do its job. */
   .split > *,
   .app__main,
   .panel {
@@ -4173,40 +1849,6 @@
     .split--40-60 {
       grid-template-columns: 1fr;
     }
-  }
-
-  /* Wide ops tables scroll inside their panel rather than pushing the page
-   sideways. .panel already clips; this gives the table somewhere to go. */
-  .table-scroll {
-    width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-  }
-  /* The ops tables carry seven-plus columns and a two-button Actions cell. Below this the browser
-     starts stealing width from the text columns, which is how service names and zones end up
-     wrapping mid-word. Scrolling the table inside its panel is the designed behaviour; crushing it
-     is not.
-
-     Sized from the artboard's own column widths for the dashboard queue — 132 + 88 + 46 + 176 fixed,
-     plus three auto columns — so it fits the 1440px design width exactly and scrolls below it. */
-  .table-scroll > .table {
-    min-width: 720px;
-  }
-
-  /* Long unbroken values — emails, addresses, provider names in Devanagari or
-   Telugu — must wrap rather than widen the column (spec §4.7).
-
-   `break-word`, NOT `anywhere`: `anywhere` lets the browser break inside a word
-   even when the word would fit on a line of its own, which turned "Kompally"
-   into "Komp / ally" and "unassigned" into "unassigne / d" the moment the
-   Actions column took its share. Only genuinely unbreakable strings wrap now. */
-  .table td {
-    overflow-wrap: break-word;
-  }
-  .table td.num,
-  .table td.id-cell {
-    overflow-wrap: normal;
-    white-space: nowrap;
   }
 
   /* The KPI row is four tiles at 1440 and must not squeeze to illegibility. */
@@ -4230,28 +1872,6 @@
    Built from the same tokens as everything else: the dark toast surface, the
    caption type step, the card radius.
    ========================================================================= */
-
-  .tooltip {
-    position: relative;
-    display: inline-flex;
-  }
-  .tooltip__bubble {
-    position: absolute;
-    bottom: calc(100% + var(--s2));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 60;
-    max-width: 240px;
-    width: max-content;
-    padding: var(--s2) var(--s3);
-    border-radius: var(--r-pill);
-    background: var(--toast-bg);
-    color: var(--text-on-dark);
-    font-size: var(--t-caption-size);
-    line-height: var(--t-caption-line);
-    box-shadow: var(--shadow-card);
-    pointer-events: none;
-  }
 
   /* Choice controls are drawn as styled spans next to a visually-hidden native input, so the real
    input keeps every platform behaviour (keyboard, screen reader, form submission) while the design

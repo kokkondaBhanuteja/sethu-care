@@ -48,7 +48,7 @@ describe("the five groups", () => {
     const headers = Array.from(container.querySelectorAll(".sidebar__group-header"));
     expect(headers.map((header) => header.textContent)).toEqual([
       "Live",
-      "Operations",
+      "Manage",
       "Records",
       "Desktop only",
       "Account",
@@ -125,7 +125,7 @@ describe("the account row", () => {
   it("stays out of the rail entirely when nobody is signed in", () => {
     renderSidebar();
 
-    expect(screen.queryByText("Operations")).toBeInTheDocument();
+    expect(screen.queryByText("Manage")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 

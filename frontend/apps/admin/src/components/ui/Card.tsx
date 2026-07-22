@@ -1,36 +1,41 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import { Card as UiCard, cn, type CardProps as UiCardProps } from "@sethu/ui-web";
 
-import { cx } from "../../lib/cx";
+/**
+ * Thin adapter over @sethu/ui-web Card (P3 migration). The admin tone/edge/outline/density/
+ * selected API is unchanged; tones map onto the global tinted-card palette, and the 3px severity
+ * edge / 1px status outline are composed as token border utilities on top.
+ */
+type UiTone = NonNullable<UiCardProps["tone"]>;
 
-/** Fill tone. A tinted card is a whole-card signal; use `edge` for a lighter severity mark. */
 export const CARD_TONES = {
-  plain: "",
-  danger: "card--danger",
-  warning: "card--warning",
-  success: "card--success",
-  info: "card--info",
-  surface: "card--surface",
-  tintDanger: "card--tint-danger",
-  tintWarning: "card--tint-warning",
-  tintSuccess: "card--tint-success",
-  tintInfo: "card--tint-info",
-} as const;
+  plain: "plain",
+  danger: "danger",
+  warning: "amber",
+  success: "green",
+  info: "blue",
+  surface: "plain",
+  tintDanger: "danger",
+  tintWarning: "amber",
+  tintSuccess: "green",
+  tintInfo: "blue",
+} as const satisfies Record<string, UiTone>;
 
-/** The 3px left edge that marks severity without repainting the whole card. */
+/** The left edge that marks severity without repainting the whole card. */
 export const CARD_EDGES = {
   none: "",
-  danger: "card--edge-danger",
-  warning: "card--edge-warning",
-  success: "card--edge-success",
-  brand: "card--edge-brand",
+  danger: "border-l-4 border-l-danger-fg",
+  warning: "border-l-4 border-l-warning-fg",
+  success: "border-l-4 border-l-success-fg",
+  brand: "border-l-4 border-l-primary",
 } as const;
 
-/** A 1px outline in a status colour — a lighter mark than the 3px edge, for a whole-card state. */
+/** A 1px outline in a status colour — a lighter mark than the edge, for a whole-card state. */
 export const CARD_OUTLINES = {
   none: "",
-  danger: "card--outline-danger",
-  warning: "card--outline-warning",
-  success: "card--outline-success",
+  danger: "border-danger-fg",
+  warning: "border-warning-fg",
+  success: "border-success-fg",
 } as const;
 
 export type CardTone = keyof typeof CARD_TONES;
@@ -59,22 +64,23 @@ export function Card({
   ...rest
 }: CardProps) {
   return (
-    <div
+    <UiCard
       {...rest}
-      className={cx(
-        "card",
-        CARD_TONES[tone],
+      tone={CARD_TONES[tone]}
+      className={cn(
+        density === "default" && "p-4",
+        density === "tight" && "p-3",
+        // Legacy `surface` tone was the recessed grouping fill, now the canvas gray.
+        tone === "surface" && "bg-canvas shadow-none",
         CARD_EDGES[edge],
         CARD_OUTLINES[outline],
-        density === "flush" && "card--flush",
-        density === "tight" && "card--tight",
-        selected === true && "is-selected",
-        selected === "danger" && "is-selected-danger",
+        selected === true && "border-info-border bg-info-bg",
+        selected === "danger" && "border-danger-border bg-danger-bg",
         className,
       )}
     >
       {children}
-    </div>
+    </UiCard>
   );
 }
 
@@ -87,6 +93,8 @@ export interface CardListProps {
 
 export function CardList({ children, gap = "tight", className }: CardListProps) {
   return (
-    <div className={cx("card-list", gap === "roomy" && "card-list--20", className)}>{children}</div>
+    <div className={cn("flex flex-col", gap === "roomy" ? "gap-5" : "gap-3", className)}>
+      {children}
+    </div>
   );
 }

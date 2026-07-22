@@ -1,7 +1,5 @@
-import { useId, useRef, type ReactNode } from "react";
-
-import { cx } from "../../lib/cx";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
+import type { ReactNode } from "react";
+import { Sheet as UiSheet, SheetContent, SheetFooter, SheetTitle, cn } from "@sethu/ui-web";
 
 export interface SheetProps {
   isOpen: boolean;
@@ -14,9 +12,9 @@ export interface SheetProps {
 }
 
 /**
- * The mobile bottom sheet: filters, pickers, quick actions and confirmations (spec §3.3). Dismissed
- * by the grabber, the scrim or Escape. The content behind stays visible but dimmed, because the
- * spec repeatedly asks for the list to remain readable as context.
+ * The mobile bottom sheet, rebuilt on @sethu/ui-web Sheet side="bottom" (P3 migration): filters,
+ * pickers, quick actions and confirmations (spec §3.3). The content behind stays visible but
+ * dimmed, because the spec repeatedly asks for the list to remain readable as context.
  */
 export function Sheet({
   isOpen,
@@ -26,31 +24,22 @@ export function Sheet({
   onDismiss,
   children,
 }: SheetProps) {
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-
-  useFocusTrap(sheetRef, isOpen, onDismiss);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="overlay overlay--bottom">
-      <div className="scrim" onClick={onDismiss} role="presentation" />
-      <div
-        ref={sheetRef}
-        role="dialog"
+    <UiSheet open={isOpen} onOpenChange={(nextOpen) => (nextOpen ? undefined : onDismiss())}>
+      <SheetContent
+        side="bottom"
         aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        className="sheet"
+        hideCloseButton
+        aria-describedby={undefined}
+        // "scrim" is the stable structural hook for the overlay (tests, debugging).
+        overlayClassName="scrim"
       >
-        <div className="sheet__grabber" />
-        <h2 className={cx("t-section w-semi c-1 gut", hideTitle && "sr-only")} id={titleId}>
-          {title}
-        </h2>
-        <div className="sheet__body">{children}</div>
-        {footer ? <div className="sheet__foot">{footer}</div> : null}
-      </div>
-    </div>
+        {/* The grabber — decorative; dismissal is the scrim, Escape or the footer actions. */}
+        <div aria-hidden className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-border-strong" />
+        <SheetTitle className={cn(hideTitle && "sr-only")}>{title}</SheetTitle>
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {footer ? <SheetFooter>{footer}</SheetFooter> : null}
+      </SheetContent>
+    </UiSheet>
   );
 }

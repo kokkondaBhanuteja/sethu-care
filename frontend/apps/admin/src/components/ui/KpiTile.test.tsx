@@ -78,6 +78,7 @@ describe("KpiTile", () => {
     });
 
     it("colours the chip by whether the news is good, not by which way the arrow points", () => {
+      // P3 restyle: the semantic colour is now the danger/success foreground token.
       const { container } = render(
         <KpiTile
           label="Avg assignment time"
@@ -86,7 +87,7 @@ describe("KpiTile", () => {
         />,
       );
 
-      expect(container.querySelector(".trend")).toHaveClass("trend--bad");
+      expect(container.querySelector(".text-danger-fg")).toHaveTextContent("40s");
     });
   });
 

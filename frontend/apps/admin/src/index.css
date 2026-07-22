@@ -1,6 +1,14 @@
 @import "tailwindcss";
+/* The generated global token vocabulary (@sethu/tokens → ui-web tokens.css) — the target design
+   language of the P3 migration. Imported FIRST so any name both files declare is resolved by the
+   admin @theme below only when this app deliberately keeps its legacy value. */
+@import "@sethu/ui-web/tokens.css";
 @import "./styles/fonts.css";
 @import "./styles/components.css";
+
+/* Tailwind must scan the ui-web sources too, or the classes inside @sethu/ui-web components
+   would never be emitted into this app's stylesheet. */
+@source "../../../packages/ui-web/src";
 
 /* ==========================================================================
    SetuCare Admin Console — design tokens ("Ops Mode", Admin spec §4)
@@ -22,15 +30,14 @@
    ========================================================================== */
 
 @theme {
-  /* -- Surfaces, back to front ------------------------------------------- */
-  --color-canvas: #ffffff; /* the page itself */
-  --color-surface: #f7f8f9; /* recessed grouping background */
+  /* -- Surfaces ------------------------------------------------------------
+     canvas / surface / inset / border-strong now come from the GLOBAL tokens
+     (@sethu/ui-web/tokens.css): soft gray page canvas, white card surfaces.
+     Only the admin-specific names remain here. ----------------------------- */
   --color-raised: #ffffff; /* cards sitting on canvas or surface */
-  --color-inset: #edeff1; /* inputs, segmented-control tracks */
 
   /* -- Lines -------------------------------------------------------------- */
   --color-border-subtle: #e4e7ea; /* card outlines, row dividers */
-  --color-border-strong: #c9cfd5; /* input outlines, secondary buttons */
 
   /* -- Text ramp ---------------------------------------------------------- */
   --color-text-1: #0b0d0e; /* primary — values, names, titles */
@@ -67,7 +74,9 @@
   --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
 
   /* -- Type ramp: size / line-height / weight as a matched set.
-        Body is 14px, not 16 — a deliberate density choice (spec §4.4). ----- */
+        Body is 14px, not 16 — a deliberate density choice (spec §4.4).
+        --text-kpi deliberately KEEPS the denser 28px over the global 2rem:
+        this @theme is authored after the tokens import, so it wins. -------- */
   --text-kpi: 28px;
   --text-kpi--line-height: 34px;
   --text-kpi--font-weight: 700;
@@ -133,14 +142,12 @@
   --spacing-topbar: 56px;
   --spacing-tabbar: 56px;
 
-  /* -- Shape -------------------------------------------------------------- */
+  /* -- Shape. radius-card/full now come from the global tokens (16px cards
+        — the premium-ERP rounded-card silhouette). ------------------------- */
   --radius-pill: 6px; /* pills, chips, inputs, buttons */
-  --radius-card: 10px; /* cards and rows */
   --radius-sheet: 14px; /* bottom sheets and modals */
-  --radius-full: 999px; /* avatars, count badges, status dots */
 
-  /* -- Elevation is minimal. No heavy shadows anywhere. ------------------- */
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06);
+  /* -- Elevation. shadow-card comes from the global tokens. ---------------- */
   --shadow-sheet: 0 -2px 16px rgb(0 0 0 / 0.1);
   --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.16);
 
@@ -165,7 +172,9 @@
    -------------------------------------------------------------------------- */
 :root {
   --canvas: var(--color-canvas);
-  --surface: var(--color-surface);
+  /* Legacy "--surface" meant the RECESSED grouping gray, which the global scale
+     calls canvas; the global --color-surface is now the white card fill. */
+  --surface: var(--color-canvas);
   --raised: var(--color-raised);
   --inset: var(--color-inset);
   --border-subtle: var(--color-border-subtle);
@@ -258,10 +267,6 @@
   --r-card: var(--radius-card);
   --r-sheet: var(--radius-sheet);
   --r-full: var(--radius-full);
-
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06);
-  --shadow-sheet: 0 -2px 16px rgb(0 0 0 / 0.1);
-  --shadow-modal: 0 8px 32px rgb(0 0 0 / 0.16);
 
   /* The 3px left edge that marks severity on a card. */
   --edge-w: 3px;
