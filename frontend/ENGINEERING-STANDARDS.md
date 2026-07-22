@@ -295,10 +295,11 @@ custom CSS files.
 
 ### 6.2 Tokens only — never hardcode a visual value
 
-Colors, spacing, radii, and typography come from the `@theme` CSS variables in each
-app's `src/index.css`, which mirror `@sethu/tokens` (generating `@theme` from the tokens
-package is a planned follow-up — until then the two are kept in sync manually, in the
-same PR). Consume them through Tailwind's token-backed utilities:
+Colors, spacing, radii, and typography come from the **generated** global token file —
+`@sethu/ui-web/tokens.css`, emitted from `@sethu/tokens/src/web.ts` by
+`pnpm --filter @sethu/tokens run generate:css` (drift-guarded in CI). Every app imports
+it; no app defines its own `@theme`. Consume tokens through Tailwind's token-backed
+utilities:
 
 ```tsx
 // Bad — raw hex / arbitrary px smuggled through Tailwind
@@ -508,9 +509,9 @@ Before creating anything:
 - **Proposing a change:** open a short PR against this file with the reason.
 - **Taking an exception:** a rule can be broken with a good reason recorded in the PR
   and one reviewer's agreement. A recorded, agreed exception is fine; a silent one is
-  not. (Current recorded exceptions: `exactOptionalPropertyTypes` relaxed in app
-  tsconfigs — Part 4; `@theme` manually mirrors `@sethu/tokens` until generation lands —
-  Part 6.2.)
+  not. (Current recorded exception: `exactOptionalPropertyTypes` relaxed in app
+  tsconfigs — Part 4. The former `@theme` manual-mirror exception is CLOSED — tokens.css
+  is generated from `@sethu/tokens` and drift-guarded.)
 - **Review cadence:** revisit quarterly — remove rules that no longer help, add ones the
   team has learned it needs.
 

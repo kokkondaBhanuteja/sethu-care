@@ -5,5 +5,9 @@
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
 }

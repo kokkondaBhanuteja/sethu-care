@@ -24,3 +24,4 @@ DerivedData/
 # Ad-hoc investigation scripts. Never committed.
 _*.mjs
 d_*.txt
+storybook-static/
