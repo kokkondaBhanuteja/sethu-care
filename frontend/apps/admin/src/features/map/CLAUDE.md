@@ -4,53 +4,74 @@ Scope: the Live Operations Map — `/live/map`, desktop BOX 24/25 and mobile BOX
 
 Purpose: spatial awareness. Where jobs and providers are, and where the gaps are. Deliberately not the default view: it is the heaviest screen in the console, so `routes/` lazy-loads it and it unmounts fully on navigation away.
 
-## The map surface is drawn, not fetched — and it is swappable
+## The map surface is a real map now — MapLibre over OpenStreetMap
 
-`MapSurface.tsx` is **the swap point**. Everything above it works in percentage coordinates and knows nothing about how the ground under the markers is drawn.
+`MapSurface.tsx` was the designed swap point, and the swap has happened: the ground under the markers is a **maplibre-gl** map drawing **OpenStreetMap raster tiles** (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`, maxzoom 19). Three decisions carry the old design constraint into the new surface:
 
-Today that ground is an abstract, desaturated SVG street grid (`MapGridDesktop.tsx`, `MapGridMobile.tsx`), traced from the artifacts. The design is explicit about why: the base map has to recede far enough that a 12px marker wins the eye, and a real tile layer's own reds, greens and yellows would make the one escalation impossible to find. Shape carries meaning before colour does — providers are circles, jobs are triangles, and the escalation is the only marker with a pulse ring.
+1. **The quiet-gray treatment** (`map.style.ts`). The design rule that produced the old hand-drawn grid — the base map must recede far enough that a 12px marker wins the eye, and no tile's own reds, greens and yellows may out-shout the one escalation (BOX 24/41) — SURVIVES the change. The raster layer ships with `raster-saturation: -0.9`, `raster-contrast: -0.2`, `raster-opacity: 0.9`. Do not "restore the colours"; a colourful base map is a regression against the approved design.
+2. **The OSM attribution is a licensing condition, not chrome.** "© OpenStreetMap contributors" (linked to openstreetmap.org/copyright) must be visible whenever the tiles are — that is the ODbL requirement for using OSM data. `useMapLibre` adds a non-compact `AttributionControl`: bottom-right on desktop, top-right on mobile (pushed below the floating header by `map.maplibre.css`, because the peek panel owns the bottom edge). Removing or hiding it is never acceptable.
+3. **Positions are real WGS84 lat/lng** (`map.types.ts`). The mock fixtures keep the artifacts' percentage layout but project it onto a Hyderabad bounding box (`FIXTURE_GEO_BOUNDS` in `map.fixtures.ts`), so a running screen still resembles its design tile.
 
-**There is no mapping dependency and no tile URL anywhere in this feature.** Introducing Leaflet or MapLibre (branch `feat/maps-osm`) replaces `MapSurface.tsx` only: mount the map instance there, translate `viewport` into centre + zoom, project each marker's lat/lng instead of calling `projectPoint`. `markers`, `viewport`, `zones` and the three `onSelect*` callbacks are the whole contract.
+The GL lifecycle follows spec §6.7 and Part 11 exactly: the instance is created on mount, `map.remove()` runs in the effect cleanup ("unmount the GL context on blur"), the container is resize-observed with the observer disconnected on cleanup, and tilt/rotation/3D are disabled (`maxPitch: 0`, `dragRotate: false`, `pitchWithRotate: false`, `touchPitch: false`).
 
-`map.projection.ts` is the only place map coordinates become screen coordinates. The base grid pans and zooms as one CSS-transformed layer; markers are projected instead of scaled, so a pin stays 12px at any zoom.
+## Markers: HTML buttons positioned by the map
+
+Markers are MapLibre HTML markers, not WebGL layers: `MapLibrePoint` (in `MapMarker.tsx`) mounts one `maplibregl.Marker` per pin and portals React content into it, so every marker stays a real `<button>` with an accessible name and every glyph stays an ordinary component. Placement rules (`MapMarkerLayer.tsx`):
+
+- Only the viewport plus a 20% buffer gets DOM markers (`boundsWithBuffer`/`isWithinBounds`), and the DOM total is hard-capped at 200, jobs before providers (spec §6.7).
+- **Above 50 pins MapLibre's cluster engine takes over** (`useMapClustering`): the pins go into a clustered GeoJSON source, `querySourceFeatures` reads the grouping back, and the layer renders cluster-count buttons (activate → `getClusterExpansionZoom` → ease in) plus the still-unclustered pins. Escalated jobs are **never** fed to the engine — the pulsing escalation marker must always be individually visible.
+- Server-provided clusters (`MapCluster`) keep their own behaviour: selecting one focuses its zone, and the list answers "what are those 12 things".
+- The demand heatmap and service-area overlays are GeoJSON fill/line layers (`useMapOverlays` + builders in `map.geojson.ts`), geographic circles that scale with zoom; their colours are design tokens resolved from the CSS custom properties at runtime, because WebGL paint cannot read `var()`.
 
 ## Contents
 
-| File                                             | Responsibility                                                                            |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `LiveMap.desktop.tsx` / `LiveMap.mobile.tsx`     | The two screens. Layout only — all behaviour is in `useLiveMap`.                          |
-| `useLiveMap.ts`                                  | The shared controller: query, layers, viewport, zone focus, freshness, location.           |
-| `useMapLocation.ts`                              | Geolocation permission. Never gates rendering.                                             |
-| `useMapStaleness.ts`                             | `navigator.onLine` + cache age → the staleness chip.                                      |
-| `MapSurface.tsx`                                 | **The swap point.** Grid + overlays + marker layer + floating chrome.                      |
-| `MapGridDesktop.tsx` / `MapGridMobile.tsx`       | The two street grids, traced from BOX 24 / BOX 41.                                         |
-| `MapOverlays.tsx`                                | Demand heatmap and service-area boundaries — the two layers that are off by default.       |
-| `MapMarkerLayer.tsx` / `MapMarker.tsx` / `MapMarkerGlyph.tsx` | Placement, the accessible button, and the silhouettes.                        |
-| `MapLegend.tsx`                                  | The key. Floating on desktop, inline in the mobile layers sheet.                           |
-| `MapDock.tsx`                                    | Desktop's 320px right dock.                                                                |
+| File                                             | Responsibility                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `LiveMap.desktop.tsx` / `LiveMap.mobile.tsx`     | The two screens. Layout only — all behaviour is in `useLiveMap`.                           |
+| `useLiveMap.ts`                                  | The shared controller: query, layers, viewport, zone focus, freshness, location.            |
+| `useMapLocation.ts`                              | Geolocation permission. Never gates rendering.                                              |
+| `useMapStaleness.ts`                             | `navigator.onLine` + cache age → the staleness chip.                                       |
+| `MapSurface.tsx`                                 | **The swap point, swapped.** Hosts the GL container, the marker layer, the floating chrome. |
+| `useMapLibre.ts`                                 | GL lifecycle: create → attribution → resize-observe → `map.remove()`; viewport → camera.    |
+| `useMapClustering.ts` / `useMapOverlays.ts`      | The cluster engine wiring and the two off-by-default overlay layers.                        |
+| `map.style.ts`                                   | The in-code OSM raster style: tile URL, attribution, the desaturation treatment.            |
+| `map.projection.ts`                              | Pure geo arithmetic: lng/lat tuples, culling bounds, overlay circle rings.                  |
+| `map.geojson.ts`                                 | Pure GeoJSON builders + the cluster-feature reader (the testable side of the GL boundary).  |
+| `map.maplibre.css`                               | Feature CSS for MapLibre-generated chrome (mobile attribution offset). Token values only.   |
+| `MapMarkerLayer.tsx` / `MapMarker.tsx` / `MapMarkerGlyph.tsx` | Placement + cap + cluster rendering, the portal/button, the silhouettes.       |
+| `MapLegend.tsx`                                  | The key. Floating on desktop, inline in the mobile layers sheet.                            |
+| `MapDock.tsx`                                    | Desktop's 320px right dock.                                                                 |
 | `MapMobileHeader.tsx` / `MapFabButton.tsx` / `MapPeekPanel.tsx` / `MapSheets.tsx` | Mobile's floating controls, bottom peek and two sheets.    |
 | `MapSummary.tsx` / `MapAttentionList.tsx` / `MapProviderList.tsx` | The list content both surfaces share.                                      |
 | `MapZeroSupplyBanner.tsx` / `MapLocationNotice.tsx` / `MapMarkersEmpty.tsx` / `MapSkeleton.tsx` | The states.                                                  |
-| `map.api.ts` / `map.mock.ts` / `map.fixtures.ts` | The data boundary and the artifacts' marker positions.                                     |
-| `map.types.ts` / `map.constants.ts` / `map.labels.ts` / `map.selectors.ts` / `map.projection.ts` | Shapes, query keys, key literals, derivation, projection.   |
+| `map.api.ts` / `map.mock.ts` / `map.fixtures.ts` | The data boundary and the artifacts' marker positions (projected to Hyderabad).             |
+| `map.types.ts` / `map.constants.ts` / `map.labels.ts` / `map.selectors.ts` | Shapes, camera + cap + threshold constants, key literals, derivation. |
 
 ## Business logic
 
 - **Zero providers online is a warning `Banner`, not an empty state.** Spec §6.7 and BOX 25 are explicit: a zone that cannot take work at all is a business emergency. The banner names the consequence ("cannot be assigned"), not the metric, and the map keeps working behind it — the escalation it stranded is still on the canvas. BOX 25 also removes that zone's own provider markers and drops the online count, because a banner above a map still showing free technicians there teaches the operator to distrust both.
-- **Location permission denied or GPS unavailable → the map still works**, centred on the primary service city, with a dismissible informational banner. The browser prompt is only ever raised by pressing Recentre, and only once: a permission dialog on mount would block the one screen an operator opens because something is already on fire.
-- **Poor connectivity → the staleness chip.** Driven by the age of the data in the cache plus `navigator.onLine`, not by a server flag, because the case that matters is the one where the server cannot be reached at all.
-- **Layer defaults** match BOX 24: active jobs and providers on, escalations-only / heatmap / service areas off. Each of the last three hides or repaints markers, and a filtered map that looks like a full one is the worst state this screen can be in.
-- **Counts are server totals, not marker counts** (`42 active · 18 providers online`). Only the viewport plus a 20% buffer is rendered and the DOM marker count is hard-capped at 200 (spec §6.7 performance rules), so the two numbers legitimately differ.
-- **Clusters focus a zone rather than pretending to zoom apart.** Selecting a cluster narrows the viewport and the list to that zone; the list is then the honest answer to "what are those 12 things".
+- **Location permission denied or GPS unavailable → the map still works**, centred on Hyderabad (`PRIMARY_SERVICE_CITY_CENTRE`, zoom 11), with a dismissible informational banner. The browser prompt is only ever raised by pressing Recentre, and only once.
+- **Poor connectivity → the staleness chip.** Driven by the age of the data in the cache plus `navigator.onLine`, not by a server flag.
+- **Layer defaults** match BOX 24: active jobs and providers on, escalations-only / heatmap / service areas off. A filtered map that looks like a full one is the worst state this screen can be in.
+- **Counts are server totals, not marker counts** (`42 active · 18 providers online`).
+- **The camera and the console do not fight.** `viewport` only changes when the console refocuses (zone focus, recentre, clear filters) and then eases the camera; operator panning never writes back into React state.
 
 ## Accessibility
 
 A purely visual map is not usable by everyone, so the canvas is never the only route to a record:
 
-- Every marker is a real `<button>` with an accessible name that always includes the status word. Colour is never the only signal.
+- Every marker is a real `<button>` with an accessible name that always includes the status word. Colour is never the only signal — true even in clustered mode, where the count buttons say what zooming will do.
 - The desktop dock and the mobile operations sheet render **the same derived marker set** (`selectVisibleMarkers`) as keyboard-reachable links. One selector, two renderings — they cannot drift.
 - Offline providers get the roster's hollow grey ring rather than a filled pin, and their accessible name carries "last seen".
 - The map region carries an `sr-only` hint pointing at the list.
+
+## Testing the GL boundary
+
+jsdom has no WebGL, so the real maplibre-gl never runs in unit tests. The split:
+
+- Everything data-shaped is pure and tested directly: `map.style.test.ts` (tile URL, maxzoom, attribution string, the treatment values), `map.projection.test.ts` (tuple order, buffer culling, circle rings, fixtures inside the Hyderabad box), `map.geojson.test.ts` (cluster threshold, escalation exclusion, rendered-feature dedupe, heat bloom), `map.selectors.test.ts` (layer/zone derivation).
+- The wiring is tested against a module-level MapLibre double: `MapSurface.test.tsx` (constructor options, attribution control placement, `map.remove()` on unmount, marker buttons + callbacks, the escalation pulse) and `MapMarkerLayer.test.tsx` (the 200 cap, clustered-mode rendering). The double's `Marker.addTo` appends the portal host into the container so Testing Library sees real buttons.
+- Behaviour that genuinely needs a GPU (tile rendering, cluster regrouping) belongs to the Playwright suite, not to jsdom.
 
 ## Mock behaviour
 
@@ -67,20 +88,23 @@ Filtered-empty is reached by turning every layer off, or by focusing a zone that
 
 ## Dependencies
 
-`components/ui/*` (Banner, Button, Card, Sheet, Switch, StatusDot, Pill, Skeleton, EmptyState, Icon), `components/states/QueryBoundary`, `layouts/Topbar`, `lib/format`, `lib/http/apiError`, `lib/cx`, `mocks/mockTransport`, `routes/routes.constants`, `hooks/useBreakpoint` (via the page), `@sethu/i18n` namespace `adminMap`, `lucide-react`.
+`maplibre-gl` (+ its stylesheet), `components/ui/*` (Banner, Button, Card, Sheet, Switch, StatusDot, Pill, Skeleton, EmptyState, Icon), `components/states/QueryBoundary`, `layouts/Topbar`, `lib/format`, `lib/http/apiError`, `lib/cx`, `mocks/mockTransport`, `routes/routes.constants`, `hooks/useBreakpoint` (via the page), `@sethu/i18n` namespace `adminMap`, `lucide-react`.
 
 ## Boundaries
 
-- **No mapping library, no tile URLs, no network for the base map.** Adding one is a change to `MapSurface.tsx` and to this file, and nothing else.
+- **The only network the base map touches is the OSM tile endpoint**, declared once in `map.style.ts`. No API keys, no vector styles, no glyph/sprite servers — the style is self-contained so the map cannot gain a second external dependency by accident.
+- The GL instance never leaks out of this folder: `useMapLibre` creates it, `MapSurface` consumes it, nothing above the surface sees maplibre types.
 - No sibling-feature imports. Navigation to a booking or a provider goes through `ROUTES`.
-- The `.map-*` BEM classes in `styles/components.css` are the artifacts' marker and dock geometry, ported verbatim, and there is no primitive that offers them. This feature is the recorded exception that consumes them directly (`MapMarker`, `MapMarkerGlyph`, `MapLegend`, `MapSurface`, `MapDock`, `MapFabButton`, `MapMobileHeader`, `MapSkeleton`). Everything else is a primitive plus token-backed Tailwind utilities — no raw colour, no arbitrary px.
+- The `.map-*` BEM classes in `styles/components.css` are the artifacts' marker and dock geometry, ported verbatim, and there is no primitive that offers them. This feature is the recorded exception that consumes them directly (`MapMarker`, `MapMarkerGlyph`, `MapLegend`, `MapSurface`, `MapDock`, `MapFabButton`, `MapMobileHeader`, `MapSkeleton`). `map.maplibre.css` is the one feature CSS file — it styles MapLibre-generated control containers no utility can reach, with token values only. Everything else is a primitive plus token-backed Tailwind utilities — no raw colour, no arbitrary px.
 - Components never import `map.mock.ts`; they go through `useLiveMap` → `map.api.ts`.
 
 ## Known gaps
 
 - `GET /ops/live-map` does not exist (see `docs/admin-api-contract.md`). The mock is the normative shape.
-- Spec §6.7's analytics events (`map_viewed`, `map_layer_toggled`, `map_marker_tapped`, `map_performance`) are not emitted — the console has no analytics client yet. The call sites are the three `onSelect*` handlers and `toggleLayer`.
+- Spec §6.7's analytics events (`map_viewed`, `map_layer_toggled`, `map_marker_tapped`, `map_performance`) are not emitted — the console has no analytics client yet.
 - The demand heatmap is derived from the visible job count per zone rather than from real demand; the backend owes a density field.
+- The OSM public tile server's usage policy is fine for development and this console's traffic, but production at scale should move `OSM_RASTER_TILE_URL` to a commercial/ self-hosted tile provider — a one-constant change.
+- Offline tile caching ("tiles degrade to cached") is whatever the browser HTTP cache holds; no service-worker tile cache yet.
 
 ## Impacted modules
 

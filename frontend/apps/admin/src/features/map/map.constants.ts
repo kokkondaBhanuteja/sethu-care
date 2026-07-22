@@ -45,21 +45,36 @@ export const MAP_DEFAULT_LAYERS: Readonly<Record<MapLayer, boolean>> = {
 };
 
 /**
- * The primary service city, centred. Location permission denied or GPS unavailable falls back to
- * exactly this rather than blocking the screen (spec §6.7 edge cases).
+ * The primary service city (Hyderabad), centred. Location permission denied or GPS unavailable
+ * falls back to exactly this rather than blocking the screen (spec §6.7 edge cases).
  */
-export const PRIMARY_SERVICE_CITY_CENTRE: MapPoint = { xPercent: 50, yPercent: 50 };
+export const PRIMARY_SERVICE_CITY_CENTRE: MapPoint = { latitude: 17.44, longitude: 78.45 };
+
+/** Tile zoom that fits the whole service city in the frame. */
+export const MAP_CITY_ZOOM = 11;
 
 export const MAP_DEFAULT_VIEWPORT: MapViewport = {
   centre: PRIMARY_SERVICE_CITY_CENTRE,
-  zoom: 1,
+  zoom: MAP_CITY_ZOOM,
 };
 
-/** Close enough to read a street name on a real tile layer, without losing the city's shape. */
-export const MAP_FOCUS_ZOOM = 1.8;
+/** Close enough to read a street name on the tile layer, without losing the zone's shape. */
+export const MAP_FOCUS_ZOOM = 13;
+
+/** The camera never leaves the service region: below this the city is a dot in a continent. */
+export const MAP_MIN_ZOOM = 9;
 
 /** Spec §6.7's hard cap. A phone dropping frames mid-escalation is worse than a missing 201st pin. */
 export const MAX_DOM_MARKERS = 200;
+
+/**
+ * Above this many pins MapLibre's cluster engine takes over placement (spec §6.7 "cluster above
+ * 50"); below it every marker is its own accessible button.
+ */
+export const MAP_CLUSTER_THRESHOLD = 50;
+
+/** Only the viewport plus this buffer is given DOM markers (spec §6.7 performance rules). */
+export const MAP_VIEWPORT_BUFFER_RATIO = 0.2;
 
 /** Which mobile sheet is open. Only one at a time — the Sheet primitive is modal. */
 export const MAP_SHEETS = {

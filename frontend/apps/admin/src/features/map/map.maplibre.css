@@ -1,0 +1,9 @@
+/* MapLibre-generated chrome that no Tailwind utility can reach: the library builds these control
+   containers itself. Token values only (ENGINEERING-STANDARDS Part 6). */
+
+/* Mobile (BOX 41): the peek panel owns the bottom edge and the floating header owns the top row,
+   so the OSM attribution — which must stay visible, it is the licensing condition for the tiles —
+   is anchored top-right by useMapLibre and pushed just below the header here. */
+.map .maplibregl-ctrl-top-right {
+  top: var(--row-56);
+}

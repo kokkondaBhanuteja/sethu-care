@@ -1,6 +1,6 @@
-// The artifacts' marker positions, lifted percentage for percentage from BOX 24 (desktop) so a
-// running screen can be diffed against its design tile directly. Mobile reuses the same coordinate
-// space: the surface is abstract, so one set of positions serves both grids.
+// The artifacts' marker positions, lifted percentage for percentage from BOX 24 (desktop) and then
+// projected onto a Hyderabad-area bounding box, so a running screen still matches its design
+// tile's layout while every position is a real coordinate the OSM tile layer can carry.
 
 import {
   ATTENTION_REASONS,
@@ -8,9 +8,30 @@ import {
   PROVIDER_MAP_STATUSES,
   type MapCluster,
   type MapJob,
+  type MapPoint,
   type MapProvider,
   type MapZone,
 } from "./map.types";
+
+/** The box BOX 24's 0–100 layout maps onto: greater Hyderabad, Kompally at the top edge. */
+export const FIXTURE_GEO_BOUNDS = {
+  north: 17.62,
+  south: 17.26,
+  west: 78.28,
+  east: 78.62,
+} as const;
+
+/** Artifact percentages → WGS84. yPercent grows downward, latitude grows upward — hence north-. */
+function geoPoint(xPercent: number, yPercent: number): MapPoint {
+  return {
+    latitude:
+      FIXTURE_GEO_BOUNDS.north -
+      (yPercent / 100) * (FIXTURE_GEO_BOUNDS.north - FIXTURE_GEO_BOUNDS.south),
+    longitude:
+      FIXTURE_GEO_BOUNDS.west +
+      (xPercent / 100) * (FIXTURE_GEO_BOUNDS.east - FIXTURE_GEO_BOUNDS.west),
+  };
+}
 
 export const ZONES = {
   kompally: "kompally",
@@ -20,10 +41,10 @@ export const ZONES = {
 } as const;
 
 export const MAP_ZONES: readonly MapZone[] = [
-  { id: ZONES.kompally, name: "Kompally", labelAt: { xPercent: 34, yPercent: 9 } },
-  { id: ZONES.miyapur, name: "Miyapur", labelAt: { xPercent: 16, yPercent: 74 } },
-  { id: ZONES.gachibowli, name: "Gachibowli", labelAt: { xPercent: 68, yPercent: 39 } },
-  { id: ZONES.madhapur, name: "Madhapur", labelAt: { xPercent: 78, yPercent: 78 } },
+  { id: ZONES.kompally, name: "Kompally", labelAt: geoPoint(34, 9) },
+  { id: ZONES.miyapur, name: "Miyapur", labelAt: geoPoint(16, 74) },
+  { id: ZONES.gachibowli, name: "Gachibowli", labelAt: geoPoint(68, 39) },
+  { id: ZONES.madhapur, name: "Madhapur", labelAt: geoPoint(78, 78) },
 ];
 
 function minutesAgo(minutes: number): string {
@@ -64,7 +85,7 @@ export const MAP_JOBS: readonly MapJob[] = [
 ];
 
 export const MAP_CLUSTERS: readonly MapCluster[] = [
-  { id: "C-1", zoneId: ZONES.madhapur, position: { xPercent: 86, yPercent: 26 }, markerCount: 12 },
+  { id: "C-1", zoneId: ZONES.madhapur, position: geoPoint(86, 26), markerCount: 12 },
 ];
 
 export const MAP_ATTENTION = [
@@ -98,7 +119,7 @@ function provider(
     name,
     status: PROVIDER_MAP_STATUSES[status],
     zoneId,
-    position: { xPercent, yPercent },
+    position: geoPoint(xPercent, yPercent),
     locatedAt: minutesAgo(0),
     ...(onBookingRef ? { onBookingRef } : {}),
   };
@@ -117,7 +138,7 @@ function offline(
     name,
     status: PROVIDER_MAP_STATUSES.offline,
     zoneId,
-    position: { xPercent, yPercent },
+    position: geoPoint(xPercent, yPercent),
     locatedAt: minutesAgo(lastSeenMinutes),
   };
 }
@@ -136,7 +157,7 @@ function job(
     bookingRef,
     state: JOB_MAP_STATES[state],
     zoneId,
-    position: { xPercent, yPercent },
+    position: geoPoint(xPercent, yPercent),
     serviceName,
   };
 }

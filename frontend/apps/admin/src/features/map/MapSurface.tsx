@@ -1,31 +1,29 @@
-import type { ReactNode } from "react";
+import { useRef } from "react";
 import { useTranslation } from "@sethu/i18n";
+import "maplibre-gl/dist/maplibre-gl.css";
+import "./map.maplibre.css";
+import type { ReactNode } from "react";
 
-import { viewportTransform } from "./map.projection";
-import { MapGridDesktop } from "./MapGridDesktop";
-import { MapGridMobile } from "./MapGridMobile";
 import { MapMarkerLayer } from "./MapMarkerLayer";
-import { MapOverlays } from "./MapOverlays";
+import { useMapClustering } from "./useMapClustering";
+import { useMapLibre } from "./useMapLibre";
+import { useMapOverlays } from "./useMapOverlays";
 import type { VisibleMarkers } from "./map.selectors";
 import type { MapCluster, MapJob, MapProvider, MapViewport, MapZone } from "./map.types";
 
 /**
- * THE SWAP POINT.
+ * THE SWAP POINT — now swapped. The ground under the markers is a real MapLibre map over
+ * OpenStreetMap raster tiles, desaturated to a quiet gray (map.style.ts) so the design's original
+ * rule still holds: the base recedes far enough that a 12px marker wins the eye, and no tile's own
+ * reds, greens and yellows out-shout the one escalation (BOX 24/41).
  *
- * Everything above this component works in percentage coordinates and knows nothing about how the
- * ground under the markers is drawn. Today that ground is an abstract, desaturated SVG street grid,
- * because the design requires the base map to recede far enough that a 12px marker wins the eye —
- * a real tile layer's own reds, greens and yellows would make the one escalation impossible to find
- * (BOX 24/41).
- *
- * Introducing Leaflet or MapLibre (branch `feat/maps-osm`) replaces THIS FILE ONLY: mount the map
- * instance here, translate `viewport` into centre + zoom, and project each marker's lat/lng instead
- * of calling `projectPoint`. `markers`, `viewport` and the selection callbacks are the whole
- * contract. No mapping dependency and no tile URL exists anywhere in this feature today.
+ * Everything above this component still only hands over `markers`, `viewport`, `zones` and the
+ * selection callbacks; the GL instance, its lifecycle and its projection are all private to this
+ * file and the hooks beside it.
  */
 
 export interface MapSurfaceProps {
-  /** Which street grid to draw. The two artboards trace different cities' worth of detail. */
+  /** Which chrome frame the surface sits in; also decides where the OSM attribution is anchored. */
   surface: "desktop" | "mobile";
   viewport: MapViewport;
   markers: VisibleMarkers;
@@ -54,6 +52,11 @@ export function MapSurface({
   children,
 }: MapSurfaceProps) {
   const { t } = useTranslation("adminMap");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const { mapInstance, visibleBounds } = useMapLibre(containerRef, surface, viewport);
+  const clustering = useMapClustering(mapInstance, markers.providers, markers.jobs);
+  useMapOverlays(mapInstance, zones, markers.jobs, showServiceAreas, showDemandHeatmap);
 
   return (
     <div
@@ -61,29 +64,26 @@ export function MapSurface({
       role="region"
       aria-label={t("region.label")}
     >
-      {/* The base map pans and zooms as one layer; markers are projected instead of scaled, so a
-          pin stays 12px whatever the zoom. */}
-      <div className="absolute inset-0" style={{ transform: viewportTransform(viewport) }}>
-        {surface === "desktop" ? <MapGridDesktop /> : <MapGridMobile />}
-        <MapOverlays
-          zones={zones}
-          jobs={markers.jobs}
-          showServiceAreas={showServiceAreas}
-          showDemandHeatmap={showDemandHeatmap}
-        />
-      </div>
+      {/* An explicit full-size box: MapLibre measures this element when the canvas is created,
+          and a flex layout inside the webview can settle after mount — useMapLibre also forces a
+          `map.resize()` one frame later for exactly that case. */}
+      <div ref={containerRef} className="absolute inset-0 h-full w-full min-h-0" />
 
       <p className="sr-only">{t("region.hint")}</p>
 
-      <MapMarkerLayer
-        viewport={viewport}
-        markers={markers}
-        zones={zones}
-        zoneNameOf={zoneNameOf}
-        onSelectProvider={onSelectProvider}
-        onSelectJob={onSelectJob}
-        onSelectCluster={onSelectCluster}
-      />
+      {mapInstance ? (
+        <MapMarkerLayer
+          mapInstance={mapInstance}
+          visibleBounds={visibleBounds}
+          markers={markers}
+          clustering={clustering}
+          zones={zones}
+          zoneNameOf={zoneNameOf}
+          onSelectProvider={onSelectProvider}
+          onSelectJob={onSelectJob}
+          onSelectCluster={onSelectCluster}
+        />
+      ) : null}
 
       {children}
     </div>

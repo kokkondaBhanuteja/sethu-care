@@ -72,7 +72,7 @@ Six `/ops/*` endpoints exist. Everything else is mock-backed —
 normative shape. Swapping a mock for a real endpoint is a change inside one `.api.ts` file.
 
 Dependencies: `@sethu/{api-client,core,domain,i18n,tokens,ui-web}`, react-router, TanStack Query,
-zustand, react-hook-form + zod, lucide-react, `@capacitor/*`.
+zustand, react-hook-form + zod, lucide-react, maplibre-gl (the live map only), `@capacitor/*`.
 
 Boundaries: never import another app; features never import sibling features; pages never call the
 API client directly.

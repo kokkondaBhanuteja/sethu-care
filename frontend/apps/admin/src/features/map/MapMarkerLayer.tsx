@@ -1,18 +1,24 @@
 import { useTranslation } from "@sethu/i18n";
+import type { Map as MapLibreMap } from "maplibre-gl";
 
 import { formatRelative } from "../../lib/format";
-import { MAX_DOM_MARKERS } from "./map.constants";
+import { MAP_VIEWPORT_BUFFER_RATIO, MAX_DOM_MARKERS } from "./map.constants";
 import { JOB_STATE_KEYS, PROVIDER_STATUS_KEYS } from "./map.labels";
-import { isWithinViewport, projectPoint, type ScreenOffset } from "./map.projection";
-import { MapMarker, MapZoneLabel } from "./MapMarker";
+import { boundsWithBuffer, isWithinBounds } from "./map.projection";
+import { MapLibrePoint, MapMarker, MapZoneLabel } from "./MapMarker";
 import { ClusterGlyph, JobGlyph, ProviderGlyph } from "./MapMarkerGlyph";
-import { PROVIDER_MAP_STATUSES } from "./map.types";
+import { JOB_MAP_STATES, PROVIDER_MAP_STATUSES } from "./map.types";
+import type { PlainBounds } from "./map.projection";
 import type { VisibleMarkers } from "./map.selectors";
-import type { MapCluster, MapJob, MapPoint, MapProvider, MapViewport, MapZone } from "./map.types";
+import type { MapClusteringController } from "./useMapClustering";
+import type { MapPoint, MapProvider, MapZone } from "./map.types";
+import type { MapCluster, MapJob } from "./map.types";
 
 export interface MapMarkerLayerProps {
-  viewport: MapViewport;
+  mapInstance: MapLibreMap;
+  visibleBounds: PlainBounds | null;
   markers: VisibleMarkers;
+  clustering: MapClusteringController;
   zones: readonly MapZone[];
   zoneNameOf: (zoneId: string) => string;
   onSelectProvider: (provider: MapProvider) => void;
@@ -21,13 +27,17 @@ export interface MapMarkerLayerProps {
 }
 
 /**
- * Places every marker for the current viewport. Only the current viewport plus a 20% buffer is
+ * Places every marker as a MapLibre-positioned HTML button. Only the viewport plus a 20% buffer is
  * rendered and the total is hard-capped, because a phone that drops frames while an operator is
  * hunting an escalation is worse than a map missing its 201st pin (spec §6.7 performance rules).
+ * Above 50 pins the cluster engine's grouping replaces individual placement — except escalations,
+ * which always surface as their own pulsing marker.
  */
 export function MapMarkerLayer({
-  viewport,
+  mapInstance,
+  visibleBounds,
   markers,
+  clustering,
   zones,
   zoneNameOf,
   onSelectProvider,
@@ -36,65 +46,84 @@ export function MapMarkerLayer({
 }: MapMarkerLayerProps) {
   const { t } = useTranslation("adminMap");
 
-  const jobs = withinViewport(markers.jobs, viewport);
-  const providers = withinViewport(markers.providers, viewport).slice(
-    0,
-    Math.max(0, MAX_DOM_MARKERS - jobs.length),
+  const bufferedBounds =
+    visibleBounds === null ? null : boundsWithBuffer(visibleBounds, MAP_VIEWPORT_BUFFER_RATIO);
+  const isVisible = (position: MapPoint): boolean =>
+    bufferedBounds === null || isWithinBounds(position, bufferedBounds);
+  const isUnclustered = (markerId: string): boolean =>
+    clustering.unclusteredMarkerIds === null || clustering.unclusteredMarkerIds.has(markerId);
+
+  const jobs = markers.jobs.filter(
+    (job) =>
+      isVisible(job.position) && (job.state === JOB_MAP_STATES.escalated || isUnclustered(job.id)),
   );
-  const clusters = withinViewport(markers.clusters, viewport);
+  const providers = markers.providers
+    .filter((provider) => isVisible(provider.position) && isUnclustered(provider.id))
+    .slice(0, Math.max(0, MAX_DOM_MARKERS - jobs.length));
+  const serverClusters = markers.clusters.filter((cluster) => isVisible(cluster.position));
 
   return (
     <>
       {zones.map((zone) => (
-        <MapZoneLabel
-          key={zone.id}
-          offset={projectPoint(zone.labelAt, viewport)}
-          name={zone.name}
-        />
+        <MapLibrePoint key={`zone-${zone.id}`} mapInstance={mapInstance} position={zone.labelAt}>
+          <MapZoneLabel name={zone.name} />
+        </MapLibrePoint>
       ))}
 
-      {providers.map(({ item: provider, offset }) => (
-        <MapMarker
-          key={provider.id}
-          offset={offset}
-          label={providerLabel(provider)}
-          onSelect={() => onSelectProvider(provider)}
-        >
-          <ProviderGlyph
-            status={provider.status}
-            statusLabel={t(PROVIDER_STATUS_KEYS[provider.status])}
-          />
-        </MapMarker>
+      {providers.map((provider) => (
+        <MapLibrePoint key={provider.id} mapInstance={mapInstance} position={provider.position}>
+          <MapMarker label={providerLabel(provider)} onSelect={() => onSelectProvider(provider)}>
+            <ProviderGlyph
+              status={provider.status}
+              statusLabel={t(PROVIDER_STATUS_KEYS[provider.status])}
+            />
+          </MapMarker>
+        </MapLibrePoint>
       ))}
 
-      {jobs.map(({ item: job, offset }) => (
-        <MapMarker
-          key={job.id}
-          offset={offset}
-          label={t("marker.job", {
-            ref: job.bookingRef,
-            service: job.serviceName,
-            state: t(JOB_STATE_KEYS[job.state]),
-            zone: zoneNameOf(job.zoneId),
-          })}
-          onSelect={() => onSelectJob(job)}
-        >
-          <JobGlyph state={job.state} />
-        </MapMarker>
+      {jobs.map((job) => (
+        <MapLibrePoint key={job.id} mapInstance={mapInstance} position={job.position}>
+          <MapMarker
+            label={t("marker.job", {
+              ref: job.bookingRef,
+              service: job.serviceName,
+              state: t(JOB_STATE_KEYS[job.state]),
+              zone: zoneNameOf(job.zoneId),
+            })}
+            onSelect={() => onSelectJob(job)}
+          >
+            <JobGlyph state={job.state} />
+          </MapMarker>
+        </MapLibrePoint>
       ))}
 
-      {clusters.map(({ item: cluster, offset }) => (
-        <MapMarker
-          key={cluster.id}
-          offset={offset}
-          label={t("marker.cluster", {
-            count: cluster.markerCount,
-            zone: zoneNameOf(cluster.zoneId),
-          })}
-          onSelect={() => onSelectCluster(cluster)}
+      {serverClusters.map((cluster) => (
+        <MapLibrePoint key={cluster.id} mapInstance={mapInstance} position={cluster.position}>
+          <MapMarker
+            label={t("marker.cluster", {
+              count: cluster.markerCount,
+              zone: zoneNameOf(cluster.zoneId),
+            })}
+            onSelect={() => onSelectCluster(cluster)}
+          >
+            <ClusterGlyph count={cluster.markerCount} />
+          </MapMarker>
+        </MapLibrePoint>
+      ))}
+
+      {clustering.engineClusters.map((engineCluster) => (
+        <MapLibrePoint
+          key={`engine-${engineCluster.clusterId}`}
+          mapInstance={mapInstance}
+          position={engineCluster.position}
         >
-          <ClusterGlyph count={cluster.markerCount} />
-        </MapMarker>
+          <MapMarker
+            label={t("marker.clusterZoom", { count: engineCluster.markerCount })}
+            onSelect={() => clustering.expandCluster(engineCluster)}
+          >
+            <ClusterGlyph count={engineCluster.markerCount} />
+          </MapMarker>
+        </MapLibrePoint>
       ))}
     </>
   );
@@ -114,18 +143,4 @@ export function MapMarkerLayer({
       zone,
     });
   }
-}
-
-interface Placed<TItem> {
-  readonly item: TItem;
-  readonly offset: ScreenOffset;
-}
-
-function withinViewport<TItem extends { readonly position: MapPoint }>(
-  items: readonly TItem[],
-  viewport: MapViewport,
-): readonly Placed<TItem>[] {
-  return items
-    .map((item) => ({ item, offset: projectPoint(item.position, viewport) }))
-    .filter((placed) => isWithinViewport(placed.offset));
 }

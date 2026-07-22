@@ -1,23 +1,23 @@
 // Shapes for the Live Operations Map (Admin spec §6.7).
 //
-// Positions are percentages of the map's coordinate space, not lat/lng. The rendered surface is an
-// abstract SVG street grid (see MapSurface.tsx), and a percentage is what both that grid and a
-// future tile layer can be handed: swapping in Leaflet/MapLibre means projecting lat/lng into the
-// same 0-100 space inside MapSurface, and nothing above this file changes.
+// Positions are real WGS84 coordinates. The rendered surface is a MapLibre map over desaturated
+// OpenStreetMap raster tiles (see MapSurface.tsx and map.style.ts); everything above MapSurface
+// still only hands positions around and never learns how the ground under them is drawn.
 
-/** Where a marker sits, as a percentage of the map's width and height. */
+/** Where a marker sits on Earth. WGS84, the coordinate system OSM tiles are served in. */
 export interface MapPoint {
-  readonly xPercent: number;
-  readonly yPercent: number;
+  readonly latitude: number;
+  readonly longitude: number;
 }
 
 /**
- * What the surface is currently showing. Handed to MapSurface as a prop so the projection lives in
- * one place; a tile layer would read the same object as centre + zoom level.
+ * Where the console has pointed the camera. Handed to MapSurface as a prop; user panning on the
+ * canvas moves the camera without writing back here — this object only changes when the console
+ * itself refocuses (zone focus, recentre, clear filters).
  */
 export interface MapViewport {
   readonly centre: MapPoint;
-  /** 1 = the whole service city. Larger values magnify around `centre`. */
+  /** A web-mercator tile zoom level: ~11 shows the whole service city, ~13 a zone. */
   readonly zoom: number;
 }
 
