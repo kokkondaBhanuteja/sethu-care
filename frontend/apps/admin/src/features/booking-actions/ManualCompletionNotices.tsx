@@ -45,9 +45,15 @@ export function OtpArrivedInterrupt({
 }: OtpArrivedInterruptProps) {
   const { t } = useTranslation("adminBookingActions");
 
+  // Bail before the body does any work. `Modal` renders nothing when closed, but React still runs
+  // everything above it — and this component formats a timestamp the caller only has once the
+  // booking has loaded. Rendering it unconditionally meant formatting "" on first paint, which
+  // threw and killed the whole manual-completion route before its data ever arrived.
+  if (!isOpen) return null;
+
   return (
     <Modal
-      isOpen={isOpen}
+      isOpen
       width="confirm"
       isDismissable={false}
       title={t("manual.otpArrivedTitle")}

@@ -131,3 +131,25 @@ describe("phone and percent", () => {
     expect(formatPercent(0.9426)).toBe("94.3%");
   });
 });
+
+describe("unrenderable dates", () => {
+  // These formatters are called from ~40 screens and Intl throws on an invalid date rather than
+  // returning something useless. One absent timestamp used to take down a whole route: the
+  // manual-completion flow rendered a closed modal that formatted "", and died before its data
+  // arrived. A missing date is worth a dash, not a lost screen.
+  it.each(["", "not-a-date", "2026-13-45T99:99:99Z"])(
+    "renders %o as a dash, never throws",
+    (bad) => {
+      expect(formatDate(bad)).toBe("—");
+      expect(formatDateShort(bad)).toBe("—");
+      expect(formatTime(bad)).toBe("—");
+      expect(formatDateTime(bad)).toBe("—");
+      expect(formatRelative(bad)).toBe("—");
+      expect(formatAge(bad)).toBe("—");
+    },
+  );
+
+  it("still formats a valid date, so the guard cannot swallow real values", () => {
+    expect(formatDate("2026-07-20T10:12:11.482Z")).toBe("20/07/2026");
+  });
+});
