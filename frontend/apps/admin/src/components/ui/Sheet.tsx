@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Sheet as UiSheet, SheetContent, SheetFooter, SheetTitle, cn } from "@sethu/ui-web";
 
 export interface SheetProps {
@@ -24,9 +24,21 @@ export function Sheet({
   onDismiss,
   children,
 }: SheetProps) {
+  // Controlled Radix root without a Trigger: hand focus back to the opener on close (WCAG 2.4.3).
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isOpen && document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement;
+    }
+  }, [isOpen]);
+
   return (
     <UiSheet open={isOpen} onOpenChange={(nextOpen) => (nextOpen ? undefined : onDismiss())}>
       <SheetContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          openerRef.current?.focus();
+        }}
         side="bottom"
         aria-modal="true"
         hideCloseButton

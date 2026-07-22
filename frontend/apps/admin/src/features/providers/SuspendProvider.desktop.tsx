@@ -31,6 +31,7 @@ export function SuspendProviderDesktop() {
     <>
       <Modal
         isOpen
+        width="wide"
         title={t("suspend.title")}
         subtitle={t("suspend.stepCounter", { current: flow.stepNumber, total: TOTAL_STEPS })}
         onDismiss={flow.requestClose}

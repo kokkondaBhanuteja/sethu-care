@@ -1,8 +1,14 @@
 /**
- * Open product defects the suite currently fails on — each test that hits one is marked
- * `test.fail(true, <defect>)`, the convention in `e2e/CLAUDE.md`: a spec that fails because the
- * app is wrong stays failing and is never weakened to go green. The `✘` markers in the output are
- * the list of open defects; delete the entry (and the marks) when the fix lands.
+ * Open product defects the suite currently fails on — never weakened to go green, per
+ * `e2e/CLAUDE.md`. Each affected test carries one of these as its mark:
+ *
+ * - `test.fail(true, <defect>)` where the defect makes an assertion fail;
+ * - `test.fixme(true, <defect>)` where the defect makes the test TIME OUT (an unreachable button
+ *   is waited on forever, and Playwright reports a timed-out "should fail" test as a plain
+ *   failure, so `test.fail` cannot express it).
+ *
+ * Delete the entry (and its marks) when the fix lands — a fixed `test.fail` flips to "expected to
+ * fail but passed", and un-fixme'd tests simply run again.
  *
  * Both defects were introduced by the P3 migration onto @sethu/ui-web Radix overlays.
  */

@@ -34,7 +34,7 @@ export function AlertDetailDesktop({ alertId }: AlertDetailDesktopProps) {
   if (detail.isNotFound) {
     return (
       <>
-        <Topbar crumbs={crumbs} />
+        <Topbar crumbs={crumbs} pageRendersHeading />
         <PageMain>
           <NotFoundState subject={t("notFoundSubject")} />
         </PageMain>
@@ -44,7 +44,7 @@ export function AlertDetailDesktop({ alertId }: AlertDetailDesktopProps) {
 
   return (
     <>
-      <Topbar crumbs={crumbs} />
+      <Topbar crumbs={crumbs} pageRendersHeading />
       <AlertsOfflineBanner
         isOnline={acknowledgement.isOnline}
         queuedCount={acknowledgement.queuedIds.length}

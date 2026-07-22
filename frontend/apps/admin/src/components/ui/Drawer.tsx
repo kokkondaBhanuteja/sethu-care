@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "@sethu/i18n";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, cn } from "@sethu/ui-web";
 
@@ -26,10 +26,21 @@ export function Drawer({
   children,
 }: DrawerProps) {
   const { t } = useTranslation("adminShell");
+  // Controlled Radix root without a Trigger: hand focus back to the opener on close (WCAG 2.4.3).
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isOpen && document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement;
+    }
+  }, [isOpen]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(nextOpen) => (nextOpen ? undefined : onDismiss())}>
       <SheetContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          openerRef.current?.focus();
+        }}
         side="right"
         aria-modal="true"
         closeLabel={t("actions.close")}

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "@sethu/i18n";
 import {
   Dialog,
@@ -59,6 +59,15 @@ export function Modal({
   const { t } = useTranslation("adminShell");
   const blockDismiss = isDismissable ? undefined : (event: Event) => event.preventDefault();
 
+  // Controlled Radix roots have no DialogTrigger, so Radix's default close-focus lands on <body>.
+  // Capture the opener when the modal opens and hand focus back on close (WCAG 2.4.3).
+  const openerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (isOpen && document.activeElement instanceof HTMLElement) {
+      openerRef.current = document.activeElement;
+    }
+  }, [isOpen]);
+
   return (
     <Dialog open={isOpen} onOpenChange={(nextOpen) => (nextOpen ? undefined : onDismiss())}>
       <DialogContent
@@ -70,21 +79,32 @@ export function Modal({
         onEscapeKeyDown={blockDismiss}
         onPointerDownOutside={blockDismiss}
         onInteractOutside={blockDismiss}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          openerRef.current?.focus();
+        }}
         // Radix wires the description id when a subtitle renders; explicitly suppressed otherwise
         // (spread, so the auto-wired id is only overridden in the no-subtitle case).
         {...(subtitle ? {} : { "aria-describedby": undefined })}
         // "modal-scrim" is the stable structural hook for the overlay (tests, debugging).
         overlayClassName="modal-scrim"
-        className={cn(MODAL_WIDTHS[width], rail && "flex gap-6")}
+        // max-h in dvh: viewport-physical (like breakpoints), outside token scope by design.
+        className={cn(
+          MODAL_WIDTHS[width],
+          "max-h-[calc(100dvh-3rem)]",
+          rail ? "flex gap-6" : "flex flex-col",
+        )}
       >
         {rail}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {subtitle ? <DialogDescription>{subtitle}</DialogDescription> : null}
           </DialogHeader>
-          <div className="mt-4">{children}</div>
-          {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+          {/* The ONLY scroll region — the footer stays pinned so the commit button is always
+              reachable (the E2E pass caught tall flows pushing it off-viewport). */}
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto">{children}</div>
+          {footer ? <DialogFooter className="shrink-0">{footer}</DialogFooter> : null}
         </div>
       </DialogContent>
     </Dialog>

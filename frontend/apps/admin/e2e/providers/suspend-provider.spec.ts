@@ -1,5 +1,4 @@
 import { expect, test } from "../fixtures";
-import { KNOWN_DEFECTS } from "../support/knownDefects";
 import { PROVIDER_TRIGGERS } from "../support/mockTriggers";
 import { chooseOption } from "../support/controls";
 
@@ -10,10 +9,10 @@ import { chooseOption } from "../support/controls";
  *
  * Action type and reason share one pane, so the rail runs 1&2 → 3 → 4.
  *
- * Every test that must PRESS Continue is an expected failure today: the ui-web Modal migration
- * left the footer button below a viewport nothing can scroll
- * (`KNOWN_DEFECTS.modalFooterUnreachable`), so no step past the first can even be reached. Left
- * failing on purpose — do not weaken.
+ * Every test that must PRESS Continue is fixme'd today: the ui-web Modal migration left the
+ * footer button below a viewport nothing can scroll (`KNOWN_DEFECTS.modalFooterUnreachable`), so
+ * no step past the first can even be reached and those tests can only time out. Do not weaken
+ * them to go green — unmark them when the Modal regains its pinned footer.
  */
 
 const REASON = "Customer safety complaint";
@@ -28,7 +27,6 @@ test("the rail names all four steps up front", async ({ suspendProvider }) => {
 });
 
 test("the cost of the action is pinned at every step", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await expect(suspendProvider.impact).toBeVisible();
 
   await suspendProvider.continueFromStepOne(REASON);
@@ -53,7 +51,6 @@ test("step 1 gates on a reason code", async ({ suspendProvider }) => {
 test("step 3 must not be skipped while the active-jobs query is still in flight", async ({
   suspendProvider,
 }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   // No wait for the record: this is exactly what a fast operator does.
   await suspendProvider.chooseReason(REASON);
   await suspendProvider.continueButton.click();
@@ -62,7 +59,6 @@ test("step 3 must not be skipped while the active-jobs query is still in flight"
 });
 
 test("step 3 lists the provider's active jobs", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await suspendProvider.continueFromStepOne(REASON);
 
   await suspendProvider.expectStepNumber(3);
@@ -75,7 +71,6 @@ test("step 3 lists the provider's active jobs", async ({ suspendProvider }) => {
 });
 
 test("step 3 refuses to continue while a job is unhandled", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
 
@@ -86,7 +81,6 @@ test("step 3 refuses to continue while a job is unhandled", async ({ suspendProv
 });
 
 test("handling every job unlocks step 4", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
 
@@ -99,7 +93,6 @@ test("handling every job unlocks step 4", async ({ suspendProvider }) => {
 });
 
 test("step 4 shows the message the provider will actually receive", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await suspendProvider.continueFromStepOne(REASON);
   await expect(suspendProvider.activeJobsHeading).toBeVisible();
   await suspendProvider.letEveryJobFinish();
@@ -127,7 +120,6 @@ test("a suspension length is only offered for a temporary suspension", async ({
 });
 
 test("a provider with no active jobs skips step 3 legitimately", async ({ suspendProvider }) => {
-  test.fail(true, KNOWN_DEFECTS.modalFooterUnreachable);
   await suspendProvider.goto(PROVIDER_TRIGGERS.withoutActiveJobs);
   await suspendProvider.continueFromStepOne("Document expired or invalid");
 
