@@ -19,9 +19,9 @@ walked-away-from device from leaking live operations data.
 | `SessionLock.desktop.tsx` · `useSessionLock.ts` | BOX 58. Desktop's password step-up. |
 | `BiometricUnlock.mobile.tsx` · `useUnlock.ts` · `biometric.ts` | BOX 92–94. Sensor, then passcode. |
 | `CodeInput.tsx` | The six-cell code control. **Promotion candidate — see below.** |
-| `auth.api.ts` · `auth.mock.ts` · `auth.types.ts` · `auth.constants.ts` | The data boundary. |
-| `auth.devBridge.ts` | **TEMPORARY** mocks-off login: the contract's `adminLogin` is not implemented yet, so `login()` signs in through the backend's existing phone-OTP auth as the seeded dev admin (`env.devAdminPhone`, backend run with `SETHU_DEV_OTP=true`; OTP requests rate-limited 30s per phone). Completes on the designed trusted-device path (no second factor); the typed credentials are chrome. Delete when `adminLogin` lands. |
-| `authRouterState.ts` · `useCountdown.ts` · `useIsOnline.ts` · `deviceIdentity.ts` | Support. |
+| `auth.api.ts` · `auth.mock.ts` · `auth.types.ts` · `auth.constants.ts` | The data boundary. The admin auth endpoints are REAL (backend `internal/adminaccount`); with `VITE_USE_MOCKS=false` every call is sdk call → pure mapper → the same outcome types the mocks produce. The mock branch is untouched. |
+| `auth.api.map.ts` · `auth.api.errors.ts` | Payloads → feature types, field by field so drift is a compile error; and the DECLARED failure bodies → outcomes-as-data: login 401/403/423 → invalidCredentials/disabled/locked{retryAfter}, 2fa 400/410/423/409 → invalidCode{attemptsRemaining}/expired/attemptsExhausted/deviceLimit{devices}. Resend's 429 budget throws `rate_limited` and the screen shows `otp.resendFailed` in place — the 429's `resetAt` has no slot on ApiError, the same trade-off booking-actions made. |
+| `authRouterState.ts` · `useCountdown.ts` · `useIsOnline.ts` · `deviceIdentity.ts` | Support. The device id is minted once and persisted through the `@sethu/core` storage adapter (`sethu.admin.deviceId` — the same adapter as the session token), so a reload is the same device and does not burn a trust slot. `getDeviceId()` is async for that reason. |
 
 `layouts/AuthLayout.tsx` is the pre-auth shell this feature renders into — three frames (`split`,
 `centred`, `lock`). It lives in `layouts/` because it owns `.app` / `.screen` / `.auth-split__*` /
@@ -47,6 +47,27 @@ walked-away-from device from leaking live operations data.
 - `role: "ADMIN"`, `permissions` deliberately **absent** — `can()` reads "not scoped" as full access,
   which is the v1 single-role behaviour. Sending `[]` would lock the console.
 
+## Real mode — the live flow (VITE_USE_MOCKS=false)
+
+The full designed flow runs against the seeded dev admin: **`ops@setucare.in` / `password123`**,
+then OTP **`123456`** on the two-factor screen (a static demo code, exempt from the SMS rate
+limits). The session token goes to the session store exactly as the mocks' would; the api-client
+interceptor reads it from there. What the live backend actually sends today:
+
+- Trust-slot rows (`DeviceLimitError.devices`, `GET /admin/auth/devices`) carry `lastUsedAt` as an
+  ISO stamp — mapped to the scannable age the row was designed around — and `location: ""` (no
+  geo-IP), so the row drops its separator rather than dangling it (`devices.lastUsedNoLocation`).
+- The auth trust list's `DeviceType` includes `desktop`; the settings screen's `DeviceKind` does
+  NOT — the same physical desktop appears as `desktop` here and as a `tablet`-glyph row there
+  (see `features/settings/CLAUDE.md`).
+- The trusted-device cap is genuinely 3 (`MAX_TRUSTED_DEVICES` mirrors it): repeated logins with
+  `trustDevice` on mint real trust slots, and the fourth login lands on the designed device-limit
+  picker. `adminBootstrap` returns honest statics; the splash still derives `hasSession` from the
+  hydrated session store, not from the payload.
+- `adminRefreshSession` exists on the backend but has no consumer here yet — sessions are
+  stateless JWTs that live to their TTL, and no screen re-arms one today. Wire it before any
+  long-lived kiosk use.
+
 ## Walking every state (mock triggers)
 
 Mocks are on by default (`VITE_USE_MOCKS=true`). Any plausible email plus any password of 8+
@@ -59,7 +80,7 @@ characters signs in successfully. The triggers live in `MOCK_TRIGGERS` (`auth.co
 | Login: account disabled | Email `disabled@setucare.in`. |
 | Login: submitting (BOX 86) | `VITE_MOCK_MODE=slow` — 3s in flight. |
 | Login: offline (BOX 87) | Go offline in devtools. Banner pins, form goes inert. |
-| Login: transport failure | Point `VITE_USE_MOCKS=false` at nothing — the api layer throws 501. |
+| Login: transport failure | Point `VITE_USE_MOCKS=false` at a stopped backend — fetch rejects, the network strip shows. |
 | Two-factor (BOX 55 / 88) | Any other email. Code `123456` (or any 6 digits) signs in. |
 | Two-factor: wrong code (BOX 56 / 89) | Code `000000`. Cells clear, focus returns to the first. |
 | Two-factor: code expired (BOX 90) | Code `111111`, or wait out the 4:37 expiry countdown. |
@@ -101,9 +122,10 @@ has no fingerprint sensor, so the two shells run different step-ups for the same
    outside `components/ui` / `layouts` that names a `components.css` class. Move it as-is.
 4. **The lock screen has nothing behind it.** The design blurs the dashboard the admin left; that
    requires the shell to render the lock over the live route rather than routing to `/unlock`.
-5. **Device id is not persisted.** `@sethu/core` does not export `savePreference`/`loadPreference`,
-   so every reload looks like a new device (spec §5.6 wants it in Preferences behind the keystore).
-6. **`formatClock` (mm:ss) lives here, not in `lib/format`.** Promote it when a second feature needs
+5. **`formatClock` (mm:ss) lives here, not in `lib/format`.** Promote it when a second feature needs
    a clock-form countdown; `formatDuration` renders ages (`14m 32s`), which is a different job.
+6. **The sdk-result seam is triplicated.** `unwrap`/`SdkResult`/`mintIdempotencyKey` exist here, in
+   `features/settings` and in `features/booking-actions`, because features cannot import siblings —
+   promote the seam to `lib/http` and delete the copies.
 
 Impacted modules: every authenticated route depends on this feature completing a session.

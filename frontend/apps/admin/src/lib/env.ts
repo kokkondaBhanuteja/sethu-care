@@ -38,13 +38,8 @@ export const APP_BUILD = {
 export const env = {
   /** Local Go API default matches backend/.env.example's ADDR=:8090. */
   apiUrl: import.meta.env.VITE_API_URL ?? "http://localhost:8090",
-  /** Mocks are the default: only six of this console's endpoints exist on the backend today. */
+  /** Mocks are the default for a standalone dev run; a live stack flips VITE_USE_MOCKS=false. */
   useMocks: (import.meta.env.VITE_USE_MOCKS ?? "true") === "true",
   mockMode: readMockMode(import.meta.env.VITE_MOCK_MODE),
-  /**
-   * The seeded admin phone the dev login bridge signs in with while the contract's `adminLogin`
-   * is still being implemented (see features/auth/auth.devBridge.ts). Dev-only; unused by mocks.
-   */
-  devAdminPhone: import.meta.env.VITE_DEV_ADMIN_PHONE ?? "+919000000008",
   isDev: import.meta.env.DEV,
 } as const;

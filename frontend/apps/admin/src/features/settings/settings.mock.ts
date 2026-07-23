@@ -98,3 +98,13 @@ export function fetchPayoutCycleMock(signal?: AbortSignal): Promise<PayoutCycle>
 export function fetchQueuedActionCountMock(signal?: AbortSignal): Promise<number> {
   return mockRead(() => QUEUED_ACTION_COUNT, { signal, emptyValue: 0 });
 }
+
+/** The mock accepts every payload — the PII gate that answers 422 is a server-side judgement. */
+export function submitDiagnosticsMock(signal?: AbortSignal): Promise<void> {
+  return mockWrite(() => undefined, { signal });
+}
+
+/** Nothing to bookkeep without a server; the local destruction in useSignOut is the real act. */
+export function signOutServerSideMock(signal?: AbortSignal): Promise<void> {
+  return mockWrite(() => undefined, { signal });
+}

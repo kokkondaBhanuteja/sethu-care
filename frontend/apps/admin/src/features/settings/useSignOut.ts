@@ -6,7 +6,7 @@ import { useTranslation } from "@sethu/i18n";
 
 import { showToast, TOAST_TONES } from "../../lib/toast/toastStore";
 import { ROUTES } from "../../routes/routes.constants";
-import { fetchQueuedActionCount } from "./settings.api";
+import { fetchQueuedActionCount, signOutServerSide } from "./settings.api";
 import { SETTINGS_QUERY_KEYS } from "./settings.constants";
 
 /**
@@ -33,6 +33,10 @@ export function useSignOut() {
     if (isSigningOut) return;
     setIsSigningOut(true);
     try {
+      // Server-side bookkeeping first, best-effort: sessions are stateless JWTs, so the token
+      // lives to its TTL either way, and a failed logout call must never trap an admin in a
+      // session they asked to leave. The local destruction below is the load-bearing half.
+      await signOutServerSide().catch(() => undefined);
       await signOutSession();
       queryClient.clear();
       await navigate(ROUTES.login, { replace: true });

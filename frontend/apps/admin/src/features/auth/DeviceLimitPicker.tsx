@@ -68,7 +68,11 @@ export function DeviceLimitPicker({
             <span className="flex grow flex-col">
               <span className="text-emph text-text-1">{device.name}</span>
               <span className="text-caption text-text-3">
-                {t("devices.lastUsed", { when: device.lastUsedLabel, location: device.location })}
+                {/* Location arrives "" from the live backend (no geo-IP) — the line drops the
+                    separator with it rather than dangling a dot after the age. */}
+                {device.location
+                  ? t("devices.lastUsed", { when: device.lastUsedLabel, location: device.location })
+                  : t("devices.lastUsedNoLocation", { when: device.lastUsedLabel })}
               </span>
             </span>
             <Button

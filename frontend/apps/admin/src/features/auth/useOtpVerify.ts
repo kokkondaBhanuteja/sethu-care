@@ -64,6 +64,7 @@ export function useOtpVerify(): UseOtpVerifyResult {
   const [devices, setDevices] = useState<readonly TrustedDevice[]>([]);
   const [revokingDeviceId, setRevokingDeviceId] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
+  const [hasResendFailed, setHasResendFailed] = useState(false);
   const [trustDevice, setTrustDevice] = useState(true);
   const [focusToken, setFocusToken] = useState(0);
 
@@ -85,7 +86,7 @@ export function useOtpVerify(): UseOtpVerifyResult {
         challengeId: challenge.challengeId,
         code: values.code,
         trustDevice,
-        deviceId: getDeviceId(),
+        deviceId: await getDeviceId(),
       });
 
       if (outcome.status === "authenticated") {
@@ -125,7 +126,10 @@ export function useOtpVerify(): UseOtpVerifyResult {
   const setCode = useCallback(
     (next: string) => {
       form.form.setValue("code", next, { shouldValidate: false });
-      if (next.length > 0) setPhase("entering");
+      if (next.length > 0) {
+        setPhase("entering");
+        setHasResendFailed(false);
+      }
     },
     [form.form],
   );
@@ -133,6 +137,7 @@ export function useOtpVerify(): UseOtpVerifyResult {
   const resend = useCallback(() => {
     if (isResending || !challenge) return;
     setIsResending(true);
+    setHasResendFailed(false);
     void resendOtp(challenge.challengeId)
       .then((next) => {
         setChallenge(next);
@@ -140,6 +145,8 @@ export function useOtpVerify(): UseOtpVerifyResult {
         form.form.setValue("code", "");
         setFocusToken((token) => token + 1);
       })
+      // Server-enforced resend budget (429) — shown in place; there is no toast host pre-auth.
+      .catch(() => setHasResendFailed(true))
       .finally(() => setIsResending(false));
   }, [challenge, form.form, isResending]);
 
@@ -194,6 +201,7 @@ export function useOtpVerify(): UseOtpVerifyResult {
       return t("otp.wrongCode", { count: attemptsRemaining });
     }
     if (activePhase === "expired") return t("otp.expired");
+    if (hasResendFailed) return t("otp.resendFailed");
     return null;
   }
 }

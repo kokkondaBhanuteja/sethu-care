@@ -21,17 +21,16 @@ export function useNotificationSettings() {
   });
 
   const mutation = useMutation({
-    mutationFn: (patch: Partial<NotificationSettings>) => saveNotificationSettings(patch),
-    onMutate: async (patch) => {
+    // The whole configurable object travels (the contract is a PUT, not a PATCH), built below by
+    // merging one control's change over the cached copy.
+    mutationFn: (next: NotificationSettings) => saveNotificationSettings(next),
+    onMutate: async (next) => {
       await queryClient.cancelQueries({ queryKey: SETTINGS_QUERY_KEYS.notifications });
       const previous = queryClient.getQueryData<NotificationSettings>(
         SETTINGS_QUERY_KEYS.notifications,
       );
       if (previous) {
-        queryClient.setQueryData<NotificationSettings>(SETTINGS_QUERY_KEYS.notifications, {
-          ...previous,
-          ...patch,
-        });
+        queryClient.setQueryData<NotificationSettings>(SETTINGS_QUERY_KEYS.notifications, next);
       }
       return { previous };
     },
@@ -48,21 +47,27 @@ export function useNotificationSettings() {
 
   const current = query.data;
 
+  /** One control's change over the cached copy; no cached copy means nothing to change yet. */
+  const save = (patch: Partial<NotificationSettings>) => {
+    if (!current) return;
+    mutation.mutate({ ...current, ...patch });
+  };
+
   return {
     query,
     toggleChannel: (channel: ConfigurableChannel, enabled: boolean) => {
       if (!current) return;
-      mutation.mutate({ channels: { ...current.channels, [channel]: enabled } });
+      save({ channels: { ...current.channels, [channel]: enabled } });
     },
     toggleQuietHours: (enabled: boolean) => {
       if (!current) return;
-      mutation.mutate({ quietHours: { ...current.quietHours, enabled } });
+      save({ quietHours: { ...current.quietHours, enabled } });
     },
     setQuietHour: (edge: "from" | "to", value: ClockTime) => {
       if (!current) return;
-      mutation.mutate({ quietHours: { ...current.quietHours, [edge]: value } });
+      save({ quietHours: { ...current.quietHours, [edge]: value } });
     },
-    setDigestTime: (digestTime: ClockTime) => mutation.mutate({ digestTime }),
-    toggleVibrate: (vibrate: boolean) => mutation.mutate({ vibrate }),
+    setDigestTime: (digestTime: ClockTime) => save({ digestTime }),
+    toggleVibrate: (vibrate: boolean) => save({ vibrate }),
   };
 }

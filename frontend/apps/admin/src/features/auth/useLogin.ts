@@ -84,7 +84,7 @@ export function useLogin(): UseLoginResult {
       const outcome = await login({
         email: values.email,
         password: values.password,
-        deviceId: getDeviceId(),
+        deviceId: await getDeviceId(),
         deviceName: getDeviceName(),
       });
 

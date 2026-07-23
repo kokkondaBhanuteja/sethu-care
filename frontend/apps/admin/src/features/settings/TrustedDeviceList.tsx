@@ -37,6 +37,20 @@ export function TrustedDeviceList({
   const { t } = useTranslation("adminSettings");
   const isAtLimit = security.devices.length >= security.deviceLimit;
 
+  // The live backend sends location as "" (no geo-IP); the row drops the separator with it
+  // rather than rendering "Last used 2m ago · " with a dangling dot.
+  function deviceDetail(device: TrustedDevice): string {
+    if (device.isCurrent) {
+      return device.location
+        ? t("security.deviceCurrentMeta", { location: device.location })
+        : t("security.deviceCurrentMetaNoLocation");
+    }
+    const lastUsed = formatRelative(device.lastUsedIso);
+    return device.location
+      ? t("security.deviceMeta", { lastUsed, location: device.location })
+      : t("security.deviceMetaNoLocation", { lastUsed });
+  }
+
   return (
     <SettingsGroup
       title={t("security.groupDevices", {
@@ -65,14 +79,7 @@ export function TrustedDeviceList({
               </span>
             }
             label={device.name}
-            detail={
-              device.isCurrent
-                ? t("security.deviceCurrentMeta", { location: device.location })
-                : t("security.deviceMeta", {
-                    lastUsed: formatRelative(device.lastUsedIso),
-                    location: device.location,
-                  })
-            }
+            detail={deviceDetail(device)}
             control={
               device.isCurrent ? (
                 <Pill tone="success" icon={Check}>

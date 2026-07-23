@@ -55,7 +55,8 @@
     "wrongCode_other": "That code isn't right. {{count}} attempts left.",
     "expired": "This code expired.",
     "tooManyAttempts": "Too many attempts. Sign in again.",
-    "resendLimited": "Too many requests. Try again in {{countdown}}"
+    "resendLimited": "Too many requests. Try again in {{countdown}}",
+    "resendFailed": "A new code couldn't be sent. Wait a moment and try again."
   },
   "devices": {
     "title_one": "{{count}} device already trusted",
@@ -63,6 +64,7 @@
     "body": "Revoke one to continue.",
     "revoke": "Revoke",
     "lastUsed": "Last used {{when}} · {{location}}",
+    "lastUsedNoLocation": "Last used {{when}}",
     "typePhone": "Phone",
     "typeTablet": "Tablet",
     "typeDesktop": "Computer",

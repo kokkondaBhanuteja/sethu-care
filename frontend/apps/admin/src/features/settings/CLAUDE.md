@@ -63,7 +63,8 @@ desktop settings screen goes INSIDE `SettingsShell` with its own entry in `SETTI
 | `HelpSupport.{desktop,mobile}.tsx` + `HelpFaqGroup` · `HelpSupportGroups` (get-help / diagnostics / legal, shared) · `HelpVersionCard` · `useDiagnostics.ts` | BOX 65 / 104. |
 | `PayoutsScreen.tsx` + `PayoutsTable` · `PayoutTotals` · `usePayouts.ts` | BOX 66. Desktop-only; NOT part of the Settings area (finance, not account) — it keeps its own Topbar frame. |
 | `DesktopOnlySummary.tsx`                                      | The read-only card for BOX 105–109.                               |
-| `settings.{api,mock,fixtures,types,constants,time}.ts`        | The data boundary, fixtures, vocabularies, IST clock helpers, and `SETTINGS_SECTIONS`. |
+| `settings.{api,mock,fixtures,types,constants,time}.ts`        | The data boundary, fixtures, vocabularies, IST clock helpers, and `SETTINGS_SECTIONS`. The settings endpoints are REAL (backend `internal/adminaccount`); with `VITE_USE_MOCKS=false` every read is sdk call → pure mapper → feature types and every write sends an `Idempotency-Key`. The mock branch is untouched. **Payouts is the exception — the backend answers 501 (2026-07-23), so it stays mock-backed on both branches.** |
+| `settings.api.map.ts` · `settings.api.requests.ts` · `settings.api.errors.ts` | Responses → feature types and inputs → generated bodies, field by field so drift is a compile error; the failure seam (`unwrap` → `ApiError`). The 422s (diagnostics PII, a critical channel in a notification PUT) surface via the status-derived `validation` code. |
 | `SettingsShell.test.tsx` · `SettingsGroup.test.tsx`           | The frame contract (one h1, section h2, active pill) and the group anatomy. |
 
 ## Business logic
@@ -101,6 +102,30 @@ customer PII in memory for whoever signs in next; a revoked device must retain n
 
 **Masked values only.** The phone number arrives masked from the server and is rendered as-is. No
 payment instrument is ever displayed beyond a masked reference, and no token is ever logged.
+
+**Sign-out and revoke close bookkeeping, not the token.** Sessions are stateless JWTs, so
+`adminLogout` and `adminRevokeDevice` end the server-side record while the token technically lives
+to its TTL. `useSignOut` therefore calls the server best-effort and treats the LOCAL destruction
+(token + `queryClient.clear()`) as the load-bearing act; revoking the current device signs out
+locally only after the server confirms. Two copy strings overpromise against this model and are
+flagged rather than silently reworded: `security.revokeOtherBody` ("signed out immediately … wiped
+on next contact") and the diagnostics consent note ("the last 200 network events" — the console
+keeps no such buffer yet; `logs`/`networkEvents` upload honestly empty).
+
+## Real mode — what the live backend actually sends
+
+`GET /admin/settings/notifications` carries the configurable tier only — the critical channels
+have no slot in the payload, so the locked rows stay static by construction; `criticalSound`
+arrives `"default"` and renders as sent. `SecuritySettings.devices[].kind` has **no `desktop`
+value** (a contract quirk — the auth trust list's `DeviceType` does), so a desktop session
+arrives as a `tablet`-glyph row; device `location` is `""` (no geo-IP) and the row drops its
+separator (`security.deviceMetaNoLocation`) instead of dangling it; event `location` is `null`
+and renders the designed "unknown". Profile activity's acknowledge metrics are honest zeros, the
+queued-actions count is an honest 0, and `/admin/version` returns honest statics ("unknown") until
+a build pipeline stamps them. `defaultLandingRoute` travels as an absolute route (`"/live"` — a
+bare id is a 422, "must be an absolute route") while the landing picker's vocabulary is tab ids —
+the read mapper strips the slash, the request builder restores it. Diagnostics answers 202 with a receipt; a 422 means the payload carried
+customer PII and surfaces as `support.diagnosticsRejected`, never a silent retry.
 
 ## Mock triggers (dev)
 
