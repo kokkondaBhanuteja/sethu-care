@@ -4,6 +4,7 @@
 
 import type {
   ActivityFeed as ApiActivityFeed,
+  AlertBandState as ApiAlertBandState,
   AttentionFilter as ApiAttentionFilter,
   AttentionItem as ApiAttentionItem,
   AttentionQueue as ApiAttentionQueue,
@@ -13,6 +14,7 @@ import type {
 import { ATTENTION_FILTERS, ATTENTION_PRIORITIES } from "./dashboard.types";
 import type {
   ActivityEntry,
+  AlertBandState,
   AttentionFilter,
   AttentionItem,
   AttentionQueue,
@@ -137,6 +139,17 @@ export function mapDashboardSummary(payload: ApiDashboardSummary): DashboardSumm
       avgAssign: [...payload.sparklines.avgAssign],
     },
     updatedAt: payload.updatedAt,
+  };
+}
+
+export function mapAlertBand(payload: ApiAlertBandState): AlertBandState {
+  return {
+    criticalCount: payload.criticalCount,
+    examples: payload.examples.map((example) => ({
+      bookingRef: example.bookingRef,
+      priority: example.priority,
+      surfacedAt: example.surfacedAt,
+    })),
   };
 }
 

@@ -22,7 +22,8 @@ invisible badge is a missed escalation (spec §3.1).
 | `useOnlineStatus`               | Connectivity, with a dev-only `?offline=1` override.                                                                                                                                                                                                  |
 | `ackQueue.store`                | Zustand queue of acknowledgements taken offline.                                                                                                                                                                                                      |
 | `alerts.selectors` / `.filters` | Pure tier splitting, counting and chip building.                                                                                                                                                                                                      |
-| `alerts.api`                    | The only data boundary. Everything under it is a mock today.                                                                                                                                                                                          |
+| `alerts.api`                    | The only data boundary. All five `/ops/alerts*` endpoints are REAL through the generated client when `env.useMocks` is false; the mock branch is untouched. Every write sends an `Idempotency-Key`, minted per call (one call = one operator intent — mutations never auto-retry, and acknowledge is additionally idempotent per alert). |
+| `alerts.api.map`                | Pure mappers from the generated payloads onto `alerts.types.ts` (unit-tested). Owns the server-code → console-wording joins listed under "Real backend" below.                                                                                        |
 | `alerts.mock` / `alertDetail.*` | Fixtures that mirror the approved designs row for row.                                                                                                                                                                                                |
 
 ## The rules this folder exists to keep
@@ -76,6 +77,25 @@ the alert simply stays unacknowledged. Persisting it needs a storage backend, an
 not export `savePreference`/`loadPreference` today (they exist in `session/storage.ts` but are not in
 the package's `index.ts`). One export there plus a hydrate-on-boot call in this store makes it
 genuinely durable; nothing else in this folder would change.
+
+## Real backend (`VITE_USE_MOCKS=false`) — the contract as it actually behaves
+
+- **The feed is one whole-feed fetch.** `GET /ops/alerts` with `acknowledged` omitted returns every
+  tier and every acknowledgement state (only `acknowledged=true` narrows); the two-tier split and
+  all counting stay client-side in `alerts.selectors`/`.filters`, exactly as with the mock.
+- **The `{id}` convention:** an alert's own uuid works, and a BOOKING uuid resolves to that
+  subject's newest alert — the dashboard's attention queue deep-links with booking-scoped ids.
+- **The server sends data and codes, the console words them** (`alerts.api.map.ts`):
+  `summaryParams` (`reference`/`service`/`zone`, "" dropped) is joined into `summary`;
+  `trigger.rule` codes (`booking.escalated`) and dispatch-history event codes
+  (`ESCALATE: SEARCHING → ESCALATED`) get console labels with an honest raw passthrough for
+  unknown codes; `relatedRecord.bookingState`/`providerStatus` become the pill's word + tone.
+  Only `description` arrives as a server-composed sentence.
+- **Acknowledge replay is a receipt, not an error:** a late acknowledger gets HTTP 200 with
+  `wonRace: false` and the winner's acknowledgement — the same designed state the mock's race
+  fixture exercises.
+- Only `bookingEscalated` alerts are produced today; the other types in `ALERT_TYPES` are declared
+  vocabulary the engine has not started emitting.
 
 ## Mock triggers (dev)
 

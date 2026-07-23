@@ -1,10 +1,17 @@
-import { opsActivityFeed, opsDashboardAttention, opsDashboardSummary } from "@sethu/api-client";
+import {
+  opsAcknowledgeAlert,
+  opsActivityFeed,
+  opsDashboardAttention,
+  opsDashboardBand,
+  opsDashboardSummary,
+} from "@sethu/api-client";
 
 import { env } from "../../lib/env";
 import { normalizeError } from "../../lib/http/apiError";
 import {
   ATTENTION_FETCH_CAP,
   mapActivityFeed,
+  mapAlertBand,
   mapAttentionQueue,
   mapDashboardSummary,
   toServerAttentionFilter,
@@ -27,10 +34,8 @@ import type {
 
 // The one boundary between the dashboard screens and their data.
 //
-// `GET /ops/dashboard/summary`, `/ops/dashboard/attention` and `/ops/activity` are real (backend
-// commit 6543b30) and served through the generated client when mocks are off; the mock branch is
-// untouched so unit tests and e2e runs behave exactly as before. The band and the acknowledge
-// write are still mock-only — see the dated notes on each.
+// All five calls are real and served through the generated client when mocks are off; the mock
+// branch is untouched so unit tests and e2e runs behave exactly as before.
 
 export async function fetchDashboardSummary(
   period: DashboardPeriod,
@@ -49,10 +54,11 @@ export async function fetchDashboardSummary(
 
 export async function fetchAlertBand(signal?: AbortSignal): Promise<AlertBandState> {
   try {
-    // 2026-07-23: `GET /ops/dashboard/band` still answers 501 (it was not in backend commit
-    // 6543b30's six endpoint groups), so the band stays on its mock in every mode. Flip it to
-    // `opsDashboardBand` the moment the endpoint lands — nothing above this file changes.
-    return await fetchAlertBandMock(signal);
+    if (env.useMocks) return await fetchAlertBandMock(signal);
+
+    const result = await opsDashboardBand({ signal });
+    if (result.data === undefined) throw result.response;
+    return mapAlertBand(result.data);
   } catch (thrown) {
     throw normalizeError(thrown, "The escalation band could not be loaded.");
   }
@@ -96,14 +102,39 @@ export async function fetchActivity(
   }
 }
 
+/**
+ * One key per operator intent — and every call below is one intent: this mutation never
+ * auto-retries, and acknowledgement is additionally idempotent per ALERT server-side
+ * (first-writer-wins), so a fresh key per call cannot double-acknowledge.
+ */
+function mintIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Older WebViews without randomUUID still need a key; the backend scopes it per admin + endpoint.
+  return `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * `POST /ops/alerts/{id}/acknowledge`. The queue hands this a booking-scoped alert id and the
+ * backend resolves it to that subject's newest alert — both id kinds land on the same receipt.
+ * A late acknowledger still gets HTTP 200 with the winner's receipt (first-writer-wins); the row
+ * flips to its acknowledged rendering on the invalidation refetch, never an error.
+ */
 export async function acknowledgeAlert(
   alertId: string,
   signal?: AbortSignal,
 ): Promise<{ alertId: string }> {
   try {
-    // 2026-07-23: still mock in every mode — mutations belong to the booking-actions integration
-    // wave (`POST /ops/alerts/{id}/acknowledge` flips here with the other writes).
-    return await acknowledgeAlertMock(alertId, signal);
+    if (env.useMocks) return await acknowledgeAlertMock(alertId, signal);
+
+    const result = await opsAcknowledgeAlert({
+      path: { id: alertId },
+      headers: { "Idempotency-Key": mintIdempotencyKey() },
+      signal,
+    });
+    if (result.data === undefined) throw result.response;
+    return { alertId };
   } catch (thrown) {
     throw normalizeError(thrown, "The alert could not be acknowledged.");
   }

@@ -7,6 +7,7 @@ import type {
 
 import {
   attentionReason,
+  mapAlertBand,
   mapAttentionQueue,
   mapDashboardSummary,
   toServerAttentionFilter,
@@ -135,6 +136,35 @@ describe("mapAttentionQueue", () => {
 
     expect(queue.lastCleared?.adminName).toBe("Demo Admin");
     expect(queue.lastCleared?.bookingRef).toBe("#B-2EF2E45B");
+  });
+});
+
+describe("mapAlertBand", () => {
+  it("copies the count and the (at most two) example rows field for field", () => {
+    const band = mapAlertBand({
+      criticalCount: 2,
+      examples: [
+        {
+          bookingRef: "#B-A4000000",
+          priority: ATTENTION_PRIORITIES.escalated,
+          surfacedAt: "2026-07-23T09:46:33+05:30",
+        },
+      ],
+    });
+
+    expect(band.criticalCount).toBe(2);
+    expect(band.examples).toEqual([
+      {
+        bookingRef: "#B-A4000000",
+        priority: ATTENTION_PRIORITIES.escalated,
+        surfacedAt: "2026-07-23T09:46:33+05:30",
+      },
+    ]);
+  });
+
+  it("keeps the healthy day empty — zero criticals, no examples", () => {
+    const band = mapAlertBand({ criticalCount: 0, examples: [] });
+    expect(band).toEqual({ criticalCount: 0, examples: [] });
   });
 });
 
