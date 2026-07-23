@@ -16,6 +16,7 @@ import (
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -25,6 +26,8 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
@@ -55,15 +58,24 @@ func newAdminAccountServer(t *testing.T) *testEnv {
 	bookingService := booking.NewService(pool)
 	verifier := verification.NewService(pool)
 	identityService := identity.NewService(pool, identity.WithDemoAccount(demoAdminPhone, demoAdminCode))
+	opsService := ops.New(pool, bookingService)
+	ledgerService := ledger.NewService(pool)
+	auditService := audit.NewService(pool)
 	mux := http.NewServeMux()
 	api := httpapi.NewHumaAPI(mux, signer)
 	httpapi.RegisterAll(api, httpapi.Dependencies{
-		Identity:      identityService,
-		Catalog:       catalog.New(pool),
-		Address:       address.New(pool),
-		Ops:           ops.New(pool, bookingService),
-		Ledger:        ledger.NewService(pool),
-		Audit:         audit.NewService(pool),
+		Identity: identityService,
+		Catalog:  catalog.New(pool),
+		Address:  address.New(pool),
+		Ops:      opsService,
+		Ledger:   ledgerService,
+		Audit:    auditService,
+		// The token-proof step hits /ops/shell-counters, which reads the alert, rescue and
+		// provider services — this harness predates them (worktree isolation) and must wire
+		// every service that endpoint touches.
+		Alert:         alert.NewService(pool),
+		Rescue:        rescue.New(pool, bookingService, ledgerService, auditService),
+		Providers:     providerops.NewService(pool, identityService, opsService, bookingService),
 		Verification:  verifier,
 		Booking:       bookingService,
 		Reviews:       reviews.NewService(pool),
