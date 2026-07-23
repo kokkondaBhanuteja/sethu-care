@@ -482,11 +482,12 @@ type shellCountersOutput struct {
 
 func (handler *AdminHandler) shellCounters(ctx context.Context, _ *struct{}) (*shellCountersOutput, error) {
 	// Honesty rule: a counter the platform cannot know yet is a REAL zero, not a fake.
-	//   - pendingApplications: no provider-applications table exists yet.
 	//   - openTickets: tickets are a v1.1 surface with no storage yet.
 	// needsAttention is real: the ops queue — bookings in SEARCHING or ESCALATED.
 	// criticalAlerts is real since the alert engine landed: unacknowledged criticals only,
 	// so the badge keeps meaning "a human must act".
+	// pendingApplications is real since the applications pipeline landed: pending plus
+	// awaiting-documents, the same figure the roster strip shows.
 	queue, err := handler.ops.Queue(ctx)
 	if err != nil {
 		return nil, toHumaError(handler.log, err)
@@ -495,10 +496,14 @@ func (handler *AdminHandler) shellCounters(ctx context.Context, _ *struct{}) (*s
 	if err != nil {
 		return nil, toHumaError(handler.log, err)
 	}
+	pendingApplications, err := handler.providers.PendingApplicationsCount(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
 	return &shellCountersOutput{Body: shellCounters{
 		CriticalAlerts:      criticalAlerts,
 		NeedsAttention:      int32(len(queue)),
 		OpenTickets:         0,
-		PendingApplications: 0,
+		PendingApplications: pendingApplications,
 	}}, nil
 }

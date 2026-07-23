@@ -721,3 +721,13 @@ func decodeApplicationCursor(cursor string) (time.Time, uuid.UUID, error) {
 	}
 	return time.Unix(0, nanos), applicationID, nil
 }
+
+// PendingApplicationsCount serves the shell badge: applications an admin still must decide
+// (pending plus awaiting-documents — the same figure the roster's strip shows).
+func (service *Service) PendingApplicationsCount(ctx context.Context) (int32, error) {
+	summary, err := sqlcgen.New(service.pool).AdminApplicationsSummary(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("reading applications summary: %w", err)
+	}
+	return summary.Pending + summary.AwaitingDocs, nil
+}
