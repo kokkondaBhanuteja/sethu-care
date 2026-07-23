@@ -13,7 +13,7 @@ The TRANSPORT layer. Exposes the API as typed [huma v2](https://github.com/danie
 none — the transport layer never writes tables directly.
 
 ## Allowed Dependencies
-Domain services (`booking`, `ledger`, `catalog`, `identity`, `ops`, `address`, `reviews`, `verification`, `gateway`), `auth`, `money`, `flow`, adapters it hands off to (`media`, `razorpay`, `sms`). See `register.go` `Dependencies`.
+Domain services (`booking`, `ledger`, `catalog`, `identity`, `ops`, `address`, `reviews`, `verification`, `gateway`, `adminaccount`), `auth`, `money`, `flow`, adapters it hands off to (`media`, `razorpay`, `sms`). See `register.go` `Dependencies` (now also `AdminAccounts` + `Environment`).
 
 ## Forbidden Dependencies
 - No direct DB / sqlcgen access, no `storage.InTx` — all persistence goes through a domain service.
@@ -27,7 +27,8 @@ Domain services (`booking`, `ledger`, `catalog`, `identity`, `ops`, `address`, `
 - `ratelimit.go` — `RateLimit(control, limit, window, next)`: per-IP fixed-window via `flow.Allow`; exempts `/health` + `/webhooks/*`; fails open; 429 + `Retry-After`. `clientIP` prefers first `X-Forwarded-For` hop.
 - `razorpay_webhook.go` — `RazorpayWebhookHandler`: raw handler, verifies HMAC on raw body, records to `gateway` inbox, captures via `ledger`, excluded from OpenAPI.
 - Per-resource handlers: `bookings.go`, `catalog.go`, `addresses.go`, `ops.go`, `cash.go`, `payments.go`, `photos.go`, `location.go`, `auth.go` — each a `NewXHandler(...).RegisterHuma(api)`.
-- `admin_*.go` — the admin console's contract (`AdminHandler`, frozen shapes; run `make openapi-check`, never regen-drift it). Phase 1 implemented: shell counters, dashboard summary/attention/activity (`ops` service), bookings list/detail (`booking.AdminList`/`AdminDetailByID` + `ledger.PaymentFactsForBooking` for the payment panel — the one deliberate two-service handler, since booking must not read the ledger), audit list (`audit.List`). Everything else still 501s via `notImplemented`. `adminBookingReference` derives the operator reference (#B- + first 8 id hex digits).
+- `admin_*.go` — the admin console's contract (`AdminHandler`, frozen shapes; run `make openapi-check`, never regen-drift it). Phase 1 implemented: shell counters, dashboard summary/attention/activity (`ops` service), bookings list/detail (`booking.AdminList`/`AdminDetailByID` + `ledger.PaymentFactsForBooking` for the payment panel — the one deliberate two-service handler, since booking must not read the ledger), audit list (`audit.List`). Phase 2 implemented (this wave): the whole AUTH family (`admin_auth.go` — login/2fa/resend/bootstrap/devices/logout/refresh/unlock over `adminaccount.Service`, bearer minted by the one `Signer` with `identity.RoleAdmin`, OTP delivered like `AuthHandler` does — SMS or dev log, NEVER a response field) and the SETTINGS family (`admin_settings.go` — profile/notifications/security/version/queued-actions/diagnostics). The remaining families still 501 via `notImplemented`. `adminBookingReference` derives the operator reference (#B- + first 8 id hex digits).
+- `admin_declared_errors.go` — `adminFailure(status, body)`: the DESIGNED failure bodies (INVALID_CREDENTIALS 401, ACCOUNT_DISABLED 403, ACCOUNT_LOCKED 423, INVALID_OTP 400, OTP_EXPIRED 410, DEVICE_LIMIT_REACHED 409, RATE_LIMITED 429) ride a `huma.StatusError` whose `MarshalJSON` emits exactly the declared shape. Undesigned errors keep flowing through `classify()`/`toHumaError`.
 
 ## Examples
 ```go

@@ -22,6 +22,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/app"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
@@ -116,6 +117,9 @@ func run() error {
 		identityOptions = append(identityOptions, identity.WithDemoAccount(settings.DemoPhone, settings.DemoOTP))
 	}
 	identityService := identity.NewService(pool, identityOptions...)
+	// The admin console's account aggregate rides the identity OTP engine for its second
+	// factor — the same challenges table, the same demo-account bypass.
+	adminAccountService := adminaccount.NewService(pool, identityService)
 	opsService := ops.New(pool, bookingService)
 	auditService := audit.NewService(pool)
 	verificationService := verification.NewService(pool)
@@ -195,6 +199,8 @@ func run() error {
 
 	router := buildRouter(routerDependencies{
 		pool:                pool,
+		adminAccountService: adminAccountService,
+		environment:         settings.Environment,
 		bookingService:      bookingService,
 		verificationService: verificationService,
 		reviewService:       reviewService,
@@ -269,6 +275,8 @@ func run() error {
 // parameter instead of many positional ones.
 type routerDependencies struct {
 	pool                *pgxpool.Pool
+	adminAccountService *adminaccount.Service
+	environment         string
 	bookingService      *booking.Service
 	verificationService *verification.Service
 	reviewService       *reviews.Service
@@ -299,24 +307,26 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 	// single operation list, shared with the tests and the OpenAPI generator.
 	humaAPI := httpapi.NewHumaAPI(mux, dependencies.signer)
 	httpapi.RegisterAll(humaAPI, httpapi.Dependencies{
-		Identity:     dependencies.identityService,
-		Catalog:      dependencies.catalogService,
-		Address:      dependencies.addressService,
-		Ops:          dependencies.opsService,
-		Ledger:       dependencies.ledgerService,
-		Verification: dependencies.verificationService,
-		Booking:      dependencies.bookingService,
-		Audit:        dependencies.auditService,
-		Reviews:      dependencies.reviewService,
-		Cloudinary:   dependencies.cloudinary,
-		Signer:       dependencies.signer,
-		OTPSender:    dependencies.otpSender,
-		Razorpay:     dependencies.razorpay,
-		UPIVPA:       dependencies.upiVPA,
-		UPIPayee:     dependencies.upiPayee,
-		DevEchoOTP:   dependencies.devEchoOTP,
-		Flow:         dependencies.flow,
-		Logger:       dependencies.logger,
+		Identity:      dependencies.identityService,
+		Catalog:       dependencies.catalogService,
+		Address:       dependencies.addressService,
+		Ops:           dependencies.opsService,
+		Ledger:        dependencies.ledgerService,
+		Verification:  dependencies.verificationService,
+		Booking:       dependencies.bookingService,
+		Audit:         dependencies.auditService,
+		Reviews:       dependencies.reviewService,
+		Cloudinary:    dependencies.cloudinary,
+		Signer:        dependencies.signer,
+		OTPSender:     dependencies.otpSender,
+		Razorpay:      dependencies.razorpay,
+		UPIVPA:        dependencies.upiVPA,
+		UPIPayee:      dependencies.upiPayee,
+		DevEchoOTP:    dependencies.devEchoOTP,
+		Flow:          dependencies.flow,
+		Logger:        dependencies.logger,
+		AdminAccounts: dependencies.adminAccountService,
+		Environment:   dependencies.environment,
 	})
 
 	// Razorpay's payment webhook — a RAW route (not huma): it needs the exact bytes for its HMAC

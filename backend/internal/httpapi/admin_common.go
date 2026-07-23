@@ -10,10 +10,13 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 )
 
 // This file and its admin_*.go siblings declare the SETHU-CARE admin console's API contract as
@@ -46,11 +49,26 @@ type AdminHandler struct {
 	bookings *booking.Service
 	ledger   *ledger.Service
 	audit    *audit.Service
+
+	// The Phase-2 sign-in and settings surface: the account aggregate, the signer that
+	// mints its bearers, the SMS sender that carries the second factor, and the dev-echo
+	// flag mirroring AuthHandler's (log the code in dev; never in a response).
+	accounts    *adminaccount.Service
+	signer      *auth.Signer
+	otpSender   sms.Sender
+	devEchoOTP  bool
+	environment string
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service) *AdminHandler {
-	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService}
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, accountService *adminaccount.Service, signer *auth.Signer, otpSender sms.Sender, devEchoOTP bool, environment string) *AdminHandler {
+	if environment == "" {
+		environment = "development"
+	}
+	return &AdminHandler{
+		log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService,
+		accounts: accountService, signer: signer, otpSender: otpSender, devEchoOTP: devEchoOTP, environment: environment,
+	}
 }
 
 // adminBookingReference derives the operator-facing booking reference ("#B-8823A0FF") from the

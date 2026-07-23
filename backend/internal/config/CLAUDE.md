@@ -17,7 +17,7 @@ stdlib (`os`, `strconv`, `time`, `fmt`) only. (godotenv is loaded in `cmd/api`, 
 - **Anything internal.** It is a leaf, passed around as values; nothing internal imports it except `cmd/api`. Domain services must NOT import `config` (Phase 4 forbidden rule).
 
 ## Contains
-- `Config` struct — `DatabaseURL`, `RedisURL`, `ListenAddr`, `JWTSecret`, `JWTTTL`, `UsingDevJWTSecret`, `DevEchoOTP`, `FailedBookingCreditPaise`, UPI (`UPIVirtualAddress`, `UPIPayeeName`), Cloudinary (`CloudinaryCloudName/APIKey/APISecret`), demo login (`DemoPhone`, `DemoOTP`), MSG91 (`MSG91AuthKey/SenderID/TemplateID`), Razorpay (`RazorpayKeyID/KeySecret/WebhookSecret`).
+- `Config` struct — `DatabaseURL`, `Environment` (`APP_ENV`, default "development"; served by `/admin/version`), `RedisURL`, `ListenAddr`, `JWTSecret`, `JWTTTL`, `UsingDevJWTSecret`, `DevEchoOTP`, `FailedBookingCreditPaise`, UPI (`UPIVirtualAddress`, `UPIPayeeName`), Cloudinary (`CloudinaryCloudName/APIKey/APISecret`), demo login (`DemoPhone`, `DemoOTP`), MSG91 (`MSG91AuthKey/SenderID/TemplateID`), Razorpay (`RazorpayKeyID/KeySecret/WebhookSecret`).
 - `Load() (Config, error)` — the ONLY error is a value that is present but malformed (e.g. an unparseable duration); a MISSING var falls back to a hardcoded default (boot never fails on a missing key). `defaultDevJWTSecret` when `JWT_SECRET` unset (long enough to satisfy the signer, flags `UsingDevJWTSecret`).
 - Helpers: `stringEnv`, `intEnv`, `durationEnv` (accepts a Go duration "24h" or a plain number of seconds).
 

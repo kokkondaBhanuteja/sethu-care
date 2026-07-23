@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -110,6 +111,18 @@ func classify(err error) (int, string) {
 		errors.Is(err, audit.ErrInvalidCursor):
 		// A cursor the server did not mint — a truncated copy-paste, never a server fault.
 		return http.StatusBadRequest, err.Error()
+
+	case errors.Is(err, adminaccount.ErrAccountNotFound),
+		errors.Is(err, adminaccount.ErrDeviceNotFound):
+		// The admin console's account context. Its DESIGNED failures (401/403/423/…)
+		// carry declared bodies and are mapped in adminAuthError before reaching here.
+		return http.StatusNotFound, err.Error()
+
+	case errors.Is(err, adminaccount.ErrInvalidSetting),
+		errors.Is(err, adminaccount.ErrDiagnosticsPII):
+		// Well-formed but unapplicable: a malformed HH:mm, or a diagnostics payload
+		// carrying customer PII (the consent notice promises exactly this rejection).
+		return http.StatusUnprocessableEntity, err.Error()
 
 	default:
 		return http.StatusInternalServerError, err.Error()

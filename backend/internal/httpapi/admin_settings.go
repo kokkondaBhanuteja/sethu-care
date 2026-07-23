@@ -7,6 +7,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 )
 
@@ -153,8 +154,16 @@ type adminProfileOutput struct {
 	Body adminProfile
 }
 
-func (handler *AdminHandler) getProfile(_ context.Context, _ *struct{}) (*adminProfileOutput, error) {
-	return nil, notImplemented("adminGetProfile")
+func (handler *AdminHandler) getProfile(ctx context.Context, _ *struct{}) (*adminProfileOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	profile, err := handler.accounts.Profile(ctx, caller.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &adminProfileOutput{Body: adminProfileDTO(profile)}, nil
 }
 
 type adminUpdateProfileInput struct {
@@ -162,8 +171,22 @@ type adminUpdateProfileInput struct {
 	Body updateAdminProfileRequest
 }
 
-func (handler *AdminHandler) updateProfile(_ context.Context, _ *adminUpdateProfileInput) (*adminProfileOutput, error) {
-	return nil, notImplemented("adminUpdateProfile")
+func (handler *AdminHandler) updateProfile(ctx context.Context, input *adminUpdateProfileInput) (*adminProfileOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	// PUT with the full preferences object is idempotent by construction, which is what
+	// honouring the Idempotency-Key requires here: replaying stores the same values.
+	profile, err := handler.accounts.UpdatePreferences(ctx, caller.ID, adminaccount.Preferences{
+		Appearance:          domainAppearanceOf(input.Body.Preferences.Appearance),
+		Haptics:             input.Body.Preferences.Haptics,
+		DefaultLandingRoute: input.Body.Preferences.DefaultLandingRoute,
+	})
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &adminProfileOutput{Body: adminProfileDTO(profile)}, nil
 }
 
 // queuedActionsCount is the unsynced offline actions, so the sign-out confirm can name how many
@@ -177,7 +200,10 @@ type queuedActionsCountOutput struct {
 }
 
 func (handler *AdminHandler) queuedActionsCount(_ context.Context, _ *struct{}) (*queuedActionsCountOutput, error) {
-	return nil, notImplemented("adminQueuedActionsCount")
+	// The offline action queue lives on the device; no server-side queue store exists, so
+	// the honest count of unsynced actions THIS SERVER knows about is zero. When an offline
+	// sync engine lands, this becomes its count.
+	return &queuedActionsCountOutput{Body: queuedActionsCount{Count: 0}}, nil
 }
 
 // ------------------------------------------------------------ notifications
@@ -280,8 +306,16 @@ type notificationSettingsOutput struct {
 	Body notificationSettings
 }
 
-func (handler *AdminHandler) getNotificationSettings(_ context.Context, _ *struct{}) (*notificationSettingsOutput, error) {
-	return nil, notImplemented("adminGetNotificationSettings")
+func (handler *AdminHandler) getNotificationSettings(ctx context.Context, _ *struct{}) (*notificationSettingsOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	settings, err := handler.accounts.NotificationSettings(ctx, caller.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &notificationSettingsOutput{Body: notificationSettingsDTO(settings)}, nil
 }
 
 type adminUpdateNotificationSettingsInput struct {
@@ -289,8 +323,40 @@ type adminUpdateNotificationSettingsInput struct {
 	Body updateNotificationSettingsRequest
 }
 
-func (handler *AdminHandler) updateNotificationSettings(_ context.Context, _ *adminUpdateNotificationSettingsInput) (*notificationSettingsOutput, error) {
-	return nil, notImplemented("adminUpdateNotificationSettings")
+func (handler *AdminHandler) updateNotificationSettings(ctx context.Context, input *adminUpdateNotificationSettingsInput) (*notificationSettingsOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	// The request type carries ONLY the configurable tier — a critical channel cannot even
+	// be expressed in it, and huma's schema (additionalProperties: false) 422s any body
+	// that tries to smuggle one in as an extra key. PUT of the whole object is idempotent,
+	// which is what the Idempotency-Key requires.
+	request := input.Body
+	settings, err := handler.accounts.UpdateNotificationSettings(ctx, caller.ID, adminaccount.NotificationSettings{
+		Channels: adminaccount.ChannelSettings{
+			SLAAtRisk:          request.Channels.SLAAtRisk,
+			ProviderNoShow:     request.Channels.ProviderNoShow,
+			ZoneSupplyCritical: request.Channels.ZoneSupplyCritical,
+			PaymentFailure:     request.Channels.PaymentFailure,
+			NewApplications:    request.Channels.NewApplications,
+			AutoSuspensions:    request.Channels.AutoSuspensions,
+			DocumentExpiring:   request.Channels.DocumentExpiring,
+			DailySummary:       request.Channels.DailySummary,
+		},
+		CriticalSound: request.CriticalSound,
+		DigestTime:    string(request.DigestTime),
+		QuietHours: adminaccount.QuietHours{
+			Enabled: request.QuietHours.Enabled,
+			From:    string(request.QuietHours.From),
+			To:      string(request.QuietHours.To),
+		},
+		Vibrate: request.Vibrate,
+	})
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &notificationSettingsOutput{Body: notificationSettingsDTO(settings)}, nil
 }
 
 // ---------------------------------------------------------------- security
@@ -363,8 +429,16 @@ type securitySettingsOutput struct {
 	Body securitySettings
 }
 
-func (handler *AdminHandler) getSecuritySettings(_ context.Context, _ *struct{}) (*securitySettingsOutput, error) {
-	return nil, notImplemented("adminGetSecuritySettings")
+func (handler *AdminHandler) getSecuritySettings(ctx context.Context, _ *struct{}) (*securitySettingsOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	snapshot, err := handler.accounts.SecuritySnapshot(ctx, caller.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &securitySettingsOutput{Body: securitySettingsDTO(snapshot)}, nil
 }
 
 type adminUpdateSecuritySettingsInput struct {
@@ -372,8 +446,16 @@ type adminUpdateSecuritySettingsInput struct {
 	Body updateSecuritySettingsRequest
 }
 
-func (handler *AdminHandler) updateSecuritySettings(_ context.Context, _ *adminUpdateSecuritySettingsInput) (*securitySettingsOutput, error) {
-	return nil, notImplemented("adminUpdateSecuritySettings")
+func (handler *AdminHandler) updateSecuritySettings(ctx context.Context, input *adminUpdateSecuritySettingsInput) (*securitySettingsOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	snapshot, err := handler.accounts.SetBiometricUnlock(ctx, caller.ID, input.Body.BiometricUnlock)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &securitySettingsOutput{Body: securitySettingsDTO(snapshot)}, nil
 }
 
 // ------------------------------------------------- diagnostics and versions
@@ -403,8 +485,26 @@ type diagnosticsReceiptOutput struct {
 	Body diagnosticsReceipt
 }
 
-func (handler *AdminHandler) submitDiagnostics(_ context.Context, _ *adminSubmitDiagnosticsInput) (*diagnosticsReceiptOutput, error) {
-	return nil, notImplemented("adminSubmitDiagnostics")
+func (handler *AdminHandler) submitDiagnostics(ctx context.Context, input *adminSubmitDiagnosticsInput) (*diagnosticsReceiptOutput, error) {
+	caller, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	receipt, err := handler.accounts.SubmitDiagnostics(ctx, caller.ID, input.IdempotencyKey, adminaccount.DiagnosticsSubmission{
+		AppVersion:    input.Body.AppVersion,
+		DeviceModel:   input.Body.DeviceModel,
+		OsVersion:     input.Body.OsVersion,
+		OtaBundle:     input.Body.OtaBundle,
+		Logs:          input.Body.Logs,
+		NetworkEvents: input.Body.NetworkEvents,
+	})
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &diagnosticsReceiptOutput{Body: diagnosticsReceipt{
+		Reference:   receipt.Reference,
+		SubmittedAt: receipt.SubmittedAt,
+	}}, nil
 }
 
 type appVersion struct {
@@ -419,5 +519,155 @@ type appVersionOutput struct {
 }
 
 func (handler *AdminHandler) version(_ context.Context, _ *struct{}) (*appVersionOutput, error) {
-	return nil, notImplemented("adminAppVersion")
+	// The environment is real (APP_ENV via config). App/build/bundle describe the CLIENT
+	// release, which no server-side release registry tracks yet — those are served as the
+	// honest "unknown" rather than fabricated version strings, and become real when a
+	// release/OTA registry exists.
+	return &appVersionOutput{Body: appVersion{
+		App:         "unknown",
+		Build:       "unknown",
+		Bundle:      "unknown",
+		Environment: handler.environment,
+	}}, nil
+}
+
+// ------------------------------------------------------------------- mapping
+
+func adminProfileDTO(profile adminaccount.Profile) adminProfile {
+	// adminId prefers the provisioned account id; a legacy ADMIN token without an
+	// admin_accounts row falls back to the user id the token names.
+	adminID := profile.Account.ID.String()
+	if !profile.Provisioned {
+		adminID = profile.Account.UserID.String()
+	}
+	return adminProfile{
+		AdminID:     adminID,
+		Name:        profile.Account.DisplayName,
+		Email:       profile.Account.Email,
+		MaskedPhone: profile.Account.MaskedPhone(),
+		Role:        identity.RoleAdmin.String(),
+		JoinedIso:   profile.Account.JoinedAt,
+		Activity: adminActivitySummary{
+			Actions:                 profile.Activity.Actions,
+			EscalationsAcknowledged: profile.Activity.EscalationsAcknowledged,
+			AverageAcknowledgeMs:    profile.Activity.AverageAcknowledgeMs,
+			BookingsRescued:         profile.Activity.BookingsRescued,
+		},
+		Preferences: adminPreferences{
+			Appearance:          wireAppearanceOf(profile.Preferences.Appearance),
+			Haptics:             profile.Preferences.Haptics,
+			DefaultLandingRoute: profile.Preferences.DefaultLandingRoute,
+		},
+	}
+}
+
+func notificationSettingsDTO(settings adminaccount.NotificationSettings) notificationSettings {
+	return notificationSettings{
+		Channels: notificationChannelSettings{
+			SLAAtRisk:          settings.Channels.SLAAtRisk,
+			ProviderNoShow:     settings.Channels.ProviderNoShow,
+			ZoneSupplyCritical: settings.Channels.ZoneSupplyCritical,
+			PaymentFailure:     settings.Channels.PaymentFailure,
+			NewApplications:    settings.Channels.NewApplications,
+			AutoSuspensions:    settings.Channels.AutoSuspensions,
+			DocumentExpiring:   settings.Channels.DocumentExpiring,
+			DailySummary:       settings.Channels.DailySummary,
+		},
+		CriticalSound:          settings.CriticalSound,
+		DigestTime:             clockTime(settings.DigestTime),
+		QueuedDuringQuietHours: settings.QueuedDuringQuietHours,
+		QuietHours: quietHours{
+			Enabled: settings.QuietHours.Enabled,
+			From:    clockTime(settings.QuietHours.From),
+			To:      clockTime(settings.QuietHours.To),
+		},
+		Vibrate: settings.Vibrate,
+	}
+}
+
+func securitySettingsDTO(snapshot adminaccount.SecuritySnapshot) securitySettings {
+	devices := make([]trustedDevice, 0, len(snapshot.Devices))
+	for _, device := range snapshot.Devices {
+		devices = append(devices, trustedDevice{
+			ID:          device.ID.String(),
+			IsCurrent:   device.IsCurrent,
+			Kind:        wireDeviceKind(device.Type),
+			LastUsedIso: device.LastUsedAt,
+			Location:    device.Location,
+			Name:        device.Name,
+		})
+	}
+	events := make([]securityEvent, 0, len(snapshot.Events))
+	for _, event := range snapshot.Events {
+		events = append(events, securityEvent{
+			ID:       event.ID.String(),
+			Kind:     wireSecurityEventKind(event.Kind),
+			Device:   event.Device,
+			Location: event.Location,
+			AtIso:    event.At,
+		})
+	}
+	return securitySettings{
+		ActiveSessions:       snapshot.ActiveSessions,
+		BiometricUnlock:      snapshot.BiometricUnlock,
+		DeviceLimit:          snapshot.DeviceLimit,
+		Devices:              devices,
+		Events:               events,
+		PasswordChangedAtIso: snapshot.PasswordChangedAt,
+	}
+}
+
+// wireDeviceKind maps stored device types to the settings screen's two-glyph vocabulary.
+// The contract's DeviceKind declares no desktop value, so desktop rows borrow the tablet
+// glyph rather than inventing an undeclared one — a recorded contract quirk.
+func wireDeviceKind(domainType adminaccount.DeviceType) deviceKind {
+	switch domainType {
+	case adminaccount.DevicePhone:
+		return deviceKindPhone
+	case adminaccount.DeviceTablet, adminaccount.DeviceDesktop:
+		return deviceKindTablet
+	}
+	return deviceKindTablet
+}
+
+func wireSecurityEventKind(kind adminaccount.SecurityEventKind) securityEventKind {
+	switch kind {
+	case adminaccount.EventSignedIn:
+		return securityEventKindSignedIn
+	case adminaccount.EventFailedSignIn:
+		return securityEventKindFailedSignIn
+	case adminaccount.EventDeviceTrusted:
+		return securityEventKindDeviceTrusted
+	case adminaccount.EventPasswordChanged:
+		return securityEventKindPasswordChanged
+	}
+	return securityEventKindSignedIn
+}
+
+// wireAppearanceOf / domainAppearanceOf translate the stored UPPER_SNAKE vocabulary to the
+// contract's lowercase one and back.
+func wireAppearanceOf(mode adminaccount.AppearanceMode) appearanceMode {
+	switch mode {
+	case adminaccount.AppearanceLight:
+		return appearanceModeLight
+	case adminaccount.AppearanceDark:
+		return appearanceModeDark
+	case adminaccount.AppearanceSystem:
+		return appearanceModeSystem
+	}
+	return appearanceModeSystem
+}
+
+func domainAppearanceOf(mode appearanceMode) adminaccount.AppearanceMode {
+	switch mode {
+	case appearanceModeLight:
+		return adminaccount.AppearanceLight
+	case appearanceModeDark:
+		return adminaccount.AppearanceDark
+	case appearanceModeSystem:
+		return adminaccount.AppearanceSystem
+	}
+	// huma's enum schema rejects anything else before the handler runs; the service
+	// re-validates and 422s if this fallthrough ever carries an unknown value.
+	return adminaccount.AppearanceMode(string(mode))
 }

@@ -25,6 +25,87 @@ type Address struct {
 	Version   int64
 }
 
+type AdminAccount struct {
+	ID                  uuid.UUID
+	UserID              uuid.UUID
+	Role                string
+	Email               string
+	PasswordHash        string
+	DisplayName         string
+	IsDisabled          bool
+	FailedLoginAttempts int32
+	LockedUntil         pgtype.Timestamptz
+	PasswordChangedAt   pgtype.Timestamptz
+	CreatedAt           pgtype.Timestamptz
+	UpdatedAt           pgtype.Timestamptz
+	Version             int64
+}
+
+type AdminChallenge struct {
+	ID             uuid.UUID
+	AdminAccountID uuid.UUID
+	DeviceID       string
+	DeviceName     string
+	Attempts       int32
+	MaxAttempts    int32
+	ExpiresAt      pgtype.Timestamptz
+	ConsumedAt     pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+}
+
+type AdminDevice struct {
+	ID             uuid.UUID
+	AdminAccountID uuid.UUID
+	DeviceID       string
+	Name           string
+	DeviceType     string
+	Location       string
+	TrustedUntil   pgtype.Timestamptz
+	SignedIn       bool
+	LastUsedAt     pgtype.Timestamptz
+	RevokedAt      pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+}
+
+type AdminDiagnostic struct {
+	ID             uuid.UUID
+	AdminAccountID uuid.UUID
+	IdempotencyKey string
+	AppVersion     string
+	DeviceModel    string
+	OsVersion      string
+	OtaBundle      string
+	Logs           []byte
+	NetworkEvents  []byte
+	SubmittedAt    pgtype.Timestamptz
+}
+
+type AdminSetting struct {
+	AdminAccountID            uuid.UUID
+	Appearance                string
+	Haptics                   bool
+	DefaultLandingRoute       string
+	ChannelSlaAtRisk          bool
+	ChannelProviderNoShow     bool
+	ChannelZoneSupplyCritical bool
+	ChannelPaymentFailure     bool
+	ChannelNewApplications    bool
+	ChannelAutoSuspensions    bool
+	ChannelDocumentExpiring   bool
+	ChannelDailySummary       bool
+	CriticalSound             string
+	DigestTime                string
+	QuietHoursFrom            string
+	QuietHoursTo              string
+	QuietHoursEnabled         bool
+	Vibrate                   bool
+	BiometricUnlock           bool
+	CreatedAt                 pgtype.Timestamptz
+	UpdatedAt                 pgtype.Timestamptz
+	Version                   int64
+}
+
 type AuditLog struct {
 	ID            uuid.UUID
 	ActorUserID   *uuid.UUID

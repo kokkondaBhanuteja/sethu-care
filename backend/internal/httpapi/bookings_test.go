@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -287,24 +288,26 @@ func newServer(t *testing.T) *testEnv {
 	bookingService := booking.NewService(pool)
 	verifier := verification.NewService(pool)
 	reviewer := reviews.NewService(pool)
+	identityService := identity.NewService(pool)
 	mux := http.NewServeMux()
 	api := httpapi.NewHumaAPI(mux, signer)
 	httpapi.RegisterAll(api, httpapi.Dependencies{
-		Identity:     identity.NewService(pool),
-		Catalog:      catalog.New(pool),
-		Address:      address.New(pool),
-		Ops:          ops.New(pool, bookingService),
-		Ledger:       ledger.NewService(pool),
-		Audit:        audit.NewService(pool),
-		Verification: verifier,
-		Booking:      bookingService,
-		Reviews:      reviewer,
-		Cloudinary:   media.NewCloudinary("democloud", "demokey", "demosecret"),
-		Signer:       signer,
-		UPIVPA:       "sethucare@upi",
-		UPIPayee:     "SETHU-CARE",
-		DevEchoOTP:   true,
-		Logger:       log,
+		Identity:      identityService,
+		Catalog:       catalog.New(pool),
+		Address:       address.New(pool),
+		Ops:           ops.New(pool, bookingService),
+		Ledger:        ledger.NewService(pool),
+		Audit:         audit.NewService(pool),
+		Verification:  verifier,
+		Booking:       bookingService,
+		Reviews:       reviewer,
+		Cloudinary:    media.NewCloudinary("democloud", "demokey", "demosecret"),
+		Signer:        signer,
+		UPIVPA:        "sethucare@upi",
+		UPIPayee:      "SETHU-CARE",
+		DevEchoOTP:    true,
+		Logger:        log,
+		AdminAccounts: adminaccount.NewService(pool, identityService),
 	})
 
 	srv := httptest.NewServer(mux)

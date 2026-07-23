@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -34,12 +35,13 @@ func adminAPI(t *testing.T) (*http.ServeMux, *auth.Signer) {
 	bookingService := booking.NewService(pool)
 	mux := http.NewServeMux()
 	RegisterAll(NewHumaAPI(mux, signer), Dependencies{
-		Signer:  signer,
-		Ops:     ops.New(pool, bookingService),
-		Booking: bookingService,
-		Ledger:  ledger.NewService(pool),
-		Audit:   audit.NewService(pool),
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Signer:        signer,
+		Ops:           ops.New(pool, bookingService),
+		Booking:       bookingService,
+		Ledger:        ledger.NewService(pool),
+		Audit:         audit.NewService(pool),
+		AdminAccounts: adminaccount.NewService(pool, identity.NewService(pool)),
+		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	return mux, signer
 }
