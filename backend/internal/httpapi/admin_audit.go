@@ -362,8 +362,18 @@ type auditAdminsOutput struct {
 	Body auditAdmins
 }
 
-func (handler *AdminHandler) listAuditAdmins(_ context.Context, _ *struct{}) (*auditAdminsOutput, error) {
-	return nil, notImplemented("opsListAuditAdmins")
+// listAuditAdmins serves the filter dropdown. email is empty for every actor — identity has
+// no email column; admins are phone-provisioned (the same honesty note as the list's DTO).
+func (handler *AdminHandler) listAuditAdmins(ctx context.Context, _ *struct{}) (*auditAdminsOutput, error) {
+	actors, err := handler.audit.ListAdmins(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	body := auditAdmins{Items: make([]auditAdmin, len(actors))}
+	for index, actor := range actors {
+		body.Items[index] = auditAdmin{Email: "", ID: actor.ID.String(), Name: actor.Name}
+	}
+	return &auditAdminsOutput{Body: body}, nil
 }
 
 type opsGetAuditEntryInput struct {
@@ -374,6 +384,18 @@ type auditEntryOutput struct {
 	Body auditEntry
 }
 
-func (handler *AdminHandler) getAuditEntry(_ context.Context, _ *opsGetAuditEntryInput) (*auditEntryOutput, error) {
-	return nil, notImplemented("opsGetAuditEntry")
+// getAuditEntry serves the deep-linked detail screen: the same row shape as the list (full
+// before/after snapshots travel on both). The compensating cross-links stay null via
+// toAuditEntryDTO — no compensating actions are recorded yet, and deriving a link that does
+// not exist would falsify the record.
+func (handler *AdminHandler) getAuditEntry(ctx context.Context, input *opsGetAuditEntryInput) (*auditEntryOutput, error) {
+	entryID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	entry, err := handler.audit.Get(ctx, entryID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return &auditEntryOutput{Body: toAuditEntryDTO(entry)}, nil
 }

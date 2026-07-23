@@ -25,6 +25,29 @@ type Address struct {
 	Version   int64
 }
 
+type Alert struct {
+	ID                      uuid.UUID
+	Kind                    string
+	Severity                string
+	SubjectKind             *string
+	SubjectID               *uuid.UUID
+	SourceEventID           *uuid.UUID
+	RequiresAcknowledgement bool
+	AcknowledgedBy          *uuid.UUID
+	AcknowledgedAt          pgtype.Timestamptz
+	ReadAt                  pgtype.Timestamptz
+	CreatedAt               pgtype.Timestamptz
+}
+
+type AlertNote struct {
+	ID             uuid.UUID
+	AlertID        uuid.UUID
+	AuthorUserID   uuid.UUID
+	IdempotencyKey string
+	Body           string
+	CreatedAt      pgtype.Timestamptz
+}
+
 type AuditLog struct {
 	ID            uuid.UUID
 	ActorUserID   *uuid.UUID

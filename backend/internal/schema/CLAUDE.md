@@ -27,7 +27,7 @@ Add a case whenever a new enum-backed column ships:
 ```go
 {"notification_log", "channel", toStrings(notifications.AllChannels())},
 ```
-NOTE: `notifications.Channel`, `audit.ActorKind`, and the `gateway` event status are NOT covered yet — the review flags them as the open drift-test gaps (Phase 6). Adding them (with `Valid()`/`Parse()` + a migration) closes the holes.
+The `alerts` table's three vocabularies are covered: `{"alerts", "kind"|"severity"|"subject_kind"}` against `alert.AllKinds()`/`AllSeverities()`/`AllSubjectKinds()`.
 
 ## Best Practices
 - Add the constant, the DB CHECK migration, AND the drift-test case in the SAME PR — that's the whole point.

@@ -162,8 +162,30 @@ type alertBandStateOutput struct {
 	Body alertBandState
 }
 
-func (handler *AdminHandler) dashboardBand(_ context.Context, _ *struct{}) (*alertBandStateOutput, error) {
-	return nil, notImplemented("opsDashboardBand")
+// dashboardBand reads the alerts model: unacknowledged criticals, with at most two example
+// refs. Every critical the engine produces today is a booking escalation, so each example's
+// priority is `escalated` — consistent with the attention queue, which diagnoses the same
+// bookings the same way.
+func (handler *AdminHandler) dashboardBand(ctx context.Context, _ *struct{}) (*alertBandStateOutput, error) {
+	band, err := handler.alerts.Band(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	state := alertBandState{
+		CriticalCount: band.OpenCritical,
+		Examples:      make([]alertBandExample, 0, len(band.Examples)),
+	}
+	for _, example := range band.Examples {
+		if example.SubjectID == nil {
+			continue // a subjectless critical has no booking ref to point at
+		}
+		state.Examples = append(state.Examples, alertBandExample{
+			BookingRef: adminBookingReference(*example.SubjectID),
+			Priority:   attentionPriorityEscalated,
+			SurfacedAt: example.CreatedAt,
+		})
+	}
+	return &alertBandStateOutput{Body: state}, nil
 }
 
 // ---------------------------------------------------------- attention queue
@@ -460,16 +482,21 @@ type shellCountersOutput struct {
 
 func (handler *AdminHandler) shellCounters(ctx context.Context, _ *struct{}) (*shellCountersOutput, error) {
 	// Honesty rule: a counter the platform cannot know yet is a REAL zero, not a fake.
-	//   - criticalAlerts: no alert engine exists, so no unacknowledged criticals exist.
 	//   - pendingApplications: no provider-applications table exists yet.
 	//   - openTickets: tickets are a v1.1 surface with no storage yet.
 	// needsAttention is real: the ops queue — bookings in SEARCHING or ESCALATED.
+	// criticalAlerts is real since the alert engine landed: unacknowledged criticals only,
+	// so the badge keeps meaning "a human must act".
 	queue, err := handler.ops.Queue(ctx)
 	if err != nil {
 		return nil, toHumaError(handler.log, err)
 	}
+	criticalAlerts, err := handler.alerts.CountOpenCritical(ctx)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
 	return &shellCountersOutput{Body: shellCounters{
-		CriticalAlerts:      0,
+		CriticalAlerts:      criticalAlerts,
 		NeedsAttention:      int32(len(queue)),
 		OpenTickets:         0,
 		PendingApplications: 0,

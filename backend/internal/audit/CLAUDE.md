@@ -6,7 +6,7 @@ Records who did what to which entity, with a before/after snapshot. Every entry 
 ## Responsibilities
 - Marshal before/after snapshots to JSONB and insert one `audit_logs` row using the caller's tx.
 - Infer `ActorKind` when the caller leaves it blank.
-- Read side for the admin console (`list.go`): `Service`/`NewService(pool)` with `List(ctx, ListFilter)` — admin-actor booking entries within `AdminActions()` (ASSIGN/CANCEL/VERIFY_COMPLETION/SEARCH), newest first, keyset cursor (limit+1 peek), whole-set total + timestamp range, snapshots flattened to `map[string]string`. `ErrInvalidCursor` → 400.
+- Read side for the admin console (`list.go`): `Service`/`NewService(pool)` with `List(ctx, ListFilter)` — admin-actor booking entries within `AdminActions()` (ASSIGN/CANCEL/VERIFY_COMPLETION/SEARCH), newest first, keyset cursor (limit+1 peek), whole-set total + timestamp range, snapshots flattened to `map[string]string`. `ErrInvalidCursor` → 400. Also `Get(ctx, id)` — one entry under the SAME visibility rule as the list (a deep link can never show more; outside-rule ids are `ErrEntryNotFound` → 404) — and `ListAdmins(ctx)` (`AdminActor{ID, Name}`) for the console's filter dropdown, derived server-side.
 
 ## Owns
 `audit_logs`. A leaf sink — nothing calls back into it. (`List`'s SQL joins `users` read-only for the admin's name; identity stays the owner.)

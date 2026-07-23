@@ -60,6 +60,95 @@ func (q *Queries) AdminCountAuditLogs(ctx context.Context, arg AdminCountAuditLo
 	return i, err
 }
 
+const adminGetAuditLog = `-- name: AdminGetAuditLog :one
+SELECT
+  al.id, al.action, al.entity_type, al.entity_id, al.before, al.after, al.created_at,
+  admin_user.id   AS admin_id,
+  admin_user.name AS admin_name
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE al.id = $1
+  AND admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY($2::text[])
+`
+
+type AdminGetAuditLogParams struct {
+	ID      uuid.UUID
+	Actions []string
+}
+
+type AdminGetAuditLogRow struct {
+	ID         uuid.UUID
+	Action     string
+	EntityType string
+	EntityID   uuid.UUID
+	Before     []byte
+	After      []byte
+	CreatedAt  pgtype.Timestamptz
+	AdminID    uuid.UUID
+	AdminName  string
+}
+
+// One audit entry by id, for the detail screen — under the SAME visibility rule as the list
+// (admin actor, booking entity, actions the console vocabulary names), so a deep link can
+// never show more than the list would.
+func (q *Queries) AdminGetAuditLog(ctx context.Context, arg AdminGetAuditLogParams) (AdminGetAuditLogRow, error) {
+	row := q.db.QueryRow(ctx, adminGetAuditLog, arg.ID, arg.Actions)
+	var i AdminGetAuditLogRow
+	err := row.Scan(
+		&i.ID,
+		&i.Action,
+		&i.EntityType,
+		&i.EntityID,
+		&i.Before,
+		&i.After,
+		&i.CreatedAt,
+		&i.AdminID,
+		&i.AdminName,
+	)
+	return i, err
+}
+
+const adminListAuditActors = `-- name: AdminListAuditActors :many
+SELECT DISTINCT
+  admin_user.id,
+  admin_user.name
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY($1::text[])
+ORDER BY admin_user.name, admin_user.id
+`
+
+type AdminListAuditActorsRow struct {
+	ID   uuid.UUID
+	Name string
+}
+
+// The distinct admins present in the audit log, for the filter dropdown — derived here so the
+// console never pages the whole ledger to build a filter. Same visibility rule as the list.
+func (q *Queries) AdminListAuditActors(ctx context.Context, actions []string) ([]AdminListAuditActorsRow, error) {
+	rows, err := q.db.Query(ctx, adminListAuditActors, actions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AdminListAuditActorsRow{}
+	for rows.Next() {
+		var i AdminListAuditActorsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const adminListAuditLogs = `-- name: AdminListAuditLogs :many
 SELECT
   al.id, al.action, al.entity_type, al.entity_id, al.before, al.after, al.created_at,

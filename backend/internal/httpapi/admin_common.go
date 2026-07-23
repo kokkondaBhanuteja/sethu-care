@@ -10,6 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
@@ -46,11 +47,12 @@ type AdminHandler struct {
 	bookings *booking.Service
 	ledger   *ledger.Service
 	audit    *audit.Service
+	alerts   *alert.Service
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service) *AdminHandler {
-	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService}
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service) *AdminHandler {
+	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService, alerts: alertService}
 }
 
 // adminBookingReference derives the operator-facing booking reference ("#B-8823A0FF") from the
