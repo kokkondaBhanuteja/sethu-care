@@ -7,7 +7,8 @@ Owns users (people who can authenticate) and the salaried technicians among them
 - `RequestOTP` — issue a 6-digit login code (bcrypt-hashed in the DB; plaintext returned to the caller, never stored); 30s resend guard.
 - `VerifyOTP` — check code, consume the challenge, return the `User`; creates a CUSTOMER on first login (staff are pre-provisioned).
 - `DeleteAccount` — anonymize-in-place (scrub PII, keep the append-only references intact); idempotent.
-- Technician workforce: `RecomputeTechnicianRating` (the `review.submitted` consumer, idempotent), `SetAvailability`, `UpdateTechnicianLocation`, `TechnicianLocationForBooking`.
+- Technician workforce: `RecomputeTechnicianRating` (the `review.submitted` consumer, idempotent), `SetAvailability` (+ `SetAvailabilityIn(ctx, executor, …)` — the tx-aware form providerops' force-offline uses so the flip commits with its audit entry), `UpdateTechnicianLocation`, `TechnicianLocationForBooking`.
+- `ProvisionTechnician(ctx, executor, name, phone, city)` — creates the users row (role TECHNICIAN) + technicians row inside the CALLER's transaction (an application approval and the identity it creates commit atomically). `ErrPhoneAlreadyRegistered` (409) on a unique-phone collision — never auto-merges an existing account into a technician.
 
 ## Owns
 `users`, `technicians`. Writes `otp_challenges` rows of purpose `LOGIN`.

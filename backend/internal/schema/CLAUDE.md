@@ -11,14 +11,14 @@ TEST-ONLY. The guard that keeps Go's enum constants and Postgres's CHECK constra
 none.
 
 ## Allowed Dependencies
-Every enum package it verifies (`catalog`, `identity`, `ledger`, `order`, `verification`), `storage/storagetest`, `pgx`, stdlib testing. Package is `schema_test`.
+Every enum package it verifies (`audit`, `catalog`, `gateway`, `identity`, `ledger`, `notifications`, `order`, `providerops`, `verification`), `storage/storagetest`, `pgx`, stdlib testing. Package is `schema_test`.
 
 ## Forbidden Dependencies
 - **Production code must NOT import `internal/schema`.** It is test-only (Phase 4 recommends an explicit depguard rule forbidding any import of it).
 
 ## Contains
 - `drift_test.go`:
-  - `TestEveryEnumColumnMatchesItsGoConstants` — table of `{table, column, want}` cases (`users.role`, `services.assignment_mode`, `question_defs.kind`, `orders.status`, `ledger_entries.kind`/`method`, `payments.status`, `otp_challenges.purpose`, `work_photos.kind`), each comparing the DB CHECK set to `toStrings(pkg.AllX())`.
+  - `TestEveryEnumColumnMatchesItsGoConstants` — table of `{table, column, want}` cases (`users.role`, `services.assignment_mode`, `question_defs.kind`, `orders.status`, `ledger_entries.kind`/`method`, `payments.status`, `otp_challenges.purpose`, `work_photos.kind`, `notification_log.channel`, `audit_logs.actor_kind`, `payment_gateway_events.status`, `provider_admin_states.standing`/`reason_code`, `provider_applications.status`/`decision_reason_code`, `provider_application_documents.document_type`/`validation`), each comparing the DB CHECK set to `toStrings(pkg.AllX())`.
   - `TestBookingStateDeliberatelyHasNoCheckConstraint` — fails if `bookings.state` ever acquires a CHECK.
   - Helpers: `checkConstraintValues` (parses `pg_get_constraintdef`, picks the `ANY(ARRAY[...])` value list), `assertSameSet` (both directions, with actionable messages), `toStrings[T ~string]`.
 

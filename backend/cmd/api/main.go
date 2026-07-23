@@ -39,6 +39,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
@@ -121,6 +122,7 @@ func run() error {
 	opsService := ops.New(pool, bookingService)
 	auditService := audit.NewService(pool)
 	alertService := alert.NewService(pool)
+	providerService := providerops.NewService(pool, identityService, opsService, bookingService)
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
@@ -211,6 +213,7 @@ func run() error {
 		auditService:        auditService,
 		alertService:        alertService,
 		rescueService:       rescueService,
+		providerService:     providerService,
 		signer:              signer,
 		otpSender:           otpSender,
 		devEchoOTP:          settings.DevEchoOTP,
@@ -287,6 +290,7 @@ type routerDependencies struct {
 	auditService        *audit.Service
 	alertService        *alert.Service
 	rescueService       *rescue.Service
+	providerService     *providerops.Service
 	signer              *auth.Signer
 	otpSender           sms.Sender
 	devEchoOTP          bool
@@ -318,6 +322,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Audit:        dependencies.auditService,
 		Alert:        dependencies.alertService,
 		Rescue:       dependencies.rescueService,
+		Providers:    dependencies.providerService,
 		Reviews:      dependencies.reviewService,
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,

@@ -13,8 +13,10 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 )
 
@@ -43,18 +45,27 @@ const adminSchemaRefPrefix = "#/components/schemas/"
 // It holds the domain services behind the Phase-1 operations; operations still awaiting their
 // domain (alerts, providers, applications, payouts, …) keep returning 501.
 type AdminHandler struct {
-	log      *slog.Logger
-	ops      *ops.Service
-	bookings *booking.Service
-	ledger   *ledger.Service
-	audit    *audit.Service
-	alerts   *alert.Service
-	rescue   *rescue.Service
+	log       *slog.Logger
+	ops       *ops.Service
+	bookings  *booking.Service
+	ledger    *ledger.Service
+	audit     *audit.Service
+	alerts    *alert.Service
+	rescue    *rescue.Service
+	providers *providerops.Service
+	// flow backs Idempotency-Key replay on the provider/application mutations. Optional and
+	// permissive by design (nil or Redis-less means no replay cache) — the version CAS and
+	// the terminal-decision guards are what actually prevent double actions.
+	flow *flow.Controller
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service, rescueService *rescue.Service) *AdminHandler {
-	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService, alerts: alertService, rescue: rescueService}
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service, rescueService *rescue.Service, providerService *providerops.Service, flowControl *flow.Controller) *AdminHandler {
+	return &AdminHandler{
+		log: log, ops: opsService, bookings: bookingService, ledger: ledgerService,
+		audit: auditService, alerts: alertService, rescue: rescueService,
+		providers: providerService, flow: flowControl,
+	}
 }
 
 // adminBookingReference derives the operator-facing booking reference ("#B-8823A0FF") from the

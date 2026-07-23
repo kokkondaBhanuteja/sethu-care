@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/storage"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/sqlcgen"
 )
 
@@ -240,13 +241,52 @@ func (service *Service) RecomputeTechnicianRating(ctx context.Context, technicia
 // SetAvailability toggles a technician's online status — the provider app's online/offline switch.
 // Scoped to the technician's own row (the caller's id), so one technician cannot flip another's.
 func (service *Service) SetAvailability(ctx context.Context, technicianID uuid.UUID, online bool) error {
-	if err := sqlcgen.New(service.pool).SetTechnicianAvailability(ctx, sqlcgen.SetTechnicianAvailabilityParams{
+	return service.SetAvailabilityIn(ctx, service.pool, technicianID, online)
+}
+
+// SetAvailabilityIn is SetAvailability against a caller-supplied executor, so an admin
+// action (providerops force-offline) can flip availability INSIDE its own transaction —
+// atomically with the audit entry that records why — while identity remains the only
+// writer of the technicians table.
+func (service *Service) SetAvailabilityIn(ctx context.Context, executor sqlcgen.DBTX, technicianID uuid.UUID, online bool) error {
+	if err := sqlcgen.New(executor).SetTechnicianAvailability(ctx, sqlcgen.SetTechnicianAvailabilityParams{
 		IsOnline: online,
 		UserID:   technicianID,
 	}); err != nil {
 		return fmt.Errorf("setting availability: %w", err)
 	}
 	return nil
+}
+
+// ErrPhoneAlreadyRegistered — provisioning a technician for a phone that already has an
+// account. The applicant must resolve the existing identity first; auto-merging roles here
+// would silently repurpose someone's customer account.
+var ErrPhoneAlreadyRegistered = errors.New("identity: phone already registered to an existing account")
+
+// ProvisionTechnician creates a TECHNICIAN identity — the users row and its technicians
+// workforce row — inside the caller's transaction, so an application approval and the
+// identity it creates commit atomically. The new technician starts offline; they go online
+// through the provider app like anyone else, and can authenticate immediately via OTP.
+func (service *Service) ProvisionTechnician(ctx context.Context, executor sqlcgen.DBTX, name, phone, city string) (uuid.UUID, error) {
+	queries := sqlcgen.New(executor)
+	created, err := queries.CreateUser(ctx, sqlcgen.CreateUserParams{
+		Phone: phone,
+		Name:  name,
+		Role:  string(RoleTechnician),
+	})
+	if storage.IsSQLState(err, storage.SQLStateUniqueViolation) {
+		return uuid.Nil, ErrPhoneAlreadyRegistered
+	}
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("creating technician user: %w", err)
+	}
+	if err := queries.InsertTechnician(ctx, sqlcgen.InsertTechnicianParams{
+		UserID: created.ID,
+		City:   city,
+	}); err != nil {
+		return uuid.Nil, fmt.Errorf("creating technician record: %w", err)
+	}
+	return created.ID, nil
 }
 
 // TechnicianLocation is a technician's last-known position. Found is false when they have not shared

@@ -409,6 +409,15 @@ WHERE t.is_online
   AND NOT t.on_leave
   AND job.job_minute BETWEEN t.shift_start_minute AND t.shift_end_minute
   AND COALESCE(aj.count, 0) < t.max_concurrent_jobs
+  -- An admin restriction takes the technician out of dispatch: a permanent block, or a
+  -- suspension that has not yet expired.
+  AND NOT EXISTS (
+    SELECT 1
+    FROM provider_admin_states pas
+    WHERE pas.technician_id = t.user_id
+      AND (pas.standing = 'BLOCKED'
+           OR (pas.standing = 'SUSPENDED' AND pas.suspended_until > now()))
+  )
   AND NOT EXISTS (
     SELECT 1
     FROM service_required_skills srs
@@ -434,6 +443,7 @@ type ListCandidateTechniciansRow struct {
 // is a candidate for a booking when ALL hold:
 //   - same city as the job (a coarse stand-in for service radius until P2),
 //   - online and not on leave,
+//   - not under an admin restriction (suspended/blocked in provider_admin_states),
 //   - holds EVERY skill the service requires,
 //   - below their max-concurrent-jobs limit.
 //

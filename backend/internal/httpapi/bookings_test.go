@@ -28,6 +28,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
@@ -287,6 +288,8 @@ func newServer(t *testing.T) *testEnv {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	bookingService := booking.NewService(pool)
+	identityService := identity.NewService(pool)
+	opsService := ops.New(pool, bookingService)
 	verifier := verification.NewService(pool)
 	reviewer := reviews.NewService(pool)
 	ledgerService := ledger.NewService(pool)
@@ -294,14 +297,15 @@ func newServer(t *testing.T) *testEnv {
 	mux := http.NewServeMux()
 	api := httpapi.NewHumaAPI(mux, signer)
 	httpapi.RegisterAll(api, httpapi.Dependencies{
-		Identity:     identity.NewService(pool),
+		Identity:     identityService,
 		Catalog:      catalog.New(pool),
 		Address:      address.New(pool),
-		Ops:          ops.New(pool, bookingService),
+		Ops:          opsService,
 		Ledger:       ledgerService,
 		Audit:        auditService,
 		Alert:        alert.NewService(pool),
 		Rescue:       rescue.New(pool, bookingService, ledgerService, auditService),
+		Providers:    providerops.NewService(pool, identityService, opsService, bookingService),
 		Verification: verifier,
 		Booking:      bookingService,
 		Reviews:      reviewer,

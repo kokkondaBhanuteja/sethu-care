@@ -16,6 +16,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/media"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
@@ -37,6 +38,7 @@ type Dependencies struct {
 	Audit        *audit.Service
 	Alert        *alert.Service
 	Rescue       *rescue.Service
+	Providers    *providerops.Service
 	Reviews      *reviews.Service
 	Cloudinary   *media.Cloudinary
 	Signer       *auth.Signer
@@ -66,5 +68,5 @@ func RegisterAll(api huma.API, deps Dependencies) {
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	NewLocationHandler(deps.Identity, deps.Verification, deps.Logger).RegisterHuma(api)
 	New(deps.Booking, deps.Verification, deps.Reviews, deps.Flow, deps.Logger).RegisterHuma(api)
-	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit, deps.Alert, deps.Rescue).RegisterHuma(api)
+	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit, deps.Alert, deps.Rescue, deps.Providers, deps.Flow).RegisterHuma(api)
 }

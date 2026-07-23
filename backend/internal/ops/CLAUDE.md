@@ -5,7 +5,7 @@ The operations console's back end: the manual-assignment queue and the commands 
 
 ## Responsibilities
 - `Queue` — bookings awaiting a human assignment, oldest first.
-- `Candidates(bookingID)` — technicians eligible for a booking, ranked by the §5.1 signals (city/skill/online/leave/capacity/shift, PostGIS distance, acceptance, rating).
+- `Candidates(bookingID)` — technicians eligible for a booking, ranked by the §5.1 signals (city/skill/online/leave/capacity/shift, PostGIS distance, acceptance, rating). Eligibility also excludes admin-restricted providers (a `provider_admin_states` block, or a suspension whose `suspended_until` is still in the future) — the read-side consequence of providerops' standing writes.
 - `Technicians` — the admin Employees view (status + current load), unfiltered.
 - `Assign(bookingID, technicianID, adminID)` — verify the technician exists (clean 404), then command the `ASSIGN` transition as admin via `booking.Apply`.
 - `StartSearch(bookingID)` — the auto-search consumer of `booking.confirmed`: moves CONFIRMED→SEARCHING as the system (nil actor) with admin authority; **idempotent** (already-moved / conflict / not-found ⇒ nil, so the outbox stops retrying).

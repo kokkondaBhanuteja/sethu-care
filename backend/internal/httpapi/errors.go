@@ -9,8 +9,10 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
@@ -46,6 +48,10 @@ func classify(err error) (int, string) {
 	var forbidden *booking.ForbiddenError
 	var transportForbidden *forbiddenError
 	var badReq *badRequestError
+	var staleProvider *providerops.StaleVersionError
+	var providerDecided *providerops.AlreadyDecidedError
+	var unresolvedJobs *providerops.UnresolvedJobsError
+	var approvalBlocked *providerops.ApprovalBlockedError
 
 	var staleVersion *rescue.StaleVersionError
 	var undoWindowClosed *rescue.UndoWindowClosedError
@@ -123,7 +129,8 @@ func classify(err error) (int, string) {
 	case errors.Is(err, ops.ErrInvalidCursor),
 		errors.Is(err, booking.ErrInvalidCursor),
 		errors.Is(err, audit.ErrInvalidCursor),
-		errors.Is(err, alert.ErrInvalidCursor):
+		errors.Is(err, alert.ErrInvalidCursor),
+		errors.Is(err, providerops.ErrInvalidCursor):
 		// A cursor the server did not mint — a truncated copy-paste, never a server fault.
 		return http.StatusBadRequest, err.Error()
 
@@ -141,6 +148,29 @@ func classify(err error) (int, string) {
 
 	case errors.As(err, &rateLimited):
 		return http.StatusTooManyRequests, err.Error()
+
+	case errors.Is(err, providerops.ErrProviderNotFound),
+		errors.Is(err, providerops.ErrApplicationNotFound):
+		return http.StatusNotFound, err.Error()
+
+	case errors.As(err, &staleProvider),
+		errors.As(err, &providerDecided),
+		errors.Is(err, providerops.ErrApplicationDecided),
+		errors.Is(err, identity.ErrPhoneAlreadyRegistered):
+		// The record moved (or was decided, or the phone was claimed) since it was read.
+		// The provider handlers shape the designed conflict bodies before reaching here;
+		// this mapping is the safety net for any other path.
+		return http.StatusConflict, err.Error()
+
+	case errors.As(err, &unresolvedJobs),
+		errors.As(err, &approvalBlocked),
+		errors.Is(err, providerops.ErrDurationRequired),
+		errors.Is(err, providerops.ErrNotRestricted),
+		errors.Is(err, providerops.ErrNoteTooShort),
+		errors.Is(err, providerops.ErrNoDocumentsRequested):
+		// Well-formed requests the domain refuses — the console renders each as its
+		// designed validation state.
+		return http.StatusUnprocessableEntity, err.Error()
 
 	default:
 		return http.StatusInternalServerError, err.Error()

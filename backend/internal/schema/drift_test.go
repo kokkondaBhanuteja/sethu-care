@@ -33,6 +33,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/notifications"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/order"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -60,6 +61,12 @@ func TestEveryEnumColumnMatchesItsGoConstants(t *testing.T) {
 		{"alerts", "kind", toStrings(alert.AllKinds())},
 		{"alerts", "severity", toStrings(alert.AllSeverities())},
 		{"alerts", "subject_kind", toStrings(alert.AllSubjectKinds())},
+		{"provider_admin_states", "standing", toStrings(providerops.AllStandings())},
+		{"provider_admin_states", "reason_code", toStrings(providerops.AllSuspendReasons())},
+		{"provider_applications", "status", toStrings(providerops.AllApplicationStatuses())},
+		{"provider_applications", "decision_reason_code", toStrings(providerops.AllRejectReasons())},
+		{"provider_application_documents", "document_type", toStrings(providerops.AllDocumentTypes())},
+		{"provider_application_documents", "validation", toStrings(providerops.AllDocumentValidations())},
 	}
 
 	for _, tc := range cases {
