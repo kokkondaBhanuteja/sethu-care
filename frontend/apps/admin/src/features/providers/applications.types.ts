@@ -157,6 +157,20 @@ export interface RejectApplicationInput {
   readonly note: string;
 }
 
+export interface ApproveApplicationInput {
+  readonly applicationId: string;
+  readonly version: number;
+}
+
+export interface RequestDocumentsInput {
+  readonly applicationId: string;
+  readonly version: number;
+  /** Echoed into the result: the wire's RequestDocumentsResult carries no applicant name. */
+  readonly applicantName: string;
+  /** What is still owed — derived from the record's missing/failed documents and blockers. */
+  readonly documentTypeKeys: readonly DocumentTypeKey[];
+}
+
 export interface ApplicationDecisionResult {
   readonly applicationId: string;
   readonly applicantName: string;

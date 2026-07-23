@@ -13,7 +13,7 @@ Contents:
 - `useSuspendSteps.ts` — the rail's three labels: Action & reason / Active jobs / Confirm.
 - `useSuspendMessages.ts` — the summary line, the reason line and the message the provider actually reads, built once so the summary, the preview and the toast cannot disagree.
 - `useApplicationsQueue.ts` — segment state and counts; `includeDecided` is the one surface difference.
-- `useApplicationReview.ts` — the review query, the selected document (defaults to the one that failed, because that is what the decision turns on), and the decision mutations.
+- `useApplicationReview.ts` — the review query, the selected document (defaults to the one that failed, because that is what the decision turns on), and the decision mutations (handed the loaded review so they carry its CAS version). A rejected 422 lands on the note field via `rejectNoteError` while the dialog stays open; closing it clears the error.
 
 Business logic:
 

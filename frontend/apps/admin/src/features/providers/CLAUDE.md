@@ -19,7 +19,10 @@ leads with a zone shortfall rather than a list.
 | `ApplicationsQueue.{desktop,mobile}.tsx` | BOX 43/44, M69/M70 |
 | `ApplicationReview.{desktop,mobile}.tsx` | BOX 45–47, M71–M74 |
 | `rosterFilters.ts` (+ test) | Pure client-side roster refinements: skill/zone/status filtering, option derivation |
-| `providers.api.ts` | THE data boundary. Every endpoint this feature needs, in one file |
+| `providers.api.ts` · `applications.api.ts` | THE data boundary, split provider-side / application-side. Mock branch when `env.useMocks` (unchanged for tests); otherwise the REAL `/ops/providers*` + `/ops/applications*` through the generated client |
+| `providers.api.map.ts` · `applications.api.map.ts` (+ tests) | Pure real-payload mappers onto the feature types: wire `DocumentType` ↔ i18n `DocumentTypeKey`, blocker/check codes → message keys, structured current-job → the roster's stage label, structured flags → free-text lines, `sizeBytes` → "0.8 MB" |
+| `providers.api.requests.ts` | Inputs → generated request bodies (undecided job resolutions stripped; document keys back to wire codes; `outstandingDocumentKeys`), plus per-call `newIdempotencyKey` |
+| `providers.api.errors.ts` | The DECLARED failure bodies → `ApiError`: 409 VERSION_CONFLICT / ALREADY_DECIDED → `conflict`; the transport's generic 422s get curated per-operation sentences, the reject note's landing ON its field |
 | `providers.types.ts` · `suspend.types.ts` · `applications.types.ts` | The normative shapes |
 | `providers.constants.ts` | Query keys, segment/reason vocabularies, copy-key lookups, §6.16 bands |
 | `providerFixtures.ts` · `providerProfileData.ts` · `applicationFixtures.ts` | Fixture data |
@@ -77,6 +80,37 @@ expired credential", no pulse) so it cannot contradict the danger banner above i
 - **No dead affordances.** "Put on hold" and "Add note" are gone until real mutations back them;
   the reviewer-notes textarea is an explicitly-labelled unsaved draft (`review.reviewerNotesHint`).
 
+## Real mode — what the live backend actually sends
+
+With `VITE_USE_MOCKS=false` (backend `internal/providerops`, all 12 operations) the seeded dev
+data is honest rather than staged:
+
+- **Status vocabulary** free / on_job / offline / suspended / offboarded (BLOCKED → offboarded);
+  the online segment is status `free` only. `lastSeenAt` null means reported within 60s.
+- **Honest empties:** profile `documents` and `flags` are `[]` (no backing tables — the documents
+  section renders its designed empty state, not an error), roster `etaMinutes` is null (label
+  reads "En route", no ETA), the metrics array carries no `onTime` entry (only what arrives is
+  rendered), skills carry no `certifiedTo`/`isPending`, and `payoutCyclePaise` is month-to-date
+  revenue (the salaried interpretation).
+- **No zone query param** on the roster — zone filtering rides the free-text search. The roster
+  and queue fetch one 100-row page (`*_FETCH_CAP`); the server's keyset `nextCursor` is not yet
+  consumed because neither screen has a pager. The mock-only `?state=` variant switch is ignored.
+- The desktop pending queue's decided tail is **two reads merged** (`appendDecidedRows`): the
+  server serves one segment per request.
+- **Every mutation** sends an `Idempotency-Key` header (minted per call — see
+  `providers.api.requests.ts`; promoting booking-actions' per-intent `useIdempotencyKey` to
+  `src/hooks` is the owed stricter form) and the standing-row CAS `version` (0 when never acted
+  on). 409 VERSION_CONFLICT / ALREADY_DECIDED and the approve 422 re-read the record in the
+  mutation hooks, so the already-decided banner and the server-computed `approvalBlockers` render
+  from the refetch. The undo of a suspension restores with the post-write version from
+  `SuspendProviderResult.version`.
+- The reject note's 20-character floor is server-enforced; a 422 lands on the note field
+  (`rejectNoteError` → `RejectApplicationDialog`) while the dialog stays open.
+- `requestDocuments` derives WHAT is owed (`outstandingDocumentKeys`: missing/failed documents +
+  blocker documents) and echoes the applicant name from the read — the wire result carries none.
+- Known gap: the generated `ApplicationDocument.url` (the actual scan) has no slot on the feature
+  shape yet, so the desktop viewer still draws its placeholder geometry.
+
 ## Reaching each designed state
 
 Mock data is deterministic. `VITE_MOCK_MODE=error|empty|slow` still drives the error, empty and
@@ -121,7 +155,8 @@ lucide-react.
 - Pages import from here; this folder never imports a page.
 - No BEM class from `styles/components.css` and no arbitrary Tailwind values — see
   `components/CLAUDE.md`.
-- Components never import a `*.mock.ts`; `providers.api.ts` is the only file that does.
+- Components never import a `*.mock.ts`; `providers.api.ts` and `applications.api.ts` are the
+  only files that do.
 
 ## Impacted modules
 

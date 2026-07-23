@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@sethu/i18n";
 
-import { API_ERROR_CODES, apiError } from "../../../lib/http/apiError";
+import { API_ERROR_CODES, apiError, normalizeError } from "../../../lib/http/apiError";
 import { ADMIN_ACTIONS, type AdminAction } from "../../../lib/permissions/actions";
 import { useActionPolicy, useCan } from "../../../lib/permissions/usePermission";
 import { useStepUp } from "../../../hooks/useStepUp";
@@ -47,6 +47,14 @@ export function useSuspendProviderMutation(
   const stepUp = useStepUp(action);
   const announce = useUndoableAction(action);
 
+  const invalidateProvider = useCallback(
+    (providerId: string) => {
+      void queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.profile(providerId) });
+      void queryClient.invalidateQueries({ queryKey: ROSTER_QUERY_SCOPE });
+    },
+    [queryClient],
+  );
+
   const mutation = useMutation({
     mutationFn: async (input: SuspendProviderInput) => {
       if (!canAct) {
@@ -54,23 +62,41 @@ export function useSuspendProviderMutation(
       }
       return suspendProvider(input);
     },
-    onSuccess: (_result, input) => {
-      void queryClient.invalidateQueries({
-        queryKey: PROVIDER_QUERY_KEYS.profile(input.providerId),
-      });
-      void queryClient.invalidateQueries({ queryKey: ROSTER_QUERY_SCOPE });
+    onSuccess: (result, input) => {
+      invalidateProvider(input.providerId);
       announce({
         message: options.doneMessage,
         onUndo: () => {
-          void restoreProvider(input.providerId).then(() => {
-            showToast({ message: t("suspend.undone"), tone: TOAST_TONES.info });
-            void queryClient.invalidateQueries({
-              queryKey: PROVIDER_QUERY_KEYS.profile(input.providerId),
+          // Undo sends the version AFTER the write; the mock result carries none, so the read
+          // version bumped once stands in (the mock ignores it anyway).
+          restoreProvider({
+            providerId: input.providerId,
+            version: result.version ?? input.version + 1,
+          })
+            .then(() => {
+              showToast({ message: t("suspend.undone"), tone: TOAST_TONES.info });
+              invalidateProvider(input.providerId);
+            })
+            .catch((thrown: unknown) => {
+              // Losing the undo race is an error the server enforces; surface it, then re-read.
+              const error = normalizeError(thrown, t("profile.permissionDenied"));
+              showToast({ message: error.message, tone: TOAST_TONES.danger });
+              invalidateProvider(input.providerId);
             });
-          });
         },
       });
       options.onSuccess();
+    },
+    onError: (thrown, input) => {
+      // A conflict or a 422 (a live job raced in) means the record moved: re-read it so the flow
+      // and the profile argue from the server's latest state. The toast bridge announces it.
+      const error = normalizeError(thrown, t("profile.permissionDenied"));
+      if (error.code === API_ERROR_CODES.conflict || error.code === API_ERROR_CODES.validation) {
+        invalidateProvider(input.providerId);
+        void queryClient.invalidateQueries({
+          queryKey: PROVIDER_QUERY_KEYS.activeJobs(input.providerId),
+        });
+      }
     },
   });
 
@@ -79,7 +105,11 @@ export function useSuspendProviderMutation(
       if (!canAct) return;
       const isVerified = await stepUp.request();
       if (!isVerified) return;
-      await mutation.mutateAsync(input);
+      try {
+        await mutation.mutateAsync(input);
+      } catch {
+        // Already surfaced: the mutation-cache toast announced it and onError re-read the record.
+      }
     },
     [canAct, stepUp, mutation],
   );
@@ -88,7 +118,11 @@ export function useSuspendProviderMutation(
 }
 
 /** Restore reverses a standing decision, so it carries the same guard the decision did. */
-export function useRestoreProviderMutation(providerId: string, providerName: string) {
+export function useRestoreProviderMutation(
+  providerId: string,
+  providerName: string,
+  version: number,
+) {
   const queryClient = useQueryClient();
   const { t } = useTranslation("adminProviders");
   const canAct = useCan(ADMIN_ACTIONS.suspendProvider);
@@ -98,7 +132,7 @@ export function useRestoreProviderMutation(providerId: string, providerName: str
       if (!canAct) {
         throw apiError(API_ERROR_CODES.forbidden, t("profile.permissionDenied"), { status: 403 });
       }
-      return restoreProvider(providerId);
+      return restoreProvider({ providerId, version });
     },
     onSuccess: () => {
       showToast({
@@ -107,6 +141,13 @@ export function useRestoreProviderMutation(providerId: string, providerName: str
       });
       void queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.profile(providerId) });
       void queryClient.invalidateQueries({ queryKey: ROSTER_QUERY_SCOPE });
+    },
+    onError: (thrown) => {
+      // A stale version means someone else acted first — re-read so the record tells the truth.
+      const error = normalizeError(thrown, t("profile.permissionDenied"));
+      if (error.code === API_ERROR_CODES.conflict) {
+        void queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.profile(providerId) });
+      }
     },
   });
 

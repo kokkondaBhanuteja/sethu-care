@@ -36,7 +36,12 @@ export function useProviderProfile(): ProviderProfileScreen {
 
   const canSuspend = useCan(ADMIN_ACTIONS.suspendProvider);
   const canForceOffline = useCan(ADMIN_ACTIONS.forceProviderOffline);
-  const restoreMutation = useRestoreProviderMutation(providerId, profile?.name ?? providerId);
+  // Version 0 is unreachable in practice: Restore only renders once the profile has loaded.
+  const restoreMutation = useRestoreProviderMutation(
+    providerId,
+    profile?.name ?? providerId,
+    profile?.version ?? 0,
+  );
 
   const expiredDocument = useMemo(
     () => profile?.documents.find((document) => document.state === DOCUMENT_STATES.expired),

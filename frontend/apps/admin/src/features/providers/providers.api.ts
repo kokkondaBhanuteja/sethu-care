@@ -1,10 +1,41 @@
-// The ONLY boundary between the providers feature and its data.
+// The data boundary for the provider side of this feature (roster, profile, active jobs and the
+// suspend / block / force-offline / restore family). The application pipeline's boundary is
+// `applications.api.ts`; no other file in this feature touches the client or a mock.
 //
-// None of these endpoints exists on the backend yet — see docs/admin-api-contract.md,
-// "MISSING — providers". Each function below is where the generated client's call replaces the
-// mock, and nothing above this file changes when it does.
+// The providerops endpoints are REAL (backend internal/providerops): with mocks off, every read
+// is sdk call → pure mapper → feature types, and every mutation sends an `Idempotency-Key` header
+// plus the standing-row CAS `version` the operator read. The mock branch is untouched, so unit
+// tests and the designed-state walks behave exactly as before — nothing above this file changed.
 
+import {
+  opsBlockProvider,
+  opsForceProviderOffline,
+  opsGetProvider,
+  opsListProviders,
+  opsProviderActiveJobs,
+  opsRestoreProvider,
+  opsSuspendProvider,
+} from "@sethu/api-client";
+
+import { env } from "../../lib/env";
 import { normalizeError } from "../../lib/http/apiError";
+import {
+  FAILURE,
+  RESTORE_STATUS_FAILURES,
+  SUSPEND_STATUS_FAILURES,
+  unwrap,
+} from "./providers.api.errors";
+import {
+  mapProviderActiveJob,
+  mapProviderProfile,
+  mapProviderRoster,
+  toListProvidersParams,
+} from "./providers.api.map";
+import {
+  newIdempotencyKey,
+  toRestoreProviderRequest,
+  toSuspendProviderRequest,
+} from "./providers.api.requests";
 import { fetchProviderRosterMock, type RosterVariant } from "./providers.mock";
 import { fetchProviderProfileMock } from "./providerProfiles.mock";
 import {
@@ -12,154 +43,117 @@ import {
   restoreProviderMock,
   suspendProviderMock,
 } from "./suspend.mock";
-import {
-  decideApplicationMock,
-  fetchApplicationQueueMock,
-  fetchApplicationReviewMock,
-  rejectApplicationMock,
-} from "./applications.mock";
 import type { ProviderProfile, ProviderRoster, RosterSegment } from "./providers.types";
+import { SUSPEND_ACTION_TYPES } from "./suspend.types";
 import type {
   ProviderActiveJob,
+  RestoreProviderInput,
   SuspendProviderInput,
   SuspendProviderResult,
 } from "./suspend.types";
-import type {
-  ApplicationDecisionResult,
-  ApplicationQueue,
-  ApplicationReview,
-  ApplicationSegment,
-  RejectApplicationInput,
-} from "./applications.types";
+
+/** Everything thrown at this boundary leaves as an ApiError — declared bodies via unwrap. */
+async function call<TResult>(run: () => Promise<TResult>, failure: string): Promise<TResult> {
+  try {
+    return await run();
+  } catch (thrown) {
+    throw normalizeError(thrown, failure);
+  }
+}
+
+const NOT_FOUND = 404;
 
 export interface RosterRequest {
   readonly segment: RosterSegment;
   readonly search: string;
+  /** Mock-only designed-state switch (`?state=healthy|stale`); the live roster ignores it. */
   readonly variant: RosterVariant;
 }
 
 /** `GET /ops/providers` */
-export async function fetchProviderRoster(
+export function fetchProviderRoster(
   request: RosterRequest,
   signal?: AbortSignal,
 ): Promise<ProviderRoster> {
-  try {
-    return await fetchProviderRosterMock(request.segment, request.search, request.variant, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "The provider roster could not be loaded.");
-  }
+  return call(async () => {
+    if (env.useMocks) {
+      return fetchProviderRosterMock(request.segment, request.search, request.variant, signal);
+    }
+    const result = await opsListProviders({ query: toListProvidersParams(request), signal });
+    return mapProviderRoster(unwrap(result, FAILURE.roster));
+  }, FAILURE.roster);
 }
 
 /** `GET /ops/providers/{id}` — resolves to null when the id is unknown, never throws 404. */
-export async function fetchProviderProfile(
+export function fetchProviderProfile(
   providerId: string,
   signal?: AbortSignal,
 ): Promise<ProviderProfile | null> {
-  try {
-    return await fetchProviderProfileMock(providerId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This provider could not be loaded.");
-  }
+  return call(async () => {
+    if (env.useMocks) return fetchProviderProfileMock(providerId, signal);
+    const result = await opsGetProvider({ path: { id: providerId }, signal });
+    if (result.response?.status === NOT_FOUND) return null;
+    return mapProviderProfile(unwrap(result, FAILURE.profile));
+  }, FAILURE.profile);
 }
 
 /** `GET /ops/providers/{id}/active-jobs` — step 3 of the suspend flow. */
-export async function fetchProviderActiveJobs(
+export function fetchProviderActiveJobs(
   providerId: string,
   signal?: AbortSignal,
 ): Promise<readonly ProviderActiveJob[]> {
-  try {
-    return await fetchProviderActiveJobsMock(providerId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This provider's active jobs could not be loaded.");
-  }
+  return call(async () => {
+    if (env.useMocks) return fetchProviderActiveJobsMock(providerId, signal);
+    const result = await opsProviderActiveJobs({ path: { id: providerId }, signal });
+    return unwrap(result, FAILURE.activeJobs).items.map(mapProviderActiveJob);
+  }, FAILURE.activeJobs);
 }
 
-/** `POST /ops/providers/{id}/suspend` · `/block` · `/force-offline` — one payload, typed by `type`. */
-export async function suspendProvider(
+/**
+ * `POST /ops/providers/{id}/suspend` · `/block` · `/force-offline` — one payload family; the
+ * input's `type` picks the endpoint AND rides in the body (the server 400s on a mismatch).
+ * A live job left unresolved is the server's 422, curated in providers.api.errors.ts.
+ */
+export function suspendProvider(
   input: SuspendProviderInput,
   signal?: AbortSignal,
 ): Promise<SuspendProviderResult> {
-  try {
-    return await suspendProviderMock(input, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "The suspension could not be applied.");
-  }
+  return call(async () => {
+    if (env.useMocks) return suspendProviderMock(input, signal);
+    const options = {
+      path: { id: input.providerId },
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: toSuspendProviderRequest(input),
+    };
+    const result =
+      input.type === SUSPEND_ACTION_TYPES.block
+        ? await opsBlockProvider(options)
+        : input.type === SUSPEND_ACTION_TYPES.forceOffline
+          ? await opsForceProviderOffline(options)
+          : await opsSuspendProvider(options);
+    const payload = unwrap(result, FAILURE.suspend, SUSPEND_STATUS_FAILURES);
+    return {
+      providerId: payload.providerId,
+      type: payload.type,
+      durationDays: payload.durationDays,
+      effectiveUntil: payload.effectiveUntil,
+      ...(payload.version !== undefined ? { version: payload.version } : {}),
+    };
+  }, FAILURE.suspend);
 }
 
-/** `POST /ops/providers/{id}/restore` */
-export async function restoreProvider(
-  providerId: string,
+/** `POST /ops/providers/{id}/restore` — reverses a suspension or a block, same CAS guard. */
+export function restoreProvider(
+  input: RestoreProviderInput,
   signal?: AbortSignal,
 ): Promise<{ providerId: string }> {
-  try {
-    return await restoreProviderMock(providerId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This provider could not be restored.");
-  }
-}
-
-export interface ApplicationQueueRequest {
-  readonly segment: ApplicationSegment;
-  /** Desktop keeps decided rows under the live ones; mobile does not (BOX 43 vs M69). */
-  readonly includeDecided: boolean;
-}
-
-/** `GET /ops/applications` */
-export async function fetchApplicationQueue(
-  request: ApplicationQueueRequest,
-  signal?: AbortSignal,
-): Promise<ApplicationQueue> {
-  try {
-    return await fetchApplicationQueueMock(request.segment, request.includeDecided, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "The applications queue could not be loaded.");
-  }
-}
-
-/** `GET /ops/applications/{id}` */
-export async function fetchApplicationReview(
-  applicationId: string,
-  signal?: AbortSignal,
-): Promise<ApplicationReview | null> {
-  try {
-    return await fetchApplicationReviewMock(applicationId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This application could not be loaded.");
-  }
-}
-
-/** `POST /ops/applications/{id}/approve` */
-export async function approveApplication(
-  applicationId: string,
-  signal?: AbortSignal,
-): Promise<ApplicationDecisionResult> {
-  try {
-    return await decideApplicationMock(applicationId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This application could not be approved.");
-  }
-}
-
-/** `POST /ops/applications/{id}/reject` */
-export async function rejectApplication(
-  input: RejectApplicationInput,
-  signal?: AbortSignal,
-): Promise<ApplicationDecisionResult> {
-  try {
-    return await rejectApplicationMock(input, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "This application could not be rejected.");
-  }
-}
-
-/** `POST /ops/applications/{id}/request-documents` */
-export async function requestApplicationDocuments(
-  applicationId: string,
-  signal?: AbortSignal,
-): Promise<ApplicationDecisionResult> {
-  try {
-    return await decideApplicationMock(applicationId, signal);
-  } catch (thrown) {
-    throw normalizeError(thrown, "The document request could not be sent.");
-  }
+  return call(async () => {
+    if (env.useMocks) return restoreProviderMock(input.providerId, signal);
+    const result = await opsRestoreProvider({
+      path: { id: input.providerId },
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: toRestoreProviderRequest(input),
+    });
+    return { providerId: unwrap(result, FAILURE.restore, RESTORE_STATUS_FAILURES).providerId };
+  }, FAILURE.restore);
 }

@@ -111,6 +111,7 @@ export function ApplicationReviewMobile() {
             review={review}
             isSubmitting={screen.decisions.isRejecting}
             requiresStepUp={screen.decisions.rejectPolicy.requiresStepUp}
+            noteError={screen.rejectNoteError}
             onCancel={screen.closeReject}
             onSubmit={(input) => void screen.submitRejection(input)}
           />

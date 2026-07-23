@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 
+import { normalizeError } from "../../../lib/http/apiError";
 import { ROUTES } from "../../../routes/routes.constants";
 import { useApplicationDecisions } from "../mutations/useApplicationDecisions";
 import { useApplicationReviewQuery } from "../queries/applications.queries";
@@ -20,8 +21,10 @@ export function useApplicationReview() {
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
+  /** A server-declared field error on the rejection note (422), rendered ON the field. */
+  const [rejectNoteError, setRejectNoteError] = useState<string | null>(null);
 
-  const decisions = useApplicationDecisions(applicationId, () => {
+  const decisions = useApplicationDecisions(applicationId, review, () => {
     void navigate(ROUTES.applications);
   });
 
@@ -49,11 +52,24 @@ export function useApplicationReview() {
   const submitRejection = useCallback(
     async (input: Omit<RejectApplicationInput, "applicationId" | "version">) => {
       if (!review) return;
-      await decisions.reject({ ...input, applicationId, version: review.version });
-      setIsRejecting(false);
+      try {
+        await decisions.reject({ ...input, applicationId, version: review.version });
+        setRejectNoteError(null);
+        setIsRejecting(false);
+      } catch (thrown) {
+        // The toast bridge already announced the failure; what belongs to THIS screen is the
+        // field placement — a 422 note error lands on the note control and the dialog stays open.
+        const error = normalizeError(thrown, "");
+        setRejectNoteError(error.fieldErrors?.note ?? null);
+      }
     },
     [review, decisions, applicationId],
   );
+
+  const closeReject = useCallback(() => {
+    setRejectNoteError(null);
+    setIsRejecting(false);
+  }, []);
 
   return {
     applicationId,
@@ -68,8 +84,9 @@ export function useApplicationReview() {
     canApproveNow,
     decisions,
     isRejecting,
+    rejectNoteError,
     openReject: () => setIsRejecting(true),
-    closeReject: () => setIsRejecting(false),
+    closeReject,
     submitRejection,
   };
 }

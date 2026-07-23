@@ -9,9 +9,9 @@ Contents:
 - `providers.queries.ts` — roster (polled, because a stale live status is a wrong answer), profile, and the active-job list step 3 of the suspend flow blocks on.
 - `applications.queries.ts` — applications queue and a single application review.
 
-Business logic: none beyond refetch cadence. Query keys come from `../providers.constants.ts`; the data boundary is `../providers.api.ts`.
+Business logic: none beyond refetch cadence. Query keys come from `../providers.constants.ts`; the data boundaries are `../providers.api.ts` and `../applications.api.ts`.
 
-Dependencies: `@tanstack/react-query`, `../providers.api`, `../providers.constants`.
+Dependencies: `@tanstack/react-query`, `../providers.api`, `../applications.api`, `../providers.constants`.
 
 Boundaries: never import a `*.mock.ts` (the `.api.ts` chooses mock vs client), never call `fetch`, never render.
 

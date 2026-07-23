@@ -18,6 +18,8 @@ export interface RejectApplicationDialogProps {
   review: ApplicationReview;
   isSubmitting: boolean;
   requiresStepUp: boolean;
+  /** The server's 422 on the note, landed on its field while the dialog stays open. */
+  noteError?: string | null;
   onCancel: () => void;
   onSubmit: (input: { reasonCode: RejectReasonCode; note: string }) => void;
 }
@@ -32,6 +34,7 @@ export function RejectApplicationDialog({
   review,
   isSubmitting,
   requiresStepUp,
+  noteError,
   onCancel,
   onSubmit,
 }: RejectApplicationDialogProps) {
@@ -73,7 +76,7 @@ export function RejectApplicationDialog({
         </>
       }
     >
-      <RejectApplicationForm draft={draft} onChange={setDraft} />
+      <RejectApplicationForm draft={draft} onChange={setDraft} serverNoteError={noteError} />
     </Modal>
   );
 }

@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { fetchApplicationQueue, fetchApplicationReview } from "../providers.api";
+import { fetchApplicationQueue, fetchApplicationReview } from "../applications.api";
 import { PROVIDER_QUERY_KEYS } from "../providers.constants";
 import type {
   ApplicationQueue,

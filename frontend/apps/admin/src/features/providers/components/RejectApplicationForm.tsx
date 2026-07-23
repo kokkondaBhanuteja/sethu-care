@@ -20,6 +20,8 @@ export interface RejectDraft {
 export interface RejectApplicationFormProps {
   draft: RejectDraft;
   onChange: (draft: RejectDraft) => void;
+  /** A server-declared 422 on the note (the floor is server-enforced), rendered ON the field. */
+  serverNoteError?: string | null;
 }
 
 /**
@@ -27,7 +29,11 @@ export interface RejectApplicationFormProps {
  * mandatory (the platform reports rejection reasons in aggregate, which a free-text-only reject
  * would make impossible) and the note has a 20-character floor shown in red until it is met.
  */
-export function RejectApplicationForm({ draft, onChange }: RejectApplicationFormProps) {
+export function RejectApplicationForm({
+  draft,
+  onChange,
+  serverNoteError,
+}: RejectApplicationFormProps) {
   const { t } = useTranslation("adminProviders");
   const [wasTouched, setWasTouched] = useState(false);
   const isNoteTooShort = draft.note.trim().length < REJECT_NOTE_MINIMUM;
@@ -60,6 +66,7 @@ export function RejectApplicationForm({ draft, onChange }: RejectApplicationForm
           maxLength={REJECT_NOTE_MAXIMUM}
           onBlur={() => setWasTouched(true)}
           onChange={(event) => onChange({ ...draft, note: event.target.value })}
+          {...(serverNoteError ? { error: serverNoteError } : {})}
         />
         <p
           aria-live="polite"

@@ -62,4 +62,12 @@ export interface SuspendProviderResult {
   readonly type: SuspendActionType;
   readonly durationDays: number | null;
   readonly effectiveUntil: string | null;
+  /** The record's version AFTER the write — what the undo's restore must send. Absent in mocks. */
+  readonly version?: number;
+}
+
+/** Restore reverses the standing decision, so it carries the same CAS token every write does. */
+export interface RestoreProviderInput {
+  readonly providerId: string;
+  readonly version: number;
 }
