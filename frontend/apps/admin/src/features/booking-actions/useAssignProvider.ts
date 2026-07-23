@@ -5,7 +5,9 @@ import { z } from "zod";
 import { useTranslation } from "@sethu/i18n";
 
 import { useAppForm } from "../../lib/forms/useAppForm";
+import type { ApiError } from "../../lib/http/apiError";
 import { ADMIN_ACTIONS } from "../../lib/permissions/actions";
+import { showToast, TOAST_TONES } from "../../lib/toast/toastStore";
 import { useActionPolicy } from "../../lib/permissions/usePermission";
 import { useUndoableAction } from "../../hooks/useUndoableAction";
 import { ROUTES } from "../../routes/routes.constants";
@@ -72,11 +74,16 @@ export function useAssignProvider() {
       announce({
         message: t("assign.assignedToast", { name: provider?.name ?? "" }),
         onUndo: () => {
-          void undoAction({
+          // The window is server-enforced from the real event timestamps; losing that race (or the
+          // network) must not fail silently. A failed WRITE announces itself — the same
+          // danger-toast pattern as the mutation bridge in main.tsx.
+          undoAction({
             bookingId,
             version: version + 1,
             idempotencyKey: key,
             undoes: "assign",
+          }).catch((failure: ApiError) => {
+            showToast({ message: failure.message, tone: TOAST_TONES.danger });
           });
         },
       });

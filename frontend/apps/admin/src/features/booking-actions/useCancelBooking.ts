@@ -5,7 +5,9 @@ import { z } from "zod";
 import { useTranslation } from "@sethu/i18n";
 
 import { useAppForm } from "../../lib/forms/useAppForm";
+import type { ApiError } from "../../lib/http/apiError";
 import { ADMIN_ACTIONS } from "../../lib/permissions/actions";
+import { showToast, TOAST_TONES } from "../../lib/toast/toastStore";
 import { useActionPolicy } from "../../lib/permissions/usePermission";
 import { useStepUp } from "../../hooks/useStepUp";
 import { useUndoableAction } from "../../hooks/useUndoableAction";
@@ -114,11 +116,16 @@ export function useCancelBooking() {
       announce({
         message: t("cancel.doneToast"),
         onUndo: () => {
-          void undoAction({
+          // The 10s window is server-enforced from the real event timestamps; losing that race
+          // (or the network) must not fail silently — same danger-toast pattern as main.tsx's
+          // mutation bridge. A failed refund reversal arrives here too ("That could not be undone.").
+          undoAction({
             bookingId,
             version: version + 1,
             idempotencyKey: key,
             undoes: "cancel",
+          }).catch((failure: ApiError) => {
+            showToast({ message: failure.message, tone: TOAST_TONES.danger });
           });
         },
       });
