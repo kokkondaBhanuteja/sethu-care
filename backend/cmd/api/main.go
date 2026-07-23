@@ -364,7 +364,9 @@ func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		// Idempotency-Key rides every admin mutation (contract §Idempotency) — without it here,
+		// the browser preflight rejects all six rescue writes.
+		writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key")
 		if request.Method == http.MethodOptions {
 			writer.WriteHeader(http.StatusNoContent)
 			return

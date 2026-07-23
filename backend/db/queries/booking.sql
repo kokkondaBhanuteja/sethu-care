@@ -12,7 +12,13 @@ SELECT state, version
 -- into a conflict (409). Never a lost update, never two technicians at one address.
 UPDATE bookings
    SET state         = @to_state,
-       technician_id = COALESCE(sqlc.narg('technician_id'), technician_id),
+       -- A booking that is searching or escalated has no technician by definition — undoing an
+       -- assign (ESCALATE) or re-running the search must not leave a ghost assignment behind.
+       technician_id = CASE
+                         WHEN @to_state IN ('SEARCHING', 'ESCALATED')
+                           THEN NULL
+                         ELSE COALESCE(sqlc.narg('technician_id'), technician_id)
+                       END,
        version       = version + 1,
        updated_at    = now()
  WHERE id = @id AND version = @expected_version;

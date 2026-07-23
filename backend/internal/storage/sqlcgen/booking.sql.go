@@ -566,7 +566,13 @@ func (q *Queries) AdminListWorkPhotoIDs(ctx context.Context, bookingID uuid.UUID
 const applyBookingTransition = `-- name: ApplyBookingTransition :execrows
 UPDATE bookings
    SET state         = $1,
-       technician_id = COALESCE($2, technician_id),
+       -- A booking that is searching or escalated has no technician by definition — undoing an
+       -- assign (ESCALATE) or re-running the search must not leave a ghost assignment behind.
+       technician_id = CASE
+                         WHEN $1 IN ('SEARCHING', 'ESCALATED')
+                           THEN NULL
+                         ELSE COALESCE($2, technician_id)
+                       END,
        version       = version + 1,
        updated_at    = now()
  WHERE id = $3 AND version = $4
