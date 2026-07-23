@@ -22,6 +22,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/app"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
@@ -118,6 +119,7 @@ func run() error {
 	identityService := identity.NewService(pool, identityOptions...)
 	opsService := ops.New(pool, bookingService)
 	auditService := audit.NewService(pool)
+	alertService := alert.NewService(pool)
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
@@ -142,6 +144,7 @@ func run() error {
 		Verification:  verificationService,
 		Ledger:        ledgerService,
 		Identity:      identityService,
+		Alert:         alertService,
 		FailedCredit:  money.FromPaise(settings.FailedBookingCreditPaise),
 		DevEchoOTP:    settings.DevEchoOTP,
 		Logger:        logger,
@@ -204,6 +207,7 @@ func run() error {
 		addressService:      addressService,
 		opsService:          opsService,
 		auditService:        auditService,
+		alertService:        alertService,
 		signer:              signer,
 		otpSender:           otpSender,
 		devEchoOTP:          settings.DevEchoOTP,
@@ -278,6 +282,7 @@ type routerDependencies struct {
 	addressService      *address.Service
 	opsService          *ops.Service
 	auditService        *audit.Service
+	alertService        *alert.Service
 	signer              *auth.Signer
 	otpSender           sms.Sender
 	devEchoOTP          bool
@@ -307,6 +312,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Verification: dependencies.verificationService,
 		Booking:      dependencies.bookingService,
 		Audit:        dependencies.auditService,
+		Alert:        dependencies.alertService,
 		Reviews:      dependencies.reviewService,
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,

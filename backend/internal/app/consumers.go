@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
@@ -29,6 +30,7 @@ type ConsumerDeps struct {
 	Verification  *verification.Service
 	Ledger        *ledger.Service
 	Identity      *identity.Service
+	Alert         *alert.Service
 	FailedCredit  money.Money
 	DevEchoOTP    bool
 	Logger        *slog.Logger
@@ -54,6 +56,13 @@ func RegisterConsumers(dispatcher *outbox.Dispatcher, deps ConsumerDeps) {
 	// queue) without an admin poking it.
 	dispatcher.Subscribe(topics.BookingConfirmed.String(), func(ctx context.Context, event outbox.Event) error {
 		return deps.Ops.StartSearch(ctx, event.AggregateID)
+	})
+
+	// THE ALERT ENGINE: an escalated booking becomes one CRITICAL alert in the admin console.
+	// Idempotent like every consumer here — the alert row is keyed to the outbox event id, so
+	// a redelivery inserts nothing.
+	dispatcher.Subscribe(topics.BookingEscalated.String(), func(ctx context.Context, event outbox.Event) error {
+		return deps.Alert.RecordBookingEscalation(ctx, event.ID, event.AggregateID)
 	})
 
 	// DUAL OTP issuance: START code when the technician arrives, COMPLETION code when they say the

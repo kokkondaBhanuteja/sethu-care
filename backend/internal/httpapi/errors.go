@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -78,7 +79,9 @@ func classify(err error) (int, string) {
 		errors.Is(err, catalog.ErrCategoryNotFound),
 		errors.Is(err, ops.ErrTechnicianNotFound),
 		errors.Is(err, reviews.ErrBookingNotFound),
-		errors.Is(err, verification.ErrBookingNotFound):
+		errors.Is(err, verification.ErrBookingNotFound),
+		errors.Is(err, alert.ErrAlertNotFound),
+		errors.Is(err, audit.ErrEntryNotFound):
 		return http.StatusNotFound, err.Error()
 
 	case errors.Is(err, address.ErrInvalidCoordinates),
@@ -107,7 +110,8 @@ func classify(err error) (int, string) {
 
 	case errors.Is(err, ops.ErrInvalidCursor),
 		errors.Is(err, booking.ErrInvalidCursor),
-		errors.Is(err, audit.ErrInvalidCursor):
+		errors.Is(err, audit.ErrInvalidCursor),
+		errors.Is(err, alert.ErrInvalidCursor):
 		// A cursor the server did not mint — a truncated copy-paste, never a server fault.
 		return http.StatusBadRequest, err.Error()
 

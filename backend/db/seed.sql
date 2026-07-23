@@ -68,4 +68,66 @@ DELETE FROM categories
 WHERE slug = 'appliance-repair'
   AND NOT EXISTS (SELECT 1 FROM services WHERE category_id = categories.id);
 
+-- ---------------------------------------------------------------------------
+-- ADMIN CONSOLE PHASE-2 FIXTURES (additive, idempotent — fixed UUIDs, ON CONFLICT guards).
+-- One escalated booking with its live CRITICAL alert, and two technicians with fresh map
+-- positions, so a dev database shows the alert feed, the dashboard band and the live map
+-- with real rows. Safe to re-run: nothing inserts twice, and an alert a dev already
+-- acknowledged stays acknowledged.
+
+INSERT INTO users (id, phone, name, role) VALUES
+  ('a1000000-0000-4000-8000-000000000001', '+911100000001', 'Deepa Demo',      'CUSTOMER'),
+  ('a1000000-0000-4000-8000-000000000002', '+911100000002', 'Ravi Fieldtech',  'TECHNICIAN'),
+  ('a1000000-0000-4000-8000-000000000003', '+911100000003', 'Sana Fieldtech',  'TECHNICIAN')
+ON CONFLICT DO NOTHING;
+
+-- Technician rows with a position refreshed to now() on every seed run, so the live map's
+-- freshness window always admits them.
+INSERT INTO technicians (user_id, city, is_online, last_lat, last_lng, last_location_at) VALUES
+  ('a1000000-0000-4000-8000-000000000002', 'Bengaluru', true, 12.9716, 77.5946, now()),
+  ('a1000000-0000-4000-8000-000000000003', 'Bengaluru', true, 12.9352, 77.6245, now())
+ON CONFLICT (user_id) DO UPDATE
+  SET last_lat = EXCLUDED.last_lat,
+      last_lng = EXCLUDED.last_lng,
+      last_location_at = now(),
+      is_online = true;
+
+INSERT INTO addresses (id, user_id, line1, city, pincode, geog)
+VALUES ('a2000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001',
+        '14 Demo Lane', 'Bengaluru', '560001', ST_MakePoint(77.6033, 12.9762)::geography)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO orders (id, customer_id, status, total_paise)
+VALUES ('a3000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'PENDING', 59900)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO bookings (id, order_id, customer_id, address_id, state, quoted_total_paise)
+VALUES ('a4000000-0000-4000-8000-000000000001', 'a3000000-0000-4000-8000-000000000001',
+        'a1000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000001',
+        'ESCALATED', 59900)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO booking_items (id, booking_id, service_id, variant_id, quantity, line_total_paise)
+SELECT 'a5000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001',
+       sv.service_id, sv.id, 1, 59900
+FROM service_variants sv
+JOIN services s ON s.id = sv.service_id
+WHERE s.slug = 'ac-repair' AND sv.name = 'Standard Service'
+ON CONFLICT DO NOTHING;
+
+-- The escalation trail the alert detail's history and trigger read (append-only table;
+-- fixed ids keep the re-run a no-op).
+INSERT INTO booking_events (id, booking_id, from_state, action, to_state) VALUES
+  ('a6000000-0000-4000-8000-000000000001', 'a4000000-0000-4000-8000-000000000001', 'DRAFT',     'CONFIRM',  'CONFIRMED'),
+  ('a6000000-0000-4000-8000-000000000002', 'a4000000-0000-4000-8000-000000000001', 'CONFIRMED', 'SEARCH',   'SEARCHING'),
+  ('a6000000-0000-4000-8000-000000000003', 'a4000000-0000-4000-8000-000000000001', 'SEARCHING', 'ESCALATE', 'ESCALATED')
+ON CONFLICT DO NOTHING;
+
+-- The live critical alert the engine would have produced for that escalation.
+INSERT INTO alerts (id, kind, severity, subject_kind, subject_id, source_event_id, requires_acknowledgement)
+VALUES ('a7000000-0000-4000-8000-000000000001', 'BOOKING_ESCALATED', 'CRITICAL',
+        'BOOKING', 'a4000000-0000-4000-8000-000000000001',
+        'a6000000-0000-4000-8000-000000000003', true)
+ON CONFLICT DO NOTHING;
+
 COMMIT;

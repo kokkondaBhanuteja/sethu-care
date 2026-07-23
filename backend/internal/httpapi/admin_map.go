@@ -8,6 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 )
 
 // One snapshot of the live operations map. Positions are PROJECTED by the server into percentages
@@ -138,6 +139,91 @@ type liveMapOutput struct {
 	Body liveMapSnapshot
 }
 
-func (handler *AdminHandler) liveMap(_ context.Context, _ *opsLiveMapInput) (*liveMapOutput, error) {
-	return nil, notImplemented("opsLiveMap")
+// liveMap serves one snapshot from real data: technician positions inside the freshness
+// window (ops.PositionFreshnessWindow), job pins on active bookings' addresses, and the
+// SEARCHING/ESCALATED attention rail. Honest gaps, stated rather than faked:
+//   - No zones table exists, so zones, clusters and zeroSupplyZoneIds are EMPTY and every
+//     marker's zoneId is the empty string.
+//   - The viewport parameters (centre, zoom) are accepted but the whole service city is
+//     returned; there is no tile model to window by yet.
+//   - No delay tracking exists, so no job pin ever reports the delayed state.
+func (handler *AdminHandler) liveMap(ctx context.Context, input *opsLiveMapInput) (*liveMapOutput, error) {
+	snapshot, err := handler.ops.LiveMap(ctx, input.Limit)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := liveMapSnapshot{
+		ActiveJobCount:      snapshot.ActiveJobCount,
+		Attention:           make([]mapAttentionItem, len(snapshot.Attention)),
+		Clusters:            []mapCluster{},
+		Jobs:                make([]mapJob, len(snapshot.Jobs)),
+		ObservedAt:          snapshot.ObservedAt,
+		OnlineProviderCount: snapshot.OnlineProviderCount,
+		Providers:           make([]mapProvider, len(snapshot.Providers)),
+		ZeroSupplyZoneIDs:   []string{},
+		Zones:               []mapZone{},
+	}
+	for index, job := range snapshot.Jobs {
+		body.Jobs[index] = mapJob{
+			BookingRef:  adminBookingReference(job.BookingID),
+			ID:          job.BookingID.String(),
+			Position:    mapPoint{XPercent: job.Position.XPercent, YPercent: job.Position.YPercent},
+			ServiceName: job.ServiceName,
+			State:       jobMapStateDTOOf(job.State),
+			ZoneID:      "",
+		}
+	}
+	for index, provider := range snapshot.Providers {
+		dto := mapProvider{
+			ID:        provider.TechnicianID.String(),
+			LocatedAt: provider.LocatedAt,
+			Name:      provider.Name,
+			Position:  mapPoint{XPercent: provider.Position.XPercent, YPercent: provider.Position.YPercent},
+			Status:    providerMapStatusDTOOf(provider.Status),
+			ZoneID:    "",
+		}
+		if provider.OnBookingID != nil {
+			dto.OnBookingRef = adminBookingReference(*provider.OnBookingID)
+		}
+		body.Providers[index] = dto
+	}
+	for index, item := range snapshot.Attention {
+		reason := attentionReasonNoProvider
+		if item.Reason == ops.MapAttentionEscalated {
+			reason = attentionReasonEscalated
+		}
+		body.Attention[index] = mapAttentionItem{
+			BookingRef:   adminBookingReference(item.BookingID),
+			ID:           item.BookingID.String(),
+			Reason:       reason,
+			WaitingSince: item.WaitingSince,
+			ZoneID:       "",
+		}
+	}
+	return &liveMapOutput{Body: body}, nil
+}
+
+func jobMapStateDTOOf(state ops.MapJobState) jobMapState {
+	switch state {
+	case ops.MapJobEnRoute:
+		return jobMapStateEnRoute
+	case ops.MapJobEscalated:
+		return jobMapStateEscalated
+	case ops.MapJobOnSite:
+		return jobMapStateOnSite
+	}
+	return jobMapStateOnSite // unreachable: the domain vocabulary is closed
+}
+
+func providerMapStatusDTOOf(status ops.MapProviderStatus) providerMapStatus {
+	switch status {
+	case ops.MapProviderOnline:
+		return providerMapStatusOnline
+	case ops.MapProviderBusy:
+		return providerMapStatusBusy
+	case ops.MapProviderOffline:
+		return providerMapStatusOffline
+	}
+	return providerMapStatusOffline // unreachable: the domain vocabulary is closed
 }

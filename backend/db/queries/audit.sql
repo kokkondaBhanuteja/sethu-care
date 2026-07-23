@@ -30,6 +30,34 @@ WHERE admin_user.role = 'ADMIN'
 ORDER BY al.created_at DESC, al.id DESC
 LIMIT @row_limit::int;
 
+-- name: AdminGetAuditLog :one
+-- One audit entry by id, for the detail screen — under the SAME visibility rule as the list
+-- (admin actor, booking entity, actions the console vocabulary names), so a deep link can
+-- never show more than the list would.
+SELECT
+  al.id, al.action, al.entity_type, al.entity_id, al.before, al.after, al.created_at,
+  admin_user.id   AS admin_id,
+  admin_user.name AS admin_name
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE al.id = @id
+  AND admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY(@actions::text[]);
+
+-- name: AdminListAuditActors :many
+-- The distinct admins present in the audit log, for the filter dropdown — derived here so the
+-- console never pages the whole ledger to build a filter. Same visibility rule as the list.
+SELECT DISTINCT
+  admin_user.id,
+  admin_user.name
+FROM audit_logs al
+JOIN users admin_user ON admin_user.id = al.actor_user_id
+WHERE admin_user.role = 'ADMIN'
+  AND al.entity_type = 'booking'
+  AND al.action = ANY(@actions::text[])
+ORDER BY admin_user.name, admin_user.id;
+
 -- name: AdminCountAuditLogs :one
 -- Total and timestamp range for the same filter as AdminListAuditLogs (minus the cursor), so
 -- the console's "N entries · from – to" line covers the whole result set, not one page.

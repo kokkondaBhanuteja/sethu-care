@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -39,6 +40,7 @@ func adminAPI(t *testing.T) (*http.ServeMux, *auth.Signer) {
 		Booking: bookingService,
 		Ledger:  ledger.NewService(pool),
 		Audit:   audit.NewService(pool),
+		Alert:   alert.NewService(pool),
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	return mux, signer

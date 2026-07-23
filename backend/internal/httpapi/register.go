@@ -6,6 +6,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -33,6 +34,7 @@ type Dependencies struct {
 	Verification *verification.Service
 	Booking      *booking.Service
 	Audit        *audit.Service
+	Alert        *alert.Service
 	Reviews      *reviews.Service
 	Cloudinary   *media.Cloudinary
 	Signer       *auth.Signer
@@ -62,5 +64,5 @@ func RegisterAll(api huma.API, deps Dependencies) {
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	NewLocationHandler(deps.Identity, deps.Verification, deps.Logger).RegisterHuma(api)
 	New(deps.Booking, deps.Verification, deps.Reviews, deps.Flow, deps.Logger).RegisterHuma(api)
-	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit).RegisterHuma(api)
+	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit, deps.Alert).RegisterHuma(api)
 }

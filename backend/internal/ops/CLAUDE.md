@@ -23,6 +23,7 @@ None (cross-reads booking/identity/services/addresses; commands booking).
 ## Contains
 - `ops.go` — `Service`, `New(pool, *booking.Service)`; `QueueEntry`, `Candidate`, `Technician` view types; `ErrTechnicianNotFound`.
 - `dashboard.go` — the admin dashboard read models: `AttentionQueue`/`RecentActivity`/`SummaryForPeriod`, their view types (`AttentionItem`, `ActivityEntry`, `DashboardSummary`, …) and `ErrInvalidCursor` (→ 400 in `classify`). Attention pagination is an opaque base64 keyset cursor over (tier, surfacedAt, id).
+- `livemap.go` — `LiveMap(ctx, markerLimit)`: one snapshot of the admin live map. Technician positions from the migration-00014 columns, filtered to `PositionFreshnessWindow` (15m — an unvouchable pin is dropped, not shown stale); job pins on active bookings' addresses (EN_ROUTE/ARRIVED/IN_PROGRESS + ESCALATED); the SEARCHING/ESCALATED attention rail; CITY totals. Positions are PROJECTED server-side into percentages of a padded bounding box over the snapshot's own markers (the honest stand-in for a city box until a zones/tile model exists). Honest gaps documented in the file: no zones, no clustering, no delay state, viewport params unused.
 
 ## Examples
 ```go
