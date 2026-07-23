@@ -25,6 +25,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
@@ -47,6 +48,8 @@ func TestEveryEnumColumnMatchesItsGoConstants(t *testing.T) {
 		want   []string
 	}{
 		{"users", "role", toStrings(identity.AllRoles())},
+		{"admin_devices", "device_type", toStrings(adminaccount.AllDeviceTypes())},
+		{"admin_settings", "appearance", toStrings(adminaccount.AllAppearanceModes())},
 		{"services", "assignment_mode", toStrings(catalog.AllAssignmentModes())},
 		{"question_defs", "kind", toStrings(catalog.AllQuestionKinds())},
 		{"orders", "status", toStrings(order.AllStatuses())},

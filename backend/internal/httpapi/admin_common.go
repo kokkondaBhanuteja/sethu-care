@@ -10,14 +10,17 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/flow"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
 )
 
 // This file and its admin_*.go siblings declare the SETHU-CARE admin console's API contract as
@@ -57,14 +60,27 @@ type AdminHandler struct {
 	// permissive by design (nil or Redis-less means no replay cache) — the version CAS and
 	// the terminal-decision guards are what actually prevent double actions.
 	flow *flow.Controller
+
+	// The Phase-2 sign-in and settings surface: the account aggregate, the signer that
+	// mints its bearers, the SMS sender that carries the second factor, and the dev-echo
+	// flag mirroring AuthHandler's (log the code in dev; never in a response).
+	accounts    *adminaccount.Service
+	signer      *auth.Signer
+	otpSender   sms.Sender
+	devEchoOTP  bool
+	environment string
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service, rescueService *rescue.Service, providerService *providerops.Service, flowControl *flow.Controller) *AdminHandler {
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service, rescueService *rescue.Service, providerService *providerops.Service, flowControl *flow.Controller, accountService *adminaccount.Service, signer *auth.Signer, otpSender sms.Sender, devEchoOTP bool, environment string) *AdminHandler {
+	if environment == "" {
+		environment = "development"
+	}
 	return &AdminHandler{
 		log: log, ops: opsService, bookings: bookingService, ledger: ledgerService,
 		audit: auditService, alerts: alertService, rescue: rescueService,
 		providers: providerService, flow: flowControl,
+		accounts: accountService, signer: signer, otpSender: otpSender, devEchoOTP: devEchoOTP, environment: environment,
 	}
 }
 

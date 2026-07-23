@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
@@ -170,6 +171,18 @@ func classify(err error) (int, string) {
 		errors.Is(err, providerops.ErrNoDocumentsRequested):
 		// Well-formed requests the domain refuses — the console renders each as its
 		// designed validation state.
+		return http.StatusUnprocessableEntity, err.Error()
+
+	case errors.Is(err, adminaccount.ErrAccountNotFound),
+		errors.Is(err, adminaccount.ErrDeviceNotFound):
+		// The admin console's account context. Its DESIGNED failures (401/403/423/…)
+		// carry declared bodies and are mapped in adminAuthError before reaching here.
+		return http.StatusNotFound, err.Error()
+
+	case errors.Is(err, adminaccount.ErrInvalidSetting),
+		errors.Is(err, adminaccount.ErrDiagnosticsPII):
+		// Well-formed but unapplicable: a malformed HH:mm, or a diagnostics payload
+		// carrying customer PII (the consent notice promises exactly this rejection).
 		return http.StatusUnprocessableEntity, err.Error()
 
 	default:

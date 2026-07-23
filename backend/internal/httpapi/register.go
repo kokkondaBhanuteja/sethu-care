@@ -6,6 +6,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
@@ -49,6 +50,11 @@ type Dependencies struct {
 	DevEchoOTP   bool
 	Flow         *flow.Controller
 	Logger       *slog.Logger
+
+	// AdminAccounts serves the admin console's sign-in and settings families; Environment
+	// names the deployment ("development", "staging", "production") for /admin/version.
+	AdminAccounts *adminaccount.Service
+	Environment   string
 }
 
 // RegisterAll registers every HTTP operation on the huma API. This is THE list of the API's
@@ -68,5 +74,7 @@ func RegisterAll(api huma.API, deps Dependencies) {
 	NewPhotoHandler(deps.Verification, deps.Cloudinary, deps.Logger).RegisterHuma(api)
 	NewLocationHandler(deps.Identity, deps.Verification, deps.Logger).RegisterHuma(api)
 	New(deps.Booking, deps.Verification, deps.Reviews, deps.Flow, deps.Logger).RegisterHuma(api)
-	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit, deps.Alert, deps.Rescue, deps.Providers, deps.Flow).RegisterHuma(api)
+	NewAdminHandler(deps.Logger, deps.Ops, deps.Booking, deps.Ledger, deps.Audit,
+		deps.Alert, deps.Rescue, deps.Providers, deps.Flow,
+		deps.AdminAccounts, deps.Signer, deps.OTPSender, deps.DevEchoOTP, deps.Environment).RegisterHuma(api)
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/address"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/adminaccount"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/alert"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/audit"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/auth"
@@ -297,24 +298,25 @@ func newServer(t *testing.T) *testEnv {
 	mux := http.NewServeMux()
 	api := httpapi.NewHumaAPI(mux, signer)
 	httpapi.RegisterAll(api, httpapi.Dependencies{
-		Identity:     identityService,
-		Catalog:      catalog.New(pool),
-		Address:      address.New(pool),
-		Ops:          opsService,
-		Ledger:       ledgerService,
-		Audit:        auditService,
-		Alert:        alert.NewService(pool),
-		Rescue:       rescue.New(pool, bookingService, ledgerService, auditService),
-		Providers:    providerops.NewService(pool, identityService, opsService, bookingService),
-		Verification: verifier,
-		Booking:      bookingService,
-		Reviews:      reviewer,
-		Cloudinary:   media.NewCloudinary("democloud", "demokey", "demosecret"),
-		Signer:       signer,
-		UPIVPA:       "sethucare@upi",
-		UPIPayee:     "SETHU-CARE",
-		DevEchoOTP:   true,
-		Logger:       log,
+		Identity:      identityService,
+		Catalog:       catalog.New(pool),
+		Address:       address.New(pool),
+		Ops:           opsService,
+		Ledger:        ledgerService,
+		Audit:         auditService,
+		Alert:         alert.NewService(pool),
+		Rescue:        rescue.New(pool, bookingService, ledgerService, auditService),
+		Providers:     providerops.NewService(pool, identityService, opsService, bookingService),
+		AdminAccounts: adminaccount.NewService(pool, identityService),
+		Verification:  verifier,
+		Booking:       bookingService,
+		Reviews:       reviewer,
+		Cloudinary:    media.NewCloudinary("democloud", "demokey", "demosecret"),
+		Signer:        signer,
+		UPIVPA:        "sethucare@upi",
+		UPIPayee:      "SETHU-CARE",
+		DevEchoOTP:    true,
+		Logger:        log,
 	})
 
 	srv := httptest.NewServer(mux)

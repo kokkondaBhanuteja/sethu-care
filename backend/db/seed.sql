@@ -276,3 +276,30 @@ INSERT INTO provider_application_documents
 ON CONFLICT DO NOTHING;
 
 COMMIT;
+
+-- ── Admin console dev sign-in ────────────────────────────────────────────────
+-- The Demo Admin the console's designed dev login uses: ops@setucare.in / password123
+-- (bcrypt below), linked to the +919000000008 ADMIN user. Pair with
+-- SETHU_DEMO_PHONE=+919000000008 and SETHU_DEMO_OTP=123456 in the environment so the
+-- second factor accepts the static demo code in dev (identity.WithDemoAccount).
+-- Idempotent, like everything above.
+BEGIN;
+
+INSERT INTO users (phone, name, role)
+VALUES ('+919000000008', 'Demo Admin', 'ADMIN')
+ON CONFLICT (phone) DO UPDATE
+  SET name = 'Demo Admin',
+      role = 'ADMIN';
+
+INSERT INTO admin_accounts (user_id, email, password_hash, display_name)
+SELECT id, 'ops@setucare.in', '$2a$10$pebuZ9l1HMt3R2veiCRx4OSsbST2J4WIHF84YjJsdxhwN7faGXgXu', 'Demo Admin'
+  FROM users
+ WHERE phone = '+919000000008'
+ON CONFLICT (email) DO UPDATE
+  SET password_hash = EXCLUDED.password_hash,
+      display_name = EXCLUDED.display_name,
+      is_disabled = false,
+      failed_login_attempts = 0,
+      locked_until = NULL;
+
+COMMIT;
