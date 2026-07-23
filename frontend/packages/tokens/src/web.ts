@@ -16,7 +16,7 @@ export interface Tone {
 
 export const webColor = {
   // Canvas & surfaces
-  canvas: "#eff1f4", // the soft gray page background every white card sits on — deep enough that white cards visibly separate (the "transparent cards" review finding)
+  canvas: "#ffffff", // pure white page background (user direction 2026-07-23: no grey canvas) — cards separate by border + shadow, not fill
   surface: "#ffffff",
   inset: "#f3f4f6", // input wells, table header fills, hover fills
   insetHover: "#eceef0",
