@@ -13,6 +13,55 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
 )
 
+const adminCreditTotalsForOrder = `-- name: AdminCreditTotalsForOrder :one
+SELECT
+  COALESCE(SUM(amount_paise) FILTER (WHERE kind = 'CREDIT_ISSUED'), 0)::bigint   AS issued_paise,
+  COALESCE(SUM(amount_paise) FILTER (WHERE kind = 'CREDIT_REDEEMED'), 0)::bigint AS redeemed_paise
+FROM ledger_entries
+WHERE order_id = $1
+`
+
+type AdminCreditTotalsForOrderRow struct {
+	IssuedPaise   int64
+	RedeemedPaise int64
+}
+
+// What has already been credited (and taken back) against an order — the refund screen's
+// alreadyRefunded figure, over the whole credit history.
+func (q *Queries) AdminCreditTotalsForOrder(ctx context.Context, orderID *uuid.UUID) (AdminCreditTotalsForOrderRow, error) {
+	row := q.db.QueryRow(ctx, adminCreditTotalsForOrder, orderID)
+	var i AdminCreditTotalsForOrderRow
+	err := row.Scan(&i.IssuedPaise, &i.RedeemedPaise)
+	return i, err
+}
+
+const adminLatestUnreversedCreditForOrder = `-- name: AdminLatestUnreversedCreditForOrder :one
+SELECT credit.id, credit.amount_paise, credit.customer_id
+FROM ledger_entries credit
+WHERE credit.order_id = $1
+  AND credit.kind = 'CREDIT_ISSUED'
+  AND NOT EXISTS (
+    SELECT 1 FROM ledger_entries reversal WHERE reversal.reverses_entry_id = credit.id
+  )
+ORDER BY credit.created_at DESC, credit.id DESC
+LIMIT 1
+`
+
+type AdminLatestUnreversedCreditForOrderRow struct {
+	ID          uuid.UUID
+	AmountPaise money.Money
+	CustomerID  *uuid.UUID
+}
+
+// The credit an undo-cancel must offset: the newest CREDIT_ISSUED on the order that no
+// reversal row points at yet.
+func (q *Queries) AdminLatestUnreversedCreditForOrder(ctx context.Context, orderID *uuid.UUID) (AdminLatestUnreversedCreditForOrderRow, error) {
+	row := q.db.QueryRow(ctx, adminLatestUnreversedCreditForOrder, orderID)
+	var i AdminLatestUnreversedCreditForOrderRow
+	err := row.Scan(&i.ID, &i.AmountPaise, &i.CustomerID)
+	return i, err
+}
+
 const completionLedgerExists = `-- name: CompletionLedgerExists :one
 SELECT EXISTS (
   SELECT 1 FROM ledger_entries
@@ -128,6 +177,68 @@ func (q *Queries) GetTechnicianCashPosition(ctx context.Context, technicianID *u
 	var i GetTechnicianCashPositionRow
 	err := row.Scan(&i.CollectedPaise, &i.DepositedPaise, &i.OutstandingPaise)
 	return i, err
+}
+
+const insertAdminCredit = `-- name: InsertAdminCredit :one
+
+INSERT INTO ledger_entries (id, kind, amount_paise, order_id, customer_id, memo)
+VALUES ($1, 'CREDIT_ISSUED', $2, $3, $4, $5)
+RETURNING created_at
+`
+
+type InsertAdminCreditParams struct {
+	ID          uuid.UUID
+	AmountPaise money.Money
+	OrderID     *uuid.UUID
+	CustomerID  *uuid.UUID
+	Memo        string
+}
+
+// ---------------------------------------------------------------------------
+// Admin refunds (internal/ledger, driven by the rescue console).
+// An admin-decided refund/goodwill credit. CREDIT_ISSUED attaches to the ORDER (the CHECK
+// requires it). The id is minted by the CALLER so the refund receipt — stored in the same
+// transaction as its idempotent-replay record — can name the credit before it exists.
+func (q *Queries) InsertAdminCredit(ctx context.Context, arg InsertAdminCreditParams) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, insertAdminCredit,
+		arg.ID,
+		arg.AmountPaise,
+		arg.OrderID,
+		arg.CustomerID,
+		arg.Memo,
+	)
+	var created_at pgtype.Timestamptz
+	err := row.Scan(&created_at)
+	return created_at, err
+}
+
+const insertCreditReversal = `-- name: InsertCreditReversal :one
+INSERT INTO ledger_entries (kind, amount_paise, order_id, customer_id, memo, reverses_entry_id)
+VALUES ('CREDIT_REDEEMED', $1, $2, $3, $4, $5)
+RETURNING id
+`
+
+type InsertCreditReversalParams struct {
+	AmountPaise     money.Money
+	OrderID         *uuid.UUID
+	CustomerID      *uuid.UUID
+	Memo            string
+	ReversesEntryID *uuid.UUID
+}
+
+// The offsetting row an undo writes: a CREDIT_REDEEMED pointing at the credit it takes
+// back. The ledger is append-only — this is how a refund is "reversed".
+func (q *Queries) InsertCreditReversal(ctx context.Context, arg InsertCreditReversalParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertCreditReversal,
+		arg.AmountPaise,
+		arg.OrderID,
+		arg.CustomerID,
+		arg.Memo,
+		arg.ReversesEntryID,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertLedgerEntry = `-- name: InsertLedgerEntry :exec

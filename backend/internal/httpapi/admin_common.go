@@ -15,6 +15,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/booking"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 )
 
 // This file and its admin_*.go siblings declare the SETHU-CARE admin console's API contract as
@@ -48,11 +49,12 @@ type AdminHandler struct {
 	ledger   *ledger.Service
 	audit    *audit.Service
 	alerts   *alert.Service
+	rescue   *rescue.Service
 }
 
 // NewAdminHandler builds the admin console handler.
-func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service) *AdminHandler {
-	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService, alerts: alertService}
+func NewAdminHandler(log *slog.Logger, opsService *ops.Service, bookingService *booking.Service, ledgerService *ledger.Service, auditService *audit.Service, alertService *alert.Service, rescueService *rescue.Service) *AdminHandler {
+	return &AdminHandler{log: log, ops: opsService, bookings: bookingService, ledger: ledgerService, audit: auditService, alerts: alertService, rescue: rescueService}
 }
 
 // adminBookingReference derives the operator-facing booking reference ("#B-8823A0FF") from the

@@ -190,3 +190,126 @@ FROM booking_events be
 LEFT JOIN users actor ON actor.id = be.actor_user_id
 WHERE be.booking_id = $1
 ORDER BY be.created_at, be.id;
+
+-- ---------------------------------------------------------------------------
+-- Admin rescue-console reads (internal/rescue). Read-only cross-module views —
+-- rescue owns no aggregate; every write still goes through the owning service.
+
+-- name: AdminAssignCandidates :many
+-- The rescue console's candidate list: technicians in the booking's city who are online and
+-- not on leave, ranked skill-match first, then PostGIS distance (technician's last known
+-- location vs the booking address; unknown locations sort last), then acceptance and rating.
+-- Busy technicians stay on the list — the console renders the on-job warning rather than
+-- hiding a candidate an operator may still want.
+WITH job AS (
+  SELECT b.id AS booking_id, a.geog, bi.service_id, a.city
+  FROM bookings b
+  JOIN booking_items bi ON bi.booking_id = b.id
+  JOIN addresses a      ON a.id = b.address_id
+  WHERE b.id = $1
+),
+active_jobs AS (
+  SELECT technician_id, count(*) AS count
+  FROM bookings
+  WHERE technician_id IS NOT NULL
+    AND state IN ('ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'IN_PROGRESS', 'AWAITING_COMPLETION')
+  GROUP BY technician_id
+),
+jobs_today AS (
+  SELECT technician_id, count(*) AS count
+  FROM bookings
+  WHERE technician_id IS NOT NULL
+    AND created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+  GROUP BY technician_id
+),
+outcomes AS (
+  SELECT technician_id,
+         (count(*) FILTER (WHERE state = 'COMPLETED'))::int AS completed,
+         (count(*) FILTER (WHERE state IN ('COMPLETED', 'CANCELLED', 'FAILED')))::int AS terminal
+  FROM bookings
+  WHERE technician_id IS NOT NULL
+  GROUP BY technician_id
+)
+SELECT
+  t.user_id, u.name, t.rating, t.acceptance_rate, t.max_concurrent_jobs,
+  COALESCE(aj.count, 0)::int AS active_jobs,
+  COALESCE(jt.count, 0)::int AS jobs_today,
+  COALESCE(o.completed, 0)::int  AS completed_jobs,
+  COALESCE(o.terminal, 0)::int   AS terminal_jobs,
+  -- -1 is the "location unknown" sentinel — the service maps it to an honest zero distance.
+  COALESCE(located.metres, -1)::float8 AS distance_metres,
+  COALESCE(matched.skill_name, '')::text AS matched_skill,
+  (NOT EXISTS (
+    SELECT 1 FROM service_required_skills srs
+    WHERE srs.service_id = job.service_id
+      AND srs.skill_id NOT IN (
+        SELECT ts.skill_id FROM technician_skills ts WHERE ts.technician_id = t.user_id
+      )
+  ))::bool AS holds_required_skills
+FROM technicians t
+JOIN users u ON u.id = t.user_id
+JOIN job     ON job.city = t.city
+LEFT JOIN active_jobs aj ON aj.technician_id = t.user_id
+LEFT JOIN jobs_today jt  ON jt.technician_id = t.user_id
+LEFT JOIN outcomes o     ON o.technician_id = t.user_id
+LEFT JOIN LATERAL (
+  SELECT ST_Distance(job.geog, ST_MakePoint(t.last_lng, t.last_lat)::geography) AS metres
+  WHERE t.last_lat IS NOT NULL AND t.last_lng IS NOT NULL
+) located ON true
+LEFT JOIN LATERAL (
+  SELECT sk.name AS skill_name
+  FROM service_required_skills srs
+  JOIN technician_skills ts ON ts.skill_id = srs.skill_id AND ts.technician_id = t.user_id
+  JOIN skills sk            ON sk.id = srs.skill_id
+  WHERE srs.service_id = job.service_id
+  ORDER BY sk.name
+  LIMIT 1
+) matched ON true
+WHERE t.is_online AND NOT t.on_leave
+ORDER BY (NOT EXISTS (
+    SELECT 1 FROM service_required_skills srs
+    WHERE srs.service_id = job.service_id
+      AND srs.skill_id NOT IN (
+        SELECT ts.skill_id FROM technician_skills ts WHERE ts.technician_id = t.user_id
+      )
+  )) DESC,
+  COALESCE(located.metres, 1e12) ASC,
+  t.acceptance_rate DESC, t.rating DESC, u.name
+LIMIT 10;
+
+-- name: AdminListRedispatchEvents :many
+-- The recorded parameter sets of every admin redispatch — booking_events rows whose meta
+-- carries the redispatch object. These are the console's dispatch rounds until the
+-- automated engine records rounds of its own.
+SELECT be.meta, be.created_at
+FROM booking_events be
+WHERE be.booking_id = $1
+  AND be.meta -> 'redispatch' IS NOT NULL
+ORDER BY be.created_at, be.id;
+
+-- name: AdminCountAdminCompletionsSince :one
+-- How often THIS admin has manually completed bookings recently — the frequency counter the
+-- manual-completion screen shows against its 30-minute lock.
+SELECT count(*)::int AS total
+FROM booking_events be
+WHERE be.action = 'VERIFY_COMPLETION'
+  AND be.actor_user_id = $1
+  AND be.created_at >= $2;
+
+-- name: AdminCountTechnicianCompletionsSince :one
+-- How many completions this booking's technician has accumulated recently — the other
+-- frequency counter behind a manual completion.
+SELECT count(*)::int AS total
+FROM booking_events be
+JOIN bookings b ON b.id = be.booking_id
+WHERE be.action = 'VERIFY_COMPLETION'
+  AND b.technician_id = $1
+  AND be.created_at >= $2;
+
+-- name: AdminListWorkPhotoIDs :many
+-- The work-photo evidence recorded for a booking (verification owns the writes; this is a
+-- read-only evidence listing for the manual-completion screen).
+SELECT id
+FROM work_photos
+WHERE booking_id = $1
+ORDER BY created_at, id;

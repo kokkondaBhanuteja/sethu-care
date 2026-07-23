@@ -21,10 +21,10 @@ The core bounded context: the lifecycle of a job. `booking` is the source of tru
 - No DB/pgx/context in `state.go`/`statemachine.go` — if the machine "needs" a database to decide legality, the design has leaked.
 
 ## Contains
-- `state.go` — `State`, `Action` enums (+`AllStates`/`AllActions`/`Valid`/`IsTerminal`/`String`).
-- `statemachine.go` — the `transitions` table, pure `Apply(from, action)`, `AllowedActions`, `ParseState`; `IllegalTransitionError`, `UnknownStateError`.
+- `state.go` — `State`, `Action` enums (+`AllStates`/`AllActions`/`Valid`/`IsTerminal`/`String`). **CANCELLED is NOT terminal** since the rescue console's 10-second cancel undo: its one exit is `ESCALATE → ESCALATED` (the compensation). COMPLETED and FAILED stay terminal — both have moved money.
+- `statemachine.go` — the `transitions` table, pure `Apply(from, action)`, `AllowedActions`, `ParseState`; `IllegalTransitionError`, `UnknownStateError`. The undo windows themselves are TIME guards in `internal/rescue`, not machine rules.
 - `permission.go` — `CanPerform(role, action)` (the role half of authz).
-- `service.go` — `Service`, `NewService(pool, ...Option)`, `WithFlow`, `Create`, `Get`, `ListForCustomer`, `ListForTechnician`, `Apply`, `TransitionInput` (Actor/ActorRole/AssignTechnician/Guard/PaymentMethod). Errors: `ConflictError` (409), `ScheduleConflictError` (23P01→409), `ForbiddenError` (403), `ErrBookingNotFound`, `ErrVariant*`, `ErrInvalidQuantity`.
+- `service.go` — `Service`, `NewService(pool, ...Option)`, `WithFlow`, `Create`, `Get`, `ListForCustomer`, `ListForTechnician`, `Apply`, `TransitionInput` (Actor/ActorRole/AssignTechnician/Guard/PaymentMethod/`Meta` — recorded verbatim on the `booking_events` row, `{}` when nil/`ExpectedVersion` — pins the CAS to the version the CALLER read; the admin console's stale-version guard). Errors: `ConflictError` (409), `ScheduleConflictError` (23P01→409), `ForbiddenError` (403), `ErrBookingNotFound`, `ErrVariant*`, `ErrInvalidQuantity`.
 - `admin.go` — the console read models: `AdminList`/`AdminDetailByID`, `AdminSegment` (active/completed/cancelled — cancelled also holds FAILED), `AdminListInput`, `AdminPage`, `AdminDetail`, `ErrInvalidCursor` (→ 400). A non-empty search spans every segment; the cursor is base64("createdAtNanos|id") with a limit+1 peek so a full last page mints no cursor.
 
 ## Examples

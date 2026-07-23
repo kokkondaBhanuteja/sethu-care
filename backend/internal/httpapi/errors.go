@@ -11,6 +11,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/catalog"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/verification"
 )
@@ -45,6 +46,17 @@ func classify(err error) (int, string) {
 	var forbidden *booking.ForbiddenError
 	var transportForbidden *forbiddenError
 	var badReq *badRequestError
+
+	var staleVersion *rescue.StaleVersionError
+	var undoWindowClosed *rescue.UndoWindowClosedError
+	var notUndoable *rescue.NotUndoableError
+	var terminalState *rescue.TerminalStateError
+	var tooEarly *rescue.TooEarlyError
+	var notEligible *rescue.NotEligibleError
+	var evidence *rescue.EvidenceError
+	var capExceeded *rescue.CapExceededError
+	var rescueValidation *rescue.ValidationError
+	var rateLimited *rescue.RateLimitedError
 
 	switch {
 	case errors.As(err, &forbidden),
@@ -114,6 +126,21 @@ func classify(err error) (int, string) {
 		errors.Is(err, alert.ErrInvalidCursor):
 		// A cursor the server did not mint — a truncated copy-paste, never a server fault.
 		return http.StatusBadRequest, err.Error()
+
+	// The rescue console's designed failures. The transport layer additionally builds the
+	// declared error BODIES for these (adminActionError, admin_booking_actions.go); this
+	// mapping is the status authority and the fallback for any path that skips it.
+	case errors.As(err, &staleVersion), errors.As(err, &undoWindowClosed),
+		errors.As(err, &notUndoable), errors.As(err, &terminalState),
+		errors.As(err, &tooEarly):
+		return http.StatusConflict, err.Error()
+
+	case errors.As(err, &notEligible), errors.As(err, &evidence),
+		errors.As(err, &capExceeded), errors.As(err, &rescueValidation):
+		return http.StatusUnprocessableEntity, err.Error()
+
+	case errors.As(err, &rateLimited):
+		return http.StatusTooManyRequests, err.Error()
 
 	default:
 		return http.StatusInternalServerError, err.Error()

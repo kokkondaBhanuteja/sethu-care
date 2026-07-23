@@ -96,6 +96,15 @@ var transitions = map[transition]State{
 	{StateArrived, ActionCancel}:   StateCancelled,
 	{StateEscalated, ActionCancel}: StateCancelled, // Tier 5: cancel with apology + credit
 
+	// THE CANCEL COMPENSATION (admin console §10.3: cancel carries a 10-second undo).
+	// An ops emergency cancel undone inside its window ESCALATEs the booking back into the
+	// human queue — a real, audited transition, not a client-side rollback. The 10-second
+	// clock is a time guard in the rescue service (like the 60-second customer-cancel
+	// window, Booking-Workflow-Decisions §8.2): the machine states legality, not timing.
+	// CANCELLED therefore stopped being terminal (see IsTerminal); COMPLETED and FAILED
+	// still are — a booking that has been billed or credited can never come back to life.
+	{StateCancelled, ActionEscalate}: StateEscalated,
+
 	// ---- terminal failure ----------------------------------------------------------
 	// Nobody could be found. Ledger issues an automatic credit (ROADMAP §8).
 	{StateSearching, ActionFail}: StateFailed,
