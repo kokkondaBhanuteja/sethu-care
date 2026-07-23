@@ -44,7 +44,8 @@ Markers are MapLibre HTML markers, not WebGL layers: `MapLibrePoint` (in `MapMar
 | `MapMobileHeader.tsx` / `MapFabButton.tsx` / `MapPeekPanel.tsx` / `MapSheets.tsx` | Mobile's floating controls, bottom peek and two sheets.    |
 | `MapSummary.tsx` / `MapAttentionList.tsx` / `MapProviderList.tsx` | The list content both surfaces share.                                      |
 | `MapZeroSupplyBanner.tsx` / `MapLocationNotice.tsx` / `MapMarkersEmpty.tsx` / `MapSkeleton.tsx` | The states.                                                  |
-| `map.api.ts` / `map.mock.ts` / `map.fixtures.ts` | The data boundary and the artifacts' marker positions (projected to Hyderabad).             |
+| `map.api.ts` / `map.api.map.ts`                  | **The data boundary, flipped.** Mock branch when `env.useMocks` (unchanged); otherwise the REAL `GET /ops/live-map` through the generated client, mapped by the pure functions in `map.api.map.ts`. |
+| `map.mock.ts` / `map.fixtures.ts`                | The mock transport and the artifacts' marker positions (projected to Hyderabad).            |
 | `map.types.ts` / `map.constants.ts` / `map.labels.ts` / `map.selectors.ts` | Shapes, camera + cap + threshold constants, key literals, derivation. |
 
 ## Business logic
@@ -73,9 +74,32 @@ jsdom has no WebGL, so the real maplibre-gl never runs in unit tests. The split:
 - The wiring is tested against a module-level MapLibre double: `MapSurface.test.tsx` (constructor options, attribution control placement, `map.remove()` on unmount, marker buttons + callbacks, the escalation pulse) and `MapMarkerLayer.test.tsx` (the 200 cap, clustered-mode rendering). The double's `Marker.addTo` appends the portal host into the container so Testing Library sees real buttons.
 - Behaviour that genuinely needs a GPU (tile rendering, cluster regrouping) belongs to the Playwright suite, not to jsdom.
 
+## Real mode and THE COORDINATE GAP (2026-07-23)
+
+With `env.useMocks` false the snapshot comes from the REAL `GET /ops/live-map`: technician
+positions from device pings inside the server's 15-minute freshness window (older pins are dropped
+server-side, never shown stale), job pins on active bookings, the SEARCHING/ESCALATED attention
+rail and CITY totals. But the payload's `MapPoint` is `{ xPercent, yPercent }` — percentages of a
+bounding box the server computes over the snapshot's own markers (10%-padded,
+`backend/internal/ops/livemap.go`) and does NOT include in the payload — so the projection cannot
+be inverted into the WGS84 lat/lng this surface renders. The reconciliation, in `map.api.map.ts`:
+
+- **Faithful and rendered:** the counts line, the staleness input (`observedAt`), the attention
+  rail (navigating by the raw booking id), and every provider/job with its name, status
+  (online/busy + `onBookingRef`/offline) and state in the dock/sheet lists.
+- **Not faked:** every real marker maps with `position: null` and `hasMapPosition`
+  (`map.types.ts`) keeps it out of `MapMarkerLayer`, the cluster engine and its threshold — a pin
+  at a made-up place is worse than no pin. Positions remain a mock-branch capability until the
+  backend ships lat/lng or declares the box.
+- Zones, clusters and `zeroSupplyZoneIds` are honestly empty on the server (no zones table;
+  `zoneId` is always `""` — the list rows drop the zone segment instead of printing a dangling
+  separator), and the `delayed` job state never occurs. The mapper drops any future zone/cluster
+  entries rather than projecting their percentages dishonestly.
+- The server's `#B-XXXXXXXX` operator refs are mapped bare because the views add the `#`.
+
 ## Mock behaviour
 
-`VITE_MOCK_MODE` drives every state without a backend:
+`VITE_MOCK_MODE` drives every state without a backend (mocks are the default):
 
 | Mode      | What you get                                                                                  |
 | --------- | --------------------------------------------------------------------------------------------- |
@@ -100,7 +124,10 @@ Filtered-empty is reached by turning every layer off, or by focusing a zone that
 
 ## Known gaps
 
-- `GET /ops/live-map` does not exist (see `docs/admin-api-contract.md`). The mock is the normative shape.
+- **The coordinate gap** (see the real-mode section): the real endpoint's positions are
+  bounding-box percentages without the box, so real markers are list-only — the canvas draws no
+  pins in real mode until the backend ships invertible coordinates. Flagged to the backend; when
+  it lands, `map.api.map.ts` is the one place positions come back.
 - Spec §6.7's analytics events (`map_viewed`, `map_layer_toggled`, `map_marker_tapped`, `map_performance`) are not emitted — the console has no analytics client yet.
 - The demand heatmap is derived from the visible job count per zone rather than from real demand; the backend owes a density field.
 - The OSM public tile server's usage policy is fine for development and this console's traffic, but production at scale should move `OSM_RASTER_TILE_URL` to a commercial/ self-hosted tile provider — a one-constant change.

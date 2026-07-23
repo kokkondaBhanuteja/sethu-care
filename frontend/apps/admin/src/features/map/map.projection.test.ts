@@ -54,6 +54,9 @@ describe("fixture geography", () => {
       ...MAP_ZONES.map((zone) => zone.labelAt),
     ];
     for (const position of positions) {
+      // Every FIXTURE marker is positioned — only the real payload's markers may carry null.
+      expect(position).not.toBeNull();
+      if (position === null) continue;
       expect(isWithinBounds(position, FIXTURE_GEO_BOUNDS)).toBe(true);
     }
   });

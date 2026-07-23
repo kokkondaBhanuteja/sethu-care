@@ -2,7 +2,7 @@ import type { Feature, FeatureCollection, LineString, Point, Polygon } from "geo
 
 import { MAP_CLUSTER_THRESHOLD } from "./map.constants";
 import { circleRingAround, toLngLat } from "./map.projection";
-import { JOB_MAP_STATES } from "./map.types";
+import { JOB_MAP_STATES, hasMapPosition } from "./map.types";
 import type { MapJob, MapPoint, MapProvider, MapZone } from "./map.types";
 
 // Pure GeoJSON builders for everything the GL map is fed. Kept free of MapLibre imports so the
@@ -16,12 +16,18 @@ export interface MarkerFeatureProperties {
   readonly kind: MarkerFeatureKind;
 }
 
-/** True once the pin count crosses spec §6.7's "cluster above 50 markers". */
+/**
+ * True once the PIN count crosses spec §6.7's "cluster above 50 markers". Unpositioned markers
+ * (the real payload's coordinate gap — map.api.map.ts) never become pins, so they do not count.
+ */
 export function shouldClusterMarkers(
   providers: readonly MapProvider[],
   jobs: readonly MapJob[],
 ): boolean {
-  return providers.length + jobs.length > MAP_CLUSTER_THRESHOLD;
+  return (
+    providers.filter(hasMapPosition).length + jobs.filter(hasMapPosition).length >
+    MAP_CLUSTER_THRESHOLD
+  );
 }
 
 /**
@@ -45,11 +51,14 @@ export function toClusterFeatureCollection(
   return {
     type: "FeatureCollection",
     features: [
-      ...providers.map((provider) =>
-        markerFeature(provider.id, MARKER_FEATURE_KINDS.provider, provider.position),
-      ),
+      ...providers
+        .filter(hasMapPosition)
+        .map((provider) =>
+          markerFeature(provider.id, MARKER_FEATURE_KINDS.provider, provider.position),
+        ),
       ...jobs
         .filter((job) => job.state !== JOB_MAP_STATES.escalated)
+        .filter(hasMapPosition)
         .map((job) => markerFeature(job.id, MARKER_FEATURE_KINDS.job, job.position)),
     ],
   };

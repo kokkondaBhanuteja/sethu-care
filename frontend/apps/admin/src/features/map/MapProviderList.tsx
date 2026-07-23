@@ -65,17 +65,18 @@ export function MapProviderList({ providers, zoneNameOf }: MapProviderListProps)
   );
 
   function secondaryLine(provider: MapProvider): string {
+    // The real payload has no zones yet (zoneId is ""), so the zone segment simply drops out.
     const zone = zoneNameOf(provider.zoneId);
     const status = t(PROVIDER_STATUS_KEYS[provider.status]);
+    const segments: string[] = zone ? [zone] : [];
 
     if (provider.status === PROVIDER_MAP_STATUSES.offline) {
-      return `${zone} · ${status} · ${t("providers.lastSeen", {
-        age: formatRelative(provider.locatedAt),
-      })}`;
+      segments.push(status, t("providers.lastSeen", { age: formatRelative(provider.locatedAt) }));
+    } else if (provider.onBookingRef) {
+      segments.push(t("providers.onJob", { ref: `#${provider.onBookingRef}` }));
+    } else {
+      segments.push(status);
     }
-    if (provider.onBookingRef) {
-      return `${zone} · ${t("providers.onJob", { ref: `#${provider.onBookingRef}` })}`;
-    }
-    return `${zone} · ${status}`;
+    return segments.join(" · ");
   }
 }

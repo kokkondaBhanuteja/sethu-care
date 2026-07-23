@@ -22,11 +22,20 @@ function fakeProviders(count: number): MapProvider[] {
   }));
 }
 
+/** The real payload's markers arrive without an invertible position — map.api.map.ts. */
+function unpositioned(providers: readonly MapProvider[]): MapProvider[] {
+  return providers.map((provider) => ({ ...provider, position: null }));
+}
+
 describe("shouldClusterMarkers", () => {
   it("keeps individual buttons up to 50 pins and clusters beyond — spec §6.7", () => {
     expect(shouldClusterMarkers(fakeProviders(50), [])).toBe(false);
     expect(shouldClusterMarkers(fakeProviders(51), [])).toBe(true);
     expect(shouldClusterMarkers(MAP_PROVIDERS, MAP_JOBS)).toBe(false);
+  });
+
+  it("counts only markers that can become pins — unpositioned ones never cluster", () => {
+    expect(shouldClusterMarkers(unpositioned(fakeProviders(60)), [])).toBe(false);
   });
 });
 
@@ -51,9 +60,17 @@ describe("toClusterFeatureCollection", () => {
     const firstProvider = MAP_PROVIDERS[0];
     const firstFeature = collection.features[0];
     expect(firstFeature?.geometry.coordinates).toEqual([
-      firstProvider?.position.longitude,
-      firstProvider?.position.latitude,
+      firstProvider?.position?.longitude,
+      firstProvider?.position?.latitude,
     ]);
+  });
+
+  it("never feeds an unpositioned marker to the engine — no coordinate is ever invented", () => {
+    const mixed = toClusterFeatureCollection(
+      [...unpositioned(fakeProviders(3)), ...MAP_PROVIDERS],
+      [],
+    );
+    expect(mixed.features).toHaveLength(MAP_PROVIDERS.length);
   });
 });
 

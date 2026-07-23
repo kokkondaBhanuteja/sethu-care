@@ -77,6 +77,20 @@ function renderLayer(markers: VisibleMarkers, clustering: MapClusteringControlle
 }
 
 describe("MapMarkerLayer", () => {
+  it("draws no button for an unpositioned marker — the real payload's coordinate gap", () => {
+    const listOnlyProviders = fakeProviders(3).map((provider) => ({
+      ...provider,
+      position: null,
+    }));
+    const listOnlyJobs = MAP_JOBS.map((job) => ({ ...job, position: null }));
+    const { containerElement } = renderLayer(
+      { providers: listOnlyProviders, jobs: listOnlyJobs, clusters: [], attention: [] },
+      inactiveClustering,
+    );
+
+    expect(containerElement.querySelectorAll("button")).toHaveLength(0);
+  });
+
   it("hard-caps the DOM at 200 markers, jobs first (spec §6.7)", () => {
     const { containerElement } = renderLayer(
       { providers: fakeProviders(210), jobs: MAP_JOBS, clusters: [], attention: [] },

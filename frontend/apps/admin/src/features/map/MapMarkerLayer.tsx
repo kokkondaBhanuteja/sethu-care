@@ -7,7 +7,7 @@ import { JOB_STATE_KEYS, PROVIDER_STATUS_KEYS } from "./map.labels";
 import { boundsWithBuffer, isWithinBounds } from "./map.projection";
 import { MapLibrePoint, MapMarker, MapZoneLabel } from "./MapMarker";
 import { ClusterGlyph, JobGlyph, ProviderGlyph } from "./MapMarkerGlyph";
-import { JOB_MAP_STATES, PROVIDER_MAP_STATUSES } from "./map.types";
+import { JOB_MAP_STATES, PROVIDER_MAP_STATUSES, hasMapPosition } from "./map.types";
 import type { PlainBounds } from "./map.projection";
 import type { VisibleMarkers } from "./map.selectors";
 import type { MapClusteringController } from "./useMapClustering";
@@ -53,11 +53,14 @@ export function MapMarkerLayer({
   const isUnclustered = (markerId: string): boolean =>
     clustering.unclusteredMarkerIds === null || clustering.unclusteredMarkerIds.has(markerId);
 
-  const jobs = markers.jobs.filter(
-    (job) =>
-      isVisible(job.position) && (job.state === JOB_MAP_STATES.escalated || isUnclustered(job.id)),
-  );
+  // Unpositioned markers (the real payload's coordinate gap — map.api.map.ts) are list-only:
+  // they never reach the canvas, because a pin at a made-up place is worse than no pin.
+  const jobs = markers.jobs
+    .filter(hasMapPosition)
+    .filter((job) => isVisible(job.position))
+    .filter((job) => job.state === JOB_MAP_STATES.escalated || isUnclustered(job.id));
   const providers = markers.providers
+    .filter(hasMapPosition)
     .filter((provider) => isVisible(provider.position) && isUnclustered(provider.id))
     .slice(0, Math.max(0, MAX_DOM_MARKERS - jobs.length));
   const serverClusters = markers.clusters.filter((cluster) => isVisible(cluster.position));

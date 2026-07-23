@@ -31,31 +31,35 @@ export function MapAttentionList({ items, zoneNameOf }: MapAttentionListProps) {
       </h3>
 
       <CardList>
-        {items.map((item) => (
-          <Link key={item.id} to={ROUTES.bookingDetail(item.bookingRef)} className="block">
-            <Card edge="danger" density="tight">
-              <span className="flex items-center gap-s2">
-                <Icon
-                  glyph={item.reason === ATTENTION_REASONS.escalated ? BellRing : UserX}
-                  className="text-danger"
-                />
-                <span className="grow min-w-0 flex flex-col">
-                  <span className="text-label text-text-1 truncate">
-                    <span className="font-mono">#{item.bookingRef}</span> ·{" "}
-                    {t(ATTENTION_REASON_KEYS[item.reason])}
+        {items.map((item) => {
+          // The real payload has no zones yet (zoneId is ""), so the meta line falls back to the
+          // age alone rather than printing a dangling separator.
+          const zoneName = zoneNameOf(item.zoneId);
+          return (
+            <Link key={item.id} to={ROUTES.bookingDetail(item.bookingId)} className="block">
+              <Card edge="danger" density="tight">
+                <span className="flex items-center gap-s2">
+                  <Icon
+                    glyph={item.reason === ATTENTION_REASONS.escalated ? BellRing : UserX}
+                    className="text-danger"
+                  />
+                  <span className="grow min-w-0 flex flex-col">
+                    <span className="text-label text-text-1 truncate">
+                      <span className="font-mono">#{item.bookingRef}</span> ·{" "}
+                      {t(ATTENTION_REASON_KEYS[item.reason])}
+                    </span>
+                    <span className="text-caption text-text-3">
+                      {zoneName
+                        ? t("attention.meta", { zone: zoneName, age: formatAge(item.waitingSince) })
+                        : formatAge(item.waitingSince)}
+                    </span>
                   </span>
-                  <span className="text-caption text-text-3">
-                    {t("attention.meta", {
-                      zone: zoneNameOf(item.zoneId),
-                      age: formatAge(item.waitingSince),
-                    })}
-                  </span>
+                  <Icon glyph={ChevronRight} className="text-text-3" />
                 </span>
-                <Icon glyph={ChevronRight} className="text-text-3" />
-              </span>
-            </Card>
-          </Link>
-        ))}
+              </Card>
+            </Link>
+          );
+        })}
       </CardList>
     </section>
   );

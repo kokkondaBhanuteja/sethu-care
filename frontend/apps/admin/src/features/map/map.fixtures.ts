@@ -88,9 +88,11 @@ export const MAP_CLUSTERS: readonly MapCluster[] = [
   { id: "C-1", zoneId: ZONES.madhapur, position: geoPoint(86, 26), markerCount: 12 },
 ];
 
+// The mock's booking ids double as the display refs, matching bookings.mock.ts' fixture ids.
 export const MAP_ATTENTION = [
   {
     id: "A-8823",
+    bookingId: "B-8823",
     bookingRef: "B-8823",
     reason: ATTENTION_REASONS.escalated,
     zoneId: ZONES.kompally,
@@ -98,6 +100,7 @@ export const MAP_ATTENTION = [
   },
   {
     id: "A-8830",
+    bookingId: "B-8830",
     bookingRef: "B-8830",
     reason: ATTENTION_REASONS.noProvider,
     zoneId: ZONES.miyapur,

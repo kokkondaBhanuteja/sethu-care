@@ -11,6 +11,18 @@ export interface MapPoint {
 }
 
 /**
+ * A marker whose position could not be honestly geolocated carries null and is rendered by the
+ * lists but never by the canvas (2026-07: the real /ops/live-map ships bounding-box percentages
+ * without the box — see map.api.map.ts). This guard is how the GL-facing layers skip them without
+ * losing the marker's own type.
+ */
+export function hasMapPosition<Marker extends { readonly position: MapPoint | null }>(
+  marker: Marker,
+): marker is Marker & { readonly position: MapPoint } {
+  return marker.position !== null;
+}
+
+/**
  * Where the console has pointed the camera. Handed to MapSurface as a prop; user panning on the
  * canvas moves the camera without writing back here — this object only changes when the console
  * itself refocuses (zone focus, recentre, clear filters).
@@ -57,7 +69,8 @@ export interface MapProvider {
   readonly name: string;
   readonly status: ProviderMapStatus;
   readonly zoneId: string;
-  readonly position: MapPoint;
+  /** Null when the payload carried no honest coordinates (see `hasMapPosition`): list-only. */
+  readonly position: MapPoint | null;
   /** Set while `status` is busy — the job this provider is currently on. */
   readonly onBookingRef?: string;
   /** An offline provider's position is its last known one, so the age has to travel with it. */
@@ -69,7 +82,8 @@ export interface MapJob {
   readonly bookingRef: string;
   readonly state: JobMapState;
   readonly zoneId: string;
-  readonly position: MapPoint;
+  /** Null when the payload carried no honest coordinates (see `hasMapPosition`): list-only. */
+  readonly position: MapPoint | null;
   readonly serviceName: string;
 }
 
@@ -83,6 +97,9 @@ export interface MapCluster {
 
 export interface MapAttentionItem {
   readonly id: string;
+  /** What `ROUTES.bookingDetail` navigates with — the raw booking id, never the display ref. */
+  readonly bookingId: string;
+  /** Display-only operator reference, bare — the views add the leading "#". */
   readonly bookingRef: string;
   readonly reason: AttentionReason;
   readonly zoneId: string;
