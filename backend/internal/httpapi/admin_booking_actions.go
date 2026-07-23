@@ -2,12 +2,16 @@ package httpapi
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/money"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 )
 
 // What an operator can DO to a booking. Every action is paired with a *-context read: the console
@@ -212,8 +216,47 @@ type assignContextOutput struct {
 	Body assignContext
 }
 
-func (handler *AdminHandler) assignContext(_ context.Context, _ *opsBookingActionPath) (*assignContextOutput, error) {
-	return nil, notImplemented("opsAssignContext")
+func (handler *AdminHandler) assignContext(ctx context.Context, input *opsBookingActionPath) (*assignContextOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	built, err := handler.rescue.AssignContext(ctx, bookingID)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+
+	candidates := make([]providerCandidate, len(built.Candidates))
+	for index, candidate := range built.Candidates {
+		candidates[index] = providerCandidate{
+			Availability:   candidateAvailability(candidate.Availability),
+			CompletionRate: candidate.CompletionRate,
+			DeclinedAtIso:  candidate.DeclinedAt,
+			DistanceKm:     candidate.DistanceKm,
+			EtaMinutes:     candidate.EtaMinutes,
+			FreeAtIso:      candidate.FreeAt,
+			IsBestMatch:    candidate.IsBestMatch,
+			JobsToday:      candidate.JobsToday,
+			Name:           candidate.Name,
+			ProviderID:     candidate.ProviderID.String(),
+			Rating:         candidate.Rating,
+			Skill:          candidate.Skill,
+		}
+	}
+	weights := make([]rankingWeight, len(built.RankingWeights))
+	for index, weight := range built.RankingWeights {
+		weights[index] = rankingWeight{FactorID: weight.FactorID, Weight: weight.Weight}
+	}
+	return &assignContextOutput{Body: assignContext{
+		Booking:       adminActionSubjectDTO(built.Subject),
+		Candidates:    candidates,
+		DeclinedCount: built.DeclinedCount,
+		// The server answered, so the candidate list is fresh by construction; a truly
+		// offline console never reaches this handler.
+		IsBlockedOffline: false,
+		RankingWeights:   weights,
+		Rounds:           adminDispatchRoundDTOs(built.Rounds),
+	}}, nil
 }
 
 type opsUndoInput struct {
@@ -222,8 +265,16 @@ type opsUndoInput struct {
 	Body undoRequest
 }
 
-func (handler *AdminHandler) undoAssign(_ context.Context, _ *opsUndoInput) (*bookingActionReceiptOutput, error) {
-	return nil, notImplemented("opsUndoAssign")
+func (handler *AdminHandler) undoAssign(ctx context.Context, input *opsUndoInput) (*bookingActionReceiptOutput, error) {
+	actionInput, err := adminUndoActionInput(ctx, input, undoTargetAssign)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	receipt, err := handler.rescue.UndoAssign(ctx, actionInput)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &bookingActionReceiptOutput{Body: adminActionReceiptDTO(receipt)}, nil
 }
 
 // ------------------------------------------------------------------ cancel
@@ -290,8 +341,22 @@ type cancelContextOutput struct {
 	Body cancelContext
 }
 
-func (handler *AdminHandler) cancelContext(_ context.Context, _ *opsBookingActionPath) (*cancelContextOutput, error) {
-	return nil, notImplemented("opsCancelContext")
+func (handler *AdminHandler) cancelContext(ctx context.Context, input *opsBookingActionPath) (*cancelContextOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	built, err := handler.rescue.CancelContext(ctx, bookingID)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &cancelContextOutput{Body: cancelContext{
+		Booking:              adminActionSubjectDTO(built.Subject),
+		CancellationFeePaise: built.CancellationFee,
+		IsPolicyRefundFull:   built.IsPolicyRefundFull,
+		PolicyRefundPaise:    built.PolicyRefundPaise,
+		TechnicianOnSite:     built.TechnicianOnSite,
+	}}, nil
 }
 
 type opsCancelBookingInput struct {
@@ -300,16 +365,52 @@ type opsCancelBookingInput struct {
 	Body cancelBookingRequest
 }
 
-func (handler *AdminHandler) cancelBooking(_ context.Context, _ *opsCancelBookingInput) (*bookingActionReceiptOutput, error) {
-	return nil, notImplemented("opsCancelBooking")
+func (handler *AdminHandler) cancelBooking(ctx context.Context, input *opsCancelBookingInput) (*bookingActionReceiptOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	receipt, err := handler.rescue.Cancel(ctx, rescue.CancelInput{
+		ActionInput: rescue.ActionInput{
+			BookingID:      bookingID,
+			AdminID:        admin.ID,
+			IdempotencyKey: input.IdempotencyKey,
+			Version:        input.Body.Version,
+		},
+		ReasonCode:            string(input.Body.ReasonCode),
+		Note:                  input.Body.Note,
+		RefundAmount:          money.FromPaise(input.Body.Refund.AmountPaise),
+		OverrideJustification: input.Body.Refund.OverrideJustification,
+		WaiveFee:              input.Body.Refund.WaiveFee,
+	})
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &bookingActionReceiptOutput{Body: adminActionReceiptDTO(receipt)}, nil
 }
 
 type cancelUndoOutput struct {
 	Body cancelUndoReceipt
 }
 
-func (handler *AdminHandler) undoCancel(_ context.Context, _ *opsUndoInput) (*cancelUndoOutput, error) {
-	return nil, notImplemented("opsUndoCancel")
+func (handler *AdminHandler) undoCancel(ctx context.Context, input *opsUndoInput) (*cancelUndoOutput, error) {
+	actionInput, err := adminUndoActionInput(ctx, input, undoTargetCancel)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	receipt, err := handler.rescue.UndoCancel(ctx, actionInput)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &cancelUndoOutput{Body: cancelUndoReceipt{
+		BookingActionReceipt:        adminActionReceiptDTO(receipt.Receipt),
+		RefundReversalFailureReason: receipt.RefundReversalFailureReason,
+		RefundReversed:              receipt.RefundReversed,
+	}}, nil
 }
 
 // -------------------------------------------------------- manual completion
@@ -397,8 +498,49 @@ type manualCompletionContextOutput struct {
 	Body manualCompletionContext
 }
 
-func (handler *AdminHandler) manualCompletionContext(_ context.Context, _ *opsBookingActionPath) (*manualCompletionContextOutput, error) {
-	return nil, notImplemented("opsManualCompletionContext")
+func (handler *AdminHandler) manualCompletionContext(ctx context.Context, input *opsBookingActionPath) (*manualCompletionContextOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	built, err := handler.rescue.ManualCompletionContext(ctx, bookingID, admin.ID)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+
+	attempts := make([]callAttempt, len(built.Evidence.CallAttempts))
+	for index, attempt := range built.Evidence.CallAttempts {
+		attempts[index] = callAttempt{
+			AtIso:           attempt.At,
+			DurationSeconds: attempt.Duration,
+			ID:              attempt.ID,
+			Outcome:         attempt.Outcome,
+		}
+	}
+	photoIDs := make([]string, len(built.Evidence.WorkPhotoIDs))
+	for index, photoID := range built.Evidence.WorkPhotoIDs {
+		photoIDs[index] = photoID.String()
+	}
+	return &manualCompletionContextOutput{Body: manualCompletionContext{
+		AdminCompletionsThisWeek: built.AdminCompletionsThisWeek,
+		AvailableInMinutes:       built.AvailableInMinutes,
+		Booking:                  adminActionSubjectDTO(built.Subject),
+		Evidence: manualCompletionEvidence{
+			CallAttempts:          attempts,
+			CompletionReportAtIso: built.Evidence.CompletionReportAt,
+			CompletionReportID:    built.Evidence.CompletionReportID,
+			WorkPhotoIDs:          photoIDs,
+		},
+		MinutesSinceWorkReported:       built.MinutesSinceWorkReported,
+		OtpArrivedAtIso:                built.OtpArrivedAt,
+		ProviderCompletionsInSevenDays: built.ProviderCompletionsInSevenDays,
+		ProviderName:                   built.ProviderName,
+		WorkReportedAtIso:              built.WorkReportedAt,
+	}}, nil
 }
 
 type opsManualCompleteInput struct {
@@ -407,8 +549,39 @@ type opsManualCompleteInput struct {
 	Body manualCompleteRequest
 }
 
-func (handler *AdminHandler) manualCompleteBooking(_ context.Context, _ *opsManualCompleteInput) (*bookingActionReceiptOutput, error) {
-	return nil, notImplemented("opsManualCompleteBooking")
+func (handler *AdminHandler) manualCompleteBooking(ctx context.Context, input *opsManualCompleteInput) (*bookingActionReceiptOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	receipt, err := handler.rescue.ManualComplete(ctx, rescue.ManualCompleteInput{
+		ActionInput: rescue.ActionInput{
+			BookingID:      bookingID,
+			AdminID:        admin.ID,
+			IdempotencyKey: input.IdempotencyKey,
+			Version:        input.Body.Version,
+		},
+		ReasonCode: string(input.Body.ReasonCode),
+		Note:       input.Body.Note,
+		Attestations: rescue.ManualCompletionAttestations{
+			AttemptedCustomer: input.Body.Attestations.AttemptedCustomer,
+			BelievesWorkDone:  input.Body.Attestations.BelievesWorkDone,
+			SpokeToProvider:   input.Body.Attestations.SpokeToProvider,
+		},
+		Evidence: rescue.ManualCompletionEvidenceRefs{
+			CallAttemptIDs:     input.Body.Evidence.CallAttemptIDs,
+			CompletionReportID: input.Body.Evidence.CompletionReportID,
+			WorkPhotoIDs:       input.Body.Evidence.WorkPhotoIDs,
+		},
+	})
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &bookingActionReceiptOutput{Body: adminActionReceiptDTO(receipt)}, nil
 }
 
 // -------------------------------------------------------------- redispatch
@@ -452,8 +625,24 @@ type redispatchContextOutput struct {
 	Body redispatchContext
 }
 
-func (handler *AdminHandler) redispatchContext(_ context.Context, _ *opsBookingActionPath) (*redispatchContextOutput, error) {
-	return nil, notImplemented("opsRedispatchContext")
+func (handler *AdminHandler) redispatchContext(ctx context.Context, input *opsBookingActionPath) (*redispatchContextOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	built, err := handler.rescue.RedispatchContext(ctx, bookingID)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &redispatchContextOutput{Body: redispatchContext{
+		Booking:               adminActionSubjectDTO(built.Subject),
+		DeclinedCount:         built.DeclinedCount,
+		DefaultIncentivePaise: built.DefaultIncentive,
+		DefaultRadiusID:       redispatchRadius(built.DefaultRadius),
+		FailedCycles:          built.FailedCycles,
+		IncentiveCapPaise:     built.IncentiveCap,
+		Rounds:                adminDispatchRoundDTOs(built.Rounds),
+	}}, nil
 }
 
 type opsRedispatchInput struct {
@@ -462,8 +651,32 @@ type opsRedispatchInput struct {
 	Body redispatchRequest
 }
 
-func (handler *AdminHandler) redispatchBooking(_ context.Context, _ *opsRedispatchInput) (*bookingActionReceiptOutput, error) {
-	return nil, notImplemented("opsRedispatchBooking")
+func (handler *AdminHandler) redispatchBooking(ctx context.Context, input *opsRedispatchInput) (*bookingActionReceiptOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	receipt, err := handler.rescue.Redispatch(ctx, rescue.RedispatchInput{
+		ActionInput: rescue.ActionInput{
+			BookingID:      bookingID,
+			AdminID:        admin.ID,
+			IdempotencyKey: input.IdempotencyKey,
+			Version:        input.Body.Version,
+		},
+		RadiusID:         rescue.Radius(input.Body.RadiusID),
+		IncentivePaise:   input.Body.IncentivePaise,
+		RelaxSkillMatch:  input.Body.RelaxSkillMatch,
+		IncludeDecliners: input.Body.IncludeDecliners,
+		PriorityBoost:    input.Body.PriorityBoost,
+	})
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &bookingActionReceiptOutput{Body: adminActionReceiptDTO(receipt)}, nil
 }
 
 // ------------------------------------------------------------------ refund
@@ -566,8 +779,33 @@ type refundContextOutput struct {
 	Body refundContext
 }
 
-func (handler *AdminHandler) refundContext(_ context.Context, _ *opsBookingActionPath) (*refundContextOutput, error) {
-	return nil, notImplemented("opsRefundContext")
+func (handler *AdminHandler) refundContext(ctx context.Context, input *opsBookingActionPath) (*refundContextOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	built, err := handler.rescue.RefundContext(ctx, bookingID, admin.ID)
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &refundContextOutput{Body: refundContext{
+		AlreadyRefundedPaise:  built.AlreadyRefundedPaise,
+		Booking:               adminActionSubjectDTO(built.Subject),
+		BookingValuePaise:     built.BookingValuePaise,
+		DefaultPayoutImpact:   refundPayoutImpact(built.DefaultPayoutImpact),
+		GoodwillCapPaise:      built.GoodwillCapPaise,
+		OriginalMethod:        paymentMethod(built.OriginalMethod),
+		PaidAtIso:             built.PaidAt,
+		ProviderPayoutPaise:   built.ProviderPayoutPaise,
+		RateLimitResetsAtIso:  built.RateLimitResetsAt,
+		RefundablePaise:       built.RefundablePaise,
+		RefundsAllowedPerHour: built.RefundsAllowedPerHour,
+		RefundsUsedThisHour:   built.RefundsUsedThisHour,
+	}}, nil
 }
 
 type opsRefundInput struct {
@@ -580,6 +818,185 @@ type refundReceiptOutput struct {
 	Body refundReceipt
 }
 
-func (handler *AdminHandler) refundBooking(_ context.Context, _ *opsRefundInput) (*refundReceiptOutput, error) {
-	return nil, notImplemented("opsRefundBooking")
+func (handler *AdminHandler) refundBooking(ctx context.Context, input *opsRefundInput) (*refundReceiptOutput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return nil, toHumaError(handler.log, &badRequestError{msg: "authentication required"})
+	}
+	receipt, err := handler.rescue.Refund(ctx, rescue.RefundInput{
+		ActionInput: rescue.ActionInput{
+			BookingID:      bookingID,
+			AdminID:        admin.ID,
+			IdempotencyKey: input.IdempotencyKey,
+			Version:        input.Body.Version,
+		},
+		Amount:       money.FromPaise(input.Body.AmountPaise),
+		ReasonCode:   string(input.Body.ReasonCode),
+		RefundType:   string(input.Body.RefundType),
+		PayoutImpact: string(input.Body.PayoutImpact),
+		Note:         input.Body.Note,
+	})
+	if err != nil {
+		return nil, adminActionError(handler.log, err)
+	}
+	return &refundReceiptOutput{Body: refundReceipt{
+		BookingActionReceipt:   adminActionReceiptDTO(receipt.Receipt),
+		EstimatedCompletionIso: receipt.EstimatedCompletionAt,
+		IsPending:              receipt.IsPending,
+		RefundID:               receipt.RefundID.String(),
+	}}, nil
 }
+
+// --------------------------------------------------------------- shared mapping
+
+// adminActionSubjectDTO maps the rescue subject onto the wire header every action screen
+// restates.
+func adminActionSubjectDTO(subject rescue.Subject) bookingActionSubject {
+	return bookingActionSubject{
+		AmountPaise:      subject.Amount.Paise(),
+		BookingID:        subject.BookingID.String(),
+		CreatedAtIso:     subject.CreatedAt,
+		CustomerName:     subject.CustomerName,
+		EscalatedMinutes: subject.EscalatedMinutes,
+		// The empty method is the truth for a booking with no payment record yet — the
+		// same encoding the detail screen's payment panel uses.
+		PaymentMethod: paymentMethod(subject.PaymentMethod),
+		ProviderName:  subject.ProviderName,
+		Reference:     adminBookingReference(subject.BookingID),
+		ServiceName:   subject.ServiceName,
+		Version:       int32(subject.Version),
+		Zone:          subject.Zone,
+	}
+}
+
+func adminDispatchRoundDTOs(rounds []rescue.DispatchRound) []dispatchRound {
+	built := make([]dispatchRound, len(rounds))
+	for index, round := range rounds {
+		built[index] = dispatchRound{
+			Contacted: round.Contacted,
+			Declined:  round.Declined,
+			RadiusKm:  round.RadiusKm,
+			Round:     round.Round,
+		}
+	}
+	return built
+}
+
+func adminActionReceiptDTO(receipt rescue.Receipt) BookingActionReceipt {
+	return BookingActionReceipt{BookingID: receipt.BookingID.String(), Version: receipt.Version}
+}
+
+// adminUndoActionInput decodes the pieces both undo endpoints share, and refuses a body
+// whose `undoes` names the other action — a routing mistake worth a 400, not a silent undo.
+func adminUndoActionInput(ctx context.Context, input *opsUndoInput, expected undoTarget) (rescue.ActionInput, error) {
+	bookingID, err := parseUUID(input.ID, "id")
+	if err != nil {
+		return rescue.ActionInput{}, err
+	}
+	if input.Body.Undoes != expected {
+		return rescue.ActionInput{}, &badRequestError{msg: "undoes must be \"" + string(expected) + "\" on this endpoint"}
+	}
+	admin, ok := userFromContext(ctx)
+	if !ok {
+		return rescue.ActionInput{}, &badRequestError{msg: "authentication required"}
+	}
+	return rescue.ActionInput{
+		BookingID:      bookingID,
+		AdminID:        admin.ID,
+		IdempotencyKey: input.IdempotencyKey,
+		Version:        input.Body.Version,
+	}, nil
+}
+
+// ------------------------------------------------------- designed error bodies
+
+// The rescue console renders dedicated states for its designed failures, so those arrive
+// with the declared BODY shapes, not the generic error model. Each wrapper implements
+// huma.StatusError: huma writes the wrapper itself as the response body. classify() stays
+// the status authority for every error not special-cased here.
+func adminActionError(log *slog.Logger, err error) error {
+	var staleVersion *rescue.StaleVersionError
+	if errors.As(err, &staleVersion) {
+		return &staleVersionStatusError{staleVersionError{
+			Code:           "VERSION_CONFLICT",
+			CurrentVersion: staleVersion.CurrentVersion,
+			Message:        "the record moved since it was read",
+		}}
+	}
+	var tooEarly *rescue.TooEarlyError
+	if errors.As(err, &tooEarly) {
+		return &tooEarlyStatusError{manualCompleteTooEarlyError{
+			AvailableAt: tooEarly.AvailableAt,
+			Code:        "TOO_EARLY",
+			Message:     "the 30-minute lock still holds",
+		}}
+	}
+	var evidence *rescue.EvidenceError
+	if errors.As(err, &evidence) {
+		return &evidenceStatusError{manualCompleteEvidenceError{
+			Code:    "EVIDENCE_INSUFFICIENT",
+			Message: "the manual completion still owes evidence",
+			Missing: evidence.Missing,
+		}}
+	}
+	var capExceeded *rescue.CapExceededError
+	if errors.As(err, &capExceeded) {
+		return &capStatusError{refundCapError{
+			CapPaise: capExceeded.Cap.Paise(),
+			Code:     "EXCEEDS_CAP",
+			Fields:   map[string]string{capExceeded.Field: "exceeds the cap"},
+			Message:  capExceeded.Error(),
+		}}
+	}
+	var rateLimit *rescue.RateLimitedError
+	if errors.As(err, &rateLimit) {
+		return &rateLimitStatusError{rateLimitedError{
+			Code:    "RATE_LIMITED",
+			Message: "refund rate limit reached",
+			ResetAt: rateLimit.ResetAt,
+		}}
+	}
+	var invalid *rescue.ValidationError
+	if errors.As(err, &invalid) {
+		return &validationStatusError{adminError{
+			Code:    "VALIDATION",
+			Fields:  map[string]string{invalid.Field: invalid.Message},
+			Message: invalid.Error(),
+		}}
+	}
+	return toHumaError(log, err)
+}
+
+type staleVersionStatusError struct{ staleVersionError }
+
+func (statusErr *staleVersionStatusError) Error() string  { return statusErr.Message }
+func (statusErr *staleVersionStatusError) GetStatus() int { return http.StatusConflict }
+
+type tooEarlyStatusError struct{ manualCompleteTooEarlyError }
+
+func (statusErr *tooEarlyStatusError) Error() string  { return statusErr.Message }
+func (statusErr *tooEarlyStatusError) GetStatus() int { return http.StatusConflict }
+
+type evidenceStatusError struct{ manualCompleteEvidenceError }
+
+func (statusErr *evidenceStatusError) Error() string  { return statusErr.Message }
+func (statusErr *evidenceStatusError) GetStatus() int { return http.StatusUnprocessableEntity }
+
+type capStatusError struct{ refundCapError }
+
+func (statusErr *capStatusError) Error() string  { return statusErr.Message }
+func (statusErr *capStatusError) GetStatus() int { return http.StatusUnprocessableEntity }
+
+type rateLimitStatusError struct{ rateLimitedError }
+
+func (statusErr *rateLimitStatusError) Error() string  { return statusErr.Message }
+func (statusErr *rateLimitStatusError) GetStatus() int { return http.StatusTooManyRequests }
+
+type validationStatusError struct{ adminError }
+
+func (statusErr *validationStatusError) Error() string  { return statusErr.Message }
+func (statusErr *validationStatusError) GetStatus() int { return http.StatusUnprocessableEntity }

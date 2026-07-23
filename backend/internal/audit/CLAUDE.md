@@ -7,6 +7,7 @@ Records who did what to which entity, with a before/after snapshot. Every entry 
 - Marshal before/after snapshots to JSONB and insert one `audit_logs` row using the caller's tx.
 - Infer `ActorKind` when the caller leaves it blank.
 - Read side for the admin console (`list.go`): `Service`/`NewService(pool)` with `List(ctx, ListFilter)` — admin-actor booking entries within `AdminActions()` (ASSIGN/CANCEL/VERIFY_COMPLETION/SEARCH), newest first, keyset cursor (limit+1 peek), whole-set total + timestamp range, snapshots flattened to `map[string]string`. `ErrInvalidCursor` → 400.
+- Idempotent-replay store for admin mutations (`idempotency.go`): `ActionKeyID(operation, subject, key)` derives a UUIDv5; the first receipt is stored as an `audit_logs` row under `entity_type='admin_action_key'` (`RecordAdminAction`) and replayed by `ReplayAdminAction`/`UnmarshalReceipt`. Lookup-then-insert without a unique guard — sequential replays always hit; simultaneous duplicates fall to the domain's own CAS. Also `CountAdminActionsSince` (entity_type pinned to `booking` so replay rows never double-count) — the refund rate limit's counter.
 
 ## Owns
 `audit_logs`. A leaf sink — nothing calls back into it. (`List`'s SQL joins `users` read-only for the admin's name; identity stays the owner.)

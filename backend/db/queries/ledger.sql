@@ -61,3 +61,43 @@ FROM ledger_entries
 WHERE order_id = $1 AND kind = 'REVENUE'
 ORDER BY created_at
 LIMIT 1;
+
+-- ---------------------------------------------------------------------------
+-- Admin refunds (internal/ledger, driven by the rescue console).
+
+-- name: InsertAdminCredit :one
+-- An admin-decided refund/goodwill credit. CREDIT_ISSUED attaches to the ORDER (the CHECK
+-- requires it). The id is minted by the CALLER so the refund receipt — stored in the same
+-- transaction as its idempotent-replay record — can name the credit before it exists.
+INSERT INTO ledger_entries (id, kind, amount_paise, order_id, customer_id, memo)
+VALUES (@id, 'CREDIT_ISSUED', @amount_paise, @order_id, @customer_id, @memo)
+RETURNING created_at;
+
+-- name: InsertCreditReversal :one
+-- The offsetting row an undo writes: a CREDIT_REDEEMED pointing at the credit it takes
+-- back. The ledger is append-only — this is how a refund is "reversed".
+INSERT INTO ledger_entries (kind, amount_paise, order_id, customer_id, memo, reverses_entry_id)
+VALUES ('CREDIT_REDEEMED', @amount_paise, @order_id, @customer_id, @memo, @reverses_entry_id)
+RETURNING id;
+
+-- name: AdminCreditTotalsForOrder :one
+-- What has already been credited (and taken back) against an order — the refund screen's
+-- alreadyRefunded figure, over the whole credit history.
+SELECT
+  COALESCE(SUM(amount_paise) FILTER (WHERE kind = 'CREDIT_ISSUED'), 0)::bigint   AS issued_paise,
+  COALESCE(SUM(amount_paise) FILTER (WHERE kind = 'CREDIT_REDEEMED'), 0)::bigint AS redeemed_paise
+FROM ledger_entries
+WHERE order_id = $1;
+
+-- name: AdminLatestUnreversedCreditForOrder :one
+-- The credit an undo-cancel must offset: the newest CREDIT_ISSUED on the order that no
+-- reversal row points at yet.
+SELECT credit.id, credit.amount_paise, credit.customer_id
+FROM ledger_entries credit
+WHERE credit.order_id = $1
+  AND credit.kind = 'CREDIT_ISSUED'
+  AND NOT EXISTS (
+    SELECT 1 FROM ledger_entries reversal WHERE reversal.reverses_entry_id = credit.id
+  )
+ORDER BY credit.created_at DESC, credit.id DESC
+LIMIT 1;

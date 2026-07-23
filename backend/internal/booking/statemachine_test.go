@@ -93,9 +93,14 @@ func TestEveryStateActionCombination(t *testing.T) {
 			booking.ActionResume: booking.StateConfirmed,
 			booking.ActionCancel: booking.StateCancelled,
 		},
-		// Terminal. No exits, not even CANCEL.
+		// CANCELLED has exactly one exit: the admin console's 10-second cancel undo, a
+		// real ESCALATE compensation back into the human queue. The 10-second clock is a
+		// time guard in the rescue service; the machine only states legality.
+		booking.StateCancelled: {
+			booking.ActionEscalate: booking.StateEscalated,
+		},
+		// Terminal. No exits, not even CANCEL — both have moved money.
 		booking.StateCompleted: {},
-		booking.StateCancelled: {},
 		booking.StateFailed:    {},
 	}
 

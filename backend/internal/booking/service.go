@@ -385,6 +385,16 @@ type TransitionInput struct {
 	// PaymentMethod is carried into the booking.completed event (UPI/CASH/ONLINE) so the
 	// ledger consumer knows how the customer paid. Only meaningful for VERIFY_COMPLETION.
 	PaymentMethod string
+	// Meta, when set, is recorded verbatim on the booking_events row (it must be a JSON
+	// object). Nil records the empty object, exactly as before. This is how the admin
+	// rescue console attaches its diagnostics — redispatch parameters, the admin-verified
+	// completion marker — to the transition that carried them.
+	Meta []byte
+	// ExpectedVersion, when set, tightens the optimistic CAS to the version the CALLER read
+	// rather than the fresh row: if the record moved since the caller looked at it, the
+	// transition refuses with ConflictError instead of applying against the newer state.
+	// This is the admin console's stale-version guard (its mutations echo the version back).
+	ExpectedVersion *int64
 }
 
 // authorize enforces both halves of access control: the role may perform the action at all
@@ -473,6 +483,12 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 			return fmt.Errorf("booking %s is in an unknown state: %w", bookingID, err)
 		}
 
+		// The caller pinned the version they read. A mismatch means the record moved under
+		// them — refuse before the pure decision, exactly as the CAS below would.
+		if in.ExpectedVersion != nil && *in.ExpectedVersion != bookingRow.Version {
+			return &ConflictError{BookingID: bookingID, Action: action}
+		}
+
 		// THE PURE DECISION. No I/O. If this rejects, we have written nothing.
 		to, err := Apply(from, action)
 		if err != nil {
@@ -499,13 +515,17 @@ func (service *Service) Apply(ctx context.Context, bookingID uuid.UUID, action A
 		}
 
 		// APPEND-ONLY, same transaction. The log can never disagree with the row above.
+		eventMeta := in.Meta
+		if len(eventMeta) == 0 {
+			eventMeta = []byte("{}")
+		}
 		if err := queries.InsertBookingEvent(ctx, sqlcgen.InsertBookingEventParams{
 			BookingID:   bookingID,
 			FromState:   string(from),
 			Action:      string(action),
 			ToState:     string(to),
 			ActorUserID: in.Actor,
-			Meta:        []byte("{}"),
+			Meta:        eventMeta,
 		}); err != nil {
 			return fmt.Errorf("writing booking event: %w", err)
 		}

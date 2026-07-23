@@ -47,3 +47,25 @@ WHERE admin_user.role = 'ADMIN'
   AND (sqlc.narg('entity_filter')::uuid IS NULL OR al.entity_id = sqlc.narg('entity_filter')::uuid)
   AND (sqlc.narg('from_time')::timestamptz IS NULL OR al.created_at >= sqlc.narg('from_time')::timestamptz)
   AND (sqlc.narg('to_time')::timestamptz IS NULL OR al.created_at < sqlc.narg('to_time')::timestamptz);
+
+-- name: GetAdminActionReplay :one
+-- The idempotent-replay record for an admin mutation: the receipt stored under the derived
+-- key id (entity_type 'admin_action_key'). Oldest first — the FIRST result is the one a
+-- replayed Idempotency-Key must return.
+SELECT after
+FROM audit_logs
+WHERE entity_type = 'admin_action_key' AND entity_id = $1
+ORDER BY created_at, id
+LIMIT 1;
+
+-- name: CountAdminAuditActionsSince :one
+-- How often an admin has performed a booking action recently, plus the oldest occurrence in
+-- the window — the refund rate limit's counter and its reset instant. entity_type is pinned
+-- to 'booking' so the admin_action_key replay rows (which reuse the action name) never
+-- double-count.
+SELECT count(*)::int AS total, min(created_at)::timestamptz AS oldest
+FROM audit_logs
+WHERE actor_user_id = $1
+  AND action = $2
+  AND entity_type = 'booking'
+  AND created_at >= $3;

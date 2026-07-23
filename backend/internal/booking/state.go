@@ -102,13 +102,19 @@ func (state State) Valid() bool {
 
 // IsTerminal reports whether the booking is finished forever. A terminal booking has no
 // legal transitions out of it — not even CANCEL.
+//
+// CANCELLED is deliberately NOT terminal since the admin console's emergency cancel gained
+// its 10-second undo: the compensation is a real ESCALATE transition back into the human
+// queue (see statemachine.go). COMPLETED and FAILED stay terminal — both have billed or
+// credited the ledger, and a booking that comes back to life after money moved would make
+// the append-only ledger lie.
 func (state State) IsTerminal() bool {
 	switch state {
-	case StateCompleted, StateCancelled, StateFailed:
+	case StateCompleted, StateFailed:
 		return true
 	case StateDraft, StateConfirmed, StateSearching, StateAssigned, StateEnRoute,
 		StateArrived, StateInProgress, StateAwaitingCompletion, StateEscalated,
-		StateRescheduled:
+		StateRescheduled, StateCancelled:
 		return false
 	}
 	return false

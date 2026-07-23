@@ -9,6 +9,7 @@ Owns the money (ROADMAP §6): revenue, cash custody/deposit, goodwill credits, a
 - `RecordDeposit` — a technician hands in held cash (`CASH_DEPOSIT` offsets `CASH_CUSTODY`).
 - `CaptureUPIPayment` — the money-moved moment: marks the collection CAPTURED and books `REVENUE` atomically (idempotent).
 - Reads: `Reconciliation`, `PositionForTechnician`, `PendingPayments`, `CollectionForBooking`; `SetPaymentLink` persists the hosted link; `PaymentFactsForBooking` (`payment_facts.go`) — the admin console's payment panel: REVENUE row → paid (method/amount/time), else CASH_CUSTODY → cash paid at collection, else a pending collection (never reported as done), else not found.
+- **Admin refunds** (`adminrefund.go`, driven by `internal/rescue`): `RecordAdminCredit` — one CREDIT_ISSUED against the booking's order (caller-minted `CreditID`), its audit trail entry and — for the refund screen — its idempotent-replay record in ONE transaction; `ReverseLatestCreditForBooking` — the undo-cancel's offsetting `CREDIT_REDEEMED` with `reverses_entry_id` (reversed=false when nothing stands, not an error); `CreditPositionForOrder` — issued/redeemed/outstanding.
 
 ## Owns
 `ledger_entries`, `payments`, and the read view `technician_cash_position`.

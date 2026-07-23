@@ -69,3 +69,61 @@ WHERE slug = 'appliance-repair'
   AND NOT EXISTS (SELECT 1 FROM services WHERE category_id = categories.id);
 
 COMMIT;
+
+-- =============================================================================
+-- ADMIN RESCUE CONSOLE DEV DATA (phase 2 — booking actions). ADDITIVE + IDEMPOTENT:
+-- fixed UUIDs, every insert guarded, safe to re-run. One ESCALATED booking (with its
+-- CONFIRM → SEARCH → ESCALATE event trail) and one online, located technician, so the
+-- console's assign / redispatch / cancel screens have a live subject to rescue.
+BEGIN;
+
+INSERT INTO users (id, phone, name, role)
+VALUES
+  ('aa000000-0000-4000-8000-000000000001', '+919000000101', 'Rescue Admin',    'ADMIN'),
+  ('cc000000-0000-4000-8000-000000000001', '+919000000102', 'Meera Customer',  'CUSTOMER'),
+  ('7e000000-0000-4000-8000-000000000001', '+919000000103', 'Arjun Technician','TECHNICIAN')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO technicians (user_id, city, is_online, last_lat, last_lng, last_location_at)
+VALUES ('7e000000-0000-4000-8000-000000000001', 'Bengaluru', true, 12.9750, 77.5950, now())
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO addresses (id, user_id, line1, city, pincode, geog)
+VALUES ('ad000000-0000-4000-8000-000000000001', 'cc000000-0000-4000-8000-000000000001',
+        '14 Residency Rd', 'Bengaluru', '560025', ST_MakePoint(77.5993, 12.9718)::geography)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO orders (id, customer_id, total_paise)
+VALUES ('0d000000-0000-4000-8000-000000000001', 'cc000000-0000-4000-8000-000000000001', 59900)
+ON CONFLICT (id) DO NOTHING;
+
+-- The escalated booking the console rescues. State written directly ONLY in this dev
+-- seed; the application always moves state through the machine.
+INSERT INTO bookings (id, order_id, customer_id, address_id, state, quoted_total_paise, duration_minutes, version)
+SELECT 'b0000000-0000-4000-8000-000000000001', '0d000000-0000-4000-8000-000000000001',
+       'cc000000-0000-4000-8000-000000000001', 'ad000000-0000-4000-8000-000000000001',
+       'ESCALATED', 59900, 60, 3
+WHERE NOT EXISTS (SELECT 1 FROM bookings WHERE id = 'b0000000-0000-4000-8000-000000000001');
+
+INSERT INTO booking_items (id, booking_id, service_id, variant_id, quantity, line_total_paise)
+SELECT 'b1000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000001',
+       v.service_id, v.id, 1, 59900
+FROM service_variants v
+JOIN services s ON s.id = v.service_id
+WHERE s.slug = 'ac-repair' AND v.name = 'Standard Service'
+  AND NOT EXISTS (SELECT 1 FROM booking_items WHERE booking_id = 'b0000000-0000-4000-8000-000000000001');
+
+-- The event trail behind the escalation, so the timeline, undo windows and attention
+-- queue read real history.
+INSERT INTO booking_events (id, booking_id, from_state, action, to_state, actor_user_id, created_at)
+SELECT * FROM (VALUES
+  ('be000000-0000-4000-8000-000000000001'::uuid, 'b0000000-0000-4000-8000-000000000001'::uuid,
+   'DRAFT', 'CONFIRM', 'CONFIRMED', 'cc000000-0000-4000-8000-000000000001'::uuid, now() - interval '45 minutes'),
+  ('be000000-0000-4000-8000-000000000002'::uuid, 'b0000000-0000-4000-8000-000000000001'::uuid,
+   'CONFIRMED', 'SEARCH', 'SEARCHING', NULL::uuid, now() - interval '44 minutes'),
+  ('be000000-0000-4000-8000-000000000003'::uuid, 'b0000000-0000-4000-8000-000000000001'::uuid,
+   'SEARCHING', 'ESCALATE', 'ESCALATED', NULL::uuid, now() - interval '30 minutes')
+) AS seed(id, booking_id, from_state, action, to_state, actor_user_id, created_at)
+WHERE NOT EXISTS (SELECT 1 FROM booking_events WHERE booking_id = 'b0000000-0000-4000-8000-000000000001');
+
+COMMIT;

@@ -39,6 +39,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/outbox"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/razorpay"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/rescue"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/reviews"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/shared/response"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/sms"
@@ -121,6 +122,7 @@ func run() error {
 	verificationService := verification.NewService(pool)
 	ledgerService := ledger.NewService(pool)
 	reviewService := reviews.NewService(pool)
+	rescueService := rescue.New(pool, bookingService, ledgerService, auditService)
 
 	// OTP delivery: real SMS via MSG91 when configured, otherwise the code is only logged (dev).
 	// The same sender carries both login codes and job start/completion codes.
@@ -204,6 +206,7 @@ func run() error {
 		addressService:      addressService,
 		opsService:          opsService,
 		auditService:        auditService,
+		rescueService:       rescueService,
 		signer:              signer,
 		otpSender:           otpSender,
 		devEchoOTP:          settings.DevEchoOTP,
@@ -278,6 +281,7 @@ type routerDependencies struct {
 	addressService      *address.Service
 	opsService          *ops.Service
 	auditService        *audit.Service
+	rescueService       *rescue.Service
 	signer              *auth.Signer
 	otpSender           sms.Sender
 	devEchoOTP          bool
@@ -307,6 +311,7 @@ func buildRouter(dependencies routerDependencies) http.Handler {
 		Verification: dependencies.verificationService,
 		Booking:      dependencies.bookingService,
 		Audit:        dependencies.auditService,
+		Rescue:       dependencies.rescueService,
 		Reviews:      dependencies.reviewService,
 		Cloudinary:   dependencies.cloudinary,
 		Signer:       dependencies.signer,

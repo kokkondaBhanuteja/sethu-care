@@ -151,6 +151,55 @@ func (q *Queries) AdminListAuditLogs(ctx context.Context, arg AdminListAuditLogs
 	return items, nil
 }
 
+const countAdminAuditActionsSince = `-- name: CountAdminAuditActionsSince :one
+SELECT count(*)::int AS total, min(created_at)::timestamptz AS oldest
+FROM audit_logs
+WHERE actor_user_id = $1
+  AND action = $2
+  AND entity_type = 'booking'
+  AND created_at >= $3
+`
+
+type CountAdminAuditActionsSinceParams struct {
+	ActorUserID *uuid.UUID
+	Action      string
+	CreatedAt   pgtype.Timestamptz
+}
+
+type CountAdminAuditActionsSinceRow struct {
+	Total  int32
+	Oldest pgtype.Timestamptz
+}
+
+// How often an admin has performed a booking action recently, plus the oldest occurrence in
+// the window — the refund rate limit's counter and its reset instant. entity_type is pinned
+// to 'booking' so the admin_action_key replay rows (which reuse the action name) never
+// double-count.
+func (q *Queries) CountAdminAuditActionsSince(ctx context.Context, arg CountAdminAuditActionsSinceParams) (CountAdminAuditActionsSinceRow, error) {
+	row := q.db.QueryRow(ctx, countAdminAuditActionsSince, arg.ActorUserID, arg.Action, arg.CreatedAt)
+	var i CountAdminAuditActionsSinceRow
+	err := row.Scan(&i.Total, &i.Oldest)
+	return i, err
+}
+
+const getAdminActionReplay = `-- name: GetAdminActionReplay :one
+SELECT after
+FROM audit_logs
+WHERE entity_type = 'admin_action_key' AND entity_id = $1
+ORDER BY created_at, id
+LIMIT 1
+`
+
+// The idempotent-replay record for an admin mutation: the receipt stored under the derived
+// key id (entity_type 'admin_action_key'). Oldest first — the FIRST result is the one a
+// replayed Idempotency-Key must return.
+func (q *Queries) GetAdminActionReplay(ctx context.Context, entityID uuid.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getAdminActionReplay, entityID)
+	var after []byte
+	err := row.Scan(&after)
+	return after, err
+}
+
 const insertAuditLog = `-- name: InsertAuditLog :exec
 INSERT INTO audit_logs (actor_user_id, actor_kind, action, entity_type, entity_id, before, after, correlation_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

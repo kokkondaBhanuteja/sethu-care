@@ -478,7 +478,8 @@ func (handler *AdminHandler) getBooking(ctx context.Context, input *opsGetBookin
 			Phone:        detail.CustomerPhone,
 		},
 		// No auto-dispatch engine exists yet: zero rounds and zero declines are the truth,
-		// not placeholders. Notes and admin-verified completions have no storage yet either.
+		// not placeholders. Notes have no storage yet either. IsAdminVerified flips below
+		// when the timeline carries an admin-verified completion.
 		DeclinedTotal:   0,
 		DispatchRounds:  []dispatchRound{},
 		ID:              detail.BookingID.String(),
@@ -522,6 +523,20 @@ func (handler *AdminHandler) getBooking(ctx context.Context, input *opsGetBookin
 		event := bookingEvent{At: entry.At, ID: entry.EventID.String(), Kind: kind}
 		if entry.ActorName != nil {
 			event.ActorName = *entry.ActorName
+		}
+		// An admin-verified completion (the rescue console's manual-complete path) marks the
+		// record and carries its accountability trail: who asserted it, and the 48-hour
+		// dispute window the customer holds.
+		if kind == bookingEventKindCompletedByAdmin {
+			body.IsAdminVerified = true
+			verification := bookingVerification{
+				DisputeWindowClosesAt: entry.At.Add(48 * time.Hour),
+				VerifiedAt:            entry.At,
+			}
+			if entry.ActorName != nil {
+				verification.VerifiedByName = *entry.ActorName
+			}
+			body.Verification = nullable[bookingVerification]{Value: &verification}
 		}
 		if kind == bookingEventKindAutoAssigned && detail.TechnicianName != nil {
 			// booking_events does not record which technician an ASSIGN placed; the current
