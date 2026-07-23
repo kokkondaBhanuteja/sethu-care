@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 )
 
 // The provider-application queue and its three decisions. Approval blockers are computed by the
@@ -212,8 +214,50 @@ type applicationQueueOutput struct {
 	Body applicationQueue
 }
 
-func (handler *AdminHandler) listApplications(_ context.Context, _ *opsListApplicationsInput) (*applicationQueueOutput, error) {
-	return nil, notImplemented("opsListApplications")
+func (handler *AdminHandler) listApplications(ctx context.Context, input *opsListApplicationsInput) (*applicationQueueOutput, error) {
+	page, err := handler.providers.Applications(ctx, providerops.ApplicationListInput{
+		Segment: providerops.ApplicationSegment(input.Segment),
+		Limit:   input.Limit,
+		Cursor:  input.Cursor,
+	})
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := applicationQueue{
+		Counts: applicationCounts{
+			AwaitingDocs: page.Counts.AwaitingDocs,
+			Decided:      page.Counts.Decided,
+			Pending:      page.Counts.Pending,
+		},
+		OldestDays: page.OldestDays,
+		Rows:       make([]applicationRow, len(page.Rows)),
+		Total:      page.Total,
+	}
+	if page.NextCursor != "" {
+		cursor := page.NextCursor
+		body.NextCursor = &cursor
+	}
+	for index, row := range page.Rows {
+		queueRow := applicationRow{
+			ApplicantName:     row.ApplicantName,
+			AppliedAt:         row.AppliedAt,
+			Categories:        row.Categories,
+			DaysWaiting:       row.DaysWaiting,
+			DecidedAt:         row.DecidedAt,
+			DocumentsPresent:  row.DocumentsPresent,
+			DocumentsRequired: row.DocumentsRequired,
+			ID:                row.ID.String(),
+			Status:            applicationStatus(row.Status),
+			Zone:              row.Zone,
+		}
+		if row.AwaitingDocumentType != nil {
+			awaiting := documentType(*row.AwaitingDocumentType)
+			queueRow.AwaitingDocumentType = &awaiting
+		}
+		body.Rows[index] = queueRow
+	}
+	return &applicationQueueOutput{Body: body}, nil
 }
 
 // ------------------------------------------------------------------ review
@@ -287,8 +331,89 @@ type applicationReviewOutput struct {
 	Body applicationReview
 }
 
-func (handler *AdminHandler) getApplication(_ context.Context, _ *opsApplicationPath) (*applicationReviewOutput, error) {
-	return nil, notImplemented("opsGetApplication")
+func (handler *AdminHandler) getApplication(ctx context.Context, input *opsApplicationPath) (*applicationReviewOutput, error) {
+	applicationID, err := adminApplicationID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	review, err := handler.providers.Application(ctx, applicationID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := applicationReview{
+		Address:             review.Address,
+		ApplicantName:       review.ApplicantName,
+		AppliedAt:           review.AppliedAt,
+		ApprovalBlockers:    make([]approvalBlocker, len(review.ApprovalBlockers)),
+		AutoValidation:      make([]autoValidationCheck, len(review.AutoValidation)),
+		BackgroundClearedAt: review.BackgroundClearedAt,
+		Categories:          make([]applicationCategory, len(review.Categories)),
+		DaysWaiting:         review.DaysWaiting,
+		Documents:           make([]applicationDocument, len(review.Documents)),
+		DocumentsRequired:   review.DocumentsRequired,
+		Email:               review.Email,
+		ID:                  review.ID.String(),
+		Phone:               review.Phone,
+		PriorApplications:   review.PriorApplications,
+		Version:             review.Version,
+	}
+	for index, blocker := range review.ApprovalBlockers {
+		wireBlocker := approvalBlocker{
+			Code: approvalBlockerCode(blocker.Code),
+			ID:   blocker.ID,
+		}
+		if blocker.DocumentType != nil {
+			blockedType := documentType(*blocker.DocumentType)
+			wireBlocker.DocumentType = &blockedType
+		}
+		body.ApprovalBlockers[index] = wireBlocker
+	}
+	for index, check := range review.AutoValidation {
+		body.AutoValidation[index] = autoValidationCheck{
+			Code:   autoCheckCode(check.Code),
+			Detail: check.Detail,
+			ID:     check.ID,
+			Passed: check.Passed,
+		}
+	}
+	for index, category := range review.Categories {
+		body.Categories[index] = applicationCategory{
+			Name:         category.Name,
+			YearsClaimed: category.YearsClaimed,
+		}
+	}
+	for index, document := range review.Documents {
+		body.Documents[index] = applicationDocument{
+			Detail:      document.Detail,
+			ExpiresAt:   document.ExpiresAt,
+			ID:          document.ID.String(),
+			OcrExpected: document.OcrExpected,
+			OcrRead:     document.OcrRead,
+			SizeBytes:   document.SizeBytes,
+			Type:        documentType(document.Type),
+			UploadedAt:  document.UploadedAt,
+			URL:         document.URL,
+			Validation:  documentValidation(document.Validation),
+		}
+	}
+	if review.Decision != nil {
+		body.Decision = &applicationDecision{
+			At:      review.Decision.At,
+			ByName:  review.Decision.ByName,
+			Outcome: applicationDecisionOutcome(review.Decision.Outcome),
+		}
+	}
+	return &applicationReviewOutput{Body: body}, nil
+}
+
+// adminApplicationID parses the path id; a non-uuid is a 400, matching the other admin routes.
+func adminApplicationID(raw string) (uuid.UUID, error) {
+	parsed, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, &badRequestError{msg: "id must be a uuid"}
+	}
+	return parsed, nil
 }
 
 // ---------------------------------------------------------------- decisions
@@ -327,8 +452,27 @@ type applicationDecisionOutput struct {
 	Body applicationDecisionResult
 }
 
-func (handler *AdminHandler) approveApplication(_ context.Context, _ *opsApproveApplicationInput) (*applicationDecisionOutput, error) {
-	return nil, notImplemented("opsApproveApplication")
+func (handler *AdminHandler) approveApplication(ctx context.Context, input *opsApproveApplicationInput) (*applicationDecisionOutput, error) {
+	caller, _ := userFromContext(ctx)
+	applicationID, err := adminApplicationID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return providerIdempotent(ctx, handler, "opsApproveApplication", input.IdempotencyKey, func() (*applicationDecisionOutput, error) {
+		result, err := handler.providers.Approve(ctx, providerops.DecisionInput{
+			ApplicationID:   applicationID,
+			ActorID:         caller.ID,
+			ExpectedVersion: input.Body.Version,
+		})
+		if err != nil {
+			return nil, handler.providerWriteError(err)
+		}
+		return &applicationDecisionOutput{Body: applicationDecisionResult{
+			ApplicantName: result.ApplicantName,
+			ApplicationID: result.ApplicationID.String(),
+			Version:       result.Version,
+		}}, nil
+	})
 }
 
 type opsRejectApplicationInput struct {
@@ -337,8 +481,35 @@ type opsRejectApplicationInput struct {
 	Body rejectApplicationRequest
 }
 
-func (handler *AdminHandler) rejectApplication(_ context.Context, _ *opsRejectApplicationInput) (*applicationDecisionOutput, error) {
-	return nil, notImplemented("opsRejectApplication")
+func (handler *AdminHandler) rejectApplication(ctx context.Context, input *opsRejectApplicationInput) (*applicationDecisionOutput, error) {
+	caller, _ := userFromContext(ctx)
+	applicationID, err := adminApplicationID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	reason, err := providerops.ParseRejectReason(string(input.Body.ReasonCode))
+	if err != nil {
+		return nil, toHumaError(handler.log, &badRequestError{msg: err.Error()})
+	}
+	return providerIdempotent(ctx, handler, "opsRejectApplication", input.IdempotencyKey, func() (*applicationDecisionOutput, error) {
+		result, err := handler.providers.Reject(ctx, providerops.RejectInput{
+			DecisionInput: providerops.DecisionInput{
+				ApplicationID:   applicationID,
+				ActorID:         caller.ID,
+				ExpectedVersion: input.Body.Version,
+			},
+			Reason: reason,
+			Note:   input.Body.Note,
+		})
+		if err != nil {
+			return nil, handler.providerWriteError(err)
+		}
+		return &applicationDecisionOutput{Body: applicationDecisionResult{
+			ApplicantName: result.ApplicantName,
+			ApplicationID: result.ApplicationID.String(),
+			Version:       result.Version,
+		}}, nil
+	})
 }
 
 type requestDocumentsRequest struct {
@@ -364,6 +535,40 @@ type requestDocumentsOutput struct {
 	Body requestDocumentsResult
 }
 
-func (handler *AdminHandler) requestApplicationDocuments(_ context.Context, _ *opsRequestDocumentsInput) (*requestDocumentsOutput, error) {
-	return nil, notImplemented("opsRequestApplicationDocuments")
+func (handler *AdminHandler) requestApplicationDocuments(ctx context.Context, input *opsRequestDocumentsInput) (*requestDocumentsOutput, error) {
+	caller, _ := userFromContext(ctx)
+	applicationID, err := adminApplicationID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	requestedTypes := make([]providerops.DocumentType, len(input.Body.DocumentTypes))
+	for index, wireType := range input.Body.DocumentTypes {
+		parsed, err := providerops.ParseDocumentType(string(wireType))
+		if err != nil {
+			return nil, toHumaError(handler.log, &badRequestError{msg: err.Error()})
+		}
+		requestedTypes[index] = parsed
+	}
+	return providerIdempotent(ctx, handler, "opsRequestApplicationDocuments", input.IdempotencyKey, func() (*requestDocumentsOutput, error) {
+		result, err := handler.providers.RequestDocuments(ctx, providerops.RequestDocumentsInput{
+			ApplicationID:   applicationID,
+			ActorID:         caller.ID,
+			DocumentTypes:   requestedTypes,
+			Note:            input.Body.Note,
+			ExpectedVersion: input.Body.Version,
+		})
+		if err != nil {
+			return nil, handler.providerWriteError(err)
+		}
+		echoedTypes := make([]documentType, len(result.RequestedTypes))
+		for index, requested := range result.RequestedTypes {
+			echoedTypes[index] = documentType(requested)
+		}
+		return &requestDocumentsOutput{Body: requestDocumentsResult{
+			ApplicationID:          result.ApplicationID.String(),
+			RequestedDocumentTypes: echoedTypes,
+			SentAt:                 result.SentAt,
+			Version:                result.Version,
+		}}, nil
+	})
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ledger"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/ops"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 	"github.com/kokkondaBhanuteja/sethu-care/internal/storage/storagetest"
 )
 
@@ -32,14 +33,17 @@ func adminAPI(t *testing.T) (*http.ServeMux, *auth.Signer) {
 		t.Fatalf("building signer: %v", err)
 	}
 	bookingService := booking.NewService(pool)
+	identityService := identity.NewService(pool)
+	opsService := ops.New(pool, bookingService)
 	mux := http.NewServeMux()
 	RegisterAll(NewHumaAPI(mux, signer), Dependencies{
-		Signer:  signer,
-		Ops:     ops.New(pool, bookingService),
-		Booking: bookingService,
-		Ledger:  ledger.NewService(pool),
-		Audit:   audit.NewService(pool),
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Signer:    signer,
+		Ops:       opsService,
+		Booking:   bookingService,
+		Ledger:    ledger.NewService(pool),
+		Audit:     audit.NewService(pool),
+		Providers: providerops.NewService(pool, identityService, opsService, bookingService),
+		Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	return mux, signer
 }

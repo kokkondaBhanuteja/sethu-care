@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/kokkondaBhanuteja/sethu-care/internal/identity"
+	"github.com/kokkondaBhanuteja/sethu-care/internal/providerops"
 )
 
 // The provider roster, one provider's profile, and the three ways an operator can take a provider
@@ -352,8 +354,70 @@ type providerRosterOutput struct {
 	Body providerRoster
 }
 
-func (handler *AdminHandler) listProviders(_ context.Context, _ *opsListProvidersInput) (*providerRosterOutput, error) {
-	return nil, notImplemented("opsListProviders")
+func (handler *AdminHandler) listProviders(ctx context.Context, input *opsListProvidersInput) (*providerRosterOutput, error) {
+	page, err := handler.providers.Roster(ctx, providerops.RosterInput{
+		Segment: providerops.RosterSegment(input.Segment),
+		Search:  input.Search,
+		Limit:   input.Limit,
+		Cursor:  input.Cursor,
+	})
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := providerRoster{
+		Counts: rosterCounts{
+			OnJob:     page.Counts.OnJob,
+			Online:    page.Counts.Online,
+			Suspended: page.Counts.Suspended,
+			Total:     page.Counts.Total,
+		},
+		OldestApplicationDays: page.OldestApplicationDays,
+		PendingApplications:   page.PendingApplications,
+		Rows:                  make([]providerRosterRow, len(page.Rows)),
+		StatusesAsOf:          page.StatusesAsOf,
+		Total:                 page.Total,
+	}
+	if page.Shortfall != nil {
+		body.Shortfall.Value = &zoneSupply{
+			OnlineCount: page.Shortfall.OnlineCount,
+			Threshold:   page.Shortfall.Threshold,
+			Zone:        page.Shortfall.Zone,
+		}
+	}
+	if page.NextCursor != "" {
+		cursor := page.NextCursor
+		body.NextCursor = &cursor
+	}
+	for index, row := range page.Rows {
+		body.Rows[index] = providerRosterRow{
+			CompletionRate:     row.CompletionRate,
+			CurrentJob:         toProviderCurrentJob(row.CurrentJob),
+			EarningsTodayPaise: row.EarningsTodayPaise,
+			ID:                 row.ID.String(),
+			JobsToday:          row.JobsToday,
+			LastSeenAt:         row.LastSeenAt,
+			Name:               row.Name,
+			Rating:             row.Rating,
+			Skills:             row.Skills,
+			Status:             providerStatus(row.Status),
+			SuspendedUntil:     row.SuspendedUntil,
+			Zone:               row.Zone,
+		}
+	}
+	return &providerRosterOutput{Body: body}, nil
+}
+
+func toProviderCurrentJob(job *providerops.CurrentJob) *providerCurrentJob {
+	if job == nil {
+		return nil
+	}
+	// EtaMinutes is contractually null once the provider is on site — and always null today,
+	// because no ETA engine exists to compute one honestly.
+	return &providerCurrentJob{
+		BookingID: job.BookingID.String(),
+		Stage:     activeJobStage(job.Stage),
+	}
 }
 
 // ----------------------------------------------------------------- profile
@@ -444,8 +508,93 @@ type providerProfileOutput struct {
 	Body providerProfile
 }
 
-func (handler *AdminHandler) getProvider(_ context.Context, _ *opsProviderInput) (*providerProfileOutput, error) {
-	return nil, notImplemented("opsGetProvider")
+func (handler *AdminHandler) getProvider(ctx context.Context, input *opsProviderInput) (*providerProfileOutput, error) {
+	technicianID, err := adminProviderID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	profile, err := handler.providers.Profile(ctx, technicianID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	body := providerProfile{
+		// Documents and Flags are declared, honestly empty: no provider-documents table and
+		// no behavioural-flag engine exist yet.
+		Documents:          []providerDocument{},
+		Flags:              []providerFlag{},
+		EarningsTodayPaise: profile.EarningsTodayPaise,
+		Feedback:           make([]providerFeedback, len(profile.Feedback)),
+		ID:                 profile.ID.String(),
+		IsVerified:         profile.IsVerified,
+		JobsToday:          profile.JobsToday,
+		JobsTotal:          profile.JobsTotal,
+		JoinedAt:           profile.JoinedAt,
+		Metrics:            make([]providerMetric, len(profile.Metrics)),
+		Name:               profile.Name,
+		OffboardedAt:       profile.OffboardedAt,
+		PayoutCyclePaise:   profile.PayoutCyclePaise,
+		Phone:              profile.Phone,
+		Rating:             profile.Rating,
+		RecentJobs:         make([]providerJob, len(profile.RecentJobs)),
+		Skills:             make([]providerSkill, len(profile.Skills)),
+		Status:             providerStatus(profile.Status),
+		Version:            profile.Version,
+		Zone:               profile.Zone,
+		Zones:              profile.Zones,
+	}
+	for index, feedback := range profile.Feedback {
+		body.Feedback[index] = providerFeedback{
+			At:      feedback.At,
+			Author:  feedback.Author,
+			Comment: feedback.Comment,
+			ID:      feedback.ID.String(),
+			Rating:  feedback.Rating,
+		}
+	}
+	for index, metric := range profile.Metrics {
+		body.Metrics[index] = providerMetric{
+			Band:  metricBand(metric.Band),
+			ID:    providerMetricID(metric.ID),
+			Trend: metric.Trend,
+			Unit:  metricUnit(metric.Unit),
+			Value: metric.Value,
+		}
+	}
+	for index, job := range profile.RecentJobs {
+		body.RecentJobs[index] = providerJob{
+			AmountPaise: job.AmountPaise,
+			At:          job.At,
+			BookingID:   job.BookingID.String(),
+			IsCancelled: job.IsCancelled,
+			Rating:      job.Rating,
+			Service:     job.Service,
+		}
+	}
+	for index, skill := range profile.Skills {
+		body.Skills[index] = providerSkill{
+			CertifiedTo: skill.CertifiedTo,
+			IsPending:   skill.IsPending,
+			Name:        skill.Name,
+		}
+	}
+	if profile.Suspension != nil {
+		body.Suspension = &providerSuspension{
+			ByName:     profile.Suspension.ByName,
+			ReasonCode: suspendReasonCode(profile.Suspension.Reason),
+			Until:      profile.Suspension.Until,
+		}
+	}
+	return &providerProfileOutput{Body: body}, nil
+}
+
+// adminProviderID parses the path id; a non-uuid is a 400, matching the other admin routes.
+func adminProviderID(raw string) (uuid.UUID, error) {
+	parsed, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, &badRequestError{msg: "id must be a uuid"}
+	}
+	return parsed, nil
 }
 
 // ------------------------------------------------------------- active jobs
@@ -471,8 +620,30 @@ type providerActiveJobsOutput struct {
 	Body providerActiveJobs
 }
 
-func (handler *AdminHandler) providerActiveJobs(_ context.Context, _ *opsProviderInput) (*providerActiveJobsOutput, error) {
-	return nil, notImplemented("opsProviderActiveJobs")
+func (handler *AdminHandler) providerActiveJobs(ctx context.Context, input *opsProviderInput) (*providerActiveJobsOutput, error) {
+	technicianID, err := adminProviderID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	jobs, err := handler.providers.ActiveJobs(ctx, technicianID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	body := providerActiveJobs{Items: make([]providerActiveJob, len(jobs))}
+	for index, job := range jobs {
+		body.Items[index] = providerActiveJob{
+			AmountPaise:           job.AmountPaise,
+			BookingID:             job.BookingID.String(),
+			CustomerName:          job.CustomerName,
+			EtaMinutes:            job.EtaMinutes,
+			Service:               job.Service,
+			Stage:                 activeJobStage(job.Stage),
+			StartedAt:             job.StartedAt,
+			SuggestedProviderName: job.SuggestedProviderName,
+			Zone:                  job.Zone,
+		}
+	}
+	return &providerActiveJobsOutput{Body: body}, nil
 }
 
 // ------------------------------------------------- suspend, block, restore
@@ -505,16 +676,98 @@ type suspendProviderOutput struct {
 	Body suspendProviderResult
 }
 
-func (handler *AdminHandler) suspendProvider(_ context.Context, _ *opsSuspendProviderInput) (*suspendProviderOutput, error) {
-	return nil, notImplemented("opsSuspendProvider")
+func (handler *AdminHandler) suspendProvider(ctx context.Context, input *opsSuspendProviderInput) (*suspendProviderOutput, error) {
+	return handler.applySuspendAction(ctx, "opsSuspendProvider", suspendActionTypeSuspend, input)
 }
 
-func (handler *AdminHandler) blockProvider(_ context.Context, _ *opsSuspendProviderInput) (*suspendProviderOutput, error) {
-	return nil, notImplemented("opsBlockProvider")
+func (handler *AdminHandler) blockProvider(ctx context.Context, input *opsSuspendProviderInput) (*suspendProviderOutput, error) {
+	return handler.applySuspendAction(ctx, "opsBlockProvider", suspendActionTypeBlock, input)
 }
 
-func (handler *AdminHandler) forceProviderOffline(_ context.Context, _ *opsSuspendProviderInput) (*suspendProviderOutput, error) {
-	return nil, notImplemented("opsForceProviderOffline")
+func (handler *AdminHandler) forceProviderOffline(ctx context.Context, input *opsSuspendProviderInput) (*suspendProviderOutput, error) {
+	return handler.applySuspendAction(ctx, "opsForceProviderOffline", suspendActionTypeForceOffline, input)
+}
+
+// applySuspendAction is the shared body of the three removal endpoints: one payload, the
+// endpoint (double-checked against `type`) decides which act, and a repeated
+// Idempotency-Key replays the first result.
+func (handler *AdminHandler) applySuspendAction(ctx context.Context, operationID string, expectedType suspendActionType, input *opsSuspendProviderInput) (*suspendProviderOutput, error) {
+	caller, _ := userFromContext(ctx)
+	technicianID, err := adminProviderID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	if input.Body.Type != expectedType {
+		return nil, toHumaError(handler.log, &badRequestError{
+			msg: "type must be " + string(expectedType) + " on this endpoint",
+		})
+	}
+	reason, err := providerops.ParseSuspendReason(string(input.Body.ReasonCode))
+	if err != nil {
+		return nil, toHumaError(handler.log, &badRequestError{msg: err.Error()})
+	}
+	resolutions, err := parseJobResolutions(input.Body.JobResolutions)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+
+	return providerIdempotent(ctx, handler, operationID, input.IdempotencyKey, func() (*suspendProviderOutput, error) {
+		changeInput := providerops.StandingChangeInput{
+			TechnicianID:      technicianID,
+			ActorID:           caller.ID,
+			Reason:            reason,
+			Note:              input.Body.Note,
+			DurationDays:      input.Body.DurationDays,
+			NotifyImmediately: input.Body.NotifyImmediately,
+			JobResolutions:    resolutions,
+			ExpectedVersion:   input.Body.Version,
+		}
+		var result providerops.StandingChangeResult
+		var actErr error
+		switch expectedType {
+		case suspendActionTypeSuspend:
+			result, actErr = handler.providers.Suspend(ctx, changeInput)
+		case suspendActionTypeBlock:
+			result, actErr = handler.providers.Block(ctx, changeInput)
+		case suspendActionTypeForceOffline:
+			result, actErr = handler.providers.ForceOffline(ctx, providerops.ForceOfflineInput{
+				TechnicianID:      technicianID,
+				ActorID:           caller.ID,
+				Reason:            reason,
+				Note:              input.Body.Note,
+				NotifyImmediately: input.Body.NotifyImmediately,
+				ExpectedVersion:   input.Body.Version,
+			})
+		}
+		if actErr != nil {
+			return nil, handler.providerWriteError(actErr)
+		}
+		return &suspendProviderOutput{Body: suspendProviderResult{
+			DurationDays:   result.DurationDays,
+			EffectiveUntil: result.EffectiveUntil,
+			ProviderID:     technicianID.String(),
+			Type:           expectedType,
+			Version:        result.Version,
+		}}, nil
+	})
+}
+
+// parseJobResolutions turns the wire map (bookingId -> resolution) into domain terms; any
+// malformed key or unknown resolution is a 400.
+func parseJobResolutions(raw map[string]jobResolution) (map[uuid.UUID]providerops.JobResolution, error) {
+	resolutions := make(map[uuid.UUID]providerops.JobResolution, len(raw))
+	for rawBookingID, rawResolution := range raw {
+		bookingID, err := uuid.Parse(rawBookingID)
+		if err != nil {
+			return nil, &badRequestError{msg: "jobResolutions key must be a booking uuid"}
+		}
+		resolution, err := providerops.ParseJobResolution(string(rawResolution))
+		if err != nil {
+			return nil, &badRequestError{msg: err.Error()}
+		}
+		resolutions[bookingID] = resolution
+	}
+	return resolutions, nil
 }
 
 // restoreProviderRequest reverses a suspension or a block; it is also the undo target inside the
@@ -540,6 +793,26 @@ type restoreProviderOutput struct {
 	Body restoreProviderResult
 }
 
-func (handler *AdminHandler) restoreProvider(_ context.Context, _ *opsRestoreProviderInput) (*restoreProviderOutput, error) {
-	return nil, notImplemented("opsRestoreProvider")
+func (handler *AdminHandler) restoreProvider(ctx context.Context, input *opsRestoreProviderInput) (*restoreProviderOutput, error) {
+	caller, _ := userFromContext(ctx)
+	technicianID, err := adminProviderID(input.ID)
+	if err != nil {
+		return nil, toHumaError(handler.log, err)
+	}
+	return providerIdempotent(ctx, handler, "opsRestoreProvider", input.IdempotencyKey, func() (*restoreProviderOutput, error) {
+		result, err := handler.providers.Restore(ctx, providerops.RestoreInput{
+			TechnicianID:    technicianID,
+			ActorID:         caller.ID,
+			Note:            input.Body.Note,
+			ExpectedVersion: input.Body.Version,
+		})
+		if err != nil {
+			return nil, handler.providerWriteError(err)
+		}
+		return &restoreProviderOutput{Body: restoreProviderResult{
+			ProviderID: technicianID.String(),
+			Status:     providerStatus(result.Status),
+			Version:    result.Version,
+		}}, nil
+	})
 }

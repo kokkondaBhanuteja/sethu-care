@@ -82,3 +82,10 @@ SELECT t.last_lat, t.last_lng, t.last_location_at
   FROM bookings b
   JOIN technicians t ON t.user_id = b.technician_id
  WHERE b.id = $1;
+
+-- name: InsertTechnician :exec
+-- The workforce half of provisioning a technician (identity.ProvisionTechnician): the user
+-- row (role TECHNICIAN) is created by CreateUser in the same transaction; the composite FK
+-- proves the pairing.
+INSERT INTO technicians (user_id, city)
+VALUES (@user_id, @city);

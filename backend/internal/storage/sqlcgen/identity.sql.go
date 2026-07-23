@@ -203,6 +203,24 @@ func (q *Queries) InsertOtpChallenge(ctx context.Context, arg InsertOtpChallenge
 	return id, err
 }
 
+const insertTechnician = `-- name: InsertTechnician :exec
+INSERT INTO technicians (user_id, city)
+VALUES ($1, $2)
+`
+
+type InsertTechnicianParams struct {
+	UserID uuid.UUID
+	City   string
+}
+
+// The workforce half of provisioning a technician (identity.ProvisionTechnician): the user
+// row (role TECHNICIAN) is created by CreateUser in the same transaction; the composite FK
+// proves the pairing.
+func (q *Queries) InsertTechnician(ctx context.Context, arg InsertTechnicianParams) error {
+	_, err := q.db.Exec(ctx, insertTechnician, arg.UserID, arg.City)
+	return err
+}
+
 const recomputeTechnicianRating = `-- name: RecomputeTechnicianRating :exec
 UPDATE technicians
    SET rating = COALESCE((SELECT AVG(rating)::numeric(3, 2) FROM reviews WHERE technician_id = $1), 5.00),

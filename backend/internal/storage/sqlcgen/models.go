@@ -203,6 +203,63 @@ type ProductUnit struct {
 	Version           int64
 }
 
+type ProviderAdminState struct {
+	TechnicianID   uuid.UUID
+	Standing       string
+	ReasonCode     *string
+	Note           string
+	SuspendedUntil pgtype.Timestamptz
+	DecidedBy      *uuid.UUID
+	DecidedAt      pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	Version        int64
+}
+
+type ProviderApplication struct {
+	ID                   uuid.UUID
+	ApplicantName        string
+	Phone                string
+	Email                string
+	Address              string
+	Zone                 string
+	Status               string
+	DocumentsRequired    int32
+	BackgroundClearedAt  pgtype.Timestamptz
+	AppliedAt            pgtype.Timestamptz
+	DecidedAt            pgtype.Timestamptz
+	DecidedBy            *uuid.UUID
+	DecisionReasonCode   *string
+	DecisionNote         string
+	ApprovedTechnicianID *uuid.UUID
+	DocumentsRequestedAt pgtype.Timestamptz
+	DocumentsRequestNote string
+	CreatedAt            pgtype.Timestamptz
+	UpdatedAt            pgtype.Timestamptz
+	Version              int64
+}
+
+type ProviderApplicationCategory struct {
+	ApplicationID uuid.UUID
+	Name          string
+	YearsClaimed  int32
+}
+
+type ProviderApplicationDocument struct {
+	ID            uuid.UUID
+	ApplicationID uuid.UUID
+	DocumentType  string
+	Validation    string
+	UploadedAt    pgtype.Timestamptz
+	ExpiresAt     pgtype.Timestamptz
+	Detail        string
+	OcrRead       string
+	OcrExpected   string
+	SizeBytes     int64
+	Url           string
+	CreatedAt     pgtype.Timestamptz
+}
+
 type QuestionDef struct {
 	ID         uuid.UUID
 	ServiceID  uuid.UUID
