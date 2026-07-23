@@ -7,6 +7,7 @@
 
 import { env } from "../../lib/env";
 import { API_ERROR_CODES, apiError } from "../../lib/http/apiError";
+import { devBridgeLogin } from "./auth.devBridge";
 import {
   mockBootstrap,
   mockLogin,
@@ -36,13 +37,21 @@ function notImplemented(endpoint: string): never {
 /** POST /admin/auth/bootstrap — resolves version support and stored session (spec §6.1). */
 export function bootstrapApp(signal?: AbortSignal): Promise<BootstrapResult> {
   if (env.useMocks) return mockBootstrap(signal);
-  return notImplemented("GET /admin/auth/bootstrap");
+  // No bootstrap endpoint exists yet; resolve locally so the splash can route. `hasSession` is
+  // decided by the hydrated session store (useSplashBoot reads it there, not from this payload).
+  return Promise.resolve({
+    isVersionSupported: true,
+    hasSession: false,
+    isBiometricEnabled: false,
+  });
 }
 
 /** POST /admin/auth/login — email + password, first factor only. There is no signup (spec §10.1). */
 export function login(request: LoginRequest, signal?: AbortSignal): Promise<LoginOutcome> {
   if (env.useMocks) return mockLogin(request, signal);
-  return notImplemented("POST /admin/auth/login");
+  // TEMPORARY: real mode signs in through the phone-OTP dev bridge until the contract's
+  // `adminLogin` is implemented — see auth.devBridge.ts for the WHY and the replacement plan.
+  return devBridgeLogin(signal);
 }
 
 /** POST /admin/auth/2fa — second factor plus device registration. */

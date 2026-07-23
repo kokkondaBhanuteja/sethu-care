@@ -30,7 +30,13 @@ other. `AuditCompensationNote` renders the link from both ends (`compensatesEntr
 - `audit.constants.ts` — query keys, page size, the `?entry=` param, and the vocabulary →
   presentation maps. `RISK_LEVELS` and `ADMIN_ACTIONS` are **imported** from
   `lib/permissions/actions`; this file only says how each value is drawn.
-- `audit.api.ts` — the only boundary to data. Reads only, permanently.
+- `audit.api.ts` — the only boundary to data. Reads only, permanently. The list is REAL
+  (`GET /ops/audit` via the generated client) when `env.useMocks` is false; the entry detail and
+  the admins filter stay mocked in every mode until their endpoints stop answering 501 (dated
+  notes in the file).
+- `audit.api.map.ts` — pure mappers for the real payloads: named date ranges → the server's
+  inclusive-`from`/exclusive-`to` pair on IST day boundaries, null filters omitted, search sent as
+  `targetId`, and the §10.4 entry copied field for field.
 - `audit.mock.ts` / `audit.fixtures.ts` / `audit.seeds.ts` / `audit.backlog.ts` / `auditSeed.ts` —
   the mock ledger: 15 design-exact entries plus 30 generated ones (45 total).
 - `useAuditLog.ts` — filters, debounce, cursor paging. Both shells call it; neither owns a rule.

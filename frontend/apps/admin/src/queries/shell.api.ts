@@ -1,17 +1,34 @@
+import { shellCounters } from "@sethu/api-client";
+import type { ShellCounters as ApiShellCounters } from "@sethu/api-client";
+
+import { env } from "../lib/env";
 import { normalizeError } from "../lib/http/apiError";
 import { fetchShellCountersMock } from "./shell.mock";
 import type { ShellCounters } from "./shell.types";
 
 // The one boundary between the shells and their data.
 //
-// There is no backend endpoint for these counters yet — see docs/admin-api-contract.md,
-// `GET /ops/shell-counters`. When it lands, the generated client's call replaces the mock call
-// below and nothing above this file changes. That replaceability is the whole reason components
-// never import a mock directly.
+// `GET /ops/shell-counters` is real (backend commit 6543b30): with mocks off the generated
+// client serves the badge counts; with mocks on the mock still does, so unit tests and e2e runs
+// are unchanged. That replaceability is the whole reason components never import a mock directly.
+
+/** Field-for-field: `queries/shell.types.ts` is the normative shape, so drift is a compile error. */
+export function mapShellCounters(payload: ApiShellCounters): ShellCounters {
+  return {
+    criticalAlerts: payload.criticalAlerts,
+    needsAttention: payload.needsAttention,
+    pendingApplications: payload.pendingApplications,
+    openTickets: payload.openTickets,
+  };
+}
 
 export async function fetchShellCounters(signal?: AbortSignal): Promise<ShellCounters> {
   try {
-    return await fetchShellCountersMock(signal);
+    if (env.useMocks) return await fetchShellCountersMock(signal);
+
+    const result = await shellCounters({ signal });
+    if (result.data === undefined) throw result.response;
+    return mapShellCounters(result.data);
   } catch (thrown) {
     throw normalizeError(thrown, "Navigation counters could not be loaded.");
   }

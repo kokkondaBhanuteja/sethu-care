@@ -20,6 +20,7 @@ walked-away-from device from leaking live operations data.
 | `BiometricUnlock.mobile.tsx` · `useUnlock.ts` · `biometric.ts` | BOX 92–94. Sensor, then passcode. |
 | `CodeInput.tsx` | The six-cell code control. **Promotion candidate — see below.** |
 | `auth.api.ts` · `auth.mock.ts` · `auth.types.ts` · `auth.constants.ts` | The data boundary. |
+| `auth.devBridge.ts` | **TEMPORARY** mocks-off login: the contract's `adminLogin` is not implemented yet, so `login()` signs in through the backend's existing phone-OTP auth as the seeded dev admin (`env.devAdminPhone`, backend run with `SETHU_DEV_OTP=true`; OTP requests rate-limited 30s per phone). Completes on the designed trusted-device path (no second factor); the typed credentials are chrome. Delete when `adminLogin` lands. |
 | `authRouterState.ts` · `useCountdown.ts` · `useIsOnline.ts` · `deviceIdentity.ts` | Support. |
 
 `layouts/AuthLayout.tsx` is the pre-auth shell this feature renders into — three frames (`split`,

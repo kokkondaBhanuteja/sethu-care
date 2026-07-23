@@ -41,5 +41,10 @@ export const env = {
   /** Mocks are the default: only six of this console's endpoints exist on the backend today. */
   useMocks: (import.meta.env.VITE_USE_MOCKS ?? "true") === "true",
   mockMode: readMockMode(import.meta.env.VITE_MOCK_MODE),
+  /**
+   * The seeded admin phone the dev login bridge signs in with while the contract's `adminLogin`
+   * is still being implemented (see features/auth/auth.devBridge.ts). Dev-only; unused by mocks.
+   */
+  devAdminPhone: import.meta.env.VITE_DEV_ADMIN_PHONE ?? "+919000000008",
   isDev: import.meta.env.DEV,
 } as const;
